@@ -14,6 +14,8 @@ Working:
 
 - PySide6 desktop GUI.
 - YAML curated server list.
+- Read-only SQLite-backed discovered server browser tab.
+- YAML/JSON import for discovered server cache rows.
 - DNS hostname and direct IP support.
 - Live DayZ server querying through `gamedig`.
 - Partial `gamedig` restart responses are treated as offline/restarting rather than as healthy online rows.
@@ -75,8 +77,8 @@ Current handling:
 ## Important design decisions
 
 - YAML is the curated server/source-of-truth format for early versions.
-- SQLite should be introduced later for scraped public server browser cache.
-- v0.6 has started with a standalone SQLite server cache foundation for discovered public servers.
+- SQLite is now introduced as the discovered public server browser cache.
+- v0.6 has started with a standalone SQLite server cache foundation and read-only browser tab for discovered public servers.
 - JSON is used for user settings and favourites under `~/.config/wolflauncher`.
 - The external shell launcher remains the launch engine for now.
 - The vendored shell launcher is the reference contract for future native launcher work.
@@ -90,8 +92,8 @@ Current handling:
 
 Use v0.6 as the next active development target:
 
-- Add a searchable server browser foundation.
-- Wire the SQLite discovered-server cache into a searchable server browser UI.
+- Add live discovery/scraping paths that populate the SQLite cache.
+- Decide when and how discovered servers can be promoted to curated YAML entries.
 - Keep `servers.yaml` for curated, personal and import/export server lists.
 - Improve filtering, sorting and diagnostics around the existing stable launch flow.
 - Continue extracting tests and documentation from the vendored launcher's behavior before rewriting it.

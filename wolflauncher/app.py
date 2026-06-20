@@ -5,6 +5,7 @@ import sys
 from PySide6.QtCore import QTimer, QThread, Signal, QUrl, Qt, QPoint, QProcess
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
     QFileDialog,
     QFormLayout,
     QHBoxLayout,
@@ -32,6 +33,7 @@ from .launcher import LaunchError, build_launch_command
 from .models import Server
 from .platform_detection import best_install
 from .mods import ModCheckResult, check_server_mods
+from . import server_cache
 from .settings import (
     load_favourites,
     load_settings,
@@ -134,6 +136,7 @@ class MainWindow(QMainWindow):
         self.worker = None
         self.mod_worker = None
         self.last_mod_result = None
+        self.server_cache = server_cache.connect()
 
         for server in self.servers:
             key = server_key(server)
@@ -161,12 +164,14 @@ class MainWindow(QMainWindow):
 
         tabs = QTabWidget()
         tabs.addTab(self._build_servers_tab(), "Servers")
+        tabs.addTab(self._build_server_browser_tab(), "Server Browser")
         tabs.addTab(self._build_mods_tab(), "Mods")
         tabs.addTab(self._build_diagnostics_tab(), "Diagnostics")
         self.setCentralWidget(tabs)
 
         self.apply_refresh_timer()
         self.refresh_statuses()
+        self.refresh_server_browser()
         self.update_diagnostics()
 
     def _build_servers_tab(self) -> QWidget:
@@ -255,6 +260,83 @@ class MainWindow(QMainWindow):
         layout.addLayout(buttons)
         return widget
 
+    def _build_server_browser_tab(self) -> QWidget:
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+
+        filters = QHBoxLayout()
+        self.browser_search = QLineEdit()
+        self.browser_search.setPlaceholderText("Search discovered servers")
+        self.browser_search.textChanged.connect(self.refresh_server_browser)
+        filters.addWidget(QLabel("Search"))
+        filters.addWidget(self.browser_search, 2)
+
+        self.browser_map = QLineEdit()
+        self.browser_map.setPlaceholderText("Any map")
+        self.browser_map.textChanged.connect(self.refresh_server_browser)
+        filters.addWidget(QLabel("Map"))
+        filters.addWidget(self.browser_map)
+
+        self.browser_version = QLineEdit()
+        self.browser_version.setPlaceholderText("Any version")
+        self.browser_version.textChanged.connect(self.refresh_server_browser)
+        filters.addWidget(QLabel("Version"))
+        filters.addWidget(self.browser_version)
+
+        self.browser_online_only = QCheckBox("Online")
+        self.browser_online_only.stateChanged.connect(self.refresh_server_browser)
+        filters.addWidget(self.browser_online_only)
+
+        self.browser_modded = QComboBox()
+        self.browser_modded.addItems(["Any mods", "Modded", "Vanilla"])
+        self.browser_modded.currentTextChanged.connect(self.refresh_server_browser)
+        filters.addWidget(self.browser_modded)
+
+        self.browser_sort = QComboBox()
+        self.browser_sort.addItems(["Name", "Players", "Ping", "Map", "Version", "Last seen"])
+        self.browser_sort.currentTextChanged.connect(self.refresh_server_browser)
+        filters.addWidget(QLabel("Sort"))
+        filters.addWidget(self.browser_sort)
+
+        self.browser_descending = QCheckBox("Desc")
+        self.browser_descending.stateChanged.connect(self.refresh_server_browser)
+        filters.addWidget(self.browser_descending)
+        layout.addLayout(filters)
+
+        self.browser_summary = QLabel("Cached discovered servers: loading")
+        layout.addWidget(self.browser_summary)
+
+        self.browser_table = QTableWidget(0, 13)
+        self.browser_table.setHorizontalHeaderLabels([
+            "Name",
+            "Live Name",
+            "Host",
+            "Game Port",
+            "Query Port",
+            "Status",
+            "Map",
+            "Players",
+            "Ping",
+            "Version",
+            "Flags",
+            "Last Seen",
+            "Source",
+        ])
+        self.browser_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.browser_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.browser_table.setSortingEnabled(True)
+        layout.addWidget(self.browser_table)
+
+        buttons = QHBoxLayout()
+        import_file = QPushButton("Import cache file")
+        import_file.clicked.connect(self.import_server_cache_file)
+        refresh = QPushButton("Refresh cache view")
+        refresh.clicked.connect(self.refresh_server_browser)
+        buttons.addStretch(1)
+        buttons.addWidget(import_file)
+        buttons.addWidget(refresh)
+        layout.addLayout(buttons)
+        return widget
 
     def _build_mods_tab(self) -> QWidget:
         widget = QWidget()
@@ -321,6 +403,28 @@ class MainWindow(QMainWindow):
             self.save_user_settings(silent=True)
             self.update_diagnostics()
 
+    def import_server_cache_file(self):
+        path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Import discovered servers",
+            "",
+            "Server cache files (*.yaml *.yml *.json);;All files (*)",
+        )
+        if not path:
+            return
+        try:
+            count = server_cache.import_servers_from_file(self.server_cache, Path(path))
+        except ValueError as exc:
+            QMessageBox.critical(self, "Import failed", str(exc))
+            return
+
+        self.refresh_server_browser()
+        QMessageBox.information(
+            self,
+            "Import complete",
+            f"Imported {count} discovered server row(s) into the cache.",
+        )
+
     def apply_refresh_timer(self):
         seconds = self.refresh_seconds.value()
         if seconds <= 0:
@@ -350,6 +454,73 @@ class MainWindow(QMainWindow):
         self.worker.status_ready.connect(self.update_status_row)
         self.worker.finished_all.connect(self.handle_refresh_finished)
         self.worker.start()
+
+    def refresh_server_browser(self, *_args):
+        if not hasattr(self, "browser_table"):
+            return
+
+        sort_key = self.browser_sort.currentText().lower().replace(" ", "_")
+        modded = None
+        if self.browser_modded.currentText() == "Modded":
+            modded = True
+        elif self.browser_modded.currentText() == "Vanilla":
+            modded = False
+
+        servers = server_cache.search_servers(
+            self.server_cache,
+            text=self.browser_search.text(),
+            online_only=self.browser_online_only.isChecked(),
+            map_name=self.browser_map.text().strip(),
+            version=self.browser_version.text().strip(),
+            modded=modded,
+            sort_by=sort_key,
+            descending=self.browser_descending.isChecked(),
+        )
+
+        self.browser_table.setSortingEnabled(False)
+        self.browser_table.setRowCount(len(servers))
+        for row, server in enumerate(servers):
+            flags = []
+            if server.password:
+                flags.append("Password")
+            if server.modded:
+                flags.append("Mods")
+            values = [
+                server.name,
+                server.server_name,
+                server.host,
+                str(server.game_port),
+                str(server.query_port),
+                "ONLINE" if server.online else "OFFLINE",
+                server.map_name,
+                self._players_text(server.players_current, server.players_max),
+                f"{server.ping_ms}ms" if server.ping_ms is not None else "",
+                server.version,
+                ", ".join(flags) if flags else "Vanilla/unknown",
+                server.last_seen,
+                server.source,
+            ]
+            for column, value in enumerate(values):
+                item = QTableWidgetItem(value)
+                if column == 5:
+                    item.setForeground(QColor("#6ee16e" if server.online else "#ff6b6b"))
+                self.browser_table.setItem(row, column, item)
+
+        self.browser_table.resizeColumnsToContents()
+        self.browser_table.setSortingEnabled(True)
+        if servers:
+            self.browser_summary.setText(f"Cached discovered servers: {len(servers)} shown")
+        else:
+            self.browser_summary.setText("Cached discovered servers: none found")
+
+    def _players_text(self, current: int | None, maximum: int | None) -> str:
+        if current is None and maximum is None:
+            return ""
+        if maximum is None:
+            return str(current)
+        if current is None:
+            return f"?/{maximum}"
+        return f"{current}/{maximum}"
 
     def _set_item(self, row: int, column: int, text: str, colour: str | None = None):
         item = QTableWidgetItem(text)
@@ -729,6 +900,7 @@ class MainWindow(QMainWindow):
 
     def closeEvent(self, event):
         self.save_user_settings(silent=True)
+        self.server_cache.close()
         super().closeEvent(event)
 
 

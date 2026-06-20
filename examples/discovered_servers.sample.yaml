@@ -1,0 +1,31 @@
+servers:
+  - name: Sample Namalsk
+    source: sample
+    server_name: Sample Namalsk Live Name
+    host: 203.0.113.60
+    game_port: 2302
+    query_port: 27016
+    map: namalsk
+    players_current: 14
+    players_max: 40
+    ping: 51
+    version: "1.26"
+    password: false
+    modded: true
+    online: true
+    last_seen: "2026-06-20T13:30:00Z"
+  - name: Sample Chernarus
+    source: sample
+    server_name: Sample Chernarus Live Name
+    host: 203.0.113.70
+    game_port: 2302
+    query_port: 27016
+    map: chernarusplus
+    players_current: 3
+    players_max: 60
+    ping: 88
+    version: "1.26"
+    password: false
+    modded: false
+    online: true
+    last_seen: "2026-06-20T13:35:00Z"

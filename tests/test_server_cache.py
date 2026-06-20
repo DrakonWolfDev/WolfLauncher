@@ -155,6 +155,89 @@ class ServerCacheTests(unittest.TestCase):
 
         self.assertEqual([server.name for server in results], ["100% Survival"])
 
+    def test_import_servers_from_yaml_file_populates_cache(self):
+        connection = self.open_cache()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "discovered.yaml"
+            path.write_text(
+                """
+servers:
+  - name: Imported Namalsk
+    source: sample
+    server_name: Live Imported Namalsk
+    host: 203.0.113.60
+    game_port: "2302"
+    query_port: "27016"
+    map: namalsk
+    players_current: "14"
+    players_max: 40
+    ping: "51"
+    version: "1.26"
+    password: "false"
+    modded: "true"
+    online: "true"
+    last_seen: "2026-06-20T13:30:00Z"
+""",
+                encoding="utf-8",
+            )
+
+            count = server_cache.import_servers_from_file(connection, path)
+
+        imported = server_cache.get_server(connection, "203.0.113.60:2302:27016")
+        self.assertEqual(count, 1)
+        self.assertEqual(imported.name, "Imported Namalsk")
+        self.assertEqual(imported.source, "sample")
+        self.assertEqual(imported.server_name, "Live Imported Namalsk")
+        self.assertEqual(imported.map_name, "namalsk")
+        self.assertEqual(imported.players_current, 14)
+        self.assertEqual(imported.players_max, 40)
+        self.assertEqual(imported.ping_ms, 51)
+        self.assertFalse(imported.password)
+        self.assertTrue(imported.modded)
+        self.assertTrue(imported.online)
+
+    def test_import_servers_from_json_file_accepts_top_level_list(self):
+        connection = self.open_cache()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "discovered.json"
+            path.write_text(
+                """
+[
+  {
+    "display_name": "JSON Chernarus",
+    "host": "203.0.113.70",
+    "game_port": 2302,
+    "query_port": 27016
+  }
+]
+""",
+                encoding="utf-8",
+            )
+
+            count = server_cache.import_servers_from_file(connection, path)
+
+        imported = server_cache.get_server(connection, "203.0.113.70:2302:27016")
+        self.assertEqual(count, 1)
+        self.assertEqual(imported.name, "JSON Chernarus")
+        self.assertEqual(imported.source, "import")
+
+    def test_import_rejects_rows_without_required_ports(self):
+        connection = self.open_cache()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "bad.yaml"
+            path.write_text(
+                """
+servers:
+  - name: Broken
+    host: 203.0.113.80
+    game_port: 2302
+""",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "query_port"):
+                server_cache.import_servers_from_file(connection, path)
+
 
 if __name__ == "__main__":
     unittest.main()

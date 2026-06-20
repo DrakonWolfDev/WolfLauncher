@@ -26,6 +26,8 @@ That issue is tracked as a Steam/Proton/DayZ launch-option compatibility problem
 
 - YAML-based server configuration.
 - SQLite cache foundation for future discovered public servers.
+- Read-only discovered server browser with search, filters and cache sorting.
+- YAML/JSON import for discovered server cache rows.
 - DNS hostname or IP address support.
 - Favourites system.
 - Server grouping support.
@@ -128,6 +130,22 @@ servers:
 ```
 
 The `host` field may contain either a DNS hostname or an IP address.
+
+## Discovered Server Cache
+
+The Server Browser tab reads from the SQLite cache at:
+
+```text
+~/.local/share/wolflauncher/server_cache.sqlite3
+```
+
+Use **Import cache file** to load discovered server rows from YAML or JSON. A sample file is included at:
+
+```text
+examples/discovered_servers.sample.yaml
+```
+
+Imported rows stay separate from curated `servers.yaml`.
 
 ## Project Documentation
 
