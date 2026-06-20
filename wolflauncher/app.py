@@ -36,7 +36,12 @@ from .models import Server
 from .platform_detection import best_install
 from .mods import ModCheckResult, check_server_mods
 from . import server_cache
-from .server_discovery import discover_dayz_servers, discover_dayz_servers_web_api, parse_master_address
+from .server_discovery import (
+    discover_dayz_servers,
+    discover_dayz_servers_battlemetrics,
+    discover_dayz_servers_web_api,
+    parse_master_address,
+)
 from .server_enrichment import enrich_discovered_server
 from .settings import (
     load_favourites,
@@ -107,6 +112,22 @@ class SteamWebApiDiscoveryWorker(QThread):
     def run(self):
         try:
             servers = discover_dayz_servers_web_api(api_key=self.api_key, limit=self.limit)
+        except Exception as exc:
+            self.discovery_ready.emit([], str(exc))
+        else:
+            self.discovery_ready.emit(servers, "")
+
+
+class BattleMetricsDiscoveryWorker(QThread):
+    discovery_ready = Signal(object, str)
+
+    def __init__(self, limit: int = 100):
+        super().__init__()
+        self.limit = limit
+
+    def run(self):
+        try:
+            servers = discover_dayz_servers_battlemetrics(limit=self.limit)
         except Exception as exc:
             self.discovery_ready.emit([], str(exc))
         else:
@@ -234,6 +255,7 @@ class MainWindow(QMainWindow):
         self.mod_worker = None
         self.discovery_worker = None
         self.web_api_worker = None
+        self.battlemetrics_worker = None
         self.enrichment_worker = None
         self.last_mod_result = None
         self.browser_servers = []
@@ -452,6 +474,8 @@ class MainWindow(QMainWindow):
         buttons = QHBoxLayout()
         import_file = QPushButton("Import cache file")
         import_file.clicked.connect(self.import_server_cache_file)
+        self.battlemetrics_button = QPushButton("Refresh BattleMetrics")
+        self.battlemetrics_button.clicked.connect(self.refresh_from_battlemetrics)
         self.steam_refresh_button = QPushButton("Refresh from Steam")
         self.steam_refresh_button.clicked.connect(self.refresh_from_steam_master)
         self.steam_web_api_button = QPushButton("Refresh Web API")
@@ -464,6 +488,7 @@ class MainWindow(QMainWindow):
         refresh.clicked.connect(self.refresh_server_browser)
         buttons.addStretch(1)
         buttons.addWidget(import_file)
+        buttons.addWidget(self.battlemetrics_button)
         buttons.addWidget(self.steam_refresh_button)
         buttons.addWidget(self.steam_web_api_button)
         buttons.addWidget(self.enrich_visible_button)
@@ -623,6 +648,29 @@ class MainWindow(QMainWindow):
             self,
             "Steam Web API discovery complete",
             f"Imported {count} Steam Web API server row(s).",
+        )
+
+    def refresh_from_battlemetrics(self):
+        if self.battlemetrics_worker and self.battlemetrics_worker.isRunning():
+            return
+        self.browser_summary.setText("Cached discovered servers: querying BattleMetrics...")
+        self.battlemetrics_button.setEnabled(False)
+        self.battlemetrics_worker = BattleMetricsDiscoveryWorker(limit=100)
+        self.battlemetrics_worker.discovery_ready.connect(self.handle_battlemetrics_ready)
+        self.battlemetrics_worker.start()
+
+    def handle_battlemetrics_ready(self, servers, error: str):
+        self.battlemetrics_button.setEnabled(True)
+        if error:
+            self.refresh_server_browser()
+            QMessageBox.warning(self, "BattleMetrics discovery failed", error)
+            return
+        count = server_cache.upsert_servers(self.server_cache, servers)
+        self.refresh_server_browser()
+        QMessageBox.information(
+            self,
+            "BattleMetrics discovery complete",
+            f"Imported {count} BattleMetrics server row(s).",
         )
 
     def enrich_visible_discovered_servers(self):

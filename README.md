@@ -33,6 +33,7 @@ That issue is tracked as a Steam/Proton/DayZ launch-option compatibility problem
 - Steam master server candidate discovery import.
 - In-app Steam master refresh for discovered server candidates.
 - Steam Web API server-list discovery with API key.
+- BattleMetrics server discovery.
 - Enrich visible discovered servers with live status data.
 - DNS hostname or IP address support.
 - Favourites system.
@@ -156,6 +157,8 @@ Imported rows stay separate from curated `servers.yaml`.
 Select an imported/discovered row and use **Promote to curated** to add it to `servers.yaml`. Right-click a discovered row to promote it or copy its connect address/details.
 
 Use **Refresh Web API** in the Server Browser tab to fetch DayZ server rows through Valve's HTTPS Steam Web API. Paste a Steam Web API key into the **Web API key** field, or start WolfLauncher with `WOLFLAUNCHER_STEAM_WEB_API_KEY` or `STEAM_WEB_API_KEY`.
+
+Use **Refresh BattleMetrics** to fetch a small batch of documented BattleMetrics DayZ server rows without a Steam API key.
 
 The older **Refresh from Steam** button uses Valve's legacy UDP master server path. If Valve's default DNS names do not resolve, paste a comma-separated endpoint list into the **Steam masters** field, for example `HOST:27011,HOST:27015`.
 

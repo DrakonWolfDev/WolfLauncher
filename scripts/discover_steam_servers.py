@@ -12,6 +12,7 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from wolflauncher import server_cache
 from wolflauncher.server_discovery import (
+    discover_dayz_servers_battlemetrics,
     discover_dayz_servers,
     discover_dayz_servers_web_api,
     parse_master_address,
@@ -23,6 +24,7 @@ def main() -> int:
     parser.add_argument("--batches", type=int, default=1, help="Maximum master-server batches to fetch.")
     parser.add_argument("--timeout", type=float, default=5.0, help="UDP timeout in seconds.")
     parser.add_argument("--web-api", action="store_true", help="Use Steam Web API instead of legacy UDP.")
+    parser.add_argument("--battlemetrics", action="store_true", help="Use BattleMetrics instead of Steam.")
     parser.add_argument("--web-api-key", default="", help="Steam Web API key. Defaults to environment.")
     parser.add_argument("--limit", type=int, default=5000, help="Maximum Steam Web API rows to fetch.")
     parser.add_argument("--filter", default="", help="Steam server filter. Defaults to DayZ appid.")
@@ -37,7 +39,11 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
-        if args.web_api:
+        if args.battlemetrics:
+            source = "BattleMetrics"
+            servers = discover_dayz_servers_battlemetrics(limit=args.limit, timeout=args.timeout)
+        elif args.web_api:
+            source = "Steam Web API"
             servers = discover_dayz_servers_web_api(
                 api_key=args.web_api_key,
                 limit=args.limit,
@@ -45,6 +51,7 @@ def main() -> int:
                 filter_text=args.filter,
             )
         else:
+            source = "Steam master"
             master_addresses = [parse_master_address(item, args.master_port) for item in args.master]
             servers = discover_dayz_servers(
                 max_batches=args.batches,
@@ -60,7 +67,7 @@ def main() -> int:
 
     with server_cache.connect() as connection:
         count = server_cache.upsert_servers(connection, servers)
-    print(f"Imported {count} Steam master server candidate(s).")
+    print(f"Imported {count} {source} server candidate(s).")
     return 0
 
 

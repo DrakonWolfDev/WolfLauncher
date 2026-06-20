@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from wolflauncher.models import DiscoveredServer
 from wolflauncher.server_discovery import (
+    BattleMetricsError,
     DAYZ_APP_ID,
     MasterServerAddress,
     MasterServerEndpoint,
@@ -12,7 +13,9 @@ from wolflauncher.server_discovery import (
     build_master_server_request,
     discover_dayz_servers,
     discovered_server_from_endpoint,
+    discovered_server_from_battlemetrics_row,
     discovered_server_from_web_api_row,
+    parse_battlemetrics_servers,
     parse_master_address,
     parse_master_server_response,
     parse_steam_web_api_servers,
@@ -262,6 +265,99 @@ class SteamWebApiDiscoveryTests(unittest.TestCase):
     def test_parse_web_api_response_rejects_missing_server_list(self):
         with self.assertRaisesRegex(SteamWebApiError, "server list"):
             parse_steam_web_api_servers({"response": {"servers": {}}})
+
+
+class BattleMetricsDiscoveryTests(unittest.TestCase):
+    def test_battlemetrics_row_maps_to_discovered_server(self):
+        server = discovered_server_from_battlemetrics_row(
+            {
+                "type": "server",
+                "id": "123",
+                "attributes": {
+                    "name": "BattleMetrics DayZ",
+                    "ip": "203.0.113.10",
+                    "port": 2302,
+                    "queryPort": 27016,
+                    "players": 12,
+                    "maxPlayers": 60,
+                    "status": "online",
+                    "details": {
+                        "map": "chernarusplus",
+                        "version": "1.26",
+                        "modded": True,
+                    },
+                },
+            },
+            "2026-06-20T16:00:00+00:00",
+        )
+
+        self.assertEqual(
+            server,
+            DiscoveredServer(
+                name="BattleMetrics DayZ",
+                source="battlemetrics",
+                server_name="BattleMetrics DayZ",
+                host="203.0.113.10",
+                game_port=2302,
+                query_port=27016,
+                map_name="chernarusplus",
+                players_current=12,
+                players_max=60,
+                version="1.26",
+                modded=True,
+                online=True,
+                last_checked="2026-06-20T16:00:00+00:00",
+                last_seen="2026-06-20T16:00:00+00:00",
+            ),
+        )
+
+    def test_battlemetrics_row_uses_port_when_query_port_missing(self):
+        server = discovered_server_from_battlemetrics_row(
+            {
+                "attributes": {
+                    "name": "No Query Port",
+                    "address": "203.0.113.20",
+                    "port": "2302",
+                    "status": "offline",
+                }
+            }
+        )
+
+        self.assertEqual(server.host, "203.0.113.20")
+        self.assertEqual(server.game_port, 2302)
+        self.assertEqual(server.query_port, 2302)
+        self.assertFalse(server.online)
+
+    def test_parse_battlemetrics_response_deduplicates_cache_keys(self):
+        servers = parse_battlemetrics_servers(
+            {
+                "data": [
+                    {
+                        "attributes": {
+                            "name": "First",
+                            "ip": "203.0.113.10",
+                            "port": 2302,
+                            "queryPort": 27016,
+                        }
+                    },
+                    {
+                        "attributes": {
+                            "name": "Duplicate",
+                            "ip": "203.0.113.10",
+                            "port": 2302,
+                            "queryPort": 27016,
+                        }
+                    },
+                ]
+            }
+        )
+
+        self.assertEqual(len(servers), 1)
+        self.assertEqual(servers[0].name, "First")
+
+    def test_parse_battlemetrics_response_rejects_missing_server_list(self):
+        with self.assertRaisesRegex(BattleMetricsError, "server list"):
+            parse_battlemetrics_servers({"data": {}})
 
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@ from .models import DiscoveredServer
 
 DAYZ_APP_ID = 221100
 STEAM_WEB_API_SERVER_LIST_URL = "https://api.steampowered.com/IGameServersService/GetServerList/v1/"
+BATTLEMETRICS_SERVER_LIST_URL = "https://api.battlemetrics.com/servers"
 MASTER_SERVER_HOST = "hl2master.steampowered.com"
 MASTER_SERVER_HOSTS = [
     MASTER_SERVER_HOST,
@@ -49,6 +50,10 @@ class SteamMasterServerError(OSError):
 
 
 class SteamWebApiError(RuntimeError):
+    pass
+
+
+class BattleMetricsError(RuntimeError):
     pass
 
 
@@ -303,6 +308,96 @@ def discovered_server_from_web_api_row(row: dict, timestamp: str = "") -> Discov
         online=True,
         last_checked=timestamp,
         last_seen=timestamp,
+    )
+
+
+def discover_dayz_servers_battlemetrics(
+    limit: int = 100,
+    timeout: float = 15.0,
+    search: str = "",
+) -> list[DiscoveredServer]:
+    params = {
+        "filter[game]": "dayz",
+        "page[size]": str(max(1, min(int(limit), 100))),
+    }
+    if search:
+        params["filter[search]"] = search
+    url = f"{BATTLEMETRICS_SERVER_LIST_URL}?{urllib.parse.urlencode(params)}"
+    request = urllib.request.Request(url, headers={"User-Agent": "WolfLauncher/0.6"})
+
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            payload = response.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as exc:
+        raise BattleMetricsError(f"BattleMetrics API HTTP error: {exc.code}") from exc
+    except urllib.error.URLError as exc:
+        raise BattleMetricsError(f"BattleMetrics API connection failed: {exc.reason}") from exc
+    except TimeoutError as exc:
+        raise BattleMetricsError("BattleMetrics API timed out") from exc
+
+    try:
+        data = json.loads(payload)
+    except json.JSONDecodeError as exc:
+        raise BattleMetricsError("BattleMetrics API returned invalid JSON") from exc
+
+    return parse_battlemetrics_servers(data)
+
+
+def parse_battlemetrics_servers(data: dict) -> list[DiscoveredServer]:
+    rows = data.get("data", []) if isinstance(data, dict) else []
+    if not isinstance(rows, list):
+        raise BattleMetricsError("BattleMetrics API response did not contain a server list.")
+
+    now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    servers = []
+    seen = set()
+    for row in rows:
+        server = discovered_server_from_battlemetrics_row(row, now)
+        if not server or server.cache_key in seen:
+            continue
+        seen.add(server.cache_key)
+        servers.append(server)
+    return servers
+
+
+def discovered_server_from_battlemetrics_row(row: dict, timestamp: str = "") -> DiscoveredServer | None:
+    if not isinstance(row, dict):
+        return None
+    attributes = row.get("attributes", {})
+    if not isinstance(attributes, dict):
+        return None
+
+    host = str(attributes.get("ip") or attributes.get("address") or "").strip()
+    port = _optional_int(attributes.get("port"))
+    query_port = _optional_int(attributes.get("queryPort") or attributes.get("query_port")) or port
+    if not host or port is None:
+        return None
+
+    details = attributes.get("details", {})
+    if not isinstance(details, dict):
+        details = {}
+
+    name = str(attributes.get("name") or f"{host}:{port}")
+    status = str(attributes.get("status") or "").lower()
+    players_current = _optional_int(attributes.get("players"))
+    players_max = _optional_int(attributes.get("maxPlayers") or attributes.get("maxplayers"))
+
+    return DiscoveredServer(
+        name=name,
+        source="battlemetrics",
+        server_name=name,
+        host=host,
+        game_port=port,
+        query_port=query_port,
+        map_name=str(details.get("map") or attributes.get("map") or ""),
+        players_current=players_current,
+        players_max=players_max,
+        version=str(details.get("version") or attributes.get("version") or ""),
+        password=bool(details.get("password", False)),
+        modded=bool(details.get("modded", False)),
+        online=status == "online",
+        last_checked=timestamp,
+        last_seen=timestamp if status == "online" else "",
     )
 
 

@@ -21,6 +21,7 @@ Working:
 - Steam master server candidate discovery import script.
 - In-app Steam master refresh for discovered server candidates.
 - Steam Web API server-list discovery with API key.
+- BattleMetrics server discovery.
 - Enrichment of visible discovered servers with live status data.
 - DNS hostname and direct IP support.
 - Live DayZ server querying through `gamedig`.
@@ -98,7 +99,7 @@ Current handling:
 
 Use v0.6 as the next active development target:
 
-- Prefer Steam Web API discovery when an API key is available; keep UDP master discovery as legacy fallback.
+- Treat BattleMetrics as the preferred no-key documented discovery source while keeping import, Steam Web API and UDP master options available.
 - Improve bulk enrichment controls and candidate port handling.
 - Improve editing/organisation for promoted curated servers.
 - Keep `servers.yaml` for curated, personal and import/export server lists.
