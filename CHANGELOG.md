@@ -2,6 +2,9 @@
 
 ## Unreleased
 - Added `AGENTS.md` as the quick project orientation and coding-agent handoff file.
+- Vendored the MIT-licensed `dayz-linux-cli-launcher` under `external/dayz-linux-cli-launcher/`.
+- Added the vendored launcher as the final default launcher path fallback.
+- Expanded diagnostics and Linux Mint install dependencies for the external launcher tools.
 - Reorganized project documentation around the end-of-v0.5.2 working baseline.
 - Documented the known Steam launch-option issue with `__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%`.
 - Clarified that successful external-launcher exit means handoff to Steam, not proof that DayZ fully started.

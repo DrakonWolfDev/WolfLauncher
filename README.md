@@ -6,6 +6,8 @@ DayZ runs surprisingly well on Linux. The problem is everything around it: Steam
 
 WolfLauncher checks those pieces before launch, then hands control to the existing `dayz-launcher.sh` workflow.
 
+The upstream MIT-licensed shell launcher is vendored in `external/dayz-linux-cli-launcher/` as the current legacy launch engine and rewrite reference.
+
 ## Status
 
 Current baseline: end of v0.5.2.
@@ -61,7 +63,7 @@ Install system dependencies:
 
 ```bash
 sudo apt update
-sudo apt install python3 python3-venv python3-pip nodejs npm dnsutils libxcb-cursor0
+sudo apt install python3 python3-venv python3-pip nodejs npm dnsutils libxcb-cursor0 curl jq gawk
 sudo npm install -g gamedig
 ```
 
@@ -80,6 +82,12 @@ Configure the path to your existing launcher script, for example:
 
 ```text
 /home/andi/dayz-launcher.sh
+```
+
+If no user-installed launcher is found, WolfLauncher can fall back to the vendored script at:
+
+```text
+external/dayz-linux-cli-launcher/dayz-launcher.sh
 ```
 
 WolfLauncher generates launch commands in this shape:
@@ -123,6 +131,7 @@ The `host` field may contain either a DNS hostname or an IP address.
 | `ARCHITECTURE.md` | Design decisions, module map and launch contract |
 | `ROADMAP.md` | Planned features and future milestones |
 | `CHANGELOG.md` | Version history and release notes |
+| `external/dayz-linux-cli-launcher/` | Vendored MIT legacy launcher reference |
 
 ## Application Locations
 

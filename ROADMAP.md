@@ -18,6 +18,7 @@ Status: complete, with one known external launch-option issue.
 - Add sort by player count, ping, map and version.
 - Preserve the current curated server workflow.
 - Add tests around server loading, status parsing and launch command generation.
+- Document the vendored shell launcher's behavior as the compatibility contract.
 
 ## v0.7 - Diagnostics and Linux polish
 
@@ -26,6 +27,7 @@ Status: complete, with one known external launch-option issue.
 - Expand native Steam and Flatpak Steam checks.
 - Add clearer failure states for Proton/Steam handoff problems.
 - Add Linux Mint/Ubuntu install instructions.
+- Start carving native Python equivalents from the vendored legacy launcher behavior.
 
 ## v0.8 - Packaging preparation
 

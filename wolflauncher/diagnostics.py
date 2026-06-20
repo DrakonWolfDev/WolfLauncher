@@ -20,7 +20,7 @@ def run_diagnostics(launcher_path: str, servers: list[Server]) -> str:
     lines.append("")
 
     lines.append("Required tools:")
-    for command in ["python3", "gamedig", "node", "npm", "dig"]:
+    for command in ["python3", "gamedig", "node", "npm", "dig", "curl", "jq", "gawk"]:
         found = shutil.which(command)
         lines.append(f"  {command}: {found or 'not found'}")
     lines.append("")

@@ -37,7 +37,7 @@ Steam               game ownership, Workshop downloads and Proton launch
 dayz-launcher.sh    current launch engine
 ```
 
-The external launcher remains the launch engine for now. WolfLauncher is responsible for preparing the user, validating the environment and generating the handoff command.
+The external launcher remains the launch engine for now. A copy of the MIT-licensed upstream shell launcher is vendored at `external/dayz-linux-cli-launcher/` as the legacy reference engine. WolfLauncher is responsible for preparing the user, validating the environment and generating the handoff command.
 
 ## Data Model
 
@@ -106,6 +106,19 @@ Before launch, the GUI checks that:
 - The latest mod check for the selected server has no missing required mods, or the user explicitly chooses to launch anyway.
 
 The launch dialog shows the generated command and captures launcher output. Exit code 0 means the command was successfully handed off to Steam; it does not prove that Proton or DayZ reached the main menu.
+
+The vendored legacy launcher performs the lower-level launch work:
+
+```text
+DayZSA API query
+  -> required Workshop IDs
+  -> local Workshop folder checks
+  -> shortened @base64modid symlinks in the DayZ directory
+  -> -mod=... command line
+  -> steam -applaunch 221100
+```
+
+This behavior is the reference contract for any future native Python launcher engine.
 
 ## Known Launch-Option Issue
 

@@ -4,10 +4,14 @@ import yaml
 from .models import Server
 
 
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+VENDORED_LAUNCHER_PATH = PROJECT_ROOT / "external/dayz-linux-cli-launcher/dayz-launcher.sh"
+
 DEFAULT_LAUNCHER_PATHS = [
     Path.home() / ".local/bin/dayz-launcher.sh",
     Path("/opt/wolflauncher/dayz-launcher.sh"),
     Path.home() / "dayz-launcher.sh",
+    VENDORED_LAUNCHER_PATH,
 ]
 
 

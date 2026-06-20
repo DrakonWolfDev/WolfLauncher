@@ -4,6 +4,8 @@ Current snapshot: end of v0.5.2.
 
 WolfLauncher is a Linux-first DayZ launcher GUI built with Python and PySide6. It currently wraps the existing MIT-licensed `dayz-linux-cli-launcher` style shell launcher instead of replacing it.
 
+The upstream shell launcher is now vendored under `external/dayz-linux-cli-launcher/` so the current working behavior can be inspected and replaced gradually.
+
 ## Current status
 
 The v0.5.2 launch, status, diagnostics and mod-checking work is considered functional. The application can be used as the working project base for the next improvement cycle.
@@ -61,6 +63,7 @@ Current handling:
 - `wolflauncher/settings.py` - user settings and favourites.
 - `wolflauncher/config.py` - YAML server loading and default launcher path candidates.
 - `servers.yaml` - curated server registry.
+- `external/dayz-linux-cli-launcher/dayz-launcher.sh` - vendored MIT legacy launch engine.
 - `CHANGELOG.md` - version history.
 - `ROADMAP.md` - planned milestones.
 - `ARCHITECTURE.md` - architecture and design notes.
@@ -71,6 +74,7 @@ Current handling:
 - SQLite should be introduced later for scraped public server browser cache.
 - JSON is used for user settings and favourites under `~/.config/wolflauncher`.
 - The external shell launcher remains the launch engine for now.
+- The vendored shell launcher is the reference contract for future native launcher work.
 - Mod management is read-only and advisory: it detects installed/missing mods and opens Workshop pages, but does not attempt automatic downloads.
 - Launch remains guarded: WolfLauncher warns about missing mods and Steam state before calling the external launcher.
 - Hostnames are resolved before launch where possible to mirror the original terminal menu behaviour and avoid DayZSA API issues with DNS-based servers.
@@ -83,4 +87,5 @@ Use v0.6 as the next active development target:
 - Introduce a SQLite cache for discovered/scraped public servers.
 - Keep `servers.yaml` for curated, personal and import/export server lists.
 - Improve filtering, sorting and diagnostics around the existing stable launch flow.
+- Start extracting tests and documentation from the vendored launcher's behavior before rewriting it.
 - Keep the NVIDIA PRIME Steam launch-option issue visible as the only known bug until it is reproduced and diagnosed.

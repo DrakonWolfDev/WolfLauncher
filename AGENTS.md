@@ -6,6 +6,8 @@ WolfLauncher is a Linux-first DayZ launcher GUI built with Python and PySide6. T
 
 The app validates the local Steam/DayZ/Workshop setup, checks server status, compares required server mods with locally installed Workshop mods, then hands launch control to an external `dayz-launcher.sh` script.
 
+The upstream shell launcher is vendored at `external/dayz-linux-cli-launcher/` as the legacy reference engine.
+
 ## Current Truth
 
 - `PROJECT_STATE.md` is the handoff snapshot.
@@ -40,6 +42,8 @@ wolflauncher/platform_detection.py
 wolflauncher/settings.py        JSON settings and favourites persistence
 wolflauncher/status.py          gamedig status checks and DNS resolution
 servers.yaml                    curated server list
+external/dayz-linux-cli-launcher/
+                                vendored MIT legacy launcher reference
 ```
 
 ## Launch Contract
@@ -57,6 +61,13 @@ Important details:
 - Treat successful process exit as handoff to Steam, not proof that DayZ fully started.
 - Preserve the guarded launch checks for DayZ detection, Workshop detection, Steam running state and missing mods.
 
+The vendored script then:
+
+- Queries the DayZSA API for required mods.
+- Verifies local Workshop folders.
+- Creates shortened `@base64modid` symlinks inside the DayZ install directory.
+- Launches Steam with `-applaunch 221100`.
+
 ## Development Notes
 
 - Keep v0.5.2 behaviour stable while working on v0.6.
@@ -64,6 +75,7 @@ Important details:
 - Mod management is read-only and advisory; do not auto-subscribe or auto-download Workshop content without an explicit future design.
 - User settings and favourites live under `~/.config/wolflauncher`.
 - Prefer small, testable changes around launch command generation and platform detection.
+- Keep the vendored launcher untouched unless deliberately updating the legacy reference; build replacement Python behavior behind WolfLauncher interfaces first.
 
 ## Local Run
 
