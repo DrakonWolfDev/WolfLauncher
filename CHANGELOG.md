@@ -4,8 +4,10 @@
 - Added `AGENTS.md` as the quick project orientation and coding-agent handoff file.
 - Vendored the MIT-licensed `dayz-linux-cli-launcher` under `external/dayz-linux-cli-launcher/`.
 - Added the vendored launcher as the final default launcher path fallback.
-- Added a standard-library unit test suite for launch command generation and launcher path discovery.
+- Added a standard-library unit test suite for launch command generation, launcher path discovery and YAML server loading.
 - Added offline unit tests for server status parsing and `gamedig` failure handling.
+- Added offline unit tests for DayZSA mod parsing and local Workshop mod scanning.
+- Removed tracked Python bytecode files and added `.gitignore` rules for generated caches.
 - Expanded diagnostics and Linux Mint install dependencies for the external launcher tools.
 - Reorganized project documentation around the end-of-v0.5.2 working baseline.
 - Documented the known Steam launch-option issue with `__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%`.

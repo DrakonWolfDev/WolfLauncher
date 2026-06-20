@@ -17,7 +17,7 @@ Status: complete, with one known external launch-option issue.
 - Add search and filtering.
 - Add sort by player count, ping, map and version.
 - Preserve the current curated server workflow.
-- Expand tests around server loading, mod parsing and launch-engine compatibility.
+- Expand tests around launch-engine compatibility.
 - Document the vendored shell launcher's behavior as the compatibility contract.
 
 ## v0.7 - Diagnostics and Linux polish

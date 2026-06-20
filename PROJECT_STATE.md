@@ -62,7 +62,7 @@ Current handling:
 - `wolflauncher/launcher.py` - external launcher command building.
 - `wolflauncher/settings.py` - user settings and favourites.
 - `wolflauncher/config.py` - YAML server loading and default launcher path candidates.
-- `tests/` - standard-library unit tests for launcher command generation, launcher path discovery and status parsing.
+- `tests/` - standard-library unit tests for launcher commands, path discovery, YAML loading, status parsing and mod parsing.
 - `servers.yaml` - curated server registry.
 - `external/dayz-linux-cli-launcher/dayz-launcher.sh` - vendored MIT legacy launch engine.
 - `CHANGELOG.md` - version history.
@@ -79,6 +79,7 @@ Current handling:
 - Mod management is read-only and advisory: it detects installed/missing mods and opens Workshop pages, but does not attempt automatic downloads.
 - Launch remains guarded: WolfLauncher warns about missing mods and Steam state before calling the external launcher.
 - Hostnames are resolved before launch where possible to mirror the original terminal menu behaviour and avoid DayZSA API issues with DNS-based servers.
+- Python bytecode caches are ignored and should not be tracked as source.
 
 ## Next step
 
@@ -88,5 +89,5 @@ Use v0.6 as the next active development target:
 - Introduce a SQLite cache for discovered/scraped public servers.
 - Keep `servers.yaml` for curated, personal and import/export server lists.
 - Improve filtering, sorting and diagnostics around the existing stable launch flow.
-- Start extracting tests and documentation from the vendored launcher's behavior before rewriting it.
+- Continue extracting tests and documentation from the vendored launcher's behavior before rewriting it.
 - Keep the NVIDIA PRIME Steam launch-option issue visible as the only known bug until it is reproduced and diagnosed.
