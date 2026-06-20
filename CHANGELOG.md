@@ -1,6 +1,11 @@
 # Changelog
 
 ## Unreleased
+- Added Steam Web API server-list discovery as the preferred HTTPS discovery path.
+- Added live enrichment for visible discovered server cache rows.
+- Added an in-app Steam master endpoint override field.
+- Added explicit Steam master endpoint-list overrides for discovery testing.
+- Added fallback/error reporting for Steam master server discovery DNS failures.
 - Added an in-app Steam master refresh button for discovered server candidates.
 - Added Steam master server candidate discovery import support.
 - Added editable promotion details and right-click copy actions for discovered servers.

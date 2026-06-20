@@ -32,6 +32,8 @@ That issue is tracked as a Steam/Proton/DayZ launch-option compatibility problem
 - Copy discovered server connect addresses and details.
 - Steam master server candidate discovery import.
 - In-app Steam master refresh for discovered server candidates.
+- Steam Web API server-list discovery with API key.
+- Enrich visible discovered servers with live status data.
 - DNS hostname or IP address support.
 - Favourites system.
 - Server grouping support.
@@ -153,7 +155,9 @@ Imported rows stay separate from curated `servers.yaml`.
 
 Select an imported/discovered row and use **Promote to curated** to add it to `servers.yaml`. Right-click a discovered row to promote it or copy its connect address/details.
 
-Use **Refresh from Steam** in the Server Browser tab to fetch one batch of candidate DayZ endpoints from the Steam master server.
+Use **Refresh Web API** in the Server Browser tab to fetch DayZ server rows through Valve's HTTPS Steam Web API. Paste a Steam Web API key into the **Web API key** field, or start WolfLauncher with `WOLFLAUNCHER_STEAM_WEB_API_KEY` or `STEAM_WEB_API_KEY`.
+
+The older **Refresh from Steam** button uses Valve's legacy UDP master server path. If Valve's default DNS names do not resolve, paste a comma-separated endpoint list into the **Steam masters** field, for example `HOST:27011,HOST:27015`.
 
 The same discovery path is available from the command line:
 
@@ -161,7 +165,21 @@ The same discovery path is available from the command line:
 .venv/bin/python scripts/discover_steam_servers.py --batches 1
 ```
 
-Steam master rows are treated as candidates until later status enrichment confirms display names, maps, player counts and port details.
+The Web API path is also available from the command line:
+
+```bash
+.venv/bin/python scripts/discover_steam_servers.py --web-api --web-api-key YOUR_KEY --limit 5000
+```
+
+Use `--master HOST[:PORT]` to test specific Steam master endpoints if local DNS cannot resolve the built-in hostnames. Pass it more than once to try multiple candidates:
+
+```bash
+.venv/bin/python scripts/discover_steam_servers.py --master 203.0.113.10:27011 --master 203.0.113.20:27015
+```
+
+The app honors `WOLFLAUNCHER_STEAM_MASTER_ENDPOINTS` as a comma-separated endpoint list, plus the older `WOLFLAUNCHER_STEAM_MASTER_HOST` / `WOLFLAUNCHER_STEAM_MASTER_PORT` overrides. Steam discovery rows are treated as candidates until later status enrichment confirms display names, maps, player counts and port details.
+
+Use **Enrich visible** in the Server Browser tab to query the currently visible cached rows and fill in live status fields such as server name, map, players, ping, version and online state.
 
 ## Project Documentation
 

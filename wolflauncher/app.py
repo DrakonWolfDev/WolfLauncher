@@ -1,5 +1,6 @@
+import os
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 import sys
 
 from PySide6.QtCore import QTimer, QThread, Signal, QUrl, Qt, QPoint, QProcess
@@ -35,7 +36,8 @@ from .models import Server
 from .platform_detection import best_install
 from .mods import ModCheckResult, check_server_mods
 from . import server_cache
-from .server_discovery import discover_dayz_servers
+from .server_discovery import discover_dayz_servers, discover_dayz_servers_web_api, parse_master_address
+from .server_enrichment import enrich_discovered_server
 from .settings import (
     load_favourites,
     load_settings,
@@ -75,19 +77,68 @@ class ModWorker(QThread):
 class SteamDiscoveryWorker(QThread):
     discovery_ready = Signal(object, str)
 
-    def __init__(self, max_batches: int = 1):
+    def __init__(self, max_batches: int = 1, master_addresses=None):
         super().__init__()
         self.max_batches = max_batches
+        self.master_addresses = master_addresses
 
     def run(self):
         try:
-            servers = discover_dayz_servers(max_batches=self.max_batches)
+            servers = discover_dayz_servers(
+                max_batches=self.max_batches,
+                master_addresses=self.master_addresses,
+            )
         except OSError as exc:
             self.discovery_ready.emit([], str(exc))
         except ValueError as exc:
             self.discovery_ready.emit([], str(exc))
         else:
             self.discovery_ready.emit(servers, "")
+
+
+class SteamWebApiDiscoveryWorker(QThread):
+    discovery_ready = Signal(object, str)
+
+    def __init__(self, api_key: str, limit: int = 5000):
+        super().__init__()
+        self.api_key = api_key
+        self.limit = limit
+
+    def run(self):
+        try:
+            servers = discover_dayz_servers_web_api(api_key=self.api_key, limit=self.limit)
+        except Exception as exc:
+            self.discovery_ready.emit([], str(exc))
+        else:
+            self.discovery_ready.emit(servers, "")
+
+
+class ServerEnrichmentWorker(QThread):
+    enrichment_ready = Signal(object, str)
+
+    def __init__(self, servers):
+        super().__init__()
+        self.servers = servers
+
+    def run(self):
+        checked_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+        enriched = []
+        try:
+            for server in self.servers:
+                status = check_server(
+                    Server(
+                        name=server.name,
+                        group="Discovered",
+                        host=server.host,
+                        game_port=server.game_port,
+                        query_port=server.query_port,
+                    )
+                )
+                enriched.append(enrich_discovered_server(server, status, checked_at))
+        except Exception as exc:
+            self.enrichment_ready.emit(enriched, str(exc))
+        else:
+            self.enrichment_ready.emit(enriched, "")
 
 
 class LaunchDialog(QDialog):
@@ -182,7 +233,10 @@ class MainWindow(QMainWindow):
         self.worker = None
         self.mod_worker = None
         self.discovery_worker = None
+        self.web_api_worker = None
+        self.enrichment_worker = None
         self.last_mod_result = None
+        self.browser_servers = []
         self.server_cache = server_cache.connect()
 
         for server in self.servers:
@@ -350,6 +404,25 @@ class MainWindow(QMainWindow):
         filters.addWidget(self.browser_descending)
         layout.addLayout(filters)
 
+        steam_row = QHBoxLayout()
+        self.steam_master_endpoints = QLineEdit(str(self.settings.get("steam_master_endpoints") or ""))
+        self.steam_master_endpoints.setPlaceholderText("Steam master endpoints, comma separated host[:port]")
+        steam_row.addWidget(QLabel("Steam masters"))
+        steam_row.addWidget(self.steam_master_endpoints)
+        layout.addLayout(steam_row)
+
+        web_api_row = QHBoxLayout()
+        self.steam_web_api_key = QLineEdit(
+            os.environ.get("WOLFLAUNCHER_STEAM_WEB_API_KEY")
+            or os.environ.get("STEAM_WEB_API_KEY")
+            or ""
+        )
+        self.steam_web_api_key.setEchoMode(QLineEdit.Password)
+        self.steam_web_api_key.setPlaceholderText("Steam Web API key")
+        web_api_row.addWidget(QLabel("Web API key"))
+        web_api_row.addWidget(self.steam_web_api_key)
+        layout.addLayout(web_api_row)
+
         self.browser_summary = QLabel("Cached discovered servers: loading")
         layout.addWidget(self.browser_summary)
 
@@ -381,6 +454,10 @@ class MainWindow(QMainWindow):
         import_file.clicked.connect(self.import_server_cache_file)
         self.steam_refresh_button = QPushButton("Refresh from Steam")
         self.steam_refresh_button.clicked.connect(self.refresh_from_steam_master)
+        self.steam_web_api_button = QPushButton("Refresh Web API")
+        self.steam_web_api_button.clicked.connect(self.refresh_from_steam_web_api)
+        self.enrich_visible_button = QPushButton("Enrich visible")
+        self.enrich_visible_button.clicked.connect(self.enrich_visible_discovered_servers)
         promote = QPushButton("Promote to curated")
         promote.clicked.connect(self.promote_selected_discovered_server)
         refresh = QPushButton("Refresh cache view")
@@ -388,6 +465,8 @@ class MainWindow(QMainWindow):
         buttons.addStretch(1)
         buttons.addWidget(import_file)
         buttons.addWidget(self.steam_refresh_button)
+        buttons.addWidget(self.steam_web_api_button)
+        buttons.addWidget(self.enrich_visible_button)
         buttons.addWidget(promote)
         buttons.addWidget(refresh)
         layout.addLayout(buttons)
@@ -485,15 +564,31 @@ class MainWindow(QMainWindow):
             return
         self.browser_summary.setText("Cached discovered servers: querying Steam master server...")
         self.steam_refresh_button.setEnabled(False)
-        self.discovery_worker = SteamDiscoveryWorker(max_batches=1)
+        try:
+            master_addresses = self.steam_master_addresses()
+        except ValueError as exc:
+            self.steam_refresh_button.setEnabled(True)
+            QMessageBox.warning(self, "Invalid Steam master endpoints", str(exc))
+            return
+        self.discovery_worker = SteamDiscoveryWorker(max_batches=1, master_addresses=master_addresses)
         self.discovery_worker.discovery_ready.connect(self.handle_steam_discovery_ready)
         self.discovery_worker.start()
+
+    def steam_master_addresses(self):
+        text = self.steam_master_endpoints.text().strip()
+        if not text:
+            return None
+        return [parse_master_address(item) for item in text.split(",") if item.strip()]
 
     def handle_steam_discovery_ready(self, servers, error: str):
         self.steam_refresh_button.setEnabled(True)
         if error:
             self.refresh_server_browser()
-            QMessageBox.warning(self, "Steam discovery failed", error)
+            QMessageBox.warning(
+                self,
+                "Steam discovery failed",
+                f"{error}\n\nCheck DNS/network access to the Steam master server, or use a YAML/JSON import file.",
+            )
             return
         count = server_cache.upsert_servers(self.server_cache, servers)
         self.refresh_server_browser()
@@ -501,6 +596,63 @@ class MainWindow(QMainWindow):
             self,
             "Steam discovery complete",
             f"Imported {count} Steam master server candidate(s).",
+        )
+
+    def refresh_from_steam_web_api(self):
+        if self.web_api_worker and self.web_api_worker.isRunning():
+            return
+        api_key = self.steam_web_api_key.text().strip()
+        if not api_key:
+            QMessageBox.warning(self, "Steam Web API key required", "Enter a Steam Web API key first.")
+            return
+        self.browser_summary.setText("Cached discovered servers: querying Steam Web API...")
+        self.steam_web_api_button.setEnabled(False)
+        self.web_api_worker = SteamWebApiDiscoveryWorker(api_key=api_key)
+        self.web_api_worker.discovery_ready.connect(self.handle_steam_web_api_ready)
+        self.web_api_worker.start()
+
+    def handle_steam_web_api_ready(self, servers, error: str):
+        self.steam_web_api_button.setEnabled(True)
+        if error:
+            self.refresh_server_browser()
+            QMessageBox.warning(self, "Steam Web API discovery failed", error)
+            return
+        count = server_cache.upsert_servers(self.server_cache, servers)
+        self.refresh_server_browser()
+        QMessageBox.information(
+            self,
+            "Steam Web API discovery complete",
+            f"Imported {count} Steam Web API server row(s).",
+        )
+
+    def enrich_visible_discovered_servers(self):
+        if self.enrichment_worker and self.enrichment_worker.isRunning():
+            return
+        servers = list(self.browser_servers)
+        if not servers:
+            QMessageBox.warning(self, "No visible servers", "No discovered servers are visible to enrich.")
+            return
+        self.browser_summary.setText(f"Cached discovered servers: enriching {len(servers)} visible row(s)...")
+        self.enrich_visible_button.setEnabled(False)
+        self.enrichment_worker = ServerEnrichmentWorker(servers)
+        self.enrichment_worker.enrichment_ready.connect(self.handle_enrichment_ready)
+        self.enrichment_worker.start()
+
+    def handle_enrichment_ready(self, servers, error: str):
+        self.enrich_visible_button.setEnabled(True)
+        count = server_cache.upsert_servers(self.server_cache, servers)
+        self.refresh_server_browser()
+        if error:
+            QMessageBox.warning(
+                self,
+                "Enrichment stopped",
+                f"Updated {count} row(s) before enrichment stopped:\n\n{error}",
+            )
+            return
+        QMessageBox.information(
+            self,
+            "Enrichment complete",
+            f"Updated {count} discovered server row(s).",
         )
 
     def promote_selected_discovered_server(self):
@@ -561,6 +713,9 @@ class MainWindow(QMainWindow):
             "player_name": self.player_name.text(),
             "refresh_seconds": self.refresh_seconds.value(),
             "last_selected_row": self.table.currentRow(),
+            "steam_master_endpoints": self.steam_master_endpoints.text().strip()
+            if hasattr(self, "steam_master_endpoints")
+            else "",
         }
         save_settings(self.settings)
         save_favourites(self.favourites)
@@ -599,6 +754,7 @@ class MainWindow(QMainWindow):
             sort_by=sort_key,
             descending=self.browser_descending.isChecked(),
         )
+        self.browser_servers = servers
 
         self.browser_table.setSortingEnabled(False)
         self.browser_table.setRowCount(len(servers))

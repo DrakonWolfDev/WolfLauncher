@@ -20,6 +20,8 @@ Working:
 - Copy actions for discovered server connect addresses and details.
 - Steam master server candidate discovery import script.
 - In-app Steam master refresh for discovered server candidates.
+- Steam Web API server-list discovery with API key.
+- Enrichment of visible discovered servers with live status data.
 - DNS hostname and direct IP support.
 - Live DayZ server querying through `gamedig`.
 - Partial `gamedig` restart responses are treated as offline/restarting rather than as healthy online rows.
@@ -96,7 +98,8 @@ Current handling:
 
 Use v0.6 as the next active development target:
 
-- Enrich Steam master server candidates with live status fields before promotion.
+- Prefer Steam Web API discovery when an API key is available; keep UDP master discovery as legacy fallback.
+- Improve bulk enrichment controls and candidate port handling.
 - Improve editing/organisation for promoted curated servers.
 - Keep `servers.yaml` for curated, personal and import/export server lists.
 - Improve filtering, sorting and diagnostics around the existing stable launch flow.

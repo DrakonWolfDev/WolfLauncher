@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import os
+import json
 import socket
+import urllib.error
+import urllib.parse
+import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
@@ -8,10 +13,25 @@ from .models import DiscoveredServer
 
 
 DAYZ_APP_ID = 221100
+STEAM_WEB_API_SERVER_LIST_URL = "https://api.steampowered.com/IGameServersService/GetServerList/v1/"
 MASTER_SERVER_HOST = "hl2master.steampowered.com"
+MASTER_SERVER_HOSTS = [
+    MASTER_SERVER_HOST,
+    "hl2master.steamcontent.com",
+]
 MASTER_SERVER_PORT = 27011
 MASTER_RESPONSE_HEADER = b"\xff\xff\xff\xfff\n"
 REGION_ALL = 0xFF
+
+
+@dataclass(frozen=True)
+class MasterServerAddress:
+    host: str
+    port: int = MASTER_SERVER_PORT
+
+    @property
+    def address(self) -> str:
+        return f"{self.host}:{self.port}"
 
 
 @dataclass(frozen=True)
@@ -22,6 +42,14 @@ class MasterServerEndpoint:
     @property
     def address(self) -> str:
         return f"{self.host}:{self.port}"
+
+
+class SteamMasterServerError(OSError):
+    pass
+
+
+class SteamWebApiError(RuntimeError):
+    pass
 
 
 def build_master_server_request(
@@ -77,6 +105,70 @@ def query_master_server_batch(
 def discover_dayz_servers(
     max_batches: int = 10,
     timeout: float = 5.0,
+    master_host: str = "",
+    master_port: int = MASTER_SERVER_PORT,
+    master_addresses: list[MasterServerAddress] | None = None,
+    extra_filter: str = "",
+) -> list[DiscoveredServer]:
+    addresses = _configured_master_addresses(master_host, master_port, master_addresses)
+    errors = []
+    for address in addresses:
+        try:
+            return _discover_dayz_servers_from_master(
+                max_batches=max_batches,
+                timeout=timeout,
+                master_host=address.host,
+                master_port=address.port,
+                extra_filter=extra_filter,
+            )
+        except OSError as exc:
+            errors.append(f"{address.address} -> {exc}")
+
+    raise SteamMasterServerError("Steam master discovery failed for all configured hosts: " + "; ".join(errors))
+
+
+def parse_master_address(value: str, default_port: int = MASTER_SERVER_PORT) -> MasterServerAddress:
+    value = value.strip()
+    if not value:
+        raise ValueError("Steam master address cannot be empty.")
+    if ":" not in value:
+        return MasterServerAddress(value, default_port)
+    host, port_text = value.rsplit(":", 1)
+    host = host.strip()
+    if not host:
+        raise ValueError("Steam master address host cannot be empty.")
+    try:
+        port = int(port_text)
+    except ValueError as exc:
+        raise ValueError(f"Invalid Steam master port: {port_text!r}.") from exc
+    if port <= 0 or port > 65535:
+        raise ValueError(f"Invalid Steam master port: {port}.")
+    return MasterServerAddress(host, port)
+
+
+def _configured_master_addresses(
+    master_host: str = "",
+    master_port: int = MASTER_SERVER_PORT,
+    master_addresses: list[MasterServerAddress] | None = None,
+) -> list[MasterServerAddress]:
+    if master_addresses:
+        return master_addresses
+
+    endpoints = os.environ.get("WOLFLAUNCHER_STEAM_MASTER_ENDPOINTS", "")
+    if endpoints:
+        return [parse_master_address(item, master_port) for item in endpoints.split(",") if item.strip()]
+
+    configured_host = master_host or os.environ.get("WOLFLAUNCHER_STEAM_MASTER_HOST", "")
+    configured_port = int(os.environ.get("WOLFLAUNCHER_STEAM_MASTER_PORT", master_port))
+    if configured_host:
+        return [MasterServerAddress(configured_host, configured_port)]
+
+    return [MasterServerAddress(host, master_port) for host in MASTER_SERVER_HOSTS]
+
+
+def _discover_dayz_servers_from_master(
+    max_batches: int = 10,
+    timeout: float = 5.0,
     master_host: str = MASTER_SERVER_HOST,
     master_port: int = MASTER_SERVER_PORT,
     extra_filter: str = "",
@@ -119,3 +211,115 @@ def discovered_server_from_endpoint(endpoint: MasterServerEndpoint, timestamp: s
         query_port=endpoint.port,
         last_seen=timestamp,
     )
+
+
+def discover_dayz_servers_web_api(
+    api_key: str = "",
+    limit: int = 5000,
+    timeout: float = 15.0,
+    filter_text: str = "",
+) -> list[DiscoveredServer]:
+    api_key = api_key or os.environ.get("WOLFLAUNCHER_STEAM_WEB_API_KEY", "") or os.environ.get("STEAM_WEB_API_KEY", "")
+    if not api_key:
+        raise SteamWebApiError("Steam Web API key is required.")
+
+    params = {
+        "key": api_key,
+        "limit": str(limit),
+        "filter": filter_text or f"\\appid\\{DAYZ_APP_ID}",
+    }
+    url = f"{STEAM_WEB_API_SERVER_LIST_URL}?{urllib.parse.urlencode(params)}"
+    request = urllib.request.Request(url, headers={"User-Agent": "WolfLauncher/0.6"})
+
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            payload = response.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as exc:
+        raise SteamWebApiError(f"Steam Web API HTTP error: {exc.code}") from exc
+    except urllib.error.URLError as exc:
+        raise SteamWebApiError(f"Steam Web API connection failed: {exc.reason}") from exc
+    except TimeoutError as exc:
+        raise SteamWebApiError("Steam Web API timed out") from exc
+
+    try:
+        data = json.loads(payload)
+    except json.JSONDecodeError as exc:
+        raise SteamWebApiError("Steam Web API returned invalid JSON") from exc
+
+    return parse_steam_web_api_servers(data)
+
+
+def parse_steam_web_api_servers(data: dict) -> list[DiscoveredServer]:
+    response = data.get("response", {}) if isinstance(data, dict) else {}
+    rows = response.get("servers", []) if isinstance(response, dict) else []
+    if not isinstance(rows, list):
+        raise SteamWebApiError("Steam Web API response did not contain a server list.")
+
+    now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    servers = []
+    seen = set()
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        server = discovered_server_from_web_api_row(row, now)
+        if not server or server.cache_key in seen:
+            continue
+        seen.add(server.cache_key)
+        servers.append(server)
+    return servers
+
+
+def discovered_server_from_web_api_row(row: dict, timestamp: str = "") -> DiscoveredServer | None:
+    host, query_port = _host_port_from_addr(str(row.get("addr") or ""))
+    if not host:
+        host = str(row.get("ip") or row.get("host") or "").strip()
+    if not host:
+        return None
+
+    game_port = _optional_int(row.get("gameport")) or query_port
+    if game_port is None:
+        return None
+    if query_port is None:
+        query_port = game_port
+
+    name = str(row.get("name") or f"{host}:{game_port}")
+    players_current = _optional_int(row.get("players"))
+    players_max = _optional_int(row.get("max_players") or row.get("maxplayers"))
+    gametype = str(row.get("gametype") or "")
+
+    return DiscoveredServer(
+        name=name,
+        source="steam_web_api",
+        server_name=name,
+        host=host,
+        game_port=game_port,
+        query_port=query_port,
+        map_name=str(row.get("map") or ""),
+        players_current=players_current,
+        players_max=players_max,
+        version=str(row.get("version") or ""),
+        password=bool(row.get("password", False)),
+        modded="mod" in gametype.lower(),
+        online=True,
+        last_checked=timestamp,
+        last_seen=timestamp,
+    )
+
+
+def _host_port_from_addr(value: str) -> tuple[str, int | None]:
+    value = value.strip()
+    if not value:
+        return "", None
+    if ":" not in value:
+        return value, None
+    host, port_text = value.rsplit(":", 1)
+    return host.strip(), _optional_int(port_text)
+
+
+def _optional_int(value) -> int | None:
+    if value is None or value == "":
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
