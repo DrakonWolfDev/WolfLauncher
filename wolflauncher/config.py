@@ -39,3 +39,43 @@ def load_servers(path: Path) -> list[Server]:
             )
         )
     return servers
+
+
+def add_curated_server(path: Path, server: Server) -> None:
+    data = _load_server_yaml(path)
+    servers = data.setdefault("servers", [])
+    if not isinstance(servers, list):
+        raise ValueError("servers.yaml must contain a 'servers' list.")
+
+    for item in servers:
+        if not isinstance(item, dict):
+            continue
+        if (
+            str(item.get("host")) == server.host
+            and int(item.get("game_port", 0)) == server.game_port
+            and int(item.get("query_port", 0)) == server.query_port
+        ):
+            raise ValueError("This server is already in the curated server list.")
+
+    servers.append(
+        {
+            "name": server.name,
+            "group": server.group,
+            "host": server.host,
+            "game_port": server.game_port,
+            "query_port": server.query_port,
+            "favourite": server.favourite,
+        }
+    )
+    with path.open("w", encoding="utf-8") as handle:
+        yaml.safe_dump(data, handle, sort_keys=False)
+
+
+def _load_server_yaml(path: Path) -> dict:
+    if not path.exists():
+        return {"servers": []}
+    with path.open("r", encoding="utf-8") as handle:
+        data = yaml.safe_load(handle) or {}
+    if not isinstance(data, dict):
+        raise ValueError("servers.yaml must contain a mapping.")
+    return data

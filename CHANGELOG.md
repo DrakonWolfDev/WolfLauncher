@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Added promotion from discovered cache rows into the curated YAML server list.
 - Added YAML/JSON import for discovered server cache rows, including a sample import file.
 - Added a read-only Server Browser tab backed by the SQLite discovered-server cache.
 - Started v0.6 SQL foundations with a SQLite discovered-server cache module and tests.

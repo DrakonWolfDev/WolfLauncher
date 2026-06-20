@@ -28,6 +28,7 @@ That issue is tracked as a Steam/Proton/DayZ launch-option compatibility problem
 - SQLite cache foundation for future discovered public servers.
 - Read-only discovered server browser with search, filters and cache sorting.
 - YAML/JSON import for discovered server cache rows.
+- Promote discovered servers into the curated `servers.yaml` list.
 - DNS hostname or IP address support.
 - Favourites system.
 - Server grouping support.
@@ -146,6 +147,8 @@ examples/discovered_servers.sample.yaml
 ```
 
 Imported rows stay separate from curated `servers.yaml`.
+
+Select an imported/discovered row and use **Promote to curated** to add it to `servers.yaml`.
 
 ## Project Documentation
 

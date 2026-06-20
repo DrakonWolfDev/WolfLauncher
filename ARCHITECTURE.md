@@ -63,7 +63,7 @@ favourites.json   favourite server keys
 
 YAML should stay useful for hand-curated servers even after SQLite is introduced.
 
-The v0.6 SQLite foundation stores discovered public servers separately from curated YAML entries. Cached rows are keyed by `host:game_port:query_port` and include browser-oriented fields such as display name, map, player counts, ping, version, mod/password flags and last-seen timestamps. This keeps scraped or transient public browser data out of `servers.yaml` while still giving the GUI a searchable local cache. The initial Server Browser tab is read-only, can import YAML/JSON cache rows, and does not alter the guarded launch workflow.
+The v0.6 SQLite foundation stores discovered public servers separately from curated YAML entries. Cached rows are keyed by `host:game_port:query_port` and include browser-oriented fields such as display name, map, player counts, ping, version, mod/password flags and last-seen timestamps. This keeps scraped or transient public browser data out of `servers.yaml` while still giving the GUI a searchable local cache. The initial Server Browser tab is read-only, can import YAML/JSON cache rows, and can explicitly promote a discovered row into the curated YAML list. The guarded launch workflow remains owned by curated servers.
 
 ## Server Status
 

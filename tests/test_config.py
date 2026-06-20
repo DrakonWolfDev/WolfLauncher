@@ -82,5 +82,80 @@ servers:
             self.assertEqual(config.load_servers(path), [])
 
 
+class AddCuratedServerTests(unittest.TestCase):
+    def test_add_curated_server_appends_yaml_entry(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "servers.yaml"
+            path.write_text(
+                """
+servers:
+  - name: Existing
+    group: Existing Group
+    host: 203.0.113.10
+    game_port: 2302
+    query_port: 27016
+""",
+                encoding="utf-8",
+            )
+
+            config.add_curated_server(
+                path,
+                Server(
+                    name="Promoted",
+                    group="Discovered",
+                    host="203.0.113.20",
+                    game_port=2402,
+                    query_port=27017,
+                    favourite=False,
+                ),
+            )
+
+            self.assertEqual(
+                config.load_servers(path),
+                [
+                    Server(
+                        name="Existing",
+                        group="Existing Group",
+                        host="203.0.113.10",
+                        game_port=2302,
+                        query_port=27016,
+                    ),
+                    Server(
+                        name="Promoted",
+                        group="Discovered",
+                        host="203.0.113.20",
+                        game_port=2402,
+                        query_port=27017,
+                    ),
+                ],
+            )
+
+    def test_add_curated_server_rejects_duplicate_host_and_ports(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "servers.yaml"
+            path.write_text(
+                """
+servers:
+  - name: Existing
+    host: 203.0.113.10
+    game_port: 2302
+    query_port: 27016
+""",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "already"):
+                config.add_curated_server(
+                    path,
+                    Server(
+                        name="Duplicate Name",
+                        group="Discovered",
+                        host="203.0.113.10",
+                        game_port=2302,
+                        query_port=27016,
+                    ),
+                )
+
+
 if __name__ == "__main__":
     unittest.main()

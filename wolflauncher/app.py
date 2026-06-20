@@ -27,7 +27,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QColor, QDesktopServices, QAction, QTextCursor
 
-from .config import find_default_launcher_path, load_servers
+from .config import add_curated_server, find_default_launcher_path, load_servers
 from .diagnostics import run_diagnostics
 from .launcher import LaunchError, build_launch_command
 from .models import Server
@@ -330,10 +330,13 @@ class MainWindow(QMainWindow):
         buttons = QHBoxLayout()
         import_file = QPushButton("Import cache file")
         import_file.clicked.connect(self.import_server_cache_file)
+        promote = QPushButton("Promote to curated")
+        promote.clicked.connect(self.promote_selected_discovered_server)
         refresh = QPushButton("Refresh cache view")
         refresh.clicked.connect(self.refresh_server_browser)
         buttons.addStretch(1)
         buttons.addWidget(import_file)
+        buttons.addWidget(promote)
         buttons.addWidget(refresh)
         layout.addLayout(buttons)
         return widget
@@ -425,6 +428,43 @@ class MainWindow(QMainWindow):
             f"Imported {count} discovered server row(s) into the cache.",
         )
 
+    def promote_selected_discovered_server(self):
+        server = self.selected_discovered_server()
+        if not server:
+            QMessageBox.warning(self, "No discovered server selected", "Select a discovered server first.")
+            return
+
+        curated = Server(
+            name=server.name,
+            group="Discovered",
+            host=server.host,
+            game_port=server.game_port,
+            query_port=server.query_port,
+            favourite=False,
+        )
+        try:
+            add_curated_server(self.config_path, curated)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Could not promote server", str(exc))
+            return
+
+        self.add_curated_server_row(curated)
+        QMessageBox.information(
+            self,
+            "Server promoted",
+            f"{curated.name} was added to the curated Servers list.",
+        )
+
+    def selected_discovered_server(self):
+        row = self.browser_table.currentRow()
+        if row < 0:
+            return None
+        item = self.browser_table.item(row, 0)
+        cache_key = item.data(Qt.UserRole) if item else None
+        if not cache_key:
+            return None
+        return server_cache.get_server(self.server_cache, str(cache_key))
+
     def apply_refresh_timer(self):
         seconds = self.refresh_seconds.value()
         if seconds <= 0:
@@ -502,6 +542,7 @@ class MainWindow(QMainWindow):
             ]
             for column, value in enumerate(values):
                 item = QTableWidgetItem(value)
+                item.setData(Qt.UserRole, server.cache_key)
                 if column == 5:
                     item.setForeground(QColor("#6ee16e" if server.online else "#ff6b6b"))
                 self.browser_table.setItem(row, column, item)
@@ -527,6 +568,34 @@ class MainWindow(QMainWindow):
         if colour:
             item.setForeground(QColor(colour))
         self.table.setItem(row, column, item)
+
+    def add_curated_server_row(self, server: Server):
+        self.servers.append(server)
+        row = len(self.servers) - 1
+        self.table.insertRow(row)
+        values = [
+            "★" if server.favourite else "☆",
+            server.group,
+            server.name,
+            "",
+            server.host,
+            "Not checked",
+            str(server.game_port),
+            str(server.query_port),
+            "Not checked",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+        ]
+        for column, value in enumerate(values):
+            item = QTableWidgetItem(value)
+            item.setData(Qt.UserRole, row)
+            self.table.setItem(row, column, item)
+        self.table.resizeColumnsToContents()
 
     def update_status_row(self, row: int, status: ServerStatus):
         self._set_item(row, 5, status.resolved_ip)
