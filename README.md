@@ -76,6 +76,12 @@ pip install -r requirements.txt
 python main.py
 ```
 
+Run the test suite:
+
+```bash
+PYTHONDONTWRITEBYTECODE=1 python -m unittest discover
+```
+
 ## Launching
 
 Configure the path to your existing launcher script, for example:

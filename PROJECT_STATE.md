@@ -62,6 +62,7 @@ Current handling:
 - `wolflauncher/launcher.py` - external launcher command building.
 - `wolflauncher/settings.py` - user settings and favourites.
 - `wolflauncher/config.py` - YAML server loading and default launcher path candidates.
+- `tests/` - standard-library unit tests for launcher command generation, launcher path discovery and status parsing.
 - `servers.yaml` - curated server registry.
 - `external/dayz-linux-cli-launcher/dayz-launcher.sh` - vendored MIT legacy launch engine.
 - `CHANGELOG.md` - version history.

@@ -85,3 +85,9 @@ source .venv/bin/activate
 pip install -r requirements.txt
 python main.py
 ```
+
+## Tests
+
+```text
+PYTHONDONTWRITEBYTECODE=1 python -m unittest discover
+```
