@@ -13,3 +13,31 @@ class Server:
     @property
     def connect_target(self) -> str:
         return f"{self.host}:{self.game_port}"
+
+
+@dataclass
+class DiscoveredServer:
+    name: str
+    host: str
+    game_port: int
+    query_port: int
+    source: str = "discovered"
+    server_name: str = ""
+    map_name: str = ""
+    players_current: int | None = None
+    players_max: int | None = None
+    ping_ms: int | None = None
+    version: str = ""
+    password: bool = False
+    modded: bool = False
+    online: bool = False
+    last_checked: str = ""
+    last_seen: str = ""
+
+    @property
+    def cache_key(self) -> str:
+        return f"{self.host}:{self.game_port}:{self.query_port}"
+
+    @property
+    def connect_target(self) -> str:
+        return f"{self.host}:{self.game_port}"

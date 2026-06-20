@@ -24,6 +24,7 @@ wolflauncher/
   models.py              Shared dataclasses
   mods.py                DayZSA API mod lookup and local Workshop comparison
   platform_detection.py  Native/Flatpak Steam, DayZ and Workshop detection
+  server_cache.py        SQLite cache for discovered public servers
   settings.py            JSON settings and favourites under ~/.config/wolflauncher
   status.py              gamedig server status and DNS resolution
 ```
@@ -47,6 +48,7 @@ Current storage:
 servers.yaml                      curated server list
 ~/.config/wolflauncher/settings.json
 ~/.config/wolflauncher/favourites.json
+~/.local/share/wolflauncher/server_cache.sqlite3
 ```
 
 Recommended long-term split:
@@ -59,6 +61,8 @@ favourites.json   favourite server keys
 ```
 
 YAML should stay useful for hand-curated servers even after SQLite is introduced.
+
+The v0.6 SQLite foundation stores discovered public servers separately from curated YAML entries. Cached rows are keyed by `host:game_port:query_port` and include browser-oriented fields such as display name, map, player counts, ping, version, mod/password flags and last-seen timestamps. This keeps scraped or transient public browser data out of `servers.yaml` while still giving the GUI a searchable local cache.
 
 ## Server Status
 

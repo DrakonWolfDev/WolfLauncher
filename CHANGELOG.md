@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Started v0.6 SQL foundations with a SQLite discovered-server cache module and tests.
 - Added the MIT license for WolfLauncher and third-party notices for vendored code.
 - Added `AGENTS.md` as the quick project orientation and coding-agent handoff file.
 - Vendored the MIT-licensed `dayz-linux-cli-launcher` under `external/dayz-linux-cli-launcher/`.

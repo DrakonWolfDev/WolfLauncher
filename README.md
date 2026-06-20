@@ -25,6 +25,7 @@ That issue is tracked as a Steam/Proton/DayZ launch-option compatibility problem
 ### Server Management
 
 - YAML-based server configuration.
+- SQLite cache foundation for future discovered public servers.
 - DNS hostname or IP address support.
 - Favourites system.
 - Server grouping support.
@@ -153,6 +154,12 @@ User configuration:
 
 ```text
 ~/.config/wolflauncher
+```
+
+User data cache:
+
+```text
+~/.local/share/wolflauncher/server_cache.sqlite3
 ```
 
 Possible future system installation:

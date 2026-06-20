@@ -60,6 +60,7 @@ Current handling:
 - `wolflauncher/mods.py` - required mod lookup and local Workshop scanning.
 - `wolflauncher/platform_detection.py` - Steam, DayZ and Workshop detection.
 - `wolflauncher/launcher.py` - external launcher command building.
+- `wolflauncher/server_cache.py` - SQLite cache for discovered public servers.
 - `wolflauncher/settings.py` - user settings and favourites.
 - `wolflauncher/config.py` - YAML server loading and default launcher path candidates.
 - `tests/` - standard-library unit tests for launcher commands, path discovery, YAML loading, status parsing and mod parsing.
@@ -75,6 +76,7 @@ Current handling:
 
 - YAML is the curated server/source-of-truth format for early versions.
 - SQLite should be introduced later for scraped public server browser cache.
+- v0.6 has started with a standalone SQLite server cache foundation for discovered public servers.
 - JSON is used for user settings and favourites under `~/.config/wolflauncher`.
 - The external shell launcher remains the launch engine for now.
 - The vendored shell launcher is the reference contract for future native launcher work.
@@ -89,7 +91,7 @@ Current handling:
 Use v0.6 as the next active development target:
 
 - Add a searchable server browser foundation.
-- Introduce a SQLite cache for discovered/scraped public servers.
+- Wire the SQLite discovered-server cache into a searchable server browser UI.
 - Keep `servers.yaml` for curated, personal and import/export server lists.
 - Improve filtering, sorting and diagnostics around the existing stable launch flow.
 - Continue extracting tests and documentation from the vendored launcher's behavior before rewriting it.
