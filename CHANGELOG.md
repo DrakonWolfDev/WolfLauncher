@@ -1,0 +1,98 @@
+# Changelog
+
+## v0.5.3
+- Reworded successful launch output so exit code 0 is shown as a successful handoff to Steam instead of an alarming finished message.
+- Fixed early selection-change traceback by guarding launch button text updates until the button exists.
+- Documented that remaining launch visibility issues can be Steam/Proton/DayZ launch-option related after the command is handed off.
+
+## v0.5.2
+- Fixed launch output dialog QTextCursor crash on PySide6.
+- Hardened launch path to pass the resolved IP address to dayz-launcher.sh.
+- Kept v0.5.1 offline/restart status handling fixes.
+
+
+## v0.5.0 - Launch integration
+
+- Added guarded launch workflow for selected servers.
+- Added DayZ/Workshop preflight checks before launch.
+- Added Steam-not-running warning with Launch Anyway / Cancel.
+- Added missing-mod warning using the latest mod check for the selected server.
+- Added Open Workshop / Launch Anyway / Cancel flow when required mods are missing.
+- Added launch output dialog using the external `dayz-launcher.sh` command.
+- Added launch command display for debugging and support.
+- Kept the external MIT-licensed shell launcher as the launch engine.
+
+## v0.4.2 - Mod management hotfix
+
+- Fixed mod table sorting causing blank/incomplete rows.
+- Fixed double-click/right-click Workshop page opening regression.
+
+## v0.4.1 - Mod management polish
+
+- Added double-click mod row to open its Steam Workshop page.
+- Added right-click context menu on mods with open/copy actions.
+- Added mod filter for All, Missing only, and Installed only.
+- Added sortable mods table.
+- Added copy Workshop ID, mod name, and Workshop URL actions.
+- Added right-click server actions to copy connect address, copy server details, and toggle favourite.
+- Missing/installed mod status is easier to scan.
+- Kept v0.4 mod detection behaviour unchanged.
+
+## v0.4.0 - Mod management foundation
+
+- Added a dedicated Mods tab.
+- Added selected-server mod checking through the DayZ SA Launcher style server API.
+- Added local DayZ Workshop mod scanning from `steamapps/workshop/content/221100`.
+- Added required-vs-installed mod comparison.
+- Added missing mod detection.
+- Added Steam Workshop links for required mods.
+- Added buttons to open the selected Workshop page or all missing Workshop pages.
+- Kept v0.3.1 Steam, DayZ, Workshop, diagnostics, favourites and settings behaviour.
+
+## v0.3.1 - Diagnostics cleanup
+
+- Improved diagnostics wording so optional install types do not appear as hard failures.
+- Added last refresh timestamp to the server browser.
+- Added subtle ONLINE/OFFLINE colour coding.
+- Auto-refresh setting now applies and saves immediately.
+
+## v0.3.0 - Local platform detection
+
+- Added native Steam detection.
+- Added Flatpak Steam detection.
+- Added DayZ install detection.
+- Added DayZ Workshop folder detection.
+- Added improved Diagnostics tab.
+- Added favourites click-to-toggle.
+- Added settings persistence.
+- Added last selected server persistence.
+
+## v0.2.1 - Project state files
+
+- Added `CHANGELOG.md`.
+- Added `ROADMAP.md`.
+- Added `ARCHITECTURE.md`.
+- Added `PROJECT_STATE.md`.
+- Updated README for handoff and continuation.
+
+## v0.2.0 - Server browser refinement
+
+- Added cleaner server table columns.
+- Added saved settings.
+- Added saved favourites.
+- Added clickable favourites star.
+- Added double-click server launch.
+- Added auto-refresh setting.
+- Added improved diagnostics tab.
+
+## v0.1.x - First working GUI
+
+- Added initial PySide6 GUI.
+- Added YAML server configuration.
+- Added DNS hostname support.
+- Added live server status checks through `gamedig`.
+- Added launch bridge to `dayz-launcher.sh`.
+
+## v0.5.1
+- Fixed launch integration for DNS-based servers by resolving hostnames before calling `dayz-launcher.sh`.
+- Improved offline/restarting server detection so incomplete query responses are not shown as ONLINE.
