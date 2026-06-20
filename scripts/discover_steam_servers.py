@@ -20,13 +20,13 @@ from wolflauncher.server_discovery import (
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Import DayZ candidates from the Steam master server.")
+    parser = argparse.ArgumentParser(description="Import DayZ candidates from configured discovery sources.")
     parser.add_argument("--batches", type=int, default=1, help="Maximum master-server batches to fetch.")
     parser.add_argument("--timeout", type=float, default=5.0, help="UDP timeout in seconds.")
     parser.add_argument("--web-api", action="store_true", help="Use Steam Web API instead of legacy UDP.")
     parser.add_argument("--battlemetrics", action="store_true", help="Use BattleMetrics instead of Steam.")
     parser.add_argument("--web-api-key", default="", help="Steam Web API key. Defaults to environment.")
-    parser.add_argument("--limit", type=int, default=5000, help="Maximum Steam Web API rows to fetch.")
+    parser.add_argument("--limit", type=int, default=500, help="Maximum discovery rows to fetch.")
     parser.add_argument("--filter", default="", help="Steam server filter. Defaults to DayZ appid.")
     parser.add_argument(
         "--master",
@@ -62,7 +62,7 @@ def main() -> int:
                 extra_filter=args.filter,
             )
     except Exception as exc:
-        print(f"Steam discovery failed: {exc}")
+        print(f"{source if 'source' in locals() else 'Server'} discovery failed: {exc}")
         return 1
 
     with server_cache.connect() as connection:

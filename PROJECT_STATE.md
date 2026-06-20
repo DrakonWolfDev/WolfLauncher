@@ -22,6 +22,7 @@ Working:
 - In-app Steam master refresh for discovered server candidates.
 - Steam Web API server-list discovery with API key.
 - BattleMetrics server discovery.
+- Quiet rate-limited BattleMetrics startup refresh, throttled to once per day.
 - Enrichment of visible discovered servers with live status data.
 - DNS hostname and direct IP support.
 - Live DayZ server querying through `gamedig`.

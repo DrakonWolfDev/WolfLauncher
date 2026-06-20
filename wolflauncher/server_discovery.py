@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import json
 import socket
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -312,17 +313,40 @@ def discovered_server_from_web_api_row(row: dict, timestamp: str = "") -> Discov
 
 
 def discover_dayz_servers_battlemetrics(
-    limit: int = 100,
+    limit: int = 500,
     timeout: float = 15.0,
     search: str = "",
+    page_delay: float = 0.0,
 ) -> list[DiscoveredServer]:
+    limit = max(1, int(limit))
+    page_size = min(limit, 100)
     params = {
         "filter[game]": "dayz",
-        "page[size]": str(max(1, min(int(limit), 100))),
+        "page[size]": str(page_size),
     }
     if search:
         params["filter[search]"] = search
     url = f"{BATTLEMETRICS_SERVER_LIST_URL}?{urllib.parse.urlencode(params)}"
+
+    servers = []
+    seen = set()
+    while url and len(servers) < limit:
+        data = fetch_battlemetrics_page(url, timeout)
+        for server in parse_battlemetrics_servers(data):
+            if server.cache_key in seen:
+                continue
+            seen.add(server.cache_key)
+            servers.append(server)
+            if len(servers) >= limit:
+                break
+        next_url = _battlemetrics_next_url(data)
+        if next_url and len(servers) < limit and page_delay > 0:
+            time.sleep(page_delay)
+        url = next_url
+    return servers
+
+
+def fetch_battlemetrics_page(url: str, timeout: float = 15.0) -> dict:
     request = urllib.request.Request(url, headers={"User-Agent": "WolfLauncher/0.6"})
 
     try:
@@ -340,7 +364,15 @@ def discover_dayz_servers_battlemetrics(
     except json.JSONDecodeError as exc:
         raise BattleMetricsError("BattleMetrics API returned invalid JSON") from exc
 
-    return parse_battlemetrics_servers(data)
+    if not isinstance(data, dict):
+        raise BattleMetricsError("BattleMetrics API returned invalid JSON object.")
+    return data
+
+
+def _battlemetrics_next_url(data: dict) -> str:
+    links = data.get("links", {}) if isinstance(data, dict) else {}
+    next_url = links.get("next") if isinstance(links, dict) else ""
+    return str(next_url or "")
 
 
 def parse_battlemetrics_servers(data: dict) -> list[DiscoveredServer]:
@@ -369,7 +401,12 @@ def discovered_server_from_battlemetrics_row(row: dict, timestamp: str = "") -> 
 
     host = str(attributes.get("ip") or attributes.get("address") or "").strip()
     port = _optional_int(attributes.get("port"))
-    query_port = _optional_int(attributes.get("queryPort") or attributes.get("query_port")) or port
+    query_port = (
+        _optional_int(attributes.get("portQuery"))
+        or _optional_int(attributes.get("queryPort"))
+        or _optional_int(attributes.get("query_port"))
+        or port
+    )
     if not host or port is None:
         return None
 

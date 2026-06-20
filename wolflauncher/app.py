@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import sys
 
 from PySide6.QtCore import QTimer, QThread, Signal, QUrl, Qt, QPoint, QProcess
@@ -121,13 +121,18 @@ class SteamWebApiDiscoveryWorker(QThread):
 class BattleMetricsDiscoveryWorker(QThread):
     discovery_ready = Signal(object, str)
 
-    def __init__(self, limit: int = 100):
+    def __init__(self, limit: int = 500, page_delay: float = 0.0, automatic: bool = False):
         super().__init__()
         self.limit = limit
+        self.page_delay = page_delay
+        self.automatic = automatic
 
     def run(self):
         try:
-            servers = discover_dayz_servers_battlemetrics(limit=self.limit)
+            servers = discover_dayz_servers_battlemetrics(
+                limit=self.limit,
+                page_delay=self.page_delay,
+            )
         except Exception as exc:
             self.discovery_ready.emit([], str(exc))
         else:
@@ -296,6 +301,7 @@ class MainWindow(QMainWindow):
         self.refresh_statuses()
         self.refresh_server_browser()
         self.update_diagnostics()
+        QTimer.singleShot(30000, self.maybe_auto_refresh_battlemetrics)
 
     def _build_servers_tab(self) -> QWidget:
         widget = QWidget()
@@ -655,18 +661,60 @@ class MainWindow(QMainWindow):
             return
         self.browser_summary.setText("Cached discovered servers: querying BattleMetrics...")
         self.battlemetrics_button.setEnabled(False)
-        self.battlemetrics_worker = BattleMetricsDiscoveryWorker(limit=100)
+        self.battlemetrics_worker = BattleMetricsDiscoveryWorker(limit=500)
         self.battlemetrics_worker.discovery_ready.connect(self.handle_battlemetrics_ready)
         self.battlemetrics_worker.start()
 
+    def maybe_auto_refresh_battlemetrics(self):
+        if self.battlemetrics_worker and self.battlemetrics_worker.isRunning():
+            return
+        if not self.should_auto_refresh_battlemetrics():
+            return
+        self.browser_summary.setText("Cached discovered servers: quietly refreshing BattleMetrics...")
+        self.battlemetrics_button.setEnabled(False)
+        self.battlemetrics_worker = BattleMetricsDiscoveryWorker(
+            limit=500,
+            page_delay=2.0,
+            automatic=True,
+        )
+        self.battlemetrics_worker.discovery_ready.connect(self.handle_battlemetrics_ready)
+        self.battlemetrics_worker.start()
+
+    def should_auto_refresh_battlemetrics(self) -> bool:
+        value = str(self.settings.get("last_battlemetrics_auto_refresh_at") or "")
+        if not value:
+            return True
+        try:
+            last_refresh = datetime.fromisoformat(value)
+        except ValueError:
+            return True
+        if last_refresh.tzinfo is None:
+            last_refresh = last_refresh.replace(tzinfo=timezone.utc)
+        return datetime.now(timezone.utc) - last_refresh >= timedelta(hours=24)
+
     def handle_battlemetrics_ready(self, servers, error: str):
+        automatic = bool(self.battlemetrics_worker and self.battlemetrics_worker.automatic)
         self.battlemetrics_button.setEnabled(True)
+        if automatic:
+            self.settings["last_battlemetrics_auto_refresh_at"] = (
+                datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+            )
+            self.save_user_settings(silent=True)
         if error:
             self.refresh_server_browser()
+            if automatic:
+                self.statusBar().showMessage(f"BattleMetrics auto-refresh failed: {error}", 7000)
+                return
             QMessageBox.warning(self, "BattleMetrics discovery failed", error)
             return
         count = server_cache.upsert_servers(self.server_cache, servers)
         self.refresh_server_browser()
+        if automatic:
+            self.statusBar().showMessage(
+                f"BattleMetrics auto-refresh imported {count} server row(s).",
+                7000,
+            )
+            return
         QMessageBox.information(
             self,
             "BattleMetrics discovery complete",
@@ -756,6 +804,7 @@ class MainWindow(QMainWindow):
             self.timer.start(seconds * 1000)
 
     def save_user_settings(self, silent: bool = False):
+        last_battlemetrics_auto_refresh_at = self.settings.get("last_battlemetrics_auto_refresh_at", "")
         self.settings = {
             "launcher_path": self.launcher_path.text(),
             "player_name": self.player_name.text(),
@@ -764,6 +813,7 @@ class MainWindow(QMainWindow):
             "steam_master_endpoints": self.steam_master_endpoints.text().strip()
             if hasattr(self, "steam_master_endpoints")
             else "",
+            "last_battlemetrics_auto_refresh_at": last_battlemetrics_auto_refresh_at,
         }
         save_settings(self.settings)
         save_favourites(self.favourites)

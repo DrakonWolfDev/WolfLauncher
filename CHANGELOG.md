@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Added quiet rate-limited BattleMetrics startup refresh.
 - Added BattleMetrics server discovery as a documented no-key discovery source.
 - Added Steam Web API server-list discovery as the preferred HTTPS discovery path.
 - Added live enrichment for visible discovered server cache rows.

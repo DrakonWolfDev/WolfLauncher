@@ -12,9 +12,11 @@ from wolflauncher.server_discovery import (
     _discover_dayz_servers_from_master,
     build_master_server_request,
     discover_dayz_servers,
+    discover_dayz_servers_battlemetrics,
     discovered_server_from_endpoint,
     discovered_server_from_battlemetrics_row,
     discovered_server_from_web_api_row,
+    fetch_battlemetrics_page,
     parse_battlemetrics_servers,
     parse_master_address,
     parse_master_server_response,
@@ -277,7 +279,7 @@ class BattleMetricsDiscoveryTests(unittest.TestCase):
                     "name": "BattleMetrics DayZ",
                     "ip": "203.0.113.10",
                     "port": 2302,
-                    "queryPort": 27016,
+                    "portQuery": 27016,
                     "players": 12,
                     "maxPlayers": 60,
                     "status": "online",
@@ -358,6 +360,106 @@ class BattleMetricsDiscoveryTests(unittest.TestCase):
     def test_parse_battlemetrics_response_rejects_missing_server_list(self):
         with self.assertRaisesRegex(BattleMetricsError, "server list"):
             parse_battlemetrics_servers({"data": {}})
+
+    @patch("wolflauncher.server_discovery.fetch_battlemetrics_page")
+    def test_battlemetrics_discovery_follows_next_links_until_limit(self, fetch_page):
+        fetch_page.side_effect = [
+            {
+                "data": [
+                    {
+                        "attributes": {
+                            "name": "One",
+                            "ip": "203.0.113.10",
+                            "port": 2302,
+                        }
+                    },
+                    {
+                        "attributes": {
+                            "name": "Two",
+                            "ip": "203.0.113.20",
+                            "port": 2302,
+                        }
+                    },
+                ],
+                "links": {"next": "https://api.battlemetrics.com/servers?page[key]=next"},
+            },
+            {
+                "data": [
+                    {
+                        "attributes": {
+                            "name": "Three",
+                            "ip": "203.0.113.30",
+                            "port": 2302,
+                        }
+                    }
+                ]
+            },
+        ]
+
+        servers = discover_dayz_servers_battlemetrics(limit=3)
+
+        self.assertEqual([server.name for server in servers], ["One", "Two", "Three"])
+        self.assertEqual(fetch_page.call_count, 2)
+
+    @patch("wolflauncher.server_discovery.time.sleep")
+    @patch("wolflauncher.server_discovery.fetch_battlemetrics_page")
+    def test_battlemetrics_discovery_sleeps_between_pages_when_configured(self, fetch_page, sleep):
+        fetch_page.side_effect = [
+            {
+                "data": [
+                    {
+                        "attributes": {
+                            "name": "One",
+                            "ip": "203.0.113.10",
+                            "port": 2302,
+                        }
+                    }
+                ],
+                "links": {"next": "https://api.battlemetrics.com/servers?page[key]=next"},
+            },
+            {
+                "data": [
+                    {
+                        "attributes": {
+                            "name": "Two",
+                            "ip": "203.0.113.20",
+                            "port": 2302,
+                        }
+                    }
+                ]
+            },
+        ]
+
+        discover_dayz_servers_battlemetrics(limit=2, page_delay=2.0)
+
+        sleep.assert_called_once_with(2.0)
+
+    @patch("wolflauncher.server_discovery.fetch_battlemetrics_page")
+    def test_battlemetrics_discovery_stops_at_limit_mid_page(self, fetch_page):
+        fetch_page.return_value = {
+            "data": [
+                {
+                    "attributes": {
+                        "name": "One",
+                        "ip": "203.0.113.10",
+                        "port": 2302,
+                    }
+                },
+                {
+                    "attributes": {
+                        "name": "Two",
+                        "ip": "203.0.113.20",
+                        "port": 2302,
+                    }
+                },
+            ],
+            "links": {"next": "https://api.battlemetrics.com/servers?page[key]=next"},
+        }
+
+        servers = discover_dayz_servers_battlemetrics(limit=1)
+
+        self.assertEqual([server.name for server in servers], ["One"])
+        fetch_page.assert_called_once()
 
 
 if __name__ == "__main__":

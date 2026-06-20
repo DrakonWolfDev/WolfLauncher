@@ -12,11 +12,14 @@ Status: complete, with one known external launch-option issue.
 
 ## v0.6 - Server browser foundation
 
-- Add SQLite cache for discovered or scraped servers.
-- Keep YAML as curated/import/export format.
-- Add search and filtering.
-- Add sort by player count, ping, map and version.
-- Preserve the current curated server workflow.
+- Add SQLite cache for discovered public servers.
+- Keep YAML as the curated, personal and import/export format.
+- Add search, filtering and sorting for cached public server rows.
+- Add documented no-key BattleMetrics discovery as the preferred public-list fallback.
+- Keep Steam Web API and legacy UDP master discovery as optional paths.
+- Add quiet, bounded and rate-limited background refresh for discovery data.
+- Add live enrichment for visible discovered rows.
+- Preserve promotion into the current curated server workflow.
 - Expand tests around launch-engine compatibility.
 - Document the vendored shell launcher's behavior as the compatibility contract.
 

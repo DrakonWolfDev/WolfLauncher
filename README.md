@@ -89,7 +89,7 @@ python main.py
 Run the test suite:
 
 ```bash
-PYTHONDONTWRITEBYTECODE=1 python -m unittest discover
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest discover
 ```
 
 ## Launching
@@ -158,7 +158,9 @@ Select an imported/discovered row and use **Promote to curated** to add it to `s
 
 Use **Refresh Web API** in the Server Browser tab to fetch DayZ server rows through Valve's HTTPS Steam Web API. Paste a Steam Web API key into the **Web API key** field, or start WolfLauncher with `WOLFLAUNCHER_STEAM_WEB_API_KEY` or `STEAM_WEB_API_KEY`.
 
-Use **Refresh BattleMetrics** to fetch a small batch of documented BattleMetrics DayZ server rows without a Steam API key.
+Use **Refresh BattleMetrics** to fetch a documented BattleMetrics DayZ server batch without a Steam API key. WolfLauncher follows BattleMetrics pagination up to a bounded row limit.
+
+WolfLauncher also performs a quiet BattleMetrics refresh after startup at most once every 24 hours. The automatic refresh waits before starting, fetches a bounded number of rows, and pauses between paginated requests.
 
 The older **Refresh from Steam** button uses Valve's legacy UDP master server path. If Valve's default DNS names do not resolve, paste a comma-separated endpoint list into the **Steam masters** field, for example `HOST:27011,HOST:27015`.
 
