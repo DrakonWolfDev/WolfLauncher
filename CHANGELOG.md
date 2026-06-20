@@ -1,13 +1,16 @@
 # Changelog
 
-## v0.5.3
-- Reworded successful launch output so exit code 0 is shown as a successful handoff to Steam instead of an alarming finished message.
-- Fixed early selection-change traceback by guarding launch button text updates until the button exists.
-- Documented that remaining launch visibility issues can be Steam/Proton/DayZ launch-option related after the command is handed off.
+## Unreleased
+- Added `AGENTS.md` as the quick project orientation and coding-agent handoff file.
+- Reorganized project documentation around the end-of-v0.5.2 working baseline.
+- Documented the known Steam launch-option issue with `__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%`.
+- Clarified that successful external-launcher exit means handoff to Steam, not proof that DayZ fully started.
 
 ## v0.5.2
 - Fixed launch output dialog QTextCursor crash on PySide6.
 - Hardened launch path to pass the resolved IP address to dayz-launcher.sh.
+- Reworded successful launch output so exit code 0 is shown as a successful handoff to Steam instead of an alarming finished message.
+- Fixed early selection-change traceback by guarding launch button text updates until the button exists.
 - Kept v0.5.1 offline/restart status handling fixes.
 
 

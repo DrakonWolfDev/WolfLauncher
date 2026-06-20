@@ -1,90 +1,123 @@
 # Architecture
 
-WolfLauncher is currently a Python + PySide6 Linux-first DayZ launcher.
+WolfLauncher is a Python + PySide6 Linux-first DayZ launcher. At the end of v0.5.2 it is a working GUI wrapper around a proven external shell launcher, with pre-launch checks moved into the application.
 
-## Current layers
+## Runtime Shape
 
 ```text
-PySide6 GUI
-  ├─ Server browser
-  ├─ Mods tab
-  ├─ Diagnostics tab
-  └─ Settings/favourites
-
-Core modules
-  ├─ status.py             DayZ server querying through gamedig
-  ├─ mods.py               required mod lookup and Workshop scanning
-  ├─ platform_detection.py Steam/DayZ/Workshop detection
-  ├─ launcher.py           external bash launcher invocation
-  ├─ settings.py           JSON settings and favourites
-  └─ config.py             YAML server loading
-
-External tools
-  ├─ gamedig
-  ├─ dig
-  ├─ Steam
-  └─ dayz-launcher.sh
+main.py
+  -> wolflauncher.app.MainWindow
+       -> Servers tab
+       -> Mods tab
+       -> Diagnostics tab
+       -> guarded launch workflow
 ```
 
-## Server data
+## Module Map
 
-Current curated servers live in `servers.yaml`.
+```text
+wolflauncher/
+  app.py                 Main Qt GUI, workers, tables, dialogs and launch flow
+  config.py              YAML server loading and default launcher candidates
+  diagnostics.py         Human-readable diagnostics report
+  launcher.py            External dayz-launcher.sh command builder
+  models.py              Shared dataclasses
+  mods.py                DayZSA API mod lookup and local Workshop comparison
+  platform_detection.py  Native/Flatpak Steam, DayZ and Workshop detection
+  settings.py            JSON settings and favourites under ~/.config/wolflauncher
+  status.py              gamedig server status and DNS resolution
+```
 
-YAML is useful for:
+## External Tools
 
-- hand-curated servers,
-- personal favourites,
-- simple sharing,
-- early testing.
+```text
+gamedig             live DayZ server status
+dig                 DNS lookup support
+Steam               game ownership, Workshop downloads and Proton launch
+dayz-launcher.sh    current launch engine
+```
 
-Later, scraped/community server data should move to SQLite.
+The external launcher remains the launch engine for now. WolfLauncher is responsible for preparing the user, validating the environment and generating the handoff command.
+
+## Data Model
+
+Current storage:
+
+```text
+servers.yaml                      curated server list
+~/.config/wolflauncher/settings.json
+~/.config/wolflauncher/favourites.json
+```
 
 Recommended long-term split:
 
 ```text
-servers.yaml  -> curated/import-export servers
-SQLite        -> scraped server browser cache
-settings.json -> user settings
-favourites.json -> favourites
+servers.yaml      curated, personal and import/export servers
+SQLite            discovered/scraped server browser cache
+settings.json     user preferences
+favourites.json   favourite server keys
 ```
 
-## Mod management
+YAML should stay useful for hand-curated servers even after SQLite is introduced.
 
-v0.4 introduced advisory mod management. v0.4.1/v0.4.2 polished the mod workflow with filters, sorting, double-click Workshop opening, right-click copy actions and hotfixes.
+## Server Status
+
+Flow:
+
+```text
+Server row
+  -> status.check_server
+  -> gamedig query
+  -> resolved IP, connect address and status fields
+  -> GUI table update
+```
+
+Partial responses during server restarts should be treated as offline/restarting rather than online with unknown fields.
+
+## Mod Management
 
 Flow:
 
 ```text
 Selected server
-  ↓
-Resolve host
-  ↓
-Query DayZ SA Launcher style API
-  ↓
-Read required Steam Workshop IDs
-  ↓
-Scan local workshop/content/221100
-  ↓
-Compare required vs installed
-  ↓
-Display installed/missing mods and Workshop links
+  -> resolve host
+  -> query DayZ SA Launcher style API
+  -> read required Steam Workshop IDs
+  -> scan local workshop/content/221100
+  -> compare required vs installed
+  -> display installed/missing mods and Workshop links
 ```
 
-The mod manager intentionally does not try to download Workshop content automatically. Steam Workshop subscription and download behaviour is left to Steam.
+The mod manager is advisory. It detects and opens Workshop pages, but does not subscribe, download or mutate Workshop content.
 
 ## Launching
 
-WolfLauncher v0.5 calls the external launcher script through a guarded launch workflow:
+WolfLauncher v0.5.2 calls the external launcher script through a guarded launch workflow:
 
 ```text
-dayz-launcher.sh -s host:game_port -p query_port -n player_name --launch
+bash dayz-launcher.sh -s resolved_ip:game_port -p query_port -n player_name --launch
 ```
 
-Before launch, the GUI checks that DayZ and the Workshop folder are detected, warns if Steam is not running, and warns if the latest mod check for the selected server shows missing required mods. The launch dialog shows the generated command and captures launcher output for debugging.
+Before launch, the GUI checks that:
 
-This keeps v0.x releases close to the proven shell workflow while the GUI matures.
+- DayZ is detected.
+- The DayZ Workshop folder is detected.
+- Steam is running, or the user explicitly chooses to launch anyway.
+- The latest mod check for the selected server has no missing required mods, or the user explicitly chooses to launch anyway.
 
-## Platform support
+The launch dialog shows the generated command and captures launcher output. Exit code 0 means the command was successfully handed off to Steam; it does not prove that Proton or DayZ reached the main menu.
+
+## Known Launch-Option Issue
+
+DayZ currently does not run when Steam launch options contain:
+
+```text
+__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%
+```
+
+This is tracked as the only known bug at the end of v0.5.2. Keep it visible in docs and diagnostics planning, but do not make it the default launch recommendation until it is reproduced and a safe workaround is confirmed.
+
+## Platform Support
 
 Primary target:
 

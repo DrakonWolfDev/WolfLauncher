@@ -1,20 +1,20 @@
 # WolfLauncher Project State
 
-Current snapshot: v0.5.3 alpha prototype.
+Current snapshot: end of v0.5.2.
 
-WolfLauncher is a Linux-first DayZ launcher GUI built with Python and PySide6. It currently wraps the existing MIT-licensed `dayz-linux-cli-launcher` style shell launcher rather than replacing it.
+WolfLauncher is a Linux-first DayZ launcher GUI built with Python and PySide6. It currently wraps the existing MIT-licensed `dayz-linux-cli-launcher` style shell launcher instead of replacing it.
 
 ## Current status
 
-Working:
+The v0.5.2 launch, status, diagnostics and mod-checking work is considered functional. The application can be used as the working project base for the next improvement cycle.
 
-- Launch command handoff to Steam via the external shell launcher has been validated.
-- Launch output now reports successful Steam handoff more clearly.
+Working:
 
 - PySide6 desktop GUI.
 - YAML curated server list.
 - DNS hostname and direct IP support.
 - Live DayZ server querying through `gamedig`.
+- Partial `gamedig` restart responses are treated as offline/restarting rather than as healthy online rows.
 - Server status table with map, players, time, ping, version, flags and connect address.
 - Native Steam detection.
 - Flatpak Steam detection.
@@ -33,23 +33,37 @@ Working:
 - Mods filtering for all/missing/installed.
 - Copy Workshop ID, mod name, Workshop URL, connect address and server details.
 - Guarded launch workflow through the external `dayz-launcher.sh` script.
+- Launch commands pass the resolved server IP to the external launcher when available.
 - Missing-mod warning with Open Workshop / Launch Anyway / Cancel.
 - Steam-not-running warning.
 - Launch output dialog with generated command and launcher output.
+- Successful external-launcher exit code is presented as a handoff to Steam.
+
+## Known bug
+
+- DayZ currently does not run when the Steam launch options contain `__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%`.
+
+Current handling:
+
+- Treat this as an external Steam/Proton/DayZ launch-option compatibility issue, not a WolfLauncher command-generation failure.
+- Do not recommend that option as the default workaround.
+- Future work should investigate hybrid-GPU/NVIDIA PRIME diagnostics and safer launch-option guidance.
 
 ## Key files
 
+- `AGENTS.md` - quick project orientation for future coding agents.
 - `main.py` - entry point.
-- `wolflauncher/app.py` - main Qt GUI and launch workflow.
-- `wolflauncher/status.py` - `gamedig` server querying.
+- `wolflauncher/app.py` - main Qt GUI, tabs, table actions and launch workflow.
+- `wolflauncher/status.py` - `gamedig` server querying and host resolution.
 - `wolflauncher/mods.py` - required mod lookup and local Workshop scanning.
 - `wolflauncher/platform_detection.py` - Steam, DayZ and Workshop detection.
 - `wolflauncher/launcher.py` - external launcher command building.
 - `wolflauncher/settings.py` - user settings and favourites.
+- `wolflauncher/config.py` - YAML server loading and default launcher path candidates.
 - `servers.yaml` - curated server registry.
 - `CHANGELOG.md` - version history.
 - `ROADMAP.md` - planned milestones.
-- `ARCHITECTURE.md` - design notes.
+- `ARCHITECTURE.md` - architecture and design notes.
 
 ## Important design decisions
 
@@ -58,25 +72,15 @@ Working:
 - JSON is used for user settings and favourites under `~/.config/wolflauncher`.
 - The external shell launcher remains the launch engine for now.
 - Mod management is read-only and advisory: it detects installed/missing mods and opens Workshop pages, but does not attempt automatic downloads.
-- v0.5 launch is guarded: WolfLauncher warns about missing mods and Steam state before calling the external launcher.
+- Launch remains guarded: WolfLauncher warns about missing mods and Steam state before calling the external launcher.
+- Hostnames are resolved before launch where possible to mirror the original terminal menu behaviour and avoid DayZSA API issues with DNS-based servers.
 
-## Suggested next version
+## Next step
 
-v0.5.x should focus on real launch validation and hotfixes only:
+Use v0.6 as the next active development target:
 
-- Confirm successful launch into a selected DayZ server.
-- Confirm behaviour when Steam is already running vs not running.
-- Confirm behaviour when missing mods are detected.
-- Improve launch output/error messages based on real terminal output.
-
-After launch is stable, v0.6 can move toward a searchable server browser backed by SQLite.
-
-## v0.5.2 Hotfix Notes
-- Launch commands now mirror the original terminal menu behaviour by passing the resolved IP address to the external launcher.
-- This fixes DayZSA API failures such as `Missing mods data from API response` when launching DNS-based servers.
-- Partial `gamedig` responses during restarts are now treated as offline/restarting rather than ONLINE with unknown fields.
-
-
-## v0.5.2 hotfix
-- Launch dialog output no longer crashes while reading launcher output.
-- Launch command now explicitly uses the resolved IP from the server table when available.
+- Add a searchable server browser foundation.
+- Introduce a SQLite cache for discovered/scraped public servers.
+- Keep `servers.yaml` for curated, personal and import/export server lists.
+- Improve filtering, sorting and diagnostics around the existing stable launch flow.
+- Keep the NVIDIA PRIME Steam launch-option issue visible as the only known bug until it is reproduced and diagnosed.

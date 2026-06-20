@@ -1,28 +1,40 @@
 # Roadmap
 
-## v0.5.x - Launch polishing and validation
+## v0.5.2 - Stable working base
 
-- Test launch flow on Andrew's Linux Mint system.
-- Confirm missing-mod guard behaviour with a real missing Workshop item.
-- Confirm launcher output dialog captures useful shell launcher messages.
-- Continue small hotfixes after real launch testing.
-- Investigate optional hybrid-GPU/NVIDIA PRIME diagnostics later.
+Status: complete, with one known external launch-option issue.
+
+- Launch handoff through `dayz-launcher.sh` works.
+- DNS-based servers launch through resolved IP addresses when available.
+- Server status, diagnostics, favourites, settings and mod checks are working.
+- Launch output dialog no longer crashes while reading PySide6 process output.
+- Known bug: DayZ does not run with the Steam launch option `__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%`.
 
 ## v0.6 - Server browser foundation
 
-- Add SQLite cache for discovered servers.
+- Add SQLite cache for discovered or scraped servers.
 - Keep YAML as curated/import/export format.
 - Add search and filtering.
 - Add sort by player count, ping, map and version.
+- Preserve the current curated server workflow.
+- Add tests around server loading, status parsing and launch command generation.
 
-## v0.7 - Packaging preparation
+## v0.7 - Diagnostics and Linux polish
 
+- Improve hybrid-GPU/NVIDIA PRIME diagnostics.
+- Add safer user-facing guidance for Steam launch options.
+- Expand native Steam and Flatpak Steam checks.
+- Add clearer failure states for Proton/Steam handoff problems.
 - Add Linux Mint/Ubuntu install instructions.
+
+## v0.8 - Packaging preparation
+
 - Explore AppImage.
 - Explore `.deb` packaging.
 - Add desktop file and icon.
+- Document user config and data directories.
 
-## v0.8 - Native launcher engine investigation
+## v0.9 - Native launcher engine investigation
 
 - Document the current handoff contract with `dayz-linux-cli-launcher`.
 - Build an internal launcher-engine module behind the existing GUI workflow.
@@ -30,7 +42,7 @@
 - Investigate direct Steam/Proton launch handling for native and Flatpak Steam.
 - Keep the external launcher path as a fallback until native launch parity is proven.
 
-## v0.9 - Native launcher engine replacement
+## v1.0 - Native launcher engine replacement
 
 - Move server launch flow from shell-script handoff to the internal engine.
 - Improve structured launch errors and user-facing diagnostics.
