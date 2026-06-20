@@ -14,6 +14,7 @@ The upstream shell launcher is vendored at `external/dayz-linux-cli-launcher/` a
 - `ARCHITECTURE.md` explains the module boundaries and launch contract.
 - `ROADMAP.md` describes the next version targets.
 - `CHANGELOG.md` records version history.
+- `LICENSE` and `THIRD_PARTY_NOTICES.md` record licensing.
 
 When these files disagree, update them as part of the same change.
 
@@ -76,6 +77,7 @@ The vendored script then:
 - User settings and favourites live under `~/.config/wolflauncher`.
 - Prefer small, testable changes around launch command generation and platform detection.
 - Keep the vendored launcher untouched unless deliberately updating the legacy reference; build replacement Python behavior behind WolfLauncher interfaces first.
+- Preserve third-party license notices when moving or replacing vendored code.
 
 ## Local Run
 

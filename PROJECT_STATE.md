@@ -65,6 +65,8 @@ Current handling:
 - `tests/` - standard-library unit tests for launcher commands, path discovery, YAML loading, status parsing and mod parsing.
 - `servers.yaml` - curated server registry.
 - `external/dayz-linux-cli-launcher/dayz-launcher.sh` - vendored MIT legacy launch engine.
+- `LICENSE` - WolfLauncher MIT license.
+- `THIRD_PARTY_NOTICES.md` - third-party license notices.
 - `CHANGELOG.md` - version history.
 - `ROADMAP.md` - planned milestones.
 - `ARCHITECTURE.md` - architecture and design notes.
@@ -80,6 +82,7 @@ Current handling:
 - Launch remains guarded: WolfLauncher warns about missing mods and Steam state before calling the external launcher.
 - Hostnames are resolved before launch where possible to mirror the original terminal menu behaviour and avoid DayZSA API issues with DNS-based servers.
 - Python bytecode caches are ignored and should not be tracked as source.
+- WolfLauncher is MIT licensed; vendored third-party MIT notices are preserved separately.
 
 ## Next step
 

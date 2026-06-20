@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Added the MIT license for WolfLauncher and third-party notices for vendored code.
 - Added `AGENTS.md` as the quick project orientation and coding-agent handoff file.
 - Vendored the MIT-licensed `dayz-linux-cli-launcher` under `external/dayz-linux-cli-launcher/`.
 - Added the vendored launcher as the final default launcher path fallback.

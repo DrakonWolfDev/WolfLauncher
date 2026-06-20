@@ -138,6 +138,7 @@ The `host` field may contain either a DNS hostname or an IP address.
 | `ROADMAP.md` | Planned features and future milestones |
 | `CHANGELOG.md` | Version history and release notes |
 | `external/dayz-linux-cli-launcher/` | Vendored MIT legacy launcher reference |
+| `THIRD_PARTY_NOTICES.md` | Third-party license notices |
 
 ## Application Locations
 
@@ -177,4 +178,6 @@ Planned future work includes:
 
 ## License
 
-License information to be added before first public release.
+WolfLauncher is licensed under the MIT License.
+
+This repository includes the MIT-licensed `dayz-linux-cli-launcher` under `external/dayz-linux-cli-launcher/`. See `THIRD_PARTY_NOTICES.md` for details.
