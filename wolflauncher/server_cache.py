@@ -117,11 +117,15 @@ def upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> N
     connection.commit()
 
 
-def import_servers_from_file(connection: sqlite3.Connection, path: Path) -> int:
-    servers = load_discovered_servers(path)
+def upsert_servers(connection: sqlite3.Connection, servers: list[DiscoveredServer]) -> int:
     for server in servers:
         upsert_server(connection, server)
     return len(servers)
+
+
+def import_servers_from_file(connection: sqlite3.Connection, path: Path) -> int:
+    servers = load_discovered_servers(path)
+    return upsert_servers(connection, servers)
 
 
 def load_discovered_servers(path: Path) -> list[DiscoveredServer]:

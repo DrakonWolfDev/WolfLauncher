@@ -77,6 +77,30 @@ class ServerCacheTests(unittest.TestCase):
         self.assertEqual(cached.players_current, 28)
         self.assertTrue(cached.online)
 
+    def test_upsert_servers_returns_inserted_count(self):
+        connection = self.open_cache()
+
+        count = server_cache.upsert_servers(
+            connection,
+            [
+                DiscoveredServer(
+                    name="Candidate One",
+                    host="203.0.113.10",
+                    game_port=27016,
+                    query_port=27016,
+                ),
+                DiscoveredServer(
+                    name="Candidate Two",
+                    host="203.0.113.20",
+                    game_port=27016,
+                    query_port=27016,
+                ),
+            ],
+        )
+
+        self.assertEqual(count, 2)
+        self.assertEqual(len(server_cache.search_servers(connection)), 2)
+
     def test_search_filters_and_sorts_cached_servers(self):
         connection = self.open_cache()
         servers = [

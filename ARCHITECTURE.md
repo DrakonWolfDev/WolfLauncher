@@ -25,6 +25,7 @@ wolflauncher/
   models.py              Shared dataclasses
   mods.py                DayZSA API mod lookup and local Workshop comparison
   platform_detection.py  Native/Flatpak Steam, DayZ and Workshop detection
+  server_discovery.py    Steam master server candidate discovery
   server_cache.py        SQLite cache for discovered public servers
   settings.py            JSON settings and favourites under ~/.config/wolflauncher
   status.py              gamedig server status and DNS resolution
@@ -63,7 +64,7 @@ favourites.json   favourite server keys
 
 YAML should stay useful for hand-curated servers even after SQLite is introduced.
 
-The v0.6 SQLite foundation stores discovered public servers separately from curated YAML entries. Cached rows are keyed by `host:game_port:query_port` and include browser-oriented fields such as display name, map, player counts, ping, version, mod/password flags and last-seen timestamps. This keeps scraped or transient public browser data out of `servers.yaml` while still giving the GUI a searchable local cache. The initial Server Browser tab is read-only, can import YAML/JSON cache rows, and can explicitly promote a discovered row into the curated YAML list. The guarded launch workflow remains owned by curated servers.
+The v0.6 SQLite foundation stores discovered public servers separately from curated YAML entries. Cached rows are keyed by `host:game_port:query_port` and include browser-oriented fields such as display name, map, player counts, ping, version, mod/password flags and last-seen timestamps. This keeps scraped or transient public browser data out of `servers.yaml` while still giving the GUI a searchable local cache. The initial Server Browser tab is read-only, can import YAML/JSON cache rows, refresh Steam master server candidates, copy server details, and explicitly promote a discovered row into the curated YAML list with an editable name/group. Steam master server discovery imports candidate endpoints into the cache; later enrichment should confirm names, maps, player counts and port details. The guarded launch workflow remains owned by curated servers.
 
 ## Server Status
 

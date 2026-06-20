@@ -16,7 +16,10 @@ Working:
 - YAML curated server list.
 - Read-only SQLite-backed discovered server browser tab.
 - YAML/JSON import for discovered server cache rows.
-- Promotion from discovered cache rows into the curated YAML server list.
+- Promotion from discovered cache rows into the curated YAML server list with editable name/group.
+- Copy actions for discovered server connect addresses and details.
+- Steam master server candidate discovery import script.
+- In-app Steam master refresh for discovered server candidates.
 - DNS hostname and direct IP support.
 - Live DayZ server querying through `gamedig`.
 - Partial `gamedig` restart responses are treated as offline/restarting rather than as healthy online rows.
@@ -93,7 +96,7 @@ Current handling:
 
 Use v0.6 as the next active development target:
 
-- Add live discovery/scraping paths that populate the SQLite cache.
+- Enrich Steam master server candidates with live status fields before promotion.
 - Improve editing/organisation for promoted curated servers.
 - Keep `servers.yaml` for curated, personal and import/export server lists.
 - Improve filtering, sorting and diagnostics around the existing stable launch flow.

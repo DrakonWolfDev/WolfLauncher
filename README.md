@@ -28,7 +28,10 @@ That issue is tracked as a Steam/Proton/DayZ launch-option compatibility problem
 - SQLite cache foundation for future discovered public servers.
 - Read-only discovered server browser with search, filters and cache sorting.
 - YAML/JSON import for discovered server cache rows.
-- Promote discovered servers into the curated `servers.yaml` list.
+- Promote discovered servers into the curated `servers.yaml` list with editable name/group.
+- Copy discovered server connect addresses and details.
+- Steam master server candidate discovery import.
+- In-app Steam master refresh for discovered server candidates.
 - DNS hostname or IP address support.
 - Favourites system.
 - Server grouping support.
@@ -148,7 +151,17 @@ examples/discovered_servers.sample.yaml
 
 Imported rows stay separate from curated `servers.yaml`.
 
-Select an imported/discovered row and use **Promote to curated** to add it to `servers.yaml`.
+Select an imported/discovered row and use **Promote to curated** to add it to `servers.yaml`. Right-click a discovered row to promote it or copy its connect address/details.
+
+Use **Refresh from Steam** in the Server Browser tab to fetch one batch of candidate DayZ endpoints from the Steam master server.
+
+The same discovery path is available from the command line:
+
+```bash
+.venv/bin/python scripts/discover_steam_servers.py --batches 1
+```
+
+Steam master rows are treated as candidates until later status enrichment confirms display names, maps, player counts and port details.
 
 ## Project Documentation
 

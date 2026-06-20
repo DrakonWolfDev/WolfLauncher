@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QDialog,
+    QDialogButtonBox,
     QComboBox,
     QMenu,
     QPushButton,
@@ -34,6 +35,7 @@ from .models import Server
 from .platform_detection import best_install
 from .mods import ModCheckResult, check_server_mods
 from . import server_cache
+from .server_discovery import discover_dayz_servers
 from .settings import (
     load_favourites,
     load_settings,
@@ -68,6 +70,24 @@ class ModWorker(QThread):
 
     def run(self):
         self.mods_ready.emit(check_server_mods(self.server, self.workshop_dir))
+
+
+class SteamDiscoveryWorker(QThread):
+    discovery_ready = Signal(object, str)
+
+    def __init__(self, max_batches: int = 1):
+        super().__init__()
+        self.max_batches = max_batches
+
+    def run(self):
+        try:
+            servers = discover_dayz_servers(max_batches=self.max_batches)
+        except OSError as exc:
+            self.discovery_ready.emit([], str(exc))
+        except ValueError as exc:
+            self.discovery_ready.emit([], str(exc))
+        else:
+            self.discovery_ready.emit(servers, "")
 
 
 class LaunchDialog(QDialog):
@@ -123,6 +143,32 @@ class LaunchDialog(QDialog):
         self.close_button.setEnabled(True)
 
 
+class PromoteServerDialog(QDialog):
+    def __init__(self, parent, name: str, group: str = "Discovered"):
+        super().__init__(parent)
+        self.setWindowTitle("Promote to curated")
+        self.resize(420, 140)
+
+        layout = QVBoxLayout(self)
+        form = QFormLayout()
+        self.name = QLineEdit(name)
+        self.group = QLineEdit(group)
+        form.addRow("Name", self.name)
+        form.addRow("Group", self.group)
+        layout.addLayout(form)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def curated_name(self) -> str:
+        return self.name.text().strip()
+
+    def curated_group(self) -> str:
+        return self.group.text().strip() or "Discovered"
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -135,6 +181,7 @@ class MainWindow(QMainWindow):
         self.favourites = load_favourites()
         self.worker = None
         self.mod_worker = None
+        self.discovery_worker = None
         self.last_mod_result = None
         self.server_cache = server_cache.connect()
 
@@ -325,17 +372,22 @@ class MainWindow(QMainWindow):
         self.browser_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.browser_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.browser_table.setSortingEnabled(True)
+        self.browser_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.browser_table.customContextMenuRequested.connect(self.show_browser_context_menu)
         layout.addWidget(self.browser_table)
 
         buttons = QHBoxLayout()
         import_file = QPushButton("Import cache file")
         import_file.clicked.connect(self.import_server_cache_file)
+        self.steam_refresh_button = QPushButton("Refresh from Steam")
+        self.steam_refresh_button.clicked.connect(self.refresh_from_steam_master)
         promote = QPushButton("Promote to curated")
         promote.clicked.connect(self.promote_selected_discovered_server)
         refresh = QPushButton("Refresh cache view")
         refresh.clicked.connect(self.refresh_server_browser)
         buttons.addStretch(1)
         buttons.addWidget(import_file)
+        buttons.addWidget(self.steam_refresh_button)
         buttons.addWidget(promote)
         buttons.addWidget(refresh)
         layout.addLayout(buttons)
@@ -428,15 +480,46 @@ class MainWindow(QMainWindow):
             f"Imported {count} discovered server row(s) into the cache.",
         )
 
+    def refresh_from_steam_master(self):
+        if self.discovery_worker and self.discovery_worker.isRunning():
+            return
+        self.browser_summary.setText("Cached discovered servers: querying Steam master server...")
+        self.steam_refresh_button.setEnabled(False)
+        self.discovery_worker = SteamDiscoveryWorker(max_batches=1)
+        self.discovery_worker.discovery_ready.connect(self.handle_steam_discovery_ready)
+        self.discovery_worker.start()
+
+    def handle_steam_discovery_ready(self, servers, error: str):
+        self.steam_refresh_button.setEnabled(True)
+        if error:
+            self.refresh_server_browser()
+            QMessageBox.warning(self, "Steam discovery failed", error)
+            return
+        count = server_cache.upsert_servers(self.server_cache, servers)
+        self.refresh_server_browser()
+        QMessageBox.information(
+            self,
+            "Steam discovery complete",
+            f"Imported {count} Steam master server candidate(s).",
+        )
+
     def promote_selected_discovered_server(self):
         server = self.selected_discovered_server()
         if not server:
             QMessageBox.warning(self, "No discovered server selected", "Select a discovered server first.")
             return
 
+        dialog = PromoteServerDialog(self, server.name)
+        if dialog.exec() != QDialog.Accepted:
+            return
+        name = dialog.curated_name()
+        if not name:
+            QMessageBox.warning(self, "Name required", "Enter a curated server name.")
+            return
+
         curated = Server(
-            name=server.name,
-            group="Discovered",
+            name=name,
+            group=dialog.curated_group(),
             host=server.host,
             game_port=server.game_port,
             query_port=server.query_port,
@@ -785,6 +868,47 @@ class MainWindow(QMainWindow):
         menu.addAction(copy_name_action)
         menu.addAction(copy_url_action)
         menu.exec(self.mods_table.viewport().mapToGlobal(pos))
+
+    def show_browser_context_menu(self, pos: QPoint):
+        row = self.browser_table.rowAt(pos.y())
+        if row < 0:
+            return
+        self.browser_table.selectRow(row)
+        server = self.selected_discovered_server()
+        if not server:
+            return
+        menu = QMenu(self)
+        promote_action = QAction("Promote to curated", self)
+        copy_connect_action = QAction("Copy connect address", self)
+        copy_details_action = QAction("Copy server details", self)
+        promote_action.triggered.connect(self.promote_selected_discovered_server)
+        copy_connect_action.triggered.connect(
+            lambda: self.copy_to_clipboard(server.connect_target, "Connect address")
+        )
+        copy_details_action.triggered.connect(
+            lambda: self.copy_to_clipboard(self.discovered_server_details_text(server), "Server details")
+        )
+        menu.addAction(promote_action)
+        menu.addAction(copy_connect_action)
+        menu.addAction(copy_details_action)
+        menu.exec(self.browser_table.viewport().mapToGlobal(pos))
+
+    def discovered_server_details_text(self, server) -> str:
+        flags = []
+        if server.password:
+            flags.append("Password")
+        if server.modded:
+            flags.append("Mods")
+        return "\n".join([
+            server.server_name or server.name,
+            server.connect_target,
+            f"Query port: {server.query_port}",
+            f"Map: {server.map_name}",
+            f"Players: {self._players_text(server.players_current, server.players_max)}",
+            f"Version: {server.version}",
+            f"Flags: {', '.join(flags) if flags else 'Vanilla/unknown'}",
+            f"Source: {server.source}",
+        ]).strip()
 
     def _mods_cell(self, row: int, column: int) -> str:
         item = self.mods_table.item(row, column)

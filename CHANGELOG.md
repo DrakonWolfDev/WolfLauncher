@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- Added an in-app Steam master refresh button for discovered server candidates.
+- Added Steam master server candidate discovery import support.
+- Added editable promotion details and right-click copy actions for discovered servers.
 - Added promotion from discovered cache rows into the curated YAML server list.
 - Added YAML/JSON import for discovered server cache rows, including a sample import file.
 - Added a read-only Server Browser tab backed by the SQLite discovered-server cache.
