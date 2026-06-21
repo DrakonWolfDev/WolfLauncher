@@ -11,6 +11,7 @@ from wolflauncher.native_launcher import (
     compact_mod_link_name,
     prepare_mod_links,
     prepare_native_launch,
+    prepare_native_launch_parity_report,
     prepare_native_launch_preview,
 )
 from wolflauncher.platform_detection import FLATPAK_STEAM_ID, SteamInstall
@@ -261,6 +262,59 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertTrue(preview.ready)
             self.assertIn("-mod=@AAE", preview.command)
             self.assertIn("-connect=203.0.113.10:2302", preview.command)
+
+    def test_prepare_native_launch_parity_report_compares_external_and_native_paths(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+            launcher = Path(tmpdir) / "dayz-launcher.sh"
+            launcher.write_text("#!/bin/sh\n", encoding="utf-8")
+            mod_dir = install.workshop_dir / "256"
+            mod_dir.mkdir()
+            (mod_dir / "meta.cpp").write_text('name = "Example Mod";\n', encoding="utf-8")
+
+            report = prepare_native_launch_parity_report(
+                install,
+                str(launcher),
+                make_server("203.0.113.10"),
+                "PlayerOne",
+                [RequiredMod("256", "Example Mod")],
+            )
+
+            self.assertTrue(report.preview.ready)
+            self.assertEqual(report.resolved_connect, "203.0.113.10:2302")
+            self.assertEqual(report.required_mod_ids, ["256"])
+            self.assertEqual(report.preview.mod_setup.mod_links, ["@AAE"])
+            self.assertEqual(
+                report.external_command,
+                [
+                    "bash",
+                    str(launcher),
+                    "-s",
+                    "203.0.113.10:2302",
+                    "-p",
+                    "27016",
+                    "-n",
+                    "PlayerOne",
+                    "--launch",
+                ],
+            )
+            self.assertIn("-connect=203.0.113.10:2302", report.preview.command)
+
+    def test_prepare_native_launch_parity_report_keeps_native_preview_when_external_path_missing(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+
+            report = prepare_native_launch_parity_report(
+                install,
+                str(Path(tmpdir) / "missing-launcher.sh"),
+                make_server("203.0.113.10"),
+                "PlayerOne",
+                [],
+            )
+
+            self.assertTrue(report.preview.ready)
+            self.assertEqual(report.external_command, [])
+            self.assertIn("Launcher script not found", report.external_error)
 
     def test_prepare_native_launch_reports_missing_mods(self):
         with tempfile.TemporaryDirectory() as tmpdir:

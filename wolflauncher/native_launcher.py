@@ -4,6 +4,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .launcher import LaunchError, build_launch_command
 from .models import Server
 from .mods import RequiredMod, fetch_required_mods
 from .platform_detection import FLATPAK_STEAM_ID, STEAM_APP_ID_DAYZ, SteamInstall
@@ -64,6 +65,19 @@ class NativeLaunchPreview:
     @property
     def ready(self) -> bool:
         return not self.mod_setup.missing_mod_ids
+
+
+@dataclass
+class NativeLaunchParityReport:
+    preview: NativeLaunchPreview
+    install: SteamInstall
+    required_mod_ids: list[str] = field(default_factory=list)
+    external_command: list[str] = field(default_factory=list)
+    external_error: str = ""
+
+    @property
+    def resolved_connect(self) -> str:
+        return f"{self.preview.server.host}:{self.preview.server.game_port}"
 
 
 def compact_mod_link_name(workshop_id: str | int) -> str:
@@ -169,6 +183,37 @@ def prepare_native_launch_preview(
     if not mod_setup.missing_mod_ids:
         command = build_steam_launch_command(install, launch_server, player_name, mod_setup.mod_links, extra_params)
     return NativeLaunchPreview(server=launch_server, command=command, mod_setup=mod_setup)
+
+
+def prepare_native_launch_parity_report(
+    install: SteamInstall,
+    launcher_path: str,
+    server: Server,
+    player_name: str,
+    required_mods: list[RequiredMod],
+    extra_params: list[str] | None = None,
+) -> NativeLaunchParityReport:
+    """Prepare a non-launching native preview and compare it with external handoff."""
+    preview = prepare_native_launch_preview(
+        install,
+        server,
+        player_name,
+        required_mods,
+        extra_params,
+    )
+    try:
+        external_command = build_launch_command(launcher_path, player_name, server)
+        external_error = ""
+    except LaunchError as exc:
+        external_command = []
+        external_error = str(exc)
+    return NativeLaunchParityReport(
+        preview=preview,
+        install=install,
+        required_mod_ids=[str(mod.workshop_id).strip() for mod in required_mods],
+        external_command=external_command,
+        external_error=external_error,
+    )
 
 
 def prepare_mod_links(dayz_dir: Path, workshop_dir: Path, required_mods: list[RequiredMod]) -> NativeModSetup:
