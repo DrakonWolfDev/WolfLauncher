@@ -68,6 +68,7 @@
 - Added data-aware Server Browser sorting for numeric ports, players, ping, status and freshness columns.
 - Added fuller NVIDIA PRIME and Steam launch-option troubleshooting guidance.
 - Added Server Browser result-limit controls and clearer matching-vs-cached summary text.
+- Added WolfAPI as a discovered-server cache provider, backed by `https://api.drakonwolf.ddns.net/api/servers`.
 - Added name-derived Server Browser style filtering for PvE and PvP servers.
 - Added Server Browser source filtering, reset controls and cache summary counts.
 - Added Server Browser double-click promotion and a copy-host context action.

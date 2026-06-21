@@ -57,7 +57,8 @@ Useful evidence for debugging:
 - YAML/JSON import for discovered server cache rows.
 - Promote discovered servers into the curated `servers.yaml` list with editable name/group.
 - Copy discovered server connect addresses and details.
-- Configurable discovered-server refresh provider for BattleMetrics, Steam Web API or Steam master candidates.
+- Configurable discovered-server refresh provider for WolfAPI, BattleMetrics, Steam Web API or Steam master candidates.
+- WolfAPI hosted discovered-server cache provider.
 - Steam Web API server-list discovery with user-supplied API key.
 - BattleMetrics server discovery.
 - Enrich visible discovered servers with live status data.
@@ -219,7 +220,7 @@ Imported rows stay separate from curated `servers.yaml`.
 
 Select an imported/discovered row and use **Promote to curated** to add it to `servers.yaml`. Right-click a discovered row to promote it or copy its connect address/details.
 
-Choose a server API provider in Settings, then use **Refresh database** in the Server Browser tab. BattleMetrics works without a key, Steam Web API uses the saved Steam API key, and Steam Master uses Valve's legacy UDP master server path.
+Choose a server API provider in Settings, then use **Refresh database** in the Server Browser tab. WolfAPI uses the hosted cache at `https://api.drakonwolf.ddns.net/api/servers`, BattleMetrics works without a key, Steam Web API uses the saved Steam API key, and Steam Master uses Valve's legacy UDP master server path.
 
 Provider refreshes sync the provider-backed cache rather than accumulating old rows: servers no longer returned by a successful selected-service refresh are removed, a successful empty refresh clears that provider's discovered rows, and existing cache keys are left untouched so live enrichment is not repeated unnecessarily. Failed provider refreshes keep existing cached rows. Keep servers you care about in the curated `servers.yaml` list.
 
@@ -231,6 +232,12 @@ The same discovery path is available from the command line:
 
 ```bash
 .venv/bin/python scripts/discover_steam_servers.py --batches 1
+```
+
+The WolfAPI cache path is also available from the command line:
+
+```bash
+.venv/bin/python scripts/discover_steam_servers.py --wolfapi --limit 500
 ```
 
 The Web API path is also available from the command line:

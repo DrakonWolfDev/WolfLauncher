@@ -21,6 +21,7 @@ Working:
 - Copy actions for discovered server connect addresses and details.
 - Steam master server candidate discovery import script.
 - Single in-app discovered-server database refresh using the provider selected in Settings.
+- WolfAPI discovered-server cache provider using `https://api.drakonwolf.ddns.net/api/servers`.
 - Steam Web API server-list discovery with user-supplied API key.
 - BattleMetrics server discovery.
 - Optional quiet rate-limited startup refresh for the selected discovery provider, throttled to once per day.

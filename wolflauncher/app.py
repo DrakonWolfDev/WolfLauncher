@@ -75,6 +75,7 @@ from .server_discovery import (
     discover_dayz_servers,
     discover_dayz_servers_battlemetrics,
     discover_dayz_servers_web_api,
+    discover_dayz_servers_wolfapi,
     parse_master_address,
 )
 from .server_enrichment import enrich_discovered_server, enrichment_probe_servers
@@ -168,6 +169,23 @@ class BattleMetricsDiscoveryWorker(QThread):
                 limit=self.limit,
                 page_delay=self.page_delay,
             )
+        except Exception as exc:
+            self.discovery_ready.emit([], str(exc))
+        else:
+            self.discovery_ready.emit(servers, "")
+
+
+class WolfApiDiscoveryWorker(QThread):
+    discovery_ready = Signal(object, str)
+
+    def __init__(self, limit: int = 10000, automatic: bool = False):
+        super().__init__()
+        self.limit = limit
+        self.automatic = automatic
+
+    def run(self):
+        try:
+            servers = discover_dayz_servers_wolfapi(limit=self.limit)
         except Exception as exc:
             self.discovery_ready.emit([], str(exc))
         else:
@@ -493,6 +511,7 @@ class MainWindow(QMainWindow):
         self.discovery_worker = None
         self.web_api_worker = None
         self.battlemetrics_worker = None
+        self.wolfapi_worker = None
         self.enrichment_worker = None
         self.last_mod_result = None
         self.active_mod_server_key = ""
@@ -807,6 +826,7 @@ class MainWindow(QMainWindow):
 
         self.discovery_provider = QComboBox()
         self.discovery_provider.addItems([
+            "WolfAPI",
             "BattleMetrics",
             "Steam Web API",
             "Steam Master",
@@ -909,7 +929,9 @@ class MainWindow(QMainWindow):
     def refresh_from_configured_provider(self):
         provider = self.discovery_provider_key()
         self.save_user_settings(silent=True)
-        if provider == "battlemetrics":
+        if provider == "wolfapi":
+            self.refresh_from_wolfapi()
+        elif provider == "battlemetrics":
             self.refresh_from_battlemetrics()
         elif provider == "steam_web_api":
             self.refresh_from_steam_web_api()
@@ -1003,6 +1025,15 @@ class MainWindow(QMainWindow):
         self.battlemetrics_worker.discovery_ready.connect(self.handle_battlemetrics_ready)
         self.battlemetrics_worker.start()
 
+    def refresh_from_wolfapi(self):
+        if self.wolfapi_worker and self.wolfapi_worker.isRunning():
+            return
+        self.browser_summary.setText("Cached discovered servers: querying WolfAPI...")
+        self._set_database_refresh_enabled(False)
+        self.wolfapi_worker = WolfApiDiscoveryWorker(limit=self.discovery_limit.value())
+        self.wolfapi_worker.discovery_ready.connect(self.handle_wolfapi_ready)
+        self.wolfapi_worker.start()
+
     def maybe_auto_refresh_configured_provider(self):
         if not hasattr(self, "discovery_auto_refresh") or not self.discovery_auto_refresh.isChecked():
             return
@@ -1015,11 +1046,20 @@ class MainWindow(QMainWindow):
             return
         if self.battlemetrics_worker and self.battlemetrics_worker.isRunning():
             return
+        if self.wolfapi_worker and self.wolfapi_worker.isRunning():
+            return
         if not self.should_auto_refresh_provider(provider):
             return
         self.browser_summary.setText("Cached discovered servers: quietly refreshing configured provider...")
         self._set_database_refresh_enabled(False)
-        if provider == "battlemetrics":
+        if provider == "wolfapi":
+            self.wolfapi_worker = WolfApiDiscoveryWorker(
+                limit=self.discovery_limit.value(),
+                automatic=True,
+            )
+            self.wolfapi_worker.discovery_ready.connect(self.handle_wolfapi_ready)
+            self.wolfapi_worker.start()
+        elif provider == "battlemetrics":
             self.battlemetrics_worker = BattleMetricsDiscoveryWorker(
                 limit=self.discovery_limit.value(),
                 page_delay=2.0,
@@ -1133,6 +1173,38 @@ class MainWindow(QMainWindow):
             7000,
         )
 
+    def handle_wolfapi_ready(self, servers, error: str):
+        automatic = bool(self.wolfapi_worker and self.wolfapi_worker.automatic)
+        self._set_database_refresh_enabled(True)
+        if automatic:
+            self.mark_auto_refresh("wolfapi")
+        if error:
+            self.refresh_server_browser()
+            if automatic:
+                self.statusBar().showMessage(
+                    f"WolfAPI auto-refresh failed; cached rows kept: {error}",
+                    7000,
+                )
+                return
+            QMessageBox.warning(
+                self,
+                "WolfAPI discovery failed",
+                f"{error}\n\nExisting cached WolfAPI rows were kept.",
+            )
+            return
+        inserted, removed = server_cache.sync_source_servers(self.server_cache, "wolfapi", servers)
+        self.refresh_server_browser()
+        if automatic:
+            self.statusBar().showMessage(
+                f"WolfAPI auto-refresh added {inserted} row(s), removed {removed}.",
+                7000,
+            )
+            return
+        self.statusBar().showMessage(
+            f"WolfAPI discovery complete: added {inserted} row(s), removed {removed} stale row(s).",
+            7000,
+        )
+
     def enrich_visible_discovered_servers(self):
         if self.enrichment_worker and self.enrichment_worker.isRunning():
             return
@@ -1216,6 +1288,7 @@ class MainWindow(QMainWindow):
 
     def _provider_label(self, key: str) -> str:
         labels = {
+            "wolfapi": "WolfAPI",
             "battlemetrics": "BattleMetrics",
             "steam_web_api": "Steam Web API",
             "steam_master": "Steam Master",
@@ -1230,6 +1303,7 @@ class MainWindow(QMainWindow):
         if not hasattr(self, "discovery_provider"):
             return str(self.settings.get("discovery_provider") or "battlemetrics")
         keys = {
+            "WolfAPI": "wolfapi",
             "BattleMetrics": "battlemetrics",
             "Steam Web API": "steam_web_api",
             "Steam Master": "steam_master",
@@ -2168,12 +2242,17 @@ class MainWindow(QMainWindow):
             else:
                 provider_status = "OK"
                 provider_detail = ", ".join(address.address for address in addresses) if addresses else "Default Steam masters"
+        elif provider == "wolfapi":
+            provider_status = "OK"
+            provider_detail = "WolfAPI hosted cache"
+        elif provider == "battlemetrics":
+            provider_status = "OK"
+            provider_detail = "BattleMetrics public API"
         elif provider == "disabled":
             provider_status = "WARN"
             provider_detail = "Database refresh is disabled"
         else:
             provider_status = "OK"
-            provider_detail = "BattleMetrics public API"
 
         steam = selected_install
         auto_steam_report = steam_selection_report("auto", install_rows)

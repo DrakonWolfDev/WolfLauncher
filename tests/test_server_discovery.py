@@ -9,18 +9,22 @@ from wolflauncher.server_discovery import (
     MasterServerEndpoint,
     SteamMasterServerError,
     SteamWebApiError,
+    WolfApiError,
     _discover_dayz_servers_from_master,
     build_master_server_request,
     discover_dayz_servers,
     discover_dayz_servers_battlemetrics,
+    discover_dayz_servers_wolfapi,
     discovered_server_from_endpoint,
     discovered_server_from_battlemetrics_row,
     discovered_server_from_web_api_row,
+    discovered_server_from_wolfapi_row,
     fetch_battlemetrics_page,
     parse_battlemetrics_servers,
     parse_master_address,
     parse_master_server_response,
     parse_steam_web_api_servers,
+    parse_wolfapi_servers,
 )
 
 
@@ -460,6 +464,126 @@ class BattleMetricsDiscoveryTests(unittest.TestCase):
 
         self.assertEqual([server.name for server in servers], ["One"])
         fetch_page.assert_called_once()
+
+
+class WolfApiDiscoveryTests(unittest.TestCase):
+    def test_wolfapi_row_maps_to_discovered_server(self):
+        server = discovered_server_from_wolfapi_row(
+            {
+                "id": "81.152.152.55:3303",
+                "addr": "81.152.152.55:3303",
+                "ip": "81.152.152.55",
+                "game_port": 3302,
+                "query_port": 3303,
+                "name": "DrakonCherno",
+                "map": "chernarusplus",
+                "players": 0,
+                "max_players": 6,
+                "version": "1.29.163047",
+                "gametype": "battleye,external,mod",
+                "last_seen": "2026-06-21T19:27:29+00:00",
+            },
+            "2026-06-21T19:30:00+00:00",
+        )
+
+        self.assertEqual(
+            server,
+            DiscoveredServer(
+                name="DrakonCherno",
+                source="wolfapi",
+                server_name="DrakonCherno",
+                host="81.152.152.55",
+                game_port=3302,
+                query_port=3303,
+                map_name="chernarusplus",
+                players_current=0,
+                players_max=6,
+                version="1.29.163047",
+                modded=True,
+                online=True,
+                last_checked="2026-06-21T19:30:00+00:00",
+                last_seen="2026-06-21T19:27:29+00:00",
+            ),
+        )
+
+    def test_wolfapi_row_uses_addr_port_when_query_port_missing(self):
+        server = discovered_server_from_wolfapi_row(
+            {
+                "addr": "203.0.113.10:27016",
+                "game_port": "2302",
+                "name": "WolfAPI DayZ",
+            }
+        )
+
+        self.assertEqual(server.host, "203.0.113.10")
+        self.assertEqual(server.game_port, 2302)
+        self.assertEqual(server.query_port, 27016)
+
+    def test_parse_wolfapi_response_deduplicates_and_limits_rows(self):
+        servers = parse_wolfapi_servers(
+            {
+                "updated_at": "2026-06-21T19:30:00+00:00",
+                "servers": [
+                    {
+                        "addr": "203.0.113.10:27016",
+                        "game_port": 2302,
+                        "name": "First",
+                    },
+                    {
+                        "addr": "203.0.113.10:27016",
+                        "game_port": 2302,
+                        "name": "Duplicate",
+                    },
+                    {
+                        "addr": "203.0.113.20:27016",
+                        "game_port": 2302,
+                        "name": "Second",
+                    },
+                ],
+            },
+            limit=1,
+        )
+
+        self.assertEqual(len(servers), 1)
+        self.assertEqual(servers[0].name, "First")
+        self.assertEqual(servers[0].last_checked, "2026-06-21T19:30:00+00:00")
+
+    def test_parse_wolfapi_response_accepts_raw_list(self):
+        servers = parse_wolfapi_servers([
+            {
+                "addr": "203.0.113.10:27016",
+                "game_port": 2302,
+                "name": "Raw List",
+            }
+        ])
+
+        self.assertEqual(len(servers), 1)
+        self.assertEqual(servers[0].source, "wolfapi")
+
+    def test_parse_wolfapi_response_rejects_missing_server_list(self):
+        with self.assertRaisesRegex(WolfApiError, "server list"):
+            parse_wolfapi_servers({"servers": {}})
+
+    @patch("wolflauncher.server_discovery.urllib.request.urlopen")
+    def test_wolfapi_discovery_fetches_default_endpoint(self, urlopen):
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self):
+                return b'{"servers": [{"addr": "203.0.113.10:27016", "game_port": 2302}]}'
+
+        urlopen.return_value = FakeResponse()
+
+        servers = discover_dayz_servers_wolfapi(limit=5, timeout=7)
+
+        self.assertEqual(len(servers), 1)
+        request = urlopen.call_args.args[0]
+        self.assertEqual(request.full_url, "https://api.drakonwolf.ddns.net/api/servers")
+        self.assertEqual(urlopen.call_args.kwargs["timeout"], 7)
 
 
 if __name__ == "__main__":

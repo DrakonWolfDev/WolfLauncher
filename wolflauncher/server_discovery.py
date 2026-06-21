@@ -16,6 +16,7 @@ from .models import DiscoveredServer
 DAYZ_APP_ID = 221100
 STEAM_WEB_API_SERVER_LIST_URL = "https://api.steampowered.com/IGameServersService/GetServerList/v1/"
 BATTLEMETRICS_SERVER_LIST_URL = "https://api.battlemetrics.com/servers"
+WOLFAPI_SERVER_LIST_URL = "https://api.drakonwolf.ddns.net/api/servers"
 MASTER_SERVER_HOST = "hl2master.steampowered.com"
 MASTER_SERVER_HOSTS = [
     MASTER_SERVER_HOST,
@@ -55,6 +56,10 @@ class SteamWebApiError(RuntimeError):
 
 
 class BattleMetricsError(RuntimeError):
+    pass
+
+
+class WolfApiError(RuntimeError):
     pass
 
 
@@ -346,6 +351,112 @@ def discover_dayz_servers_battlemetrics(
     return servers
 
 
+def discover_dayz_servers_wolfapi(
+    limit: int = 10000,
+    timeout: float = 15.0,
+    url: str = "",
+) -> list[DiscoveredServer]:
+    endpoint = url or os.environ.get("WOLFLAUNCHER_WOLFAPI_SERVER_LIST_URL", "") or WOLFAPI_SERVER_LIST_URL
+    request = urllib.request.Request(endpoint, headers={"User-Agent": "WolfLauncher/0.7"})
+
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            payload = response.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as exc:
+        raise WolfApiError(f"WolfAPI HTTP error: {exc.code}") from exc
+    except urllib.error.URLError as exc:
+        raise WolfApiError(f"WolfAPI connection failed: {exc.reason}") from exc
+    except TimeoutError as exc:
+        raise WolfApiError("WolfAPI timed out") from exc
+
+    try:
+        data = json.loads(payload)
+    except json.JSONDecodeError as exc:
+        raise WolfApiError("WolfAPI returned invalid JSON") from exc
+
+    return parse_wolfapi_servers(data, limit=limit)
+
+
+def parse_wolfapi_servers(data, limit: int = 10000) -> list[DiscoveredServer]:
+    if isinstance(data, list):
+        rows = data
+        updated_at = ""
+    elif isinstance(data, dict):
+        rows = data.get("servers", data.get("data", []))
+        updated_at = str(data.get("updated_at") or "")
+    else:
+        rows = []
+        updated_at = ""
+
+    if not isinstance(rows, list):
+        raise WolfApiError("WolfAPI response did not contain a server list.")
+
+    now = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    timestamp = updated_at or now
+    servers = []
+    seen = set()
+    limit = max(1, int(limit))
+    for row in rows:
+        server = discovered_server_from_wolfapi_row(row, timestamp)
+        if not server or server.cache_key in seen:
+            continue
+        seen.add(server.cache_key)
+        servers.append(server)
+        if len(servers) >= limit:
+            break
+    return servers
+
+
+def discovered_server_from_wolfapi_row(row: dict, timestamp: str = "") -> DiscoveredServer | None:
+    if not isinstance(row, dict):
+        return None
+
+    host, addr_query_port = _host_port_from_addr(str(row.get("addr") or row.get("address") or ""))
+    host = host or str(row.get("ip") or row.get("host") or "").strip()
+    game_port = (
+        _optional_int(row.get("game_port"))
+        or _optional_int(row.get("gameport"))
+        or _optional_int(row.get("port"))
+    )
+    query_port = (
+        _optional_int(row.get("query_port"))
+        or _optional_int(row.get("queryPort"))
+        or _optional_int(row.get("portQuery"))
+        or addr_query_port
+    )
+    if game_port is None:
+        game_port = query_port
+    if query_port is None:
+        query_port = game_port
+    if not host or game_port is None or query_port is None:
+        return None
+
+    name = str(row.get("name") or row.get("server_name") or f"{host}:{game_port}")
+    gametype = str(row.get("gametype") or "")
+    online = row.get("online")
+    if online is None:
+        status = str(row.get("status") or "").lower()
+        online = status != "offline" if status else True
+
+    return DiscoveredServer(
+        name=name,
+        source="wolfapi",
+        server_name=name,
+        host=host,
+        game_port=game_port,
+        query_port=query_port,
+        map_name=str(row.get("map") or row.get("map_name") or ""),
+        players_current=_optional_int(_first_present(row, "players", "players_current")),
+        players_max=_optional_int(_first_present(row, "max_players", "maxplayers", "players_max")),
+        version=str(row.get("version") or ""),
+        password=bool(row.get("password", False)),
+        modded="mod" in gametype.lower() or bool(row.get("modded", False)),
+        online=bool(online),
+        last_checked=timestamp,
+        last_seen=str(row.get("last_seen") or timestamp),
+    )
+
+
 def fetch_battlemetrics_page(url: str, timeout: float = 15.0) -> dict:
     request = urllib.request.Request(url, headers={"User-Agent": "WolfLauncher/0.6"})
 
@@ -455,3 +566,11 @@ def _optional_int(value) -> int | None:
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
+def _first_present(row: dict, *keys: str):
+    for key in keys:
+        value = row.get(key)
+        if value is not None and value != "":
+            return value
+    return None
