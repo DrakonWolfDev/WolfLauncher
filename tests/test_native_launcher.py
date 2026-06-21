@@ -394,6 +394,26 @@ class NativeLauncherTests(unittest.TestCase):
             )
             self.assertIn("-connect=203.0.113.10:2302", report.preview.command)
 
+    def test_prepare_native_launch_parity_report_reuses_resolved_preview_target_for_external_command(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+            launcher = Path(tmpdir) / "dayz-launcher.sh"
+            launcher.write_text("#!/bin/sh\n", encoding="utf-8")
+
+            with patch("wolflauncher.native_launcher.resolve_host", return_value="203.0.113.10"):
+                with patch("wolflauncher.launcher.resolve_host", side_effect=lambda host: host) as external_resolve:
+                    report = prepare_native_launch_parity_report(
+                        install,
+                        str(launcher),
+                        make_server(),
+                        "PlayerOne",
+                        [],
+                    )
+
+            self.assertEqual(report.resolved_connect, "203.0.113.10:2302")
+            self.assertIn("-s 203.0.113.10:2302", report.external_command_text)
+            external_resolve.assert_called_once_with("203.0.113.10")
+
     def test_format_native_launch_parity_report_includes_copyable_validation_details(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             install = make_install(Path(tmpdir), mode="flatpak")

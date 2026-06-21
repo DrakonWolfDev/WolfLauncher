@@ -237,7 +237,7 @@ def prepare_native_launch_parity_report(
         extra_params,
     )
     try:
-        external_command = build_launch_command(launcher_path, player_name, server)
+        external_command = build_launch_command(launcher_path, player_name, preview.server)
         external_error = ""
     except LaunchError as exc:
         external_command = []
