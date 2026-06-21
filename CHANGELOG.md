@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Added a Settings health copy action and right-click menu so support snapshots can be copied from the health table.
 - Added PRIME helper command visibility to diagnostics and Settings health, showing whether `prime-run` or `switcherooctl` are available without warning non-hybrid systems.
 - Improved native launch Steam-library error guidance so missing DayZ installs and missing Workshop folders point to different recovery steps.
 - Expanded the native launch preview into a copyable parity report with a validation checklist comparing the external launcher handoff with the experimental native command, selected Steam install, resolved connect target, required mod IDs, prepared mod links and missing Workshop directories.

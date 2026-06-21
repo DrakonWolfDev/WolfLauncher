@@ -2,6 +2,7 @@ import os
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Sequence
 
 from .config import DEFAULT_LAUNCHER_PATHS
 from .models import Server
@@ -113,6 +114,17 @@ def prime_helper_report(which=shutil.which) -> PrimeHelperReport:
             "If this is a hybrid-GPU system, confirm the distro's PRIME/offload tool is installed before testing DayZ.",
         ],
     )
+
+
+def format_settings_health_report(summary: str, rows: Sequence[Sequence[str]]) -> str:
+    lines = ["WolfLauncher Settings Health"]
+    clean_summary = summary.strip()
+    if clean_summary:
+        lines.extend(["", f"Summary: {clean_summary}"])
+    lines.append("")
+    for row in rows:
+        lines.append(" | ".join(value.strip() for value in row))
+    return "\n".join(lines).strip()
 
 
 def launch_troubleshooting_report(

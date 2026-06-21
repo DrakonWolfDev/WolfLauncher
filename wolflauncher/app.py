@@ -38,7 +38,12 @@ from .config import (
     remove_curated_server,
     update_curated_server,
 )
-from .diagnostics import launch_troubleshooting_report, prime_environment_report, prime_helper_report
+from .diagnostics import (
+    format_settings_health_report,
+    launch_troubleshooting_report,
+    prime_environment_report,
+    prime_helper_report,
+)
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from .models import Server
 from .native_launcher import (
@@ -829,12 +834,15 @@ class MainWindow(QMainWindow):
         row = QHBoxLayout()
         health = QPushButton("Check health")
         health.clicked.connect(self.update_settings_health)
+        copy_health = QPushButton("Copy health")
+        copy_health.clicked.connect(self.copy_settings_health)
         import_file = QPushButton("Import server list")
         import_file.clicked.connect(self.import_server_cache_file)
         save = QPushButton("Save settings")
         save.clicked.connect(self.save_user_settings)
         row.addStretch(1)
         row.addWidget(health)
+        row.addWidget(copy_health)
         row.addWidget(import_file)
         row.addWidget(save)
         layout.addLayout(row)
@@ -846,6 +854,8 @@ class MainWindow(QMainWindow):
         self.health_table.setHorizontalHeaderLabels(["Check", "Status", "Details"])
         self.health_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.health_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.health_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.health_table.customContextMenuRequested.connect(self.show_health_context_menu)
         layout.addWidget(self.health_table)
         return widget
 
@@ -1859,6 +1869,50 @@ class MainWindow(QMainWindow):
     def copy_to_clipboard(self, text: str, label: str = "Text"):
         QApplication.clipboard().setText(text)
         self.statusBar().showMessage(f"{label} copied to clipboard", 3000)
+
+    def copy_settings_health(self):
+        if not hasattr(self, "health_table") or self.health_table.rowCount() == 0:
+            self.update_settings_health()
+        self.copy_to_clipboard(self.settings_health_text(), "Settings health")
+
+    def copy_selected_health_row(self):
+        row = self.health_table.currentRow()
+        if row < 0:
+            return
+        self.copy_to_clipboard(self.health_row_text(row), "Health row")
+
+    def show_health_context_menu(self, pos: QPoint):
+        row = self.health_table.rowAt(pos.y())
+        if row >= 0:
+            self.health_table.selectRow(row)
+
+        menu = QMenu(self)
+        copy_row_action = QAction("Copy selected row", self)
+        copy_report_action = QAction("Copy health report", self)
+        copy_row_action.setEnabled(row >= 0)
+        copy_row_action.triggered.connect(self.copy_selected_health_row)
+        copy_report_action.triggered.connect(self.copy_settings_health)
+        menu.addAction(copy_row_action)
+        menu.addAction(copy_report_action)
+        menu.exec(self.health_table.viewport().mapToGlobal(pos))
+
+    def settings_health_text(self) -> str:
+        summary = self.system_summary.text() if hasattr(self, "system_summary") else ""
+        rows = []
+        for row in range(self.health_table.rowCount()):
+            values = []
+            for column in range(self.health_table.columnCount()):
+                item = self.health_table.item(row, column)
+                values.append(item.text() if item else "")
+            rows.append(values)
+        return format_settings_health_report(summary, rows)
+
+    def health_row_text(self, row: int) -> str:
+        values = []
+        for column in range(self.health_table.columnCount()):
+            item = self.health_table.item(row, column)
+            values.append(item.text().strip() if item else "")
+        return " | ".join(values)
 
     def show_mod_context_menu(self, pos: QPoint):
         row = self.mods_table.rowAt(pos.y())

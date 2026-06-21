@@ -4,6 +4,7 @@ import unittest
 from unittest.mock import patch
 
 from wolflauncher.diagnostics import (
+    format_settings_health_report,
     launch_troubleshooting_report,
     prime_environment_report,
     prime_helper_report,
@@ -14,6 +15,20 @@ from wolflauncher.platform_detection import ProcessCheck, SteamInstall
 
 
 class DiagnosticsTests(unittest.TestCase):
+    def test_format_settings_health_report_is_copyable(self):
+        report = format_settings_health_report(
+            "Selected Flatpak Steam | DayZ OK | Workshop OK",
+            [
+                ["PRIME environment", "OK", "No PRIME-related variables are visible"],
+                ["Selected Steam", "OK", "Flatpak Steam ready (not running)"],
+            ],
+        )
+
+        self.assertIn("WolfLauncher Settings Health", report)
+        self.assertIn("Summary: Selected Flatpak Steam | DayZ OK | Workshop OK", report)
+        self.assertIn("PRIME environment | OK | No PRIME-related variables are visible", report)
+        self.assertIn("Selected Steam | OK | Flatpak Steam ready (not running)", report)
+
     def test_reports_prime_environment_without_reading_steam_launch_options(self):
         with tempfile.NamedTemporaryFile() as launcher:
             with patch("wolflauncher.diagnostics.detect_steam", return_value=[]):
