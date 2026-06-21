@@ -554,6 +554,10 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertEqual(report.external_command, [])
             self.assertIn("Launcher script not found", report.external_error)
 
+            text = format_native_launch_parity_report(report)
+            self.assertIn("External launcher comparison is unavailable: Launcher script not found", text)
+            self.assertIn("- Command: not available", text)
+
     def test_prepare_native_launch_reports_missing_mods(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             install = make_install(Path(tmpdir))

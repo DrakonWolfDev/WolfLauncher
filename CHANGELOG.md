@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Clarified native parity report result text when the external launcher comparison cannot be built.
 - Changed native parity reports to build the external comparison from the same resolved server target as the native preview.
 - Matched native launch player-name fallback to the external launcher handoff by using `Survivor` when the configured name is blank.
 - Marked v0.7 health checks and Linux polish as the current documented baseline after successful real-world server testing.

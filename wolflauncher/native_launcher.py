@@ -462,15 +462,20 @@ def _reused_mod_link_count(mod_setup: NativeModSetup) -> int:
 
 def _parity_result_text(report: NativeLaunchParityReport) -> str:
     preview = report.preview
+    external_note = ""
+    if report.external_error:
+        external_note = f" External launcher comparison is unavailable: {report.external_error}"
     if preview.ready:
         return (
             f"Native command is ready for {report.resolved_connect} with "
             f"{len(preview.mod_setup.prepared_mods)} prepared mod link(s)."
+            f"{external_note}"
         )
     return (
         "Native command is not ready because "
         f"{len(preview.mod_setup.missing_mod_ids)} Workshop director"
         f"{'y is' if len(preview.mod_setup.missing_mod_ids) == 1 else 'ies are'} missing."
+        f"{external_note}"
     )
 
 
