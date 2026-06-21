@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Documented command-aware Steam install summaries in README and handoff notes.
 - Added Steam command details to Auto/selected Steam candidate summaries in Settings health and diagnostics.
 - Added Steam command details to the Settings health configured-install summary.
 - Clarified copied diagnostics and native parity reports to show Flatpak Steam as a `flatpak run` handoff command.

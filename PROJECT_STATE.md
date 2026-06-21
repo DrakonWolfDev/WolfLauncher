@@ -49,6 +49,7 @@ Working:
 - Missing Proton compatdata is reported as a possible first-run Steam/Proton state, with guidance to launch DayZ directly from Steam once so Proton can create the prefix and show prompts.
 - Steam health reporting distinguishes native, Flatpak and `STEAM_ROOT` installs and explains partial detection states.
 - Settings health and diagnostics explain the selected Steam install and list detected Steam candidates so Auto selection is easier to troubleshoot.
+- Settings health and diagnostics include Steam command details in selected, Auto and candidate summaries, including the `flatpak run com.valvesoftware.Steam` handoff form for Flatpak Steam.
 - Settings health includes a dedicated Auto Steam row so users can compare the selected Steam install mode with the install WolfLauncher would choose automatically.
 - Discovery provider, API key, endpoint and refresh-limit settings persistence.
 - Favourites persistence.
@@ -97,8 +98,8 @@ Current handling:
 - Diagnostics, Settings health and post-handoff warnings include explicit Steam launch-options guidance that points users to Steam's DayZ Properties page, while preserving the rule that WolfLauncher does not read, write or default per-game launch options.
 - Settings health includes a PRIME environment row so the known problematic environment is visible without opening a full diagnostics report.
 - Diagnostics and Settings health report whether common PRIME helper commands such as `prime-run` and `switcherooctl` are visible, without treating their absence as a problem on non-hybrid systems.
-- Diagnostics include per-install Steam readiness summaries for native, Flatpak and `STEAM_ROOT` library detection.
-- Diagnostics include Auto Steam selection and candidate summaries for native, Flatpak and `STEAM_ROOT` troubleshooting.
+- Diagnostics include per-install Steam readiness and command summaries for native, Flatpak and `STEAM_ROOT` library detection.
+- Diagnostics include Auto Steam selection and command-aware candidate summaries for native, Flatpak and `STEAM_ROOT` troubleshooting.
 - Diagnostics list detected Steam library folders for each configured install.
 - Diagnostics include known DayZ process visibility for Steam/Proton handoff troubleshooting.
 - Copied diagnostics label known DayZ process visibility as general process state, while launch dialogs keep the more specific post-handoff process-check wording.
