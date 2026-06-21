@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -394,9 +395,13 @@ class NativeLauncherTests(unittest.TestCase):
                 [RequiredMod("256", "Example Mod")],
             )
 
-            text = format_native_launch_parity_report(report)
+            text = format_native_launch_parity_report(
+                report,
+                generated_at=datetime(2026, 6, 21, 15, 16, 59, tzinfo=timezone.utc),
+            )
 
             self.assertIn("Native launch parity report", text)
+            self.assertIn("Generated at: 2026-06-21T15:16:59+00:00", text)
             self.assertIn("- Steam mode: Flatpak Steam", text)
             self.assertIn(f"- Proton compatdata: {install.compatdata_dir}", text)
             self.assertIn(f"- DayZ path: {install.dayz_dir}", text)

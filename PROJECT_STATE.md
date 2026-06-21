@@ -42,7 +42,7 @@ Working:
 - DayZ Workshop folder detection.
 - Secondary Steam library detection through `steamapps/libraryfolders.vdf` for native and Flatpak Steam installs.
 - Settings tab with compact green/yellow/red health checks.
-- Settings health rows can be copied as a support snapshot.
+- Settings health rows can be copied as a support snapshot with generated-at metadata.
 - Full diagnostics reports can be copied from Settings for support and bug reports.
 - Copied diagnostics reports include generated-at and selected launch-engine metadata.
 - Settings health, diagnostics and native parity reports show the selected install's DayZ Proton compatdata folder when visible; this is informational and does not gate launch.
@@ -66,11 +66,11 @@ Working:
 - Missing-mod warning with Open Workshop / Launch Anyway / Cancel.
 - Steam-not-running warning.
 - Launch output dialog with generated command and launcher output.
-- External launch output can be copied from the launch dialog for support reports.
+- External launch output can be copied from the launch dialog for timestamped support reports.
 - Successful external-launcher exit code is presented as a handoff to Steam.
 - Launch dialogs clarify that a successful handoff does not prove Proton initialized or DayZ reached the menu.
 - Launch dialogs watch for known DayZ processes for up to 45 seconds after handoff, because Steam/Proton can take tens of seconds before DayZ appears.
-- Experimental native launch parity report from the Mods tab, with a copyable validation checklist comparing the external launcher handoff with the native command, selected Steam install, resolved connect target, required mod IDs, prepared mod links and missing Workshop directories.
+- Experimental native launch parity report from the Mods tab, with generated-at metadata and a copyable validation checklist comparing the external launcher handoff with the native command, selected Steam install, resolved connect target, required mod IDs, prepared mod links and missing Workshop directories.
 - Native launch failures include copyable parity-report details when a cached mod check is available, so failed launches and preview reports can be compared.
 - Native parity reports show created versus reused mod symlink counts, and existing `@mod` symlinks are reused only when they point to the expected Workshop directory.
 - The native experimental engine does not offer "Launch anyway" when required Workshop directories are missing, because it cannot build a valid native mod command until the missing mods are installed.
@@ -90,6 +90,7 @@ Current handling:
 - Do not recommend that option as the default workaround.
 - WolfLauncher does not set, rewrite or reliably read per-game Steam launch options.
 - Diagnostics report PRIME-related environment variables visible to WolfLauncher, but Steam launch options must be checked in Steam itself; confirmed testing showed Steam can have the known option set while WolfLauncher sees no PRIME variables in its own environment.
+- Diagnostics use a single environment snapshot for the visible PRIME values and launch troubleshooting summary so copied reports stay internally consistent.
 - Diagnostics classify visible PRIME/DRI environment state and warn when WolfLauncher itself is running with the known problematic NVIDIA PRIME offload environment combination.
 - Settings health includes a PRIME environment row so the known problematic environment is visible without opening a full diagnostics report.
 - Diagnostics and Settings health report whether common PRIME helper commands such as `prime-run` and `switcherooctl` are visible, without treating their absence as a problem on non-hybrid systems.

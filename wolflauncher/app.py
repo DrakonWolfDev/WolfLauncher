@@ -39,6 +39,7 @@ from .config import (
     update_curated_server,
 )
 from .diagnostics import (
+    format_launch_output_report,
     format_settings_health_report,
     launch_troubleshooting_report,
     prime_environment_report,
@@ -291,16 +292,7 @@ class LaunchDialog(PostHandoffProcessCheckMixin, QDialog):
         self.output.append("\nLaunch command and output copied to clipboard.")
 
     def copyable_output_text(self) -> str:
-        return "\n".join(
-            [
-                "WolfLauncher launch output",
-                "",
-                f"Command: {self.command_text}",
-                "",
-                "Output:",
-                self.output.toPlainText().strip(),
-            ]
-        ).strip()
+        return format_launch_output_report(self.command_text, self.output.toPlainText())
 
     def read_output(self):
         data = bytes(self.process.readAllStandardOutput()).decode("utf-8", errors="replace")

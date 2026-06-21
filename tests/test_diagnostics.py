@@ -5,6 +5,7 @@ import unittest
 from unittest.mock import patch
 
 from wolflauncher.diagnostics import (
+    format_launch_output_report,
     format_settings_health_report,
     launch_troubleshooting_report,
     prime_environment_report,
@@ -23,12 +24,30 @@ class DiagnosticsTests(unittest.TestCase):
                 ["PRIME environment", "OK", "No PRIME-related variables are visible"],
                 ["Selected Steam", "OK", "Flatpak Steam ready (not running)"],
             ],
+            generated_at=datetime(2026, 6, 21, 15, 16, 59, tzinfo=timezone.utc),
         )
 
         self.assertIn("WolfLauncher Settings Health", report)
+        self.assertIn("Generated at: 2026-06-21T15:16:59+00:00", report)
         self.assertIn("Summary: Selected Flatpak Steam | DayZ OK | Workshop OK", report)
         self.assertIn("PRIME environment | OK | No PRIME-related variables are visible", report)
         self.assertIn("Selected Steam | OK | Flatpak Steam ready (not running)", report)
+
+    def test_format_launch_output_report_is_copyable(self):
+        report = format_launch_output_report(
+            "bash /home/andi/dayz-launcher.sh -s 81.152.152.55:3302 -p 3303 -n Andi --launch",
+            "Starting launcher...\n[dayz-launcher.sh][info] Using flatpak mode",
+            generated_at=datetime(2026, 6, 21, 15, 53, 45, tzinfo=timezone.utc),
+        )
+
+        self.assertIn("WolfLauncher launch output", report)
+        self.assertIn("Generated at: 2026-06-21T15:53:45+00:00", report)
+        self.assertIn(
+            "Command: bash /home/andi/dayz-launcher.sh -s 81.152.152.55:3302 -p 3303 -n Andi --launch",
+            report,
+        )
+        self.assertIn("Output:\nStarting launcher...", report)
+        self.assertIn("[dayz-launcher.sh][info] Using flatpak mode", report)
 
     def test_reports_prime_environment_without_reading_steam_launch_options(self):
         with tempfile.NamedTemporaryFile() as launcher:
@@ -82,6 +101,36 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertIn("Detail: Steam command: not detected", report)
         self.assertIn("Detail: Post-handoff process visibility: No known DayZ process detected", report)
         self.assertIn("Next step: Open Settings health", report)
+
+    def test_diagnostics_report_uses_one_environment_snapshot(self):
+        def mutate_environment():
+            env.clear()
+            return []
+
+        env = {
+            "__NV_PRIME_RENDER_OFFLOAD": "1",
+            "__GLX_VENDOR_LIBRARY_NAME": "nvidia",
+        }
+
+        with tempfile.NamedTemporaryFile() as launcher:
+            with patch("wolflauncher.diagnostics.detect_steam", side_effect=mutate_environment):
+                with patch("wolflauncher.diagnostics.resolve_host", return_value="203.0.113.10"):
+                    with patch(
+                        "wolflauncher.diagnostics.dayz_process_check",
+                        return_value=ProcessCheck(False, "No known DayZ process detected"),
+                    ):
+                        with patch("wolflauncher.diagnostics.os.environ", env):
+                            report = run_diagnostics(
+                                launcher.name,
+                                [],
+                                generated_at=datetime(2026, 6, 21, 15, 16, 59, tzinfo=timezone.utc),
+                            )
+
+        self.assertIn("__NV_PRIME_RENDER_OFFLOAD: 1", report)
+        self.assertIn("__GLX_VENDOR_LIBRARY_NAME: nvidia", report)
+        self.assertIn("PRIME status: WARN", report)
+        self.assertIn("Detail: PRIME status: WARN", report)
+        self.assertIn("Next step: Remove the known bad NVIDIA PRIME Steam launch option", report)
 
     def test_diagnostics_report_includes_selected_launch_engine_when_provided(self):
         with tempfile.NamedTemporaryFile() as launcher:

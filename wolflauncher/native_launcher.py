@@ -3,6 +3,7 @@ import os
 import re
 import shlex
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .launcher import LaunchError, build_launch_command
@@ -253,13 +254,20 @@ def prepare_native_launch_parity_report(
     )
 
 
-def format_native_launch_parity_report(report: NativeLaunchParityReport) -> str:
+def format_native_launch_parity_report(
+    report: NativeLaunchParityReport,
+    generated_at: datetime | None = None,
+) -> str:
     """Return a copyable native-launch parity report for testing and bug reports."""
     preview = report.preview
     install = report.install
     install_detail = install_label(install)
+    timestamp = generated_at or datetime.now(timezone.utc)
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
     lines = [
         "Native launch parity report",
+        f"Generated at: {timestamp.astimezone(timezone.utc).replace(microsecond=0).isoformat()}",
         "",
         "This compares the configured external launcher handoff with the experimental native path.",
         "It did not launch Steam or DayZ.",

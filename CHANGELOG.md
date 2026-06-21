@@ -1,6 +1,10 @@
 # Changelog
 
 ## Unreleased
+- Added generated-at metadata to copied Settings health reports.
+- Added generated-at metadata to copied external launch output reports.
+- Added generated-at metadata to native launch parity reports.
+- Changed diagnostics generation to use a single environment snapshot for PRIME status and launch troubleshooting sections.
 - Changed `STEAM_ROOT` detection to reuse the native Steam command and running state when available, and warn when a ready Steam library lacks a launchable Steam command.
 - Made post-handoff DayZ process detection case-insensitive so Proton command lines with different executable casing are still recognized.
 - Expanded DayZ install detection to read Steam `appmanifest_221100.acf` `installdir` values before falling back to the conventional `steamapps/common/DayZ` path.

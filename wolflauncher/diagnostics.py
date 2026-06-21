@@ -118,8 +118,16 @@ def prime_helper_report(which=shutil.which) -> PrimeHelperReport:
     )
 
 
-def format_settings_health_report(summary: str, rows: Sequence[Sequence[str]]) -> str:
+def format_settings_health_report(
+    summary: str,
+    rows: Sequence[Sequence[str]],
+    generated_at: datetime | None = None,
+) -> str:
     lines = ["WolfLauncher Settings Health"]
+    timestamp = generated_at or datetime.now(timezone.utc)
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
+    lines.append(f"Generated at: {timestamp.astimezone(timezone.utc).replace(microsecond=0).isoformat()}")
     clean_summary = summary.strip()
     if clean_summary:
         lines.extend(["", f"Summary: {clean_summary}"])
@@ -127,6 +135,27 @@ def format_settings_health_report(summary: str, rows: Sequence[Sequence[str]]) -
     for row in rows:
         lines.append(" | ".join(value.strip() for value in row))
     return "\n".join(lines).strip()
+
+
+def format_launch_output_report(
+    command_text: str,
+    output_text: str,
+    generated_at: datetime | None = None,
+) -> str:
+    timestamp = generated_at or datetime.now(timezone.utc)
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
+    return "\n".join(
+        [
+            "WolfLauncher launch output",
+            f"Generated at: {timestamp.astimezone(timezone.utc).replace(microsecond=0).isoformat()}",
+            "",
+            f"Command: {command_text.strip()}",
+            "",
+            "Output:",
+            output_text.strip(),
+        ]
+    ).strip()
 
 
 def launch_troubleshooting_report(
@@ -194,6 +223,7 @@ def run_diagnostics(
     generated_at: datetime | None = None,
 ) -> str:
     lines: list[str] = []
+    environment = dict(os.environ)
     lines.append("WolfLauncher diagnostics")
     lines.append("========================")
     lines.append("")
@@ -249,8 +279,8 @@ def run_diagnostics(
 
     lines.append("Launch option environment:")
     for name in PRIME_ENV_VARS:
-        lines.append(f"  {name}: {os.environ.get(name) or 'not set'}")
-    prime = prime_environment_report()
+        lines.append(f"  {name}: {environment.get(name) or 'not set'}")
+    prime = prime_environment_report(environment)
     lines.append(f"  PRIME status: {prime.status} - {prime.summary}")
     for detail in prime.details:
         lines.append(f"  PRIME guidance: {detail}")
@@ -266,7 +296,7 @@ def run_diagnostics(
     lines.append(f"  {process_check.detail}")
     lines.append("")
 
-    launch_report = launch_troubleshooting_report(selected_steam_mode, installs, process_check)
+    launch_report = launch_troubleshooting_report(selected_steam_mode, installs, process_check, environment)
     lines.append("Launch troubleshooting:")
     lines.append(f"  Status: {launch_report.status}")
     lines.append(f"  Summary: {launch_report.summary}")
