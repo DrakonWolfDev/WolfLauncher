@@ -216,8 +216,10 @@ class NativeLauncherTests(unittest.TestCase):
             install = make_install(Path(tmpdir))
 
             with patch("wolflauncher.native_launcher.resolve_host", return_value="203.0.113.10"):
-                with self.assertRaisesRegex(NativeLaunchError, "Missing mod directories for: 111"):
+                with self.assertRaisesRegex(NativeLaunchError, "Missing mod directories for: 111") as raised:
                     prepare_native_launch(install, make_server(), "PlayerOne", [RequiredMod("111")])
+        self.assertEqual(raised.exception.stage, "mod setup")
+        self.assertIn("Open the missing Workshop pages", raised.exception.user_message())
 
     def test_prepare_native_launch_requires_mod_metadata(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -225,8 +227,10 @@ class NativeLauncherTests(unittest.TestCase):
             (install.workshop_dir / "111").mkdir()
 
             with patch("wolflauncher.native_launcher.resolve_host", return_value="203.0.113.10"):
-                with self.assertRaisesRegex(NativeLaunchError, "Missing mod metadata for: 111"):
+                with self.assertRaisesRegex(NativeLaunchError, "Missing mod metadata for: 111") as raised:
                     prepare_native_launch(install, make_server(), "PlayerOne", [RequiredMod("111")])
+        self.assertEqual(raised.exception.stage, "mod setup")
+        self.assertIn("redownload the Workshop item", raised.exception.user_message())
 
     def test_prepare_native_launch_requires_mod_name(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -244,8 +248,10 @@ class NativeLauncherTests(unittest.TestCase):
             install = make_install(Path(tmpdir))
 
             with patch("wolflauncher.native_launcher.resolve_host", side_effect=OSError("no host")):
-                with self.assertRaisesRegex(NativeLaunchError, "Could not resolve server host"):
+                with self.assertRaisesRegex(NativeLaunchError, "Could not resolve server host") as raised:
                     prepare_native_launch(install, make_server(), "PlayerOne", [])
+        self.assertEqual(raised.exception.stage, "server DNS")
+        self.assertIn("network connection and DNS", raised.exception.user_message())
 
 
 if __name__ == "__main__":

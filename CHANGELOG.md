@@ -1,6 +1,14 @@
 # Changelog
 
 ## Unreleased
+- Added post-handoff DayZ process checks to external and native launch dialogs.
+- Added DayZ process visibility to diagnostics for Steam/Proton troubleshooting.
+- Clarified launch dialog wording so successful handoff is not presented as proof that Proton or DayZ fully started.
+- Added clearer native, Flatpak and `STEAM_ROOT` Steam readiness messages in Settings health and diagnostics.
+- Added platform-detection tests for Steam install readiness and complete-install selection.
+- Added structured native-launch failure stages with user-facing recovery guidance.
+- Added launch dialog handling for command start failures.
+- Added a diagnostics warning when WolfLauncher sees the known problematic NVIDIA PRIME offload environment combination.
 - Added an experimental native launch action behind the Mods tab preview, with first real-world native Steam handoff confirmed.
 - Added a saved launch-engine setting so the main Launch button can opt into the native experimental engine while keeping the external launcher as default.
 - Added native launch preview output for prepared mod symlinks, missing Workshop directories and generated Steam commands.

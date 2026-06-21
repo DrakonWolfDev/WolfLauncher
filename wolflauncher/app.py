@@ -42,7 +42,7 @@ from .config import (
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from .models import Server
 from .native_launcher import NativeLaunchError, prepare_native_launch, prepare_native_launch_preview
-from .platform_detection import best_install, detect_steam
+from .platform_detection import best_install, dayz_process_check, detect_steam, install_label, install_readiness
 from .mods import ModCheckResult, check_server_mods
 from . import server_cache
 from .server_discovery import (
@@ -192,10 +192,11 @@ class SortableTableWidgetItem(QTableWidgetItem):
 
 
 class LaunchDialog(QDialog):
-    def __init__(self, parent, command: list[str], title: str):
+    def __init__(self, parent, command: list[str], title: str, handoff_label: str = "launch command"):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.resize(820, 460)
+        self.handoff_label = handoff_label
         self.process = QProcess(self)
         self.process.setProcessChannelMode(QProcess.MergedChannels)
 
@@ -219,6 +220,7 @@ class LaunchDialog(QDialog):
 
         self.process.readyReadStandardOutput.connect(self.read_output)
         self.process.finished.connect(self.handle_finished)
+        self.process.errorOccurred.connect(self.handle_process_error)
         self.output.append("Starting launcher...\n")
         self.process.start(command[0], command[1:])
 
@@ -233,15 +235,34 @@ class LaunchDialog(QDialog):
         self.read_output()
         if exit_code == 0:
             self.output.append(
-                "\nLaunch command handed off to Steam successfully. "
-                "If DayZ does not appear, check Steam/Proton or existing DayZ processes."
+                f"\n{self.handoff_label.title()} exited successfully, which means WolfLauncher handed control "
+                "to Steam. It does not prove that Proton initialized or DayZ reached the menu."
             )
+            self.output.append("Checking for known DayZ processes shortly...")
+            QTimer.singleShot(3000, self.append_dayz_process_check)
         else:
             self.output.append(
                 f"\nLauncher exited with code {exit_code}. "
                 "Check the messages above for the script or Steam error."
             )
         self.close_button.setEnabled(True)
+
+    def handle_process_error(self, error):
+        if error == QProcess.ProcessError.FailedToStart:
+            self.output.append(
+                "\nLaunch command could not start. Check that the configured launcher or Steam command exists."
+            )
+            self.close_button.setEnabled(True)
+
+    def append_dayz_process_check(self):
+        check = dayz_process_check()
+        if check.running:
+            self.output.append(f"\nPost-handoff process check: {check.detail}.")
+        else:
+            self.output.append(
+                "\nPost-handoff process check: no known DayZ process detected yet. "
+                "If Steam showed no activity, check Steam downloads, Proton/BattlEye prompts, and Steam launch options."
+            )
 
 
 class NativeLaunchPreviewDialog(QDialog):
@@ -275,6 +296,7 @@ class NativeLaunchPreviewDialog(QDialog):
 
         self.process.readyReadStandardOutput.connect(self.read_output)
         self.process.finished.connect(self.handle_finished)
+        self.process.errorOccurred.connect(self.handle_process_error)
 
     def copy_preview(self):
         QApplication.clipboard().setText(self.output.toPlainText())
@@ -310,13 +332,33 @@ class NativeLaunchPreviewDialog(QDialog):
         if exit_code == 0:
             self.output.append(
                 "\nExperimental native command handed off to Steam successfully. "
-                "If DayZ does not appear, check Steam/Proton or existing DayZ processes."
+                "This means Steam accepted the command; it does not prove that Proton initialized or DayZ reached the menu."
             )
+            self.output.append("Checking for known DayZ processes shortly...")
+            QTimer.singleShot(3000, self.append_dayz_process_check)
         else:
             self.output.append(
                 f"\nExperimental native command exited with code {exit_code}. "
                 "Check the messages above for the Steam error."
             )
+        self.launch_button.setEnabled(bool(self.command))
+
+    def append_dayz_process_check(self):
+        check = dayz_process_check()
+        if check.running:
+            self.output.append(f"\nPost-handoff process check: {check.detail}.")
+        else:
+            self.output.append(
+                "\nPost-handoff process check: no known DayZ process detected yet. "
+                "If Steam showed no activity, check Steam downloads, Proton/BattlEye prompts, and Steam launch options."
+            )
+
+    def handle_process_error(self, error):
+        if error == QProcess.ProcessError.FailedToStart:
+            self.output.append(
+                "\nExperimental native command could not start. Check Steam detection in Settings health."
+            )
+            self.launch_button.setEnabled(bool(self.command))
 
 
 class PromoteServerDialog(QDialog):
@@ -1916,7 +1958,7 @@ class MainWindow(QMainWindow):
                 self.last_mod_result.required_mods,
             )
         except NativeLaunchError as exc:
-            QMessageBox.critical(self, "Native preview failed", str(exc))
+            QMessageBox.critical(self, "Native preview failed", exc.user_message())
             return
 
         dialog = NativeLaunchPreviewDialog(
@@ -1971,11 +2013,11 @@ class MainWindow(QMainWindow):
             return
         install = best_install()
         if install and install.dayz_dir and install.workshop_dir:
-            self.system_summary.setText(f"Detected {install.mode} Steam | DayZ OK | Workshop OK")
+            self.system_summary.setText(f"Detected {install_label(install)} | DayZ OK | Workshop OK")
         elif install and install.dayz_dir:
-            self.system_summary.setText(f"Detected {install.mode} Steam | DayZ OK | Workshop missing")
+            self.system_summary.setText(f"Detected {install_label(install)} | DayZ OK | Workshop missing")
         elif install and (install.root or install.executable):
-            self.system_summary.setText(f"Detected {install.mode} Steam | DayZ not found yet")
+            self.system_summary.setText(f"Detected {install_label(install)} | DayZ not found yet")
         else:
             self.system_summary.setText("Steam/DayZ not detected")
 
@@ -2004,6 +2046,7 @@ class MainWindow(QMainWindow):
 
         install_rows = detect_steam()
         steam = best_install()
+        steam_status, steam_detail = install_readiness(steam)
         tools = ["python3", "gamedig", "node", "npm", "dig", "curl", "jq", "gawk"]
         missing_tools = [command for command in tools if not shutil.which(command)]
         launcher_candidates = [str(candidate) for candidate in DEFAULT_LAUNCHER_PATHS if candidate.exists()]
@@ -2031,8 +2074,8 @@ class MainWindow(QMainWindow):
             ),
             (
                 "Steam",
-                "OK" if steam and (steam.root or steam.executable) else "MISSING",
-                self._install_summary(steam) if steam else "Not detected",
+                steam_status,
+                steam_detail,
             ),
             (
                 "DayZ",
@@ -2067,8 +2110,7 @@ class MainWindow(QMainWindow):
     def _install_summary(self, install) -> str:
         if not install:
             return "Not detected"
-        state = "running" if install.running else "not running"
-        return f"{install.mode} Steam ({state})"
+        return install_readiness(install)[1]
 
     def _health_colour(self, status: str) -> str:
         if status == "OK":
@@ -2097,11 +2139,15 @@ class MainWindow(QMainWindow):
 
         try:
             command = self.build_selected_launch_command(server, row)
-        except (LaunchError, NativeLaunchError) as exc:
+        except NativeLaunchError as exc:
+            QMessageBox.critical(self, f"Launch failed during {exc.stage}", exc.user_message())
+            return
+        except LaunchError as exc:
             QMessageBox.critical(self, "Launch failed", str(exc))
             return
 
-        dialog = LaunchDialog(self, command, f"Launching {server.name}")
+        handoff_label = "native launch command" if self.launch_engine_key() == "native" else "external launcher"
+        dialog = LaunchDialog(self, command, f"Launching {server.name}", handoff_label)
         dialog.exec()
 
     def build_selected_launch_command(self, server: Server, row: int) -> list[str]:
@@ -2125,7 +2171,11 @@ class MainWindow(QMainWindow):
         if self.launch_engine_key() == "native":
             install = best_install()
             if not install:
-                raise NativeLaunchError("Steam installation not detected")
+                raise NativeLaunchError(
+                    "Steam installation not detected",
+                    stage="Steam detection",
+                    guidance="Open Settings health and confirm native or Flatpak Steam can be detected.",
+                )
             required_mods = None
             if self.last_mod_result and server_key(self.last_mod_result.server) == server_key(server):
                 required_mods = self.last_mod_result.required_mods

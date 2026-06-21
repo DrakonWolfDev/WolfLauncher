@@ -41,6 +41,7 @@ Working:
 - DayZ install detection.
 - DayZ Workshop folder detection.
 - Settings tab with compact green/yellow/red health checks.
+- Steam health reporting distinguishes native, Flatpak and `STEAM_ROOT` installs and explains partial detection states.
 - Discovery provider, API key, endpoint and refresh-limit settings persistence.
 - Favourites persistence.
 - Last selected server persistence.
@@ -58,9 +59,12 @@ Working:
 - Steam-not-running warning.
 - Launch output dialog with generated command and launcher output.
 - Successful external-launcher exit code is presented as a handoff to Steam.
+- Launch dialogs clarify that a successful handoff does not prove Proton initialized or DayZ reached the menu.
+- Launch dialogs run a delayed post-handoff check for known DayZ processes.
 - Experimental native launch preview from the Mods tab, including prepared mod-link output, missing Workshop directory reporting and generated Steam command display.
 - Experimental native Steam handoff from the preview dialog, with first real-world native launch success confirmed against native Steam. The external launcher remains the default launch path while parity testing continues.
 - Saved launch-engine setting in Settings. `External launcher` remains the default, while `Native experimental` routes the main Launch button through the Python native engine.
+- Structured native-launch failure stages with user-facing recovery guidance for Steam detection, library detection, DNS and mod setup failures.
 
 ## Known bug
 
@@ -72,6 +76,9 @@ Current handling:
 - Do not recommend that option as the default workaround.
 - WolfLauncher does not set, rewrite or reliably read per-game Steam launch options.
 - Diagnostics report PRIME-related environment variables visible to WolfLauncher, but Steam launch options must be checked in Steam itself.
+- Diagnostics warn when WolfLauncher itself is running with the known problematic NVIDIA PRIME offload environment combination.
+- Diagnostics include per-install Steam readiness summaries for native, Flatpak and `STEAM_ROOT` library detection.
+- Diagnostics include known DayZ process visibility for Steam/Proton handoff troubleshooting.
 - Hybrid-GPU testing should start outside WolfLauncher, for example with `prime-run glxinfo -B`, `prime-run steam` and direct DayZ launch from Steam before testing the WolfLauncher handoff.
 - Useful bug reports should capture native-vs-Flatpak Steam, GPU driver/PRIME helper, Proton version, whether DayZ starts directly from Steam without per-game launch options, and WolfLauncher diagnostics output.
 - Future work should improve hybrid-GPU/NVIDIA PRIME diagnostics and safer launch-option guidance.

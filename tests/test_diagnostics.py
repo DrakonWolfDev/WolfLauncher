@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from wolflauncher.diagnostics import run_diagnostics
 from wolflauncher.models import Server
+from wolflauncher.platform_detection import ProcessCheck
 
 
 class DiagnosticsTests(unittest.TestCase):
@@ -11,32 +12,40 @@ class DiagnosticsTests(unittest.TestCase):
         with tempfile.NamedTemporaryFile() as launcher:
             with patch("wolflauncher.diagnostics.detect_steam", return_value=[]):
                 with patch("wolflauncher.diagnostics.resolve_host", return_value="203.0.113.10"):
-                    with patch.dict(
-                        "wolflauncher.diagnostics.os.environ",
-                        {
-                            "__NV_PRIME_RENDER_OFFLOAD": "1",
-                            "__GLX_VENDOR_LIBRARY_NAME": "nvidia",
-                        },
-                        clear=True,
+                    with patch(
+                        "wolflauncher.diagnostics.dayz_process_check",
+                        return_value=ProcessCheck(False, "No known DayZ process detected"),
                     ):
-                        report = run_diagnostics(
-                            launcher.name,
-                            [
-                                Server(
-                                    name="Example",
-                                    group="Tests",
-                                    host="example.test",
-                                    game_port=2302,
-                                    query_port=27016,
-                                )
-                            ],
-                        )
+                        with patch.dict(
+                            "wolflauncher.diagnostics.os.environ",
+                            {
+                                "__NV_PRIME_RENDER_OFFLOAD": "1",
+                                "__GLX_VENDOR_LIBRARY_NAME": "nvidia",
+                            },
+                            clear=True,
+                        ):
+                            report = run_diagnostics(
+                                launcher.name,
+                                [
+                                    Server(
+                                        name="Example",
+                                        group="Tests",
+                                        host="example.test",
+                                        game_port=2302,
+                                        query_port=27016,
+                                    )
+                                ],
+                            )
 
         self.assertIn("Launch option environment:", report)
         self.assertIn("__NV_PRIME_RENDER_OFFLOAD: 1", report)
         self.assertIn("__GLX_VENDOR_LIBRARY_NAME: nvidia", report)
         self.assertIn("DRI_PRIME: not set", report)
+        self.assertIn("PRIME note:", report)
+        self.assertIn("test DayZ directly from Steam without per-game launch options", report)
         self.assertIn("Steam launch options: not readable by WolfLauncher", report)
+        self.assertIn("DayZ process check:", report)
+        self.assertIn("No known DayZ process detected", report)
 
 
 if __name__ == "__main__":

@@ -11,7 +11,15 @@ from .status import resolve_host
 
 
 class NativeLaunchError(RuntimeError):
-    pass
+    def __init__(self, message: str, *, stage: str = "native launch", guidance: str = ""):
+        super().__init__(message)
+        self.stage = stage
+        self.guidance = guidance
+
+    def user_message(self) -> str:
+        if not self.guidance:
+            return str(self)
+        return f"{self}\n\n{self.guidance}"
 
 
 FLATPAK_STEAM_PARAMS = [
@@ -63,9 +71,17 @@ def compact_mod_link_name(workshop_id: str | int) -> str:
     try:
         value = int(str(workshop_id).strip(), 10)
     except ValueError as exc:
-        raise NativeLaunchError(f"Invalid Workshop mod ID: {workshop_id}") from exc
+        raise NativeLaunchError(
+            f"Invalid Workshop mod ID: {workshop_id}",
+            stage="mod setup",
+            guidance="Recheck the server's required mod list before trying the native launcher again.",
+        ) from exc
     if value < 0:
-        raise NativeLaunchError(f"Invalid Workshop mod ID: {workshop_id}")
+        raise NativeLaunchError(
+            f"Invalid Workshop mod ID: {workshop_id}",
+            stage="mod setup",
+            guidance="Recheck the server's required mod list before trying the native launcher again.",
+        )
 
     encoded = bytearray()
     while True:
@@ -120,7 +136,14 @@ def prepare_native_launch(
     mod_setup = prepare_mod_links(dayz_dir, workshop_dir, mods)
 
     if mod_setup.missing_mod_ids:
-        raise NativeLaunchError("Missing mod directories for: " + ", ".join(mod_setup.missing_mod_ids))
+        raise NativeLaunchError(
+            "Missing mod directories for: " + ", ".join(mod_setup.missing_mod_ids),
+            stage="mod setup",
+            guidance=(
+                "Open the missing Workshop pages from the Mods tab, let Steam finish downloading them, "
+                "then run the mod check again."
+            ),
+        )
 
     return PreparedNativeLaunch(
         command=build_steam_launch_command(install, launch_server, player_name, mod_setup.mod_links, extra_params),
@@ -160,11 +183,19 @@ def prepare_mod_links(dayz_dir: Path, workshop_dir: Path, required_mods: list[Re
             setup.missing_mod_ids.append(workshop_id)
             continue
 
-        mod_name = mod.name.strip() or _read_mod_name(mod_path / "meta.cpp")
         if not (mod_path / "meta.cpp").is_file():
-            raise NativeLaunchError(f"Missing mod metadata for: {workshop_id}")
+            raise NativeLaunchError(
+                f"Missing mod metadata for: {workshop_id}",
+                stage="mod setup",
+                guidance="Let Steam verify or redownload the Workshop item, then recheck mods.",
+            )
+        mod_name = mod.name.strip() or _read_mod_name(mod_path / "meta.cpp")
         if not mod_name:
-            raise NativeLaunchError(f"Missing mod name for: {workshop_id}")
+            raise NativeLaunchError(
+                f"Missing mod name for: {workshop_id}",
+                stage="mod setup",
+                guidance="Let Steam verify or redownload the Workshop item, then recheck mods.",
+            )
 
         link_path = dayz_dir / compact_name
         created = _ensure_relative_symlink(mod_path, link_path)
@@ -186,7 +217,11 @@ def prepare_mod_links(dayz_dir: Path, workshop_dir: Path, required_mods: list[Re
 def _steam_command_prefix(install: SteamInstall) -> list[str]:
     if install.mode == "flatpak":
         if not install.executable:
-            raise NativeLaunchError("Flatpak executable not detected")
+            raise NativeLaunchError(
+                "Flatpak executable not detected",
+                stage="Steam detection",
+                guidance="Install Flatpak Steam or switch to a detected native Steam installation.",
+            )
         return ["flatpak", "run", *FLATPAK_STEAM_PARAMS, FLATPAK_STEAM_ID]
 
     executable = install.executable or "steam"
@@ -195,7 +230,11 @@ def _steam_command_prefix(install: SteamInstall) -> list[str]:
 
 def _require_dir(path: Path | None, label: str) -> Path:
     if not path or not path.is_dir():
-        raise NativeLaunchError(f"{label} directory not detected")
+        raise NativeLaunchError(
+            f"{label} directory not detected",
+            stage="Steam library detection",
+            guidance="Check Settings health and confirm DayZ is installed in the detected Steam library.",
+        )
     return path
 
 
@@ -203,7 +242,11 @@ def _resolved_server(server: Server) -> Server:
     try:
         host = resolve_host(server.host)
     except OSError as exc:
-        raise NativeLaunchError(f"Could not resolve server host {server.host}: {exc}") from exc
+        raise NativeLaunchError(
+            f"Could not resolve server host {server.host}: {exc}",
+            stage="server DNS",
+            guidance="Check the server address, network connection and DNS before launching.",
+        ) from exc
     return Server(
         name=server.name,
         group=server.group,
@@ -229,11 +272,19 @@ def _ensure_relative_symlink(target: Path, link_path: Path) -> bool:
     if link_path.is_symlink():
         return False
     if link_path.exists():
-        raise NativeLaunchError(f"Mod link path already exists and is not a symlink: {link_path}")
+        raise NativeLaunchError(
+            f"Mod link path already exists and is not a symlink: {link_path}",
+            stage="mod setup",
+            guidance="Move or remove the conflicting path in the DayZ install directory before retrying.",
+        )
 
     relative_target = os.path.relpath(target, start=link_path.parent)
     try:
         link_path.symlink_to(relative_target)
         return True
     except OSError as exc:
-        raise NativeLaunchError(f"Could not create mod symlink {link_path}: {exc}") from exc
+        raise NativeLaunchError(
+            f"Could not create mod symlink {link_path}: {exc}",
+            stage="mod setup",
+            guidance="Check write permissions on the DayZ install directory.",
+        ) from exc

@@ -6,6 +6,11 @@ from pathlib import Path
 
 STEAM_APP_ID_DAYZ = 221100
 FLATPAK_STEAM_ID = "com.valvesoftware.Steam"
+DAYZ_PROCESS_PATTERNS = (
+    "DayZ_x64.exe",
+    "DayZ_BE.exe",
+    "DayZDiag_x64.exe",
+)
 
 
 @dataclass
@@ -17,6 +22,12 @@ class SteamInstall:
     steamapps: Path | None
     dayz_dir: Path | None
     workshop_dir: Path | None
+
+
+@dataclass
+class ProcessCheck:
+    running: bool
+    detail: str
 
 
 NATIVE_STEAM_ROOTS = [
@@ -43,6 +54,20 @@ def _flatpak_steam_running() -> bool:
         return FLATPAK_STEAM_ID in result.stdout
     except Exception:
         return False
+
+
+def _matching_process_lines(patterns: tuple[str, ...]) -> list[str]:
+    try:
+        result = subprocess.run(["pgrep", "-af", "|".join(patterns)], capture_output=True, text=True, timeout=2)
+    except Exception:
+        return []
+    if result.returncode != 0:
+        return []
+    lines = []
+    for line in result.stdout.splitlines():
+        if any(pattern in line for pattern in patterns):
+            lines.append(line)
+    return lines
 
 
 def _steamapps_from_root(root: Path | None) -> Path | None:
@@ -132,6 +157,52 @@ def best_install() -> SteamInstall | None:
         if install.root or install.executable:
             return install
     return installs[0] if installs else None
+
+
+def install_label(install: SteamInstall) -> str:
+    if install.mode == "native":
+        return "Native Steam"
+    if install.mode == "flatpak":
+        return "Flatpak Steam"
+    if install.mode == "STEAM_ROOT env":
+        return "STEAM_ROOT Steam library"
+    return f"{install.mode} Steam"
+
+
+def install_readiness(install: SteamInstall | None) -> tuple[str, str]:
+    if not install:
+        return "MISSING", "Steam not detected"
+
+    label = install_label(install)
+    state = "running" if install.running else "not running"
+    if not (install.executable or install.root or install.steamapps):
+        return "MISSING", f"{label} not detected"
+    if not install.root and install.executable:
+        return "WARN", f"{label} executable found, but Steam data root was not detected ({state})"
+    if install.root and not install.steamapps:
+        return "WARN", f"{label} root found, but steamapps folder was not detected ({state})"
+    if install.steamapps and not install.dayz_dir:
+        return "WARN", f"{label} library found, but DayZ install is not visible ({state})"
+    if install.dayz_dir and not install.workshop_dir:
+        return "WARN", f"{label} DayZ found, but Workshop folder is not visible ({state})"
+    if install.dayz_dir and install.workshop_dir:
+        return "OK", f"{label} ready ({state})"
+    return "WARN", f"{label} partially detected ({state})"
+
+
+def dayz_process_check() -> ProcessCheck:
+    lines = _matching_process_lines(DAYZ_PROCESS_PATTERNS)
+    if not lines:
+        return ProcessCheck(False, "No known DayZ process detected")
+    names = []
+    for line in lines:
+        for pattern in DAYZ_PROCESS_PATTERNS:
+            if pattern in line and pattern not in names:
+                names.append(pattern)
+    detail = "Detected known DayZ process: " + ", ".join(names)
+    if len(lines) > len(names):
+        detail += f" ({len(lines)} matching process lines)"
+    return ProcessCheck(True, detail)
 
 
 def ok_missing(value: bool) -> str:

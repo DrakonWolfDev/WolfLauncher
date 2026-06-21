@@ -33,7 +33,7 @@ Status: complete.
 - Improve hybrid-GPU/NVIDIA PRIME diagnostics.
 - Add safer user-facing guidance for Steam launch options.
 - Expand native Steam and Flatpak Steam checks.
-- Add clearer failure states for Proton/Steam handoff problems.
+- Continue improving Proton/Steam handoff failure states; launch dialogs now clarify the handoff boundary and probe for known DayZ processes after successful command exit.
 - Add Linux Mint/Ubuntu install instructions.
 - Start carving native Python equivalents from the vendored legacy launcher behavior. Experimental native Steam handoff now has an initial native-Steam success and an opt-in launch-engine setting, while Flatpak and broader server parity still need testing.
 

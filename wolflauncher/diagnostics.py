@@ -4,7 +4,7 @@ from pathlib import Path
 
 from .config import DEFAULT_LAUNCHER_PATHS
 from .models import Server
-from .platform_detection import detect_steam, ok_missing, yes_no
+from .platform_detection import dayz_process_check, detect_steam, install_label, install_readiness, ok_missing, yes_no
 from .status import resolve_host
 
 
@@ -36,11 +36,13 @@ def run_diagnostics(launcher_path: str, servers: list[Server]) -> str:
     lines.append("Steam / DayZ detection:")
     for install in detect_steam():
         has_install = bool(install.executable or install.root or install.steamapps)
-        label = install.mode.capitalize()
+        label = install_label(install)
         if not has_install:
             lines.append(f"  {label}: Not configured")
             continue
-        lines.append(f"  {label} Steam")
+        status, detail = install_readiness(install)
+        lines.append(f"  {label}")
+        lines.append(f"    readiness: {status} - {detail}")
         lines.append(f"    executable: {install.executable or 'not found'}")
         lines.append(f"    running: {yes_no(install.running)}")
         lines.append(f"    root: {install.root or 'not found'}")
@@ -52,7 +54,21 @@ def run_diagnostics(launcher_path: str, servers: list[Server]) -> str:
     lines.append("Launch option environment:")
     for name in PRIME_ENV_VARS:
         lines.append(f"  {name}: {os.environ.get(name) or 'not set'}")
+    if _known_bad_prime_environment():
+        lines.append(
+            "  PRIME note: this process has the same NVIDIA offload variables as the known problematic "
+            "Steam launch-option combination."
+        )
+        lines.append(
+            "  PRIME guidance: test DayZ directly from Steam without per-game launch options before "
+            "testing WolfLauncher handoff."
+        )
     lines.append("  Steam launch options: not readable by WolfLauncher")
+    lines.append("")
+
+    process_check = dayz_process_check()
+    lines.append("DayZ process check:")
+    lines.append(f"  {process_check.detail}")
     lines.append("")
 
     lines.append("Default launcher path candidates:")
@@ -69,3 +85,10 @@ def run_diagnostics(launcher_path: str, servers: list[Server]) -> str:
             lines.append(f"  {server.name}: {server.host} -> DNS failed: {exc}")
 
     return "\n".join(lines)
+
+
+def _known_bad_prime_environment() -> bool:
+    return (
+        os.environ.get("__NV_PRIME_RENDER_OFFLOAD") == "1"
+        and os.environ.get("__GLX_VENDOR_LIBRARY_NAME") == "nvidia"
+    )
