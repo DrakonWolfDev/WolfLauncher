@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Added the first native Python launcher-engine foundation for legacy-compatible mod symlink preparation and Steam launch command generation.
 - Added fuller NVIDIA PRIME and Steam launch-option troubleshooting guidance.
 - Added Server Browser result-limit controls and clearer matching-vs-cached summary text.
 - Added name-derived Server Browser style filtering for PvE and PvP servers.

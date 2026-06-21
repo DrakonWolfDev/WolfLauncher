@@ -81,6 +81,7 @@ Current handling:
 - `wolflauncher/mods.py` - required mod lookup and local Workshop scanning.
 - `wolflauncher/platform_detection.py` - Steam, DayZ and Workshop detection.
 - `wolflauncher/launcher.py` - external launcher command building.
+- `wolflauncher/native_launcher.py` - native Python launch-engine foundation for tested Steam command and mod-link preparation.
 - `wolflauncher/server_cache.py` - SQLite cache for discovered public servers.
 - `wolflauncher/settings.py` - user settings and favourites.
 - `wolflauncher/config.py` - YAML server loading and default launcher path candidates.
@@ -102,6 +103,7 @@ Current handling:
 - JSON is used for user settings and favourites under `~/.config/wolflauncher`.
 - The external shell launcher remains the launch engine for now.
 - The vendored shell launcher is the reference contract for future native launcher work.
+- Native launcher replacement work has started behind a separate Python interface, with tests covering compact mod symlink names, relative symlink creation and Steam launch command generation.
 - Mod management is read-only and advisory: it detects installed/missing mods and opens Workshop pages, but does not attempt automatic downloads.
 - Launch remains guarded: WolfLauncher warns about missing mods and Steam state before calling the external launcher.
 - Hostnames are resolved before launch where possible to mirror the original terminal menu behaviour and avoid DayZSA API issues with DNS-based servers.
@@ -117,5 +119,5 @@ Use v0.6 as the next active development target:
 - Continue improving curated server organisation beyond basic edit/remove flows.
 - Keep `servers.yaml` for curated, personal and import/export server lists.
 - Improve filtering, sorting, source/style-focused browsing and settings health checks around the existing stable launch flow.
-- Continue extracting tests and documentation from the vendored launcher's behavior before rewriting it.
+- Continue extracting tests and documentation from the vendored launcher's behavior while expanding the new native launcher engine behind WolfLauncher interfaces.
 - Keep the NVIDIA PRIME Steam launch-option issue visible as the only known bug until it is reproduced and diagnosed.

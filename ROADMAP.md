@@ -44,7 +44,7 @@ Status: complete, with one known external launch-option issue.
 ## v0.9 - Native launcher engine investigation
 
 - Document the current handoff contract with `dayz-linux-cli-launcher`.
-- Build an internal launcher-engine module behind the existing GUI workflow.
+- Build an internal launcher-engine module behind the existing GUI workflow. Initial foundation is in place for compact mod symlink names, mod link preparation and Steam command generation.
 - Reproduce the current external launcher command behaviour with test coverage.
 - Investigate direct Steam/Proton launch handling for native and Flatpak Steam.
 - Keep the external launcher path as a fallback until native launch parity is proven.
