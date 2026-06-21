@@ -179,7 +179,9 @@ The experimental native engine can be selected in **Settings**. When testing it,
 use **Native Steam install** to choose Auto, Native Steam, Flatpak Steam or a
 `STEAM_ROOT` library explicitly. Mod checks, native preview and native launch
 preflight use that selected install so Flatpak testing does not accidentally
-read Workshop state from native Steam.
+read Workshop state from native Steam. `STEAM_ROOT` still needs the native
+`steam` command on `PATH` for launch handoff; Settings health reports when that
+command is missing.
 
 ## Server Configuration
 

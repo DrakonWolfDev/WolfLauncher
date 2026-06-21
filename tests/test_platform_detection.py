@@ -90,6 +90,21 @@ class PlatformDetectionTests(unittest.TestCase):
             ("WARN", "Flatpak Steam executable found, but Steam data root was not detected (not running)"),
         )
 
+    def test_install_readiness_warns_when_ready_library_lacks_steam_command(self):
+        install = make_install(
+            mode="STEAM_ROOT env",
+            executable="",
+            root=Path("/steam-library"),
+            steamapps=Path("/steam-library/steamapps"),
+            dayz_dir=Path("/steam-library/steamapps/common/DayZ"),
+            workshop_dir=Path("/steam-library/steamapps/workshop/content/221100"),
+        )
+
+        self.assertEqual(
+            install_readiness(install),
+            ("WARN", "STEAM_ROOT Steam library ready, but Steam command is not detected (not running)"),
+        )
+
     def test_proton_compatdata_detail_reports_visible_prefix(self):
         install = make_install(
             root=Path("/steam"),
@@ -181,6 +196,30 @@ class PlatformDetectionTests(unittest.TestCase):
 
         self.assertEqual(installs[0].dayz_dir, dayz_dir)
         self.assertEqual(installs[0].workshop_dir, workshop_dir)
+
+    def test_detect_steam_root_env_uses_native_steam_command_when_available(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            steamapps = root / "steamapps"
+            dayz_dir = steamapps / "common" / "DayZ"
+            workshop_dir = steamapps / "workshop" / "content" / "221100"
+            dayz_dir.mkdir(parents=True)
+            workshop_dir.mkdir(parents=True)
+
+            with patch.dict("wolflauncher.platform_detection.os.environ", {"STEAM_ROOT": str(root)}, clear=True):
+                with patch("wolflauncher.platform_detection.NATIVE_STEAM_ROOTS", [root / "missing-native"]):
+                    with patch("wolflauncher.platform_detection.FLATPAK_STEAM_ROOT", root / "missing-flatpak"):
+                        with patch("wolflauncher.platform_detection.shutil.which") as which:
+                            which.side_effect = lambda command: "/usr/bin/steam" if command == "steam" else None
+                            with patch("wolflauncher.platform_detection._is_running", return_value=True):
+                                installs = detect_steam()
+
+        steam_root = installs[-1]
+        self.assertEqual(steam_root.mode, "STEAM_ROOT env")
+        self.assertEqual(steam_root.executable, "/usr/bin/steam")
+        self.assertTrue(steam_root.running)
+        self.assertEqual(steam_root.dayz_dir, dayz_dir)
+        self.assertEqual(install_readiness(steam_root), ("OK", "STEAM_ROOT Steam library ready (running)"))
 
     def test_detect_steam_finds_dayz_in_secondary_native_library(self):
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -202,13 +202,15 @@ def detect_steam() -> list[SteamInstall]:
     installs: list[SteamInstall] = []
 
     native_root = _first_existing(NATIVE_STEAM_ROOTS)
+    native_executable = shutil.which("steam") or ""
+    native_running = _is_running("steam")
     native_libraries = _library_steamapps_from_root(native_root)
     native_steamapps = _select_visible_steamapps(native_libraries)
     installs.append(
         SteamInstall(
             mode="native",
-            executable=shutil.which("steam") or "",
-            running=_is_running("steam"),
+            executable=native_executable,
+            running=native_running,
             root=native_root,
             steamapps=native_steamapps,
             dayz_dir=_dayz_from_libraries(native_libraries),
@@ -243,8 +245,8 @@ def detect_steam() -> list[SteamInstall]:
         installs.append(
             SteamInstall(
                 mode="STEAM_ROOT env",
-                executable="",
-                running=False,
+                executable=native_executable,
+                running=native_running,
                 root=root,
                 steamapps=_select_visible_steamapps(env_libraries),
                 dayz_dir=_dayz_from_libraries(env_libraries),
@@ -343,6 +345,8 @@ def install_readiness(install: SteamInstall | None) -> tuple[str, str]:
         return "WARN", f"{label} library found, but DayZ install is not visible ({state})"
     if install.dayz_dir and not install.workshop_dir:
         return "WARN", f"{label} DayZ found, but Workshop folder is not visible ({state})"
+    if install.dayz_dir and install.workshop_dir and not install.executable:
+        return "WARN", f"{label} ready, but Steam command is not detected ({state})"
     if install.dayz_dir and install.workshop_dir:
         return "OK", f"{label} ready ({state})"
     return "WARN", f"{label} partially detected ({state})"

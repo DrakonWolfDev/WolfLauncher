@@ -191,6 +191,23 @@ class NativeLauncherTests(unittest.TestCase):
         self.assertEqual(raised.exception.stage, "Steam detection")
         self.assertIn("points WolfLauncher at a Steam library", raised.exception.user_message())
 
+    def test_build_steam_root_command_uses_detected_native_steam_executable(self):
+        install = SteamInstall(
+            mode="STEAM_ROOT env",
+            executable="/usr/bin/steam",
+            running=False,
+            root=Path("/steam-library"),
+            steamapps=Path("/steam-library/steamapps"),
+            dayz_dir=None,
+            workshop_dir=None,
+        )
+
+        command = build_steam_launch_command(install, make_server("203.0.113.10"), "PlayerOne", [])
+
+        self.assertEqual(command[0], "/usr/bin/steam")
+        self.assertIn("-applaunch", command)
+        self.assertIn("-connect=203.0.113.10:2302", command)
+
     def test_prepare_native_launch_creates_relative_mod_symlinks(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             install = make_install(Path(tmpdir))

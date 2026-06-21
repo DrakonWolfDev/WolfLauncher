@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Changed `STEAM_ROOT` detection to reuse the native Steam command and running state when available, and warn when a ready Steam library lacks a launchable Steam command.
 - Made post-handoff DayZ process detection case-insensitive so Proton command lines with different executable casing are still recognized.
 - Expanded DayZ install detection to read Steam `appmanifest_221100.acf` `installdir` values before falling back to the conventional `steamapps/common/DayZ` path.
 - Clarified Proton compatdata diagnostics so missing prefixes are reported as first-run Steam/Proton state rather than a launch blocker, with matching Settings health, diagnostics and native parity report wording.
