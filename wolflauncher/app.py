@@ -254,12 +254,13 @@ class LaunchDialog(PostHandoffProcessCheckMixin, QDialog):
         self.setWindowTitle(title)
         self.resize(820, 460)
         self.handoff_label = handoff_label
+        self.command_text = " ".join(command)
         self.process = QProcess(self)
         self.process.setProcessChannelMode(QProcess.MergedChannels)
 
         layout = QVBoxLayout(self)
         layout.addWidget(QLabel("Launch command:"))
-        command_box = QLineEdit(" ".join(command))
+        command_box = QLineEdit(self.command_text)
         command_box.setReadOnly(True)
         layout.addWidget(command_box)
 
@@ -285,8 +286,20 @@ class LaunchDialog(PostHandoffProcessCheckMixin, QDialog):
         self.process.start(command[0], command[1:])
 
     def copy_output(self):
-        QApplication.clipboard().setText(self.output.toPlainText())
-        self.output.append("\nLaunch output copied to clipboard.")
+        QApplication.clipboard().setText(self.copyable_output_text())
+        self.output.append("\nLaunch command and output copied to clipboard.")
+
+    def copyable_output_text(self) -> str:
+        return "\n".join(
+            [
+                "WolfLauncher launch output",
+                "",
+                f"Command: {self.command_text}",
+                "",
+                "Output:",
+                self.output.toPlainText().strip(),
+            ]
+        ).strip()
 
     def read_output(self):
         data = bytes(self.process.readAllStandardOutput()).decode("utf-8", errors="replace")
