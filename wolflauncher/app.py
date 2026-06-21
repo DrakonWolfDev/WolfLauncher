@@ -50,6 +50,9 @@ from .platform_detection import (
     detect_steam,
     install_label,
     install_readiness,
+    select_steam_install,
+    steam_mode_label,
+    steam_selection_readiness,
 )
 from .mods import ModCheckResult, check_server_mods
 from . import server_cache
@@ -227,7 +230,8 @@ class PostHandoffProcessCheckMixin:
 
         self.output.append(
             f"\nPost-handoff process check: no known DayZ process detected after about {elapsed_seconds} seconds. "
-            "If Steam showed no activity, check Steam downloads, Proton/BattlEye prompts, and Steam launch options. "
+            "Steam may still be preparing Proton, but if there is no Steam activity, check downloads, Proton/BattlEye prompts, "
+            "the selected Steam install in Settings health, and Steam launch options. "
             "On NVIDIA PRIME systems, remove the known problematic "
             "__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command% option and test DayZ directly from Steam."
         )
@@ -278,7 +282,7 @@ class LaunchDialog(PostHandoffProcessCheckMixin, QDialog):
         if exit_code == 0:
             self.output.append(
                 f"\n{self.handoff_label.title()} exited successfully, which means WolfLauncher handed control "
-                "to Steam. It does not prove that Proton initialized or DayZ reached the menu."
+                "to Steam. Steam may still need time to start, update, initialize Proton or show a BattlEye prompt."
             )
             self.start_post_handoff_process_checks()
         else:
@@ -362,7 +366,7 @@ class NativeLaunchPreviewDialog(PostHandoffProcessCheckMixin, QDialog):
         if exit_code == 0:
             self.output.append(
                 "\nExperimental native command handed off to Steam successfully. "
-                "This means Steam accepted the command; it does not prove that Proton initialized or DayZ reached the menu."
+                "Steam may still need time to start, update, initialize Proton or show a BattlEye prompt."
             )
             self.start_post_handoff_process_checks()
         else:
@@ -1187,13 +1191,7 @@ class MainWindow(QMainWindow):
         return labels.get(key, "BattleMetrics")
 
     def _native_steam_mode_label(self, key: str) -> str:
-        labels = {
-            "auto": "Auto",
-            "native": "Native Steam",
-            "flatpak": "Flatpak Steam",
-            "STEAM_ROOT env": "STEAM_ROOT Steam library",
-        }
-        return labels.get(key, "Auto")
+        return steam_mode_label(key)
 
     def discovery_provider_key(self) -> str:
         if not hasattr(self, "discovery_provider"):
@@ -1223,25 +1221,10 @@ class MainWindow(QMainWindow):
         return keys.get(self.native_steam_mode.currentText(), "auto")
 
     def selected_steam_install(self) -> SteamInstall | None:
-        mode = self.native_steam_mode_key()
-        if mode == "auto":
-            return best_install()
-        for install in detect_steam():
-            if install.mode == mode:
-                return install
-        return None
+        return select_steam_install(self.native_steam_mode_key())
 
     def selected_steam_install_detail(self) -> tuple[str, str]:
-        mode = self.native_steam_mode_key()
-        install = self.selected_steam_install()
-        if mode == "auto":
-            if not install:
-                return "MISSING", "Auto selection found no Steam install"
-            status, detail = install_readiness(install)
-            return status, f"Auto selected {detail}"
-        if not install:
-            return "MISSING", f"{self._native_steam_mode_label(mode)} not detected"
-        return install_readiness(install)
+        return steam_selection_readiness(self.native_steam_mode_key())
 
     def handle_settings_changed(self, *_args):
         self.save_user_settings(silent=True)

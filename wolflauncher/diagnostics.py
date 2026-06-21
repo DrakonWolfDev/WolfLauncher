@@ -93,6 +93,10 @@ def run_diagnostics(launcher_path: str, servers: list[Server]) -> str:
         lines.append(f"    running: {yes_no(install.running)}")
         lines.append(f"    root: {install.root or 'not found'}")
         lines.append(f"    steamapps: {install.steamapps or 'not found'}")
+        if install.library_steamapps:
+            lines.append("    libraries:")
+            for library in install.library_steamapps:
+                lines.append(f"      {library}")
         lines.append(f"    DayZ: {ok_missing(bool(install.dayz_dir))} {install.dayz_dir or ''}")
         lines.append(f"    Workshop: {ok_missing(bool(install.workshop_dir))} {install.workshop_dir or ''}")
     lines.append("")

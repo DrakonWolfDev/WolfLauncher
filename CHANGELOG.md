@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- Expanded native and Flatpak Steam detection to read Steam `libraryfolders.vdf`, so DayZ and Workshop can be found in secondary Steam libraries.
+- Added diagnostics output for all detected Steam library folders.
+- Added unit-tested Steam install selection helpers for Auto, Native Steam, Flatpak Steam and `STEAM_ROOT` launch modes.
 - Confirmed real-world experimental native launch success through Flatpak Steam, with DayZ detected roughly 10 seconds after handoff.
 - Added a native Steam install selector for Auto, Native Steam, Flatpak Steam and `STEAM_ROOT` so experimental native-launch testing can target a specific Steam install.
 - Changed native-engine mod checks, launch preview and launch preflight to use the selected Steam install, clearing stale mod results when the selection changes.

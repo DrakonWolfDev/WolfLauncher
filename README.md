@@ -88,6 +88,7 @@ Useful evidence for debugging:
 
 - Native Steam support.
 - Flatpak Steam support.
+- Secondary Steam library detection for DayZ and Workshop folders.
 - DayZ installation detection.
 - Pre-launch validation checks.
 - Launch diagnostics and output logging.
@@ -142,7 +143,7 @@ Run the test suite:
 PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest discover
 ```
 
-If the app starts but launch preflight fails, open **Settings** and press **Check health**. That table reports native Steam, Flatpak Steam, DayZ, Workshop, required tools and visible PRIME/offload environment state.
+If the app starts but launch preflight fails, open **Settings** and press **Check health**. That table reports native Steam, Flatpak Steam, DayZ, Workshop, required tools and visible PRIME/offload environment state. WolfLauncher reads Steam `libraryfolders.vdf` for native and Flatpak Steam, so DayZ and Workshop can be detected from secondary Steam libraries as well as the primary Steam folder.
 
 ## Launching
 
@@ -294,7 +295,7 @@ Planned future work includes:
 - Continued Server Browser polish.
 - Hybrid-GPU/NVIDIA PRIME diagnostics and launch-option guidance.
 - Improved Steam/Proton handoff diagnostics.
-- Expanded native and Flatpak Steam checks.
+- Expanded native and Flatpak Steam checks, including secondary Steam library detection.
 - Native packaging and installation.
 - Eventual internal launcher engine investigation.
 

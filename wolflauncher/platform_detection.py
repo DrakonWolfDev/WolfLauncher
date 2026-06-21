@@ -1,7 +1,8 @@
 import os
+import re
 import shutil
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 STEAM_APP_ID_DAYZ = 221100
@@ -22,6 +23,7 @@ class SteamInstall:
     steamapps: Path | None
     dayz_dir: Path | None
     workshop_dir: Path | None
+    library_steamapps: list[Path] = field(default_factory=list)
 
 
 @dataclass
@@ -70,11 +72,46 @@ def _matching_process_lines(patterns: tuple[str, ...]) -> list[str]:
     return lines
 
 
+LIBRARY_PATH_RE = re.compile(r'"path"\s+"((?:\\.|[^"\\])*)"')
+
+
+def _unescape_vdf_string(value: str) -> str:
+    return value.replace(r"\\", "\\").replace(r"\"", '"')
+
+
+def parse_libraryfolders_paths(text: str) -> list[Path]:
+    paths = []
+    for match in LIBRARY_PATH_RE.finditer(text):
+        path = Path(_unescape_vdf_string(match.group(1))).expanduser()
+        if path not in paths:
+            paths.append(path)
+    return paths
+
+
 def _steamapps_from_root(root: Path | None) -> Path | None:
     if not root:
         return None
     steamapps = root / "steamapps"
     return steamapps if steamapps.exists() else None
+
+
+def _library_steamapps_from_root(root: Path | None) -> list[Path]:
+    primary = _steamapps_from_root(root)
+    if not primary:
+        return []
+
+    libraries = [primary]
+    libraryfolders = primary / "libraryfolders.vdf"
+    try:
+        extra_roots = parse_libraryfolders_paths(libraryfolders.read_text(errors="ignore"))
+    except OSError:
+        extra_roots = []
+
+    for library_root in extra_roots:
+        steamapps = library_root / "steamapps"
+        if steamapps.exists() and steamapps not in libraries:
+            libraries.append(steamapps)
+    return libraries
 
 
 def _dayz_from_steamapps(steamapps: Path | None) -> Path | None:
@@ -91,6 +128,29 @@ def _workshop_from_steamapps(steamapps: Path | None) -> Path | None:
     return workshop if workshop.exists() else None
 
 
+def _dayz_from_libraries(libraries: list[Path]) -> Path | None:
+    for steamapps in libraries:
+        dayz = _dayz_from_steamapps(steamapps)
+        if dayz:
+            return dayz
+    return None
+
+
+def _workshop_from_libraries(libraries: list[Path]) -> Path | None:
+    for steamapps in libraries:
+        workshop = _workshop_from_steamapps(steamapps)
+        if workshop:
+            return workshop
+    return None
+
+
+def _select_visible_steamapps(libraries: list[Path]) -> Path | None:
+    for steamapps in libraries:
+        if _dayz_from_steamapps(steamapps) or _workshop_from_steamapps(steamapps):
+            return steamapps
+    return libraries[0] if libraries else None
+
+
 def _first_existing(paths: list[Path]) -> Path | None:
     for path in paths:
         if path.exists():
@@ -102,7 +162,8 @@ def detect_steam() -> list[SteamInstall]:
     installs: list[SteamInstall] = []
 
     native_root = _first_existing(NATIVE_STEAM_ROOTS)
-    native_steamapps = _steamapps_from_root(native_root)
+    native_libraries = _library_steamapps_from_root(native_root)
+    native_steamapps = _select_visible_steamapps(native_libraries)
     installs.append(
         SteamInstall(
             mode="native",
@@ -110,13 +171,15 @@ def detect_steam() -> list[SteamInstall]:
             running=_is_running("steam"),
             root=native_root,
             steamapps=native_steamapps,
-            dayz_dir=_dayz_from_steamapps(native_steamapps),
-            workshop_dir=_workshop_from_steamapps(native_steamapps),
+            dayz_dir=_dayz_from_libraries(native_libraries),
+            workshop_dir=_workshop_from_libraries(native_libraries),
+            library_steamapps=native_libraries,
         )
     )
 
     flatpak_root = FLATPAK_STEAM_ROOT if FLATPAK_STEAM_ROOT.exists() else None
-    flatpak_steamapps = _steamapps_from_root(flatpak_root)
+    flatpak_libraries = _library_steamapps_from_root(flatpak_root)
+    flatpak_steamapps = _select_visible_steamapps(flatpak_libraries)
     installs.append(
         SteamInstall(
             mode="flatpak",
@@ -124,8 +187,9 @@ def detect_steam() -> list[SteamInstall]:
             running=_flatpak_steam_running(),
             root=flatpak_root,
             steamapps=flatpak_steamapps,
-            dayz_dir=_dayz_from_steamapps(flatpak_steamapps),
-            workshop_dir=_workshop_from_steamapps(flatpak_steamapps),
+            dayz_dir=_dayz_from_libraries(flatpak_libraries),
+            workshop_dir=_workshop_from_libraries(flatpak_libraries),
+            library_steamapps=flatpak_libraries,
         )
     )
 
@@ -133,15 +197,17 @@ def detect_steam() -> list[SteamInstall]:
     if env_root:
         root = Path(env_root).expanduser()
         steamapps = root / "steamapps" if (root / "steamapps").exists() else root
+        env_libraries = [steamapps] if steamapps.exists() else []
         installs.append(
             SteamInstall(
                 mode="STEAM_ROOT env",
                 executable="",
                 running=False,
                 root=root,
-                steamapps=steamapps if steamapps.exists() else None,
-                dayz_dir=_dayz_from_steamapps(steamapps if steamapps.exists() else None),
-                workshop_dir=_workshop_from_steamapps(steamapps if steamapps.exists() else None),
+                steamapps=_select_visible_steamapps(env_libraries),
+                dayz_dir=_dayz_from_libraries(env_libraries),
+                workshop_dir=_workshop_from_libraries(env_libraries),
+                library_steamapps=env_libraries,
             )
         )
 
@@ -149,7 +215,10 @@ def detect_steam() -> list[SteamInstall]:
 
 
 def best_install() -> SteamInstall | None:
-    installs = detect_steam()
+    return best_install_from(detect_steam())
+
+
+def best_install_from(installs: list[SteamInstall]) -> SteamInstall | None:
     for install in installs:
         if install.dayz_dir and install.workshop_dir:
             return install
@@ -157,6 +226,26 @@ def best_install() -> SteamInstall | None:
         if install.root or install.executable:
             return install
     return installs[0] if installs else None
+
+
+def steam_mode_label(mode: str) -> str:
+    labels = {
+        "auto": "Auto",
+        "native": "Native Steam",
+        "flatpak": "Flatpak Steam",
+        "STEAM_ROOT env": "STEAM_ROOT Steam library",
+    }
+    return labels.get(mode, "Auto")
+
+
+def select_steam_install(mode: str, installs: list[SteamInstall] | None = None) -> SteamInstall | None:
+    detected = installs if installs is not None else detect_steam()
+    if mode == "auto":
+        return best_install_from(detected)
+    for install in detected:
+        if install.mode == mode:
+            return install
+    return None
 
 
 def install_label(install: SteamInstall) -> str:
@@ -167,6 +256,18 @@ def install_label(install: SteamInstall) -> str:
     if install.mode == "STEAM_ROOT env":
         return "STEAM_ROOT Steam library"
     return f"{install.mode} Steam"
+
+
+def steam_selection_readiness(mode: str, installs: list[SteamInstall] | None = None) -> tuple[str, str]:
+    install = select_steam_install(mode, installs)
+    if mode == "auto":
+        if not install:
+            return "MISSING", "Auto selection found no Steam install"
+        status, detail = install_readiness(install)
+        return status, f"Auto selected {detail}"
+    if not install:
+        return "MISSING", f"{steam_mode_label(mode)} not detected"
+    return install_readiness(install)
 
 
 def install_readiness(install: SteamInstall | None) -> tuple[str, str]:

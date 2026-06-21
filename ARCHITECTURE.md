@@ -24,7 +24,7 @@ wolflauncher/
   launcher.py            External dayz-launcher.sh command builder
   models.py              Shared dataclasses
   mods.py                DayZSA API mod lookup and local Workshop comparison
-  platform_detection.py  Native/Flatpak Steam, DayZ and Workshop detection
+  platform_detection.py  Native/Flatpak Steam, Steam library, DayZ and Workshop detection
   native_launcher.py     Native launch-engine foundation for mod links and Steam commands
   server_discovery.py    BattleMetrics, Steam Web API and legacy master server candidate discovery
   server_enrichment.py   Maps live status results onto discovered cache rows
@@ -144,6 +144,11 @@ testing cannot accidentally read Workshop state from a different Steam library.
 Native command generation should fail before handoff when the selected Steam
 mode does not have a detected launch command, so users get Steam-mode-specific
 recovery guidance instead of a generic process-start failure.
+
+Native and Flatpak Steam detection reads `steamapps/libraryfolders.vdf` from the
+detected Steam root and scans secondary Steam libraries for DayZ and Workshop
+folders. `STEAM_ROOT` remains an explicit single-library override for targeted
+testing.
 
 ## Known Launch-Option Issue
 

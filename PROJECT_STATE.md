@@ -40,6 +40,7 @@ Working:
 - Flatpak Steam detection.
 - DayZ install detection.
 - DayZ Workshop folder detection.
+- Secondary Steam library detection through `steamapps/libraryfolders.vdf` for native and Flatpak Steam installs.
 - Settings tab with compact green/yellow/red health checks.
 - Steam health reporting distinguishes native, Flatpak and `STEAM_ROOT` installs and explains partial detection states.
 - Discovery provider, API key, endpoint and refresh-limit settings persistence.
@@ -81,6 +82,7 @@ Current handling:
 - Diagnostics classify visible PRIME/DRI environment state and warn when WolfLauncher itself is running with the known problematic NVIDIA PRIME offload environment combination.
 - Settings health includes a PRIME environment row so the known problematic environment is visible without opening a full diagnostics report.
 - Diagnostics include per-install Steam readiness summaries for native, Flatpak and `STEAM_ROOT` library detection.
+- Diagnostics list detected Steam library folders for each configured install.
 - Diagnostics include known DayZ process visibility for Steam/Proton handoff troubleshooting.
 - Post-handoff process checks should avoid warning too early; observed native launches can report no DayZ process initially, then show DayZ roughly 10 seconds later, matching the slower behavior seen with the original CLI launcher.
 - Hybrid-GPU testing should start outside WolfLauncher, for example with `prime-run glxinfo -B`, `prime-run steam` and direct DayZ launch from Steam before testing the WolfLauncher handoff.
@@ -135,7 +137,7 @@ Use v0.7 as the next active development target:
 
 - Improve hybrid-GPU/NVIDIA PRIME diagnostics and safer user-facing Steam launch-option guidance.
 - Continue refining hybrid-GPU guidance after real-world NVIDIA PRIME reproduction data is available.
-- Expand native and Flatpak Steam checks.
+- Expand native and Flatpak Steam checks beyond secondary-library detection.
 - Add clearer failure states for Proton/Steam handoff problems.
 - Continue refining Linux Mint/Ubuntu install instructions toward packaged installs.
 - Defer packaging work until late pre-1.0 polish; launcher parity and Steam/Proton reliability should come first.
