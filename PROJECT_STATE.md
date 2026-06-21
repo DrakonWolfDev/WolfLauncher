@@ -65,6 +65,8 @@ Working:
 - Launch dialogs clarify that a successful handoff does not prove Proton initialized or DayZ reached the menu.
 - Launch dialogs watch for known DayZ processes for up to 45 seconds after handoff, because Steam/Proton can take tens of seconds before DayZ appears.
 - Experimental native launch parity report from the Mods tab, with a copyable validation checklist comparing the external launcher handoff with the native command, selected Steam install, resolved connect target, required mod IDs, prepared mod links and missing Workshop directories.
+- Native launch failures include copyable parity-report details when a cached mod check is available, so failed launches and preview reports can be compared.
+- The native experimental engine does not offer "Launch anyway" when required Workshop directories are missing, because it cannot build a valid native mod command until the missing mods are installed.
 - Experimental native Steam handoff from the preview dialog, with real-world native Steam and Flatpak Steam launch success confirmed. The external launcher remains the default launch path while parity testing continues.
 - Saved launch-engine setting in Settings. `External launcher` remains the default, while `Native experimental` routes the main Launch button through the Python native engine.
 - Saved native Steam install selection in Settings, with Auto, Native Steam, Flatpak Steam and `STEAM_ROOT` options so parity testing can target a specific detected install.

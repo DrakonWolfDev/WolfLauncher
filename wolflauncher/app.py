@@ -2219,7 +2219,7 @@ class MainWindow(QMainWindow):
         try:
             command = self.build_selected_launch_command(server, row)
         except NativeLaunchError as exc:
-            QMessageBox.critical(self, f"Launch failed during {exc.stage}", exc.user_message())
+            self.show_native_launch_error(exc)
             return
         except LaunchError as exc:
             QMessageBox.critical(self, "Launch failed", str(exc))
@@ -2258,10 +2258,57 @@ class MainWindow(QMainWindow):
             required_mods = None
             if self.last_mod_result and server_key(self.last_mod_result.server) == server_key(server):
                 required_mods = self.last_mod_result.required_mods
-            prepared = prepare_native_launch(install, launch_server, player_name, required_mods)
+            try:
+                prepared = prepare_native_launch(install, launch_server, player_name, required_mods)
+            except NativeLaunchError as exc:
+                raise exc.with_details(
+                    self.native_launch_failure_details(
+                        install,
+                        launch_server,
+                        player_name,
+                        required_mods,
+                    )
+                ) from exc
             return prepared.command
 
         return build_launch_command(self.launcher_path.text(), player_name, launch_server)
+
+    def show_native_launch_error(self, error: NativeLaunchError):
+        box = QMessageBox(self)
+        box.setIcon(QMessageBox.Critical)
+        box.setWindowTitle(f"Launch failed during {error.stage}")
+        box.setText(error.user_message())
+        if error.details:
+            box.setDetailedText(error.details)
+        box.exec()
+
+    def native_launch_failure_details(
+        self,
+        install: SteamInstall,
+        server: Server,
+        player_name: str,
+        required_mods,
+    ) -> str:
+        if required_mods is None:
+            return (
+                "Native launch parity report unavailable.\n\n"
+                "Run Check selected server mods successfully before launching to include required Workshop IDs "
+                "and prepared mod-link details in launch failure reports."
+            )
+        try:
+            report = prepare_native_launch_parity_report(
+                install,
+                self.launcher_path.text(),
+                server,
+                player_name,
+                required_mods,
+            )
+        except NativeLaunchError as detail_error:
+            return (
+                "Native launch parity report unavailable.\n\n"
+                f"Report generation failed during {detail_error.stage}: {detail_error.user_message()}"
+            )
+        return format_native_launch_parity_report(report)
 
     def confirm_launch_preflight(self, server: Server) -> bool:
         install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
@@ -2300,6 +2347,24 @@ class MainWindow(QMainWindow):
                 names = "\n".join(f"- {mod.name or mod.workshop_id}" for mod in missing[:12])
                 if len(missing) > 12:
                     names += f"\n- ...and {len(missing) - 12} more"
+                if self.launch_engine_key() == "native":
+                    box = QMessageBox(self)
+                    box.setIcon(QMessageBox.Warning)
+                    box.setWindowTitle("Missing required mods")
+                    box.setText(f"{server.name} is missing {len(missing)} required mod(s).")
+                    box.setInformativeText(
+                        f"{names}\n\n"
+                        "The native experimental engine needs every required Workshop directory before it can "
+                        "build the DayZ mod command."
+                    )
+                    open_button = box.addButton("Open Workshop", QMessageBox.ButtonRole.ActionRole)
+                    cancel_button = box.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
+                    box.setDefaultButton(cancel_button)
+                    box.exec()
+                    if box.clickedButton() == open_button:
+                        self.open_missing_workshop_pages()
+                    return False
+
                 box = QMessageBox(self)
                 box.setIcon(QMessageBox.Warning)
                 box.setWindowTitle("Missing required mods")

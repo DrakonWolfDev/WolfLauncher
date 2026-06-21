@@ -46,6 +46,26 @@ def make_install(root: Path, mode: str = "native") -> SteamInstall:
 
 
 class NativeLauncherTests(unittest.TestCase):
+    def test_native_launch_error_can_carry_copyable_details(self):
+        error = NativeLaunchError(
+            "Missing mod directories for: 111",
+            stage="mod setup",
+            guidance="Open the missing Workshop pages.",
+        )
+
+        detailed = error.with_details("Native launch parity report\n- Missing Workshop directories: 1")
+
+        self.assertIsNot(detailed, error)
+        self.assertEqual(detailed.stage, "mod setup")
+        self.assertEqual(detailed.user_message(), error.user_message())
+        self.assertIn("Native launch parity report", detailed.details)
+        self.assertEqual(error.details, "")
+
+    def test_native_launch_error_ignores_empty_details(self):
+        error = NativeLaunchError("Steam not detected")
+
+        self.assertIs(error.with_details(""), error)
+
     def test_compact_mod_link_name_matches_legacy_little_endian_base64(self):
         self.assertEqual(compact_mod_link_name("1"), "@AQ")
         self.assertEqual(compact_mod_link_name("248"), "@_A")
@@ -284,6 +304,8 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertTrue(report.preview.ready)
             self.assertEqual(report.resolved_connect, "203.0.113.10:2302")
             self.assertEqual(report.required_mod_ids, ["256"])
+            self.assertEqual(report.required_mod_labels, ["Example Mod (256)"])
+            self.assertEqual(report.missing_mod_labels, [])
             self.assertEqual(report.preview.mod_setup.mod_links, ["@AAE"])
             self.assertIn("-connect=203.0.113.10:2302", report.native_command_text)
             self.assertIn("-s 203.0.113.10:2302", report.external_command_text)
@@ -329,6 +351,8 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertIn("- Prepared native mod links: 1", text)
             self.assertIn("- Missing Workshop directories: 0", text)
             self.assertIn("- Native ready: yes", text)
+            self.assertIn("Native command is ready for 203.0.113.10:2302 with 1 prepared mod link(s).", text)
+            self.assertIn("Required Workshop mods:\n- Example Mod (256)", text)
             self.assertIn("Example Mod (256) -> @AAE", text)
             self.assertIn("-connect=203.0.113.10:2302", text)
             self.assertIn("-s 203.0.113.10:2302", text)
@@ -351,9 +375,12 @@ class NativeLauncherTests(unittest.TestCase):
 
             self.assertFalse(report.preview.ready)
             self.assertEqual(report.native_command_text, "")
+            self.assertEqual(report.required_mod_labels, ["Missing Mod (111)"])
+            self.assertEqual(report.missing_mod_labels, ["Missing Mod (111)"])
             self.assertIn("- Missing Workshop directories: 1", text)
             self.assertIn("- Native ready: no", text)
-            self.assertIn("Missing Workshop mod directories:\n- 111", text)
+            self.assertIn("Native command is not ready because 1 Workshop directory is missing.", text)
+            self.assertIn("Missing Workshop mod directories:\n- Missing Mod (111)", text)
             self.assertIn("Native Steam command: not ready until all required mods are installed.", text)
 
     def test_prepare_native_launch_parity_report_keeps_native_preview_when_external_path_missing(self):
@@ -381,6 +408,20 @@ class NativeLauncherTests(unittest.TestCase):
                     prepare_native_launch(install, make_server(), "PlayerOne", [RequiredMod("111")])
         self.assertEqual(raised.exception.stage, "mod setup")
         self.assertIn("Open the missing Workshop pages", raised.exception.user_message())
+
+    def test_prepare_native_launch_reports_missing_mod_names_when_available(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+
+            with patch("wolflauncher.native_launcher.resolve_host", return_value="203.0.113.10"):
+                with self.assertRaisesRegex(NativeLaunchError, r"Missing Mod \(111\)") as raised:
+                    prepare_native_launch(
+                        install,
+                        make_server(),
+                        "PlayerOne",
+                        [RequiredMod("111", "Missing Mod")],
+                    )
+        self.assertIn("Missing Mod (111)", str(raised.exception))
 
     def test_prepare_native_launch_requires_mod_metadata(self):
         with tempfile.TemporaryDirectory() as tmpdir:

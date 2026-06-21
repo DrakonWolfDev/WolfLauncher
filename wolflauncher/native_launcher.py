@@ -13,15 +13,33 @@ from .status import resolve_host
 
 
 class NativeLaunchError(RuntimeError):
-    def __init__(self, message: str, *, stage: str = "native launch", guidance: str = ""):
+    def __init__(
+        self,
+        message: str,
+        *,
+        stage: str = "native launch",
+        guidance: str = "",
+        details: str = "",
+    ):
         super().__init__(message)
         self.stage = stage
         self.guidance = guidance
+        self.details = details
 
     def user_message(self) -> str:
         if not self.guidance:
             return str(self)
         return f"{self}\n\n{self.guidance}"
+
+    def with_details(self, details: str) -> "NativeLaunchError":
+        if not details:
+            return self
+        return NativeLaunchError(
+            str(self),
+            stage=self.stage,
+            guidance=self.guidance,
+            details=details,
+        )
 
 
 FLATPAK_STEAM_PARAMS = [
@@ -73,6 +91,8 @@ class NativeLaunchParityReport:
     preview: NativeLaunchPreview
     install: SteamInstall
     required_mod_ids: list[str] = field(default_factory=list)
+    required_mod_labels: list[str] = field(default_factory=list)
+    missing_mod_labels: list[str] = field(default_factory=list)
     external_command: list[str] = field(default_factory=list)
     external_error: str = ""
 
@@ -160,7 +180,7 @@ def prepare_native_launch(
 
     if mod_setup.missing_mod_ids:
         raise NativeLaunchError(
-            "Missing mod directories for: " + ", ".join(mod_setup.missing_mod_ids),
+            "Missing mod directories for: " + ", ".join(_missing_mod_labels(mods, mod_setup.missing_mod_ids)),
             stage="mod setup",
             guidance=(
                 "Open the missing Workshop pages from the Mods tab, let Steam finish downloading them, "
@@ -220,6 +240,8 @@ def prepare_native_launch_parity_report(
         preview=preview,
         install=install,
         required_mod_ids=[str(mod.workshop_id).strip() for mod in required_mods],
+        required_mod_labels=_mod_labels(required_mods),
+        missing_mod_labels=_missing_mod_labels(required_mods, preview.mod_setup.missing_mod_ids),
         external_command=external_command,
         external_error=external_error,
     )
@@ -249,8 +271,13 @@ def format_native_launch_parity_report(report: NativeLaunchParityReport) -> str:
         f"- Query port: {preview.server.query_port}",
         f"- Required mod count: {len(report.required_mod_ids)}",
         f"- Prepared native mod links: {len(preview.mod_setup.prepared_mods)}",
+        f"- Created native mod links: {_created_mod_link_count(preview.mod_setup)}",
+        f"- Reused native mod links: {_reused_mod_link_count(preview.mod_setup)}",
         f"- Missing Workshop directories: {len(preview.mod_setup.missing_mod_ids)}",
         f"- Native ready: {'yes' if preview.ready else 'no'}",
+        "",
+        "Result:",
+        _parity_result_text(report),
         "",
         "External launcher handoff:",
     ]
@@ -276,10 +303,10 @@ def format_native_launch_parity_report(report: NativeLaunchParityReport) -> str:
     ])
 
     if report.required_mod_ids:
-        lines.append("Required Workshop IDs:")
-        lines.extend(f"- {workshop_id}" for workshop_id in report.required_mod_ids)
+        lines.append("Required Workshop mods:")
+        lines.extend(f"- {label}" for label in report.required_mod_labels)
     else:
-        lines.append("Required Workshop IDs: none")
+        lines.append("Required Workshop mods: none")
     lines.append("")
 
     if preview.mod_setup.prepared_mods:
@@ -299,7 +326,7 @@ def format_native_launch_parity_report(report: NativeLaunchParityReport) -> str:
         lines.extend([
             "",
             "Missing Workshop mod directories:",
-            *[f"- {workshop_id}" for workshop_id in preview.mod_setup.missing_mod_ids],
+            *[f"- {label}" for label in report.missing_mod_labels],
             "",
             "Native Steam command: not ready until all required mods are installed.",
         ])
@@ -401,6 +428,50 @@ def _path_text(path: Path | None) -> str:
     return str(path) if path else "not detected"
 
 
+def _created_mod_link_count(mod_setup: NativeModSetup) -> int:
+    return sum(1 for prepared in mod_setup.prepared_mods if prepared.created)
+
+
+def _reused_mod_link_count(mod_setup: NativeModSetup) -> int:
+    return sum(1 for prepared in mod_setup.prepared_mods if not prepared.created)
+
+
+def _parity_result_text(report: NativeLaunchParityReport) -> str:
+    preview = report.preview
+    if preview.ready:
+        return (
+            f"Native command is ready for {report.resolved_connect} with "
+            f"{len(preview.mod_setup.prepared_mods)} prepared mod link(s)."
+        )
+    return (
+        "Native command is not ready because "
+        f"{len(preview.mod_setup.missing_mod_ids)} Workshop director"
+        f"{'y is' if len(preview.mod_setup.missing_mod_ids) == 1 else 'ies are'} missing."
+    )
+
+
+def _missing_mod_labels(required_mods: list[RequiredMod], missing_mod_ids: list[str]) -> list[str]:
+    names_by_id = _mod_names_by_id(required_mods)
+    labels = []
+    for workshop_id in missing_mod_ids:
+        name = names_by_id.get(workshop_id)
+        labels.append(f"{name} ({workshop_id})" if name else workshop_id)
+    return labels
+
+
+def _mod_labels(required_mods: list[RequiredMod]) -> list[str]:
+    labels = []
+    for mod in required_mods:
+        workshop_id = str(mod.workshop_id).strip()
+        name = mod.name.strip()
+        labels.append(f"{name} ({workshop_id})" if name else workshop_id)
+    return labels
+
+
+def _mod_names_by_id(required_mods: list[RequiredMod]) -> dict[str, str]:
+    return {str(mod.workshop_id).strip(): mod.name.strip() for mod in required_mods if mod.name.strip()}
+
+
 def _resolved_server(server: Server) -> Server:
     try:
         host = resolve_host(server.host)
@@ -433,7 +504,17 @@ def _read_mod_name(meta_path: Path) -> str:
 
 def _ensure_relative_symlink(target: Path, link_path: Path) -> bool:
     if link_path.is_symlink():
-        return False
+        existing_target = Path(os.readlink(link_path))
+        expected_target = Path(os.path.relpath(target, start=link_path.parent))
+        if existing_target == expected_target or link_path.resolve(strict=False) == target.resolve(strict=False):
+            return False
+        raise NativeLaunchError(
+            f"Mod link path already exists but points somewhere else: {link_path}",
+            stage="mod setup",
+            guidance=(
+                "Remove the stale @mod symlink from the DayZ install directory, then prepare the native launch again."
+            ),
+        )
     if link_path.exists():
         raise NativeLaunchError(
             f"Mod link path already exists and is not a symlink: {link_path}",
