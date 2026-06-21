@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from wolflauncher.launcher import LaunchError, build_launch_command
+from wolflauncher.launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from wolflauncher.models import Server
 
 
@@ -20,7 +20,7 @@ class BuildLaunchCommandTests(unittest.TestCase):
     def test_builds_external_launcher_command_with_resolved_ip(self):
         with tempfile.NamedTemporaryFile() as launcher:
             with patch("wolflauncher.launcher.resolve_host", return_value="203.0.113.10") as resolve_host:
-                command = build_launch_command(launcher.name, "Andi", self.make_server())
+                command = build_launch_command(launcher.name, "PlayerOne", self.make_server())
 
         self.assertEqual(
             command,
@@ -32,7 +32,7 @@ class BuildLaunchCommandTests(unittest.TestCase):
                 "-p",
                 "27016",
                 "-n",
-                "Andi",
+                "PlayerOne",
                 "--launch",
             ],
         )
@@ -43,24 +43,24 @@ class BuildLaunchCommandTests(unittest.TestCase):
             with patch("wolflauncher.launcher.resolve_host", return_value="203.0.113.10"):
                 command = build_launch_command(launcher.name, "   ", self.make_server())
 
-        self.assertEqual(command[command.index("-n") + 1], "Survivor")
+        self.assertEqual(command[command.index("-n") + 1], DEFAULT_PLAYER_NAME)
 
     def test_missing_launcher_path_raises_launch_error(self):
         missing_path = str(Path(tempfile.gettempdir()) / "wolflauncher-missing-launcher.sh")
 
         with self.assertRaisesRegex(LaunchError, "Launcher script not found"):
-            build_launch_command(missing_path, "Andi", self.make_server())
+            build_launch_command(missing_path, "PlayerOne", self.make_server())
 
     def test_directory_launcher_path_raises_launch_error(self):
         with tempfile.TemporaryDirectory() as launcher_dir:
             with self.assertRaisesRegex(LaunchError, "Launcher path is not a file"):
-                build_launch_command(launcher_dir, "Andi", self.make_server())
+                build_launch_command(launcher_dir, "PlayerOne", self.make_server())
 
     def test_dns_failure_is_reported_as_launch_error(self):
         with tempfile.NamedTemporaryFile() as launcher:
             with patch("wolflauncher.launcher.resolve_host", side_effect=OSError("no host")):
                 with self.assertRaisesRegex(LaunchError, "Could not resolve server host"):
-                    build_launch_command(launcher.name, "Andi", self.make_server())
+                    build_launch_command(launcher.name, "PlayerOne", self.make_server())
 
 
 if __name__ == "__main__":

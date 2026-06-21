@@ -1,4 +1,5 @@
 import os
+import shutil
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 import sys
@@ -29,11 +30,10 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QColor, QDesktopServices, QAction, QTextCursor
 
-from .config import add_curated_server, find_default_launcher_path, load_servers
-from .diagnostics import run_diagnostics
-from .launcher import LaunchError, build_launch_command
+from .config import DEFAULT_LAUNCHER_PATHS, add_curated_server, find_default_launcher_path, load_servers
+from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from .models import Server
-from .platform_detection import best_install
+from .platform_detection import best_install, detect_steam
 from .mods import ModCheckResult, check_server_mods
 from . import server_cache
 from .server_discovery import (
@@ -278,7 +278,7 @@ class MainWindow(QMainWindow):
         self.launcher_path = QLineEdit(
             str(self.settings.get("launcher_path") or find_default_launcher_path())
         )
-        self.player_name = QLineEdit(str(self.settings.get("player_name") or "Andi"))
+        self.player_name = QLineEdit(str(self.settings.get("player_name") or DEFAULT_PLAYER_NAME))
         self.refresh_seconds = QSpinBox()
         self.refresh_seconds.setRange(0, 3600)
         self.refresh_seconds.setValue(int(self.settings.get("refresh_seconds", 30)))
@@ -294,14 +294,14 @@ class MainWindow(QMainWindow):
         tabs.addTab(self._build_servers_tab(), "Servers")
         tabs.addTab(self._build_server_browser_tab(), "Server Browser")
         tabs.addTab(self._build_mods_tab(), "Mods")
-        tabs.addTab(self._build_diagnostics_tab(), "Diagnostics")
+        tabs.addTab(self._build_settings_tab(), "Settings")
         self.setCentralWidget(tabs)
 
         self.apply_refresh_timer()
         self.refresh_statuses()
         self.refresh_server_browser()
-        self.update_diagnostics()
-        QTimer.singleShot(30000, self.maybe_auto_refresh_battlemetrics)
+        self.update_settings_health()
+        QTimer.singleShot(30000, self.maybe_auto_refresh_configured_provider)
 
     def _build_servers_tab(self) -> QWidget:
         widget = QWidget()
@@ -314,7 +314,13 @@ class MainWindow(QMainWindow):
         browse.clicked.connect(self.browse_launcher)
         launcher_row.addWidget(browse)
         settings.addRow("Launcher script", launcher_row)
-        settings.addRow("Player name", self.player_name)
+        player_name_row = QHBoxLayout()
+        player_name_row.addWidget(self.player_name)
+        self.player_name.returnPressed.connect(self.save_player_name)
+        set_player_name = QPushButton("Set name")
+        set_player_name.clicked.connect(self.save_player_name)
+        player_name_row.addWidget(set_player_name)
+        settings.addRow("Player name", player_name_row)
         settings.addRow("Auto refresh", self.refresh_seconds)
         settings.addRow("Status", self.last_refresh_label)
         layout.addLayout(settings)
@@ -432,25 +438,6 @@ class MainWindow(QMainWindow):
         filters.addWidget(self.browser_descending)
         layout.addLayout(filters)
 
-        steam_row = QHBoxLayout()
-        self.steam_master_endpoints = QLineEdit(str(self.settings.get("steam_master_endpoints") or ""))
-        self.steam_master_endpoints.setPlaceholderText("Steam master endpoints, comma separated host[:port]")
-        steam_row.addWidget(QLabel("Steam masters"))
-        steam_row.addWidget(self.steam_master_endpoints)
-        layout.addLayout(steam_row)
-
-        web_api_row = QHBoxLayout()
-        self.steam_web_api_key = QLineEdit(
-            os.environ.get("WOLFLAUNCHER_STEAM_WEB_API_KEY")
-            or os.environ.get("STEAM_WEB_API_KEY")
-            or ""
-        )
-        self.steam_web_api_key.setEchoMode(QLineEdit.Password)
-        self.steam_web_api_key.setPlaceholderText("Steam Web API key")
-        web_api_row.addWidget(QLabel("Web API key"))
-        web_api_row.addWidget(self.steam_web_api_key)
-        layout.addLayout(web_api_row)
-
         self.browser_summary = QLabel("Cached discovered servers: loading")
         layout.addWidget(self.browser_summary)
 
@@ -478,14 +465,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.browser_table)
 
         buttons = QHBoxLayout()
-        import_file = QPushButton("Import cache file")
-        import_file.clicked.connect(self.import_server_cache_file)
-        self.battlemetrics_button = QPushButton("Refresh BattleMetrics")
-        self.battlemetrics_button.clicked.connect(self.refresh_from_battlemetrics)
-        self.steam_refresh_button = QPushButton("Refresh from Steam")
-        self.steam_refresh_button.clicked.connect(self.refresh_from_steam_master)
-        self.steam_web_api_button = QPushButton("Refresh Web API")
-        self.steam_web_api_button.clicked.connect(self.refresh_from_steam_web_api)
+        self.refresh_database_button = QPushButton("Refresh database")
+        self.refresh_database_button.clicked.connect(self.refresh_from_configured_provider)
         self.enrich_visible_button = QPushButton("Enrich visible")
         self.enrich_visible_button.clicked.connect(self.enrich_visible_discovered_servers)
         promote = QPushButton("Promote to curated")
@@ -493,10 +474,7 @@ class MainWindow(QMainWindow):
         refresh = QPushButton("Refresh cache view")
         refresh.clicked.connect(self.refresh_server_browser)
         buttons.addStretch(1)
-        buttons.addWidget(import_file)
-        buttons.addWidget(self.battlemetrics_button)
-        buttons.addWidget(self.steam_refresh_button)
-        buttons.addWidget(self.steam_web_api_button)
+        buttons.addWidget(self.refresh_database_button)
         buttons.addWidget(self.enrich_visible_button)
         buttons.addWidget(promote)
         buttons.addWidget(refresh)
@@ -545,20 +523,73 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.mods_table)
         return widget
 
-    def _build_diagnostics_tab(self) -> QWidget:
+    def _build_settings_tab(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
+
+        launcher_settings = QFormLayout()
+        self.discovery_provider = QComboBox()
+        self.discovery_provider.addItems([
+            "BattleMetrics",
+            "Steam Web API",
+            "Steam Master",
+            "Disabled",
+        ])
+        self.discovery_provider.setCurrentText(
+            self._provider_label(str(self.settings.get("discovery_provider") or "battlemetrics"))
+        )
+        self.discovery_provider.currentTextChanged.connect(self.handle_settings_changed)
+        launcher_settings.addRow("Server API provider", self.discovery_provider)
+
+        self.discovery_limit = QSpinBox()
+        self.discovery_limit.setRange(1, 10000)
+        self.discovery_limit.setValue(int(self.settings.get("discovery_limit", 500)))
+        self.discovery_limit.valueChanged.connect(self.handle_settings_changed)
+        launcher_settings.addRow("Refresh limit", self.discovery_limit)
+
+        self.discovery_auto_refresh = QCheckBox("Refresh selected provider quietly after startup")
+        self.discovery_auto_refresh.setChecked(bool(self.settings.get("discovery_auto_refresh", False)))
+        self.discovery_auto_refresh.stateChanged.connect(self.handle_settings_changed)
+        launcher_settings.addRow("Automatic refresh", self.discovery_auto_refresh)
+
+        self.steam_web_api_key = QLineEdit(
+            str(self.settings.get("steam_web_api_key") or "")
+            or os.environ.get("WOLFLAUNCHER_STEAM_WEB_API_KEY")
+            or os.environ.get("STEAM_WEB_API_KEY")
+            or ""
+        )
+        self.steam_web_api_key.setEchoMode(QLineEdit.Password)
+        self.steam_web_api_key.setPlaceholderText("Steam Web API key")
+        self.steam_web_api_key.editingFinished.connect(self.handle_settings_changed)
+        launcher_settings.addRow("Steam API key", self.steam_web_api_key)
+
+        self.steam_master_endpoints = QLineEdit(str(self.settings.get("steam_master_endpoints") or ""))
+        self.steam_master_endpoints.setPlaceholderText("Comma separated host[:port]")
+        self.steam_master_endpoints.editingFinished.connect(self.handle_settings_changed)
+        launcher_settings.addRow("Steam masters", self.steam_master_endpoints)
+        layout.addLayout(launcher_settings)
+
         row = QHBoxLayout()
-        refresh = QPushButton("Run diagnostics")
-        refresh.clicked.connect(self.update_diagnostics)
-        row.addWidget(QLabel("Diagnostics"))
-        row.addWidget(refresh)
+        health = QPushButton("Check health")
+        health.clicked.connect(self.update_settings_health)
+        import_file = QPushButton("Import server list")
+        import_file.clicked.connect(self.import_server_cache_file)
+        save = QPushButton("Save settings")
+        save.clicked.connect(self.save_user_settings)
+        row.addStretch(1)
+        row.addWidget(health)
+        row.addWidget(import_file)
+        row.addWidget(save)
         layout.addLayout(row)
+
         self.system_summary = QLabel("Checking Steam and DayZ installation...")
         layout.addWidget(self.system_summary)
-        self.diagnostics = QTextEdit()
-        self.diagnostics.setReadOnly(True)
-        layout.addWidget(self.diagnostics)
+
+        self.health_table = QTableWidget(0, 3)
+        self.health_table.setHorizontalHeaderLabels(["Check", "Status", "Details"])
+        self.health_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.health_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        layout.addWidget(self.health_table)
         return widget
 
     def browse_launcher(self):
@@ -566,7 +597,7 @@ class MainWindow(QMainWindow):
         if path:
             self.launcher_path.setText(path)
             self.save_user_settings(silent=True)
-            self.update_diagnostics()
+            self.update_settings_health()
 
     def import_server_cache_file(self):
         path, _ = QFileDialog.getOpenFileName(
@@ -590,15 +621,35 @@ class MainWindow(QMainWindow):
             f"Imported {count} discovered server row(s) into the cache.",
         )
 
+    def refresh_from_configured_provider(self):
+        provider = self.discovery_provider_key()
+        self.save_user_settings(silent=True)
+        if provider == "battlemetrics":
+            self.refresh_from_battlemetrics()
+        elif provider == "steam_web_api":
+            self.refresh_from_steam_web_api()
+        elif provider == "steam_master":
+            self.refresh_from_steam_master()
+        else:
+            QMessageBox.information(
+                self,
+                "Discovery disabled",
+                "Choose a server API provider in Settings before refreshing the database.",
+            )
+
+    def _set_database_refresh_enabled(self, enabled: bool):
+        if hasattr(self, "refresh_database_button"):
+            self.refresh_database_button.setEnabled(enabled)
+
     def refresh_from_steam_master(self):
         if self.discovery_worker and self.discovery_worker.isRunning():
             return
         self.browser_summary.setText("Cached discovered servers: querying Steam master server...")
-        self.steam_refresh_button.setEnabled(False)
+        self._set_database_refresh_enabled(False)
         try:
             master_addresses = self.steam_master_addresses()
         except ValueError as exc:
-            self.steam_refresh_button.setEnabled(True)
+            self._set_database_refresh_enabled(True)
             QMessageBox.warning(self, "Invalid Steam master endpoints", str(exc))
             return
         self.discovery_worker = SteamDiscoveryWorker(max_batches=1, master_addresses=master_addresses)
@@ -612,7 +663,7 @@ class MainWindow(QMainWindow):
         return [parse_master_address(item) for item in text.split(",") if item.strip()]
 
     def handle_steam_discovery_ready(self, servers, error: str):
-        self.steam_refresh_button.setEnabled(True)
+        self._set_database_refresh_enabled(True)
         if error:
             self.refresh_server_browser()
             QMessageBox.warning(
@@ -637,13 +688,13 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "Steam Web API key required", "Enter a Steam Web API key first.")
             return
         self.browser_summary.setText("Cached discovered servers: querying Steam Web API...")
-        self.steam_web_api_button.setEnabled(False)
-        self.web_api_worker = SteamWebApiDiscoveryWorker(api_key=api_key)
+        self._set_database_refresh_enabled(False)
+        self.web_api_worker = SteamWebApiDiscoveryWorker(api_key=api_key, limit=self.discovery_limit.value())
         self.web_api_worker.discovery_ready.connect(self.handle_steam_web_api_ready)
         self.web_api_worker.start()
 
     def handle_steam_web_api_ready(self, servers, error: str):
-        self.steam_web_api_button.setEnabled(True)
+        self._set_database_refresh_enabled(True)
         if error:
             self.refresh_server_browser()
             QMessageBox.warning(self, "Steam Web API discovery failed", error)
@@ -660,28 +711,59 @@ class MainWindow(QMainWindow):
         if self.battlemetrics_worker and self.battlemetrics_worker.isRunning():
             return
         self.browser_summary.setText("Cached discovered servers: querying BattleMetrics...")
-        self.battlemetrics_button.setEnabled(False)
-        self.battlemetrics_worker = BattleMetricsDiscoveryWorker(limit=500)
+        self._set_database_refresh_enabled(False)
+        self.battlemetrics_worker = BattleMetricsDiscoveryWorker(limit=self.discovery_limit.value())
         self.battlemetrics_worker.discovery_ready.connect(self.handle_battlemetrics_ready)
         self.battlemetrics_worker.start()
 
-    def maybe_auto_refresh_battlemetrics(self):
+    def maybe_auto_refresh_configured_provider(self):
+        if not hasattr(self, "discovery_auto_refresh") or not self.discovery_auto_refresh.isChecked():
+            return
+        provider = self.discovery_provider_key()
+        if provider == "disabled":
+            return
+        if self.discovery_worker and self.discovery_worker.isRunning():
+            return
+        if self.web_api_worker and self.web_api_worker.isRunning():
+            return
         if self.battlemetrics_worker and self.battlemetrics_worker.isRunning():
             return
-        if not self.should_auto_refresh_battlemetrics():
+        if not self.should_auto_refresh_provider(provider):
             return
-        self.browser_summary.setText("Cached discovered servers: quietly refreshing BattleMetrics...")
-        self.battlemetrics_button.setEnabled(False)
-        self.battlemetrics_worker = BattleMetricsDiscoveryWorker(
-            limit=500,
-            page_delay=2.0,
-            automatic=True,
-        )
-        self.battlemetrics_worker.discovery_ready.connect(self.handle_battlemetrics_ready)
-        self.battlemetrics_worker.start()
+        self.browser_summary.setText("Cached discovered servers: quietly refreshing configured provider...")
+        self._set_database_refresh_enabled(False)
+        if provider == "battlemetrics":
+            self.battlemetrics_worker = BattleMetricsDiscoveryWorker(
+                limit=self.discovery_limit.value(),
+                page_delay=2.0,
+                automatic=True,
+            )
+            self.battlemetrics_worker.discovery_ready.connect(self.handle_battlemetrics_ready)
+            self.battlemetrics_worker.start()
+        elif provider == "steam_web_api":
+            api_key = self.steam_web_api_key.text().strip()
+            if not api_key:
+                self._set_database_refresh_enabled(True)
+                return
+            self.web_api_worker = SteamWebApiDiscoveryWorker(
+                api_key=api_key,
+                limit=self.discovery_limit.value(),
+            )
+            self.web_api_worker.discovery_ready.connect(self.handle_auto_web_api_ready)
+            self.web_api_worker.start()
+        elif provider == "steam_master":
+            try:
+                master_addresses = self.steam_master_addresses()
+            except ValueError as exc:
+                self._set_database_refresh_enabled(True)
+                self.statusBar().showMessage(f"Steam master auto-refresh skipped: {exc}", 7000)
+                return
+            self.discovery_worker = SteamDiscoveryWorker(max_batches=1, master_addresses=master_addresses)
+            self.discovery_worker.discovery_ready.connect(self.handle_auto_steam_discovery_ready)
+            self.discovery_worker.start()
 
-    def should_auto_refresh_battlemetrics(self) -> bool:
-        value = str(self.settings.get("last_battlemetrics_auto_refresh_at") or "")
+    def should_auto_refresh_provider(self, provider: str) -> bool:
+        value = str(self.settings.get(f"last_{provider}_auto_refresh_at") or "")
         if not value:
             return True
         try:
@@ -692,14 +774,39 @@ class MainWindow(QMainWindow):
             last_refresh = last_refresh.replace(tzinfo=timezone.utc)
         return datetime.now(timezone.utc) - last_refresh >= timedelta(hours=24)
 
+    def mark_auto_refresh(self, provider: str):
+        self.settings[f"last_{provider}_auto_refresh_at"] = (
+            datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+        )
+        self.save_user_settings(silent=True)
+
+    def handle_auto_steam_discovery_ready(self, servers, error: str):
+        self._set_database_refresh_enabled(True)
+        self.mark_auto_refresh("steam_master")
+        if error:
+            self.refresh_server_browser()
+            self.statusBar().showMessage(f"Steam master auto-refresh failed: {error}", 7000)
+            return
+        count = server_cache.upsert_servers(self.server_cache, servers)
+        self.refresh_server_browser()
+        self.statusBar().showMessage(f"Steam master auto-refresh imported {count} row(s).", 7000)
+
+    def handle_auto_web_api_ready(self, servers, error: str):
+        self._set_database_refresh_enabled(True)
+        self.mark_auto_refresh("steam_web_api")
+        if error:
+            self.refresh_server_browser()
+            self.statusBar().showMessage(f"Steam Web API auto-refresh failed: {error}", 7000)
+            return
+        count = server_cache.upsert_servers(self.server_cache, servers)
+        self.refresh_server_browser()
+        self.statusBar().showMessage(f"Steam Web API auto-refresh imported {count} row(s).", 7000)
+
     def handle_battlemetrics_ready(self, servers, error: str):
         automatic = bool(self.battlemetrics_worker and self.battlemetrics_worker.automatic)
-        self.battlemetrics_button.setEnabled(True)
+        self._set_database_refresh_enabled(True)
         if automatic:
-            self.settings["last_battlemetrics_auto_refresh_at"] = (
-                datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-            )
-            self.save_user_settings(silent=True)
+            self.mark_auto_refresh("battlemetrics")
         if error:
             self.refresh_server_browser()
             if automatic:
@@ -803,18 +910,62 @@ class MainWindow(QMainWindow):
         else:
             self.timer.start(seconds * 1000)
 
+    def _provider_label(self, key: str) -> str:
+        labels = {
+            "battlemetrics": "BattleMetrics",
+            "steam_web_api": "Steam Web API",
+            "steam_master": "Steam Master",
+            "disabled": "Disabled",
+        }
+        return labels.get(key, "BattleMetrics")
+
+    def discovery_provider_key(self) -> str:
+        if not hasattr(self, "discovery_provider"):
+            return str(self.settings.get("discovery_provider") or "battlemetrics")
+        keys = {
+            "BattleMetrics": "battlemetrics",
+            "Steam Web API": "steam_web_api",
+            "Steam Master": "steam_master",
+            "Disabled": "disabled",
+        }
+        return keys.get(self.discovery_provider.currentText(), "battlemetrics")
+
+    def handle_settings_changed(self, *_args):
+        self.save_user_settings(silent=True)
+        self.update_settings_health()
+
+    def save_player_name(self):
+        if not self.player_name.text().strip():
+            self.player_name.setText(DEFAULT_PLAYER_NAME)
+        self.save_user_settings(silent=True)
+        self.statusBar().showMessage(f"Player name saved as {self.player_name.text().strip()}.", 5000)
+
     def save_user_settings(self, silent: bool = False):
-        last_battlemetrics_auto_refresh_at = self.settings.get("last_battlemetrics_auto_refresh_at", "")
+        auto_refresh_timestamps = {
+            key: value
+            for key, value in self.settings.items()
+            if key.startswith("last_") and key.endswith("_auto_refresh_at")
+        }
         self.settings = {
             "launcher_path": self.launcher_path.text(),
             "player_name": self.player_name.text(),
             "refresh_seconds": self.refresh_seconds.value(),
             "last_selected_row": self.table.currentRow(),
+            "discovery_provider": self.discovery_provider_key(),
+            "discovery_limit": self.discovery_limit.value()
+            if hasattr(self, "discovery_limit")
+            else int(self.settings.get("discovery_limit", 500)),
+            "discovery_auto_refresh": self.discovery_auto_refresh.isChecked()
+            if hasattr(self, "discovery_auto_refresh")
+            else bool(self.settings.get("discovery_auto_refresh", False)),
+            "steam_web_api_key": self.steam_web_api_key.text().strip()
+            if hasattr(self, "steam_web_api_key")
+            else str(self.settings.get("steam_web_api_key") or ""),
             "steam_master_endpoints": self.steam_master_endpoints.text().strip()
             if hasattr(self, "steam_master_endpoints")
             else "",
-            "last_battlemetrics_auto_refresh_at": last_battlemetrics_auto_refresh_at,
         }
+        self.settings.update(auto_refresh_timestamps)
         save_settings(self.settings)
         save_favourites(self.favourites)
         self.apply_refresh_timer()
@@ -1015,7 +1166,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(
                 self,
                 "Workshop folder not found",
-                "WolfLauncher could not find the DayZ Workshop folder. Check Diagnostics.",
+                "WolfLauncher could not find the DayZ Workshop folder. Check Settings health.",
             )
             return
 
@@ -1224,7 +1375,9 @@ class MainWindow(QMainWindow):
         for mod in missing:
             QDesktopServices.openUrl(QUrl(mod.workshop_url))
 
-    def update_diagnostics(self):
+    def update_settings_health(self):
+        if not hasattr(self, "health_table"):
+            return
         install = best_install()
         if install and install.dayz_dir and install.workshop_dir:
             self.system_summary.setText(f"Detected {install.mode} Steam | DayZ OK | Workshop OK")
@@ -1234,7 +1387,104 @@ class MainWindow(QMainWindow):
             self.system_summary.setText(f"Detected {install.mode} Steam | DayZ not found yet")
         else:
             self.system_summary.setText("Steam/DayZ not detected")
-        self.diagnostics.setPlainText(run_diagnostics(self.launcher_path.text(), self.servers))
+
+        path = Path(self.launcher_path.text()).expanduser()
+        provider = self.discovery_provider_key()
+        provider_detail = self.discovery_provider.currentText()
+        if provider == "steam_web_api":
+            provider_status = "OK" if self.steam_web_api_key.text().strip() else "MISSING"
+            provider_detail = "Steam Web API key saved" if provider_status == "OK" else "Steam Web API key required"
+        elif provider == "steam_master":
+            try:
+                addresses = self.steam_master_addresses()
+            except ValueError as exc:
+                provider_status = "WARN"
+                provider_detail = str(exc)
+            else:
+                provider_status = "OK"
+                provider_detail = ", ".join(address.address for address in addresses) if addresses else "Default Steam masters"
+        elif provider == "disabled":
+            provider_status = "WARN"
+            provider_detail = "Database refresh is disabled"
+        else:
+            provider_status = "OK"
+            provider_detail = "BattleMetrics public API"
+
+        install_rows = detect_steam()
+        steam = best_install()
+        tools = ["python3", "gamedig", "node", "npm", "dig", "curl", "jq", "gawk"]
+        missing_tools = [command for command in tools if not shutil.which(command)]
+        launcher_candidates = [str(candidate) for candidate in DEFAULT_LAUNCHER_PATHS if candidate.exists()]
+
+        rows = [
+            (
+                "Launcher script",
+                "OK" if path.exists() and path.is_file() else "MISSING",
+                str(path),
+            ),
+            (
+                "Server API",
+                provider_status,
+                provider_detail,
+            ),
+            (
+                "Required tools",
+                "OK" if not missing_tools else "WARN",
+                "All found" if not missing_tools else "Missing: " + ", ".join(missing_tools),
+            ),
+            (
+                "Steam",
+                "OK" if steam and (steam.root or steam.executable) else "MISSING",
+                self._install_summary(steam) if steam else "Not detected",
+            ),
+            (
+                "DayZ",
+                "OK" if steam and steam.dayz_dir else "MISSING",
+                str(steam.dayz_dir) if steam and steam.dayz_dir else "Not detected",
+            ),
+            (
+                "Workshop",
+                "OK" if steam and steam.workshop_dir else "MISSING",
+                str(steam.workshop_dir) if steam and steam.workshop_dir else "Not detected",
+            ),
+            (
+                "Configured Steam installs",
+                "OK" if any(item.root or item.executable for item in install_rows) else "WARN",
+                ", ".join(self._install_summary(item) for item in install_rows if item.root or item.executable)
+                or "No native or Flatpak Steam roots found",
+            ),
+            (
+                "Launcher candidates",
+                "OK" if launcher_candidates else "WARN",
+                ", ".join(launcher_candidates) or "No default candidate exists",
+            ),
+        ]
+
+        self.health_table.setRowCount(len(rows))
+        for row, (name, status, details) in enumerate(rows):
+            self._set_health_item(row, 0, name)
+            self._set_health_item(row, 1, status, self._health_colour(status))
+            self._set_health_item(row, 2, details)
+        self.health_table.resizeColumnsToContents()
+
+    def _install_summary(self, install) -> str:
+        if not install:
+            return "Not detected"
+        state = "running" if install.running else "not running"
+        return f"{install.mode} Steam ({state})"
+
+    def _health_colour(self, status: str) -> str:
+        if status == "OK":
+            return "#6ee16e"
+        if status == "WARN":
+            return "#f6c453"
+        return "#ff6b6b"
+
+    def _set_health_item(self, row: int, column: int, text: str, colour: str | None = None):
+        item = QTableWidgetItem(text)
+        if colour:
+            item.setForeground(QColor(colour))
+        self.health_table.setItem(row, column, item)
 
     def launch_selected(self):
         row = self.table.currentRow()
@@ -1267,7 +1517,7 @@ class MainWindow(QMainWindow):
         try:
             command = build_launch_command(
                 self.launcher_path.text(),
-                self.player_name.text().strip() or "Survivor",
+                self.player_name.text().strip() or DEFAULT_PLAYER_NAME,
                 launch_server,
             )
         except LaunchError as exc:
@@ -1283,7 +1533,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(
                 self,
                 "DayZ not detected",
-                "WolfLauncher could not detect a DayZ installation. Check the Diagnostics tab before launching.",
+                "WolfLauncher could not detect a DayZ installation. Check Settings health before launching.",
             )
             return False
 
@@ -1291,7 +1541,7 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(
                 self,
                 "Workshop folder not detected",
-                "WolfLauncher could not detect the DayZ Workshop folder. Check the Diagnostics tab before launching.",
+                "WolfLauncher could not detect the DayZ Workshop folder. Check Settings health before launching.",
             )
             return False
 

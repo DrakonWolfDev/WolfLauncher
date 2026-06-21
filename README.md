@@ -12,7 +12,7 @@ The upstream MIT-licensed shell launcher is vendored in `external/dayz-linux-cli
 
 Current baseline: end of v0.5.2.
 
-The server browser, diagnostics, mod checks and guarded launch handoff are working. The only known bug is that DayZ does not run when Steam launch options contain:
+The server browser, settings health checks, mod checks and guarded launch handoff are working. The only known bug is that DayZ does not run when Steam launch options contain:
 
 ```text
 __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%
@@ -30,9 +30,8 @@ That issue is tracked as a Steam/Proton/DayZ launch-option compatibility problem
 - YAML/JSON import for discovered server cache rows.
 - Promote discovered servers into the curated `servers.yaml` list with editable name/group.
 - Copy discovered server connect addresses and details.
-- Steam master server candidate discovery import.
-- In-app Steam master refresh for discovered server candidates.
-- Steam Web API server-list discovery with API key.
+- Configurable discovered-server refresh provider for BattleMetrics, Steam Web API or Steam master candidates.
+- Steam Web API server-list discovery with user-supplied API key.
 - BattleMetrics server discovery.
 - Enrich visible discovered servers with live status data.
 - DNS hostname or IP address support.
@@ -47,7 +46,7 @@ That issue is tracked as a Steam/Proton/DayZ launch-option compatibility problem
 - Player counts and server information.
 - Resolved IP and connect address display.
 - Powered by `gamedig`.
-- Quick diagnostics and troubleshooting tools.
+- Quick settings health checks and troubleshooting indicators.
 
 ### Mod Validation
 
@@ -97,7 +96,7 @@ PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest discover
 Configure the path to your existing launcher script, for example:
 
 ```text
-/home/andi/dayz-launcher.sh
+~/dayz-launcher.sh
 ```
 
 If no user-installed launcher is found, WolfLauncher can fall back to the vendored script at:
@@ -109,7 +108,7 @@ external/dayz-linux-cli-launcher/dayz-launcher.sh
 WolfLauncher generates launch commands in this shape:
 
 ```text
-bash /home/andi/dayz-launcher.sh -s "RESOLVED_IP:GAMEPORT" -p "QUERYPORT" -n "PLAYER" --launch
+bash ~/dayz-launcher.sh -s "RESOLVED_IP:GAMEPORT" -p "QUERYPORT" -n "PLAYER" --launch
 ```
 
 Recommended workflow:
@@ -146,7 +145,7 @@ The Server Browser tab reads from the SQLite cache at:
 ~/.local/share/wolflauncher/server_cache.sqlite3
 ```
 
-Use **Import cache file** to load discovered server rows from YAML or JSON. A sample file is included at:
+Use **Import server list** in Settings to load discovered server rows from YAML or JSON. A sample file is included at:
 
 ```text
 examples/discovered_servers.sample.yaml
@@ -156,13 +155,11 @@ Imported rows stay separate from curated `servers.yaml`.
 
 Select an imported/discovered row and use **Promote to curated** to add it to `servers.yaml`. Right-click a discovered row to promote it or copy its connect address/details.
 
-Use **Refresh Web API** in the Server Browser tab to fetch DayZ server rows through Valve's HTTPS Steam Web API. Paste a Steam Web API key into the **Web API key** field, or start WolfLauncher with `WOLFLAUNCHER_STEAM_WEB_API_KEY` or `STEAM_WEB_API_KEY`.
+Choose a server API provider in Settings, then use **Refresh database** in the Server Browser tab. BattleMetrics works without a key, Steam Web API uses the saved Steam API key, and Steam Master uses Valve's legacy UDP master server path.
 
-Use **Refresh BattleMetrics** to fetch a documented BattleMetrics DayZ server batch without a Steam API key. WolfLauncher follows BattleMetrics pagination up to a bounded row limit.
+Settings also contains the refresh row limit, an opt-in automatic refresh toggle, and a comma-separated **Steam masters** endpoint list for cases where Valve's default DNS names do not resolve, for example `HOST:27011,HOST:27015`.
 
-WolfLauncher also performs a quiet BattleMetrics refresh after startup at most once every 24 hours. The automatic refresh waits before starting, fetches a bounded number of rows, and pauses between paginated requests.
-
-The older **Refresh from Steam** button uses Valve's legacy UDP master server path. If Valve's default DNS names do not resolve, paste a comma-separated endpoint list into the **Steam masters** field, for example `HOST:27011,HOST:27015`.
+When automatic refresh is enabled, WolfLauncher waits after startup and refreshes the selected provider at most once every 24 hours.
 
 The same discovery path is available from the command line:
 

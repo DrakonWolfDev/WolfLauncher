@@ -6,7 +6,7 @@ Status: complete, with one known external launch-option issue.
 
 - Launch handoff through `dayz-launcher.sh` works.
 - DNS-based servers launch through resolved IP addresses when available.
-- Server status, diagnostics, favourites, settings and mod checks are working.
+- Server status, settings health checks, favourites and mod checks are working.
 - Launch output dialog no longer crashes while reading PySide6 process output.
 - Known bug: DayZ does not run with the Steam launch option `__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%`.
 
@@ -23,7 +23,7 @@ Status: complete, with one known external launch-option issue.
 - Expand tests around launch-engine compatibility.
 - Document the vendored shell launcher's behavior as the compatibility contract.
 
-## v0.7 - Diagnostics and Linux polish
+## v0.7 - Health checks and Linux polish
 
 - Improve hybrid-GPU/NVIDIA PRIME diagnostics.
 - Add safer user-facing guidance for Steam launch options.

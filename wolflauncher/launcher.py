@@ -9,6 +9,9 @@ class LaunchError(RuntimeError):
     pass
 
 
+DEFAULT_PLAYER_NAME = "Survivor"
+
+
 def build_launch_command(launcher_path: str, player_name: str, server: Server) -> list[str]:
     """Build the external dayz-launcher.sh command for a selected server.
 
@@ -28,7 +31,7 @@ def build_launch_command(launcher_path: str, player_name: str, server: Server) -
     except OSError as exc:
         raise LaunchError(f"Could not resolve server host {server.host}: {exc}") from exc
 
-    safe_name = player_name.strip() or "Survivor"
+    safe_name = player_name.strip() or DEFAULT_PLAYER_NAME
     return [
         "bash",
         str(path),

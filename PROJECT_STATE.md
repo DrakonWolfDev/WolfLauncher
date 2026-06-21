@@ -8,7 +8,7 @@ The upstream shell launcher is now vendored under `external/dayz-linux-cli-launc
 
 ## Current status
 
-The v0.5.2 launch, status, diagnostics and mod-checking work is considered functional. The application can be used as the working project base for the next improvement cycle.
+The v0.5.2 launch, status, settings health checks and mod-checking work is considered functional. The application can be used as the working project base for the next improvement cycle.
 
 Working:
 
@@ -19,10 +19,10 @@ Working:
 - Promotion from discovered cache rows into the curated YAML server list with editable name/group.
 - Copy actions for discovered server connect addresses and details.
 - Steam master server candidate discovery import script.
-- In-app Steam master refresh for discovered server candidates.
-- Steam Web API server-list discovery with API key.
+- Single in-app discovered-server database refresh using the provider selected in Settings.
+- Steam Web API server-list discovery with user-supplied API key.
 - BattleMetrics server discovery.
-- Quiet rate-limited BattleMetrics startup refresh, throttled to once per day.
+- Optional quiet rate-limited startup refresh for the selected discovery provider, throttled to once per day.
 - Enrichment of visible discovered servers with live status data.
 - DNS hostname and direct IP support.
 - Live DayZ server querying through `gamedig`.
@@ -32,8 +32,8 @@ Working:
 - Flatpak Steam detection.
 - DayZ install detection.
 - DayZ Workshop folder detection.
-- Diagnostics tab.
-- Settings persistence.
+- Settings tab with compact green/yellow/red health checks.
+- Discovery provider, API key, endpoint and refresh-limit settings persistence.
 - Favourites persistence.
 - Last selected server persistence.
 - Mods tab.
@@ -100,10 +100,10 @@ Current handling:
 
 Use v0.6 as the next active development target:
 
-- Treat BattleMetrics as the preferred no-key documented discovery source while keeping import, Steam Web API and UDP master options available.
+- Keep BattleMetrics as the default no-key discovery source while allowing users to choose Steam Web API or UDP master discovery in Settings.
 - Improve bulk enrichment controls and candidate port handling.
 - Improve editing/organisation for promoted curated servers.
 - Keep `servers.yaml` for curated, personal and import/export server lists.
-- Improve filtering, sorting and diagnostics around the existing stable launch flow.
+- Improve filtering, sorting and settings health checks around the existing stable launch flow.
 - Continue extracting tests and documentation from the vendored launcher's behavior before rewriting it.
 - Keep the NVIDIA PRIME Steam launch-option issue visible as the only known bug until it is reproduced and diagnosed.

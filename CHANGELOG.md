@@ -1,6 +1,10 @@
 # Changelog
 
 ## Unreleased
+- Replaced the separate Diagnostics tab with a Settings tab containing compact health checks.
+- Moved discovery provider configuration, API key, refresh limit, endpoint overrides and server-list import into Settings.
+- Simplified the Server Browser tab to a single configured-provider **Refresh database** button.
+- Changed startup discovery refresh from hard-coded BattleMetrics to opt-in refresh for the selected provider.
 - Added quiet rate-limited BattleMetrics startup refresh.
 - Added BattleMetrics server discovery as a documented no-key discovery source.
 - Added Steam Web API server-list discovery as the preferred HTTPS discovery path.

@@ -10,7 +10,7 @@ main.py
        -> Servers tab
        -> Server Browser tab
        -> Mods tab
-       -> Diagnostics tab
+       -> Settings tab
        -> guarded launch workflow
 ```
 
@@ -65,7 +65,7 @@ favourites.json   favourite server keys
 
 YAML should stay useful for hand-curated servers even after SQLite is introduced.
 
-The v0.6 SQLite foundation stores discovered public servers separately from curated YAML entries. Cached rows are keyed by `host:game_port:query_port` and include browser-oriented fields such as display name, map, player counts, ping, version, mod/password flags and last-seen timestamps. This keeps scraped or transient public browser data out of `servers.yaml` while still giving the GUI a searchable local cache. The initial Server Browser tab is read-only, can import YAML/JSON cache rows, refresh BattleMetrics rows, quietly refresh BattleMetrics in the background at most once per day, refresh Steam Web API rows, refresh legacy Steam master server candidates, enrich visible rows with live status data, copy server details, and explicitly promote a discovered row into the curated YAML list with an editable name/group. Discovery imports candidate endpoints into the cache; enrichment confirms names, maps, player counts and status where query ports respond. The guarded launch workflow remains owned by curated servers.
+The v0.6 SQLite foundation stores discovered public servers separately from curated YAML entries. Cached rows are keyed by `host:game_port:query_port` and include browser-oriented fields such as display name, map, player counts, ping, version, mod/password flags and last-seen timestamps. This keeps scraped or transient public browser data out of `servers.yaml` while still giving the GUI a searchable local cache. The Server Browser tab is read-only and focused on searching, filtering, refreshing the local database from the configured Settings provider, enriching visible rows with live status data, copying server details, and explicitly promoting a discovered row into the curated YAML list with an editable name/group. Settings owns YAML/JSON cache imports, provider choice, API keys, Steam master endpoint overrides, refresh limits, opt-in automatic refresh and compact health checks. Discovery imports candidate endpoints into the cache; enrichment confirms names, maps, player counts and status where query ports respond. The guarded launch workflow remains owned by curated servers.
 
 ## Server Status
 
