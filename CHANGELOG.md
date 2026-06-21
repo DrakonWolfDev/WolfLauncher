@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- Added Steam command details to Auto/selected Steam candidate summaries in Settings health and diagnostics.
+- Added Steam command details to the Settings health configured-install summary.
 - Clarified copied diagnostics and native parity reports to show Flatpak Steam as a `flatpak run` handoff command.
 - Clarified native parity report result text when the external launcher comparison cannot be built.
 - Changed native parity reports to build the external comparison from the same resolved server target as the native preview.

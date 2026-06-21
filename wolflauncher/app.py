@@ -62,9 +62,9 @@ from .platform_detection import (
     dayz_process_check,
     detect_steam,
     install_label,
-    install_readiness,
     proton_compatdata_detail,
     select_steam_install,
+    steam_install_summary,
     steam_mode_label,
     steam_selection_candidates_detail,
     steam_selection_report,
@@ -2296,9 +2296,7 @@ class MainWindow(QMainWindow):
         self.health_table.resizeColumnsToContents()
 
     def _install_summary(self, install) -> str:
-        if not install:
-            return "Not detected"
-        return install_readiness(install)[1]
+        return steam_install_summary(install)
 
     def _health_colour(self, status: str) -> str:
         if status == "OK":

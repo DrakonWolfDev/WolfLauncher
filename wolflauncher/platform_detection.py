@@ -311,6 +311,13 @@ def steam_command_detail(install: SteamInstall | None) -> str:
     return install.executable
 
 
+def steam_install_summary(install: SteamInstall | None) -> str:
+    if not install:
+        return "Not detected"
+    _status, detail = install_readiness(install)
+    return f"{detail}; command: {steam_command_detail(install)}"
+
+
 def steam_selection_readiness(mode: str, installs: list[SteamInstall] | None = None) -> tuple[str, str]:
     report = steam_selection_report(mode, installs)
     return report.status, report.detail
@@ -319,7 +326,7 @@ def steam_selection_readiness(mode: str, installs: list[SteamInstall] | None = N
 def steam_selection_report(mode: str, installs: list[SteamInstall] | None = None) -> SteamSelectionReport:
     detected = installs if installs is not None else detect_steam()
     install = select_steam_install(mode, detected)
-    candidates = [install_readiness(candidate)[1] for candidate in detected if candidate.root or candidate.executable]
+    candidates = [steam_install_summary(candidate) for candidate in detected if candidate.root or candidate.executable]
     if mode == "auto":
         if not install:
             return SteamSelectionReport("MISSING", "Auto selection found no Steam install", "None", candidates)

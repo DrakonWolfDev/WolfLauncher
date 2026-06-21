@@ -16,6 +16,7 @@ from wolflauncher.platform_detection import (
     proton_compatdata_detail,
     select_steam_install,
     steam_command_detail,
+    steam_install_summary,
     steam_selection_candidates_detail,
     steam_selection_report,
     steam_mode_label,
@@ -59,6 +60,22 @@ class PlatformDetectionTests(unittest.TestCase):
         )
         self.assertEqual(steam_command_detail(make_install("native", executable="/usr/bin/steam")), "/usr/bin/steam")
         self.assertEqual(steam_command_detail(make_install("native", executable="")), "not detected")
+
+    def test_steam_install_summary_includes_readiness_and_command_detail(self):
+        install = make_install(
+            "flatpak",
+            executable="com.valvesoftware.Steam",
+            root=Path("/flatpak/Steam"),
+            steamapps=Path("/flatpak/Steam/steamapps"),
+            dayz_dir=Path("/flatpak/Steam/steamapps/common/DayZ"),
+            workshop_dir=Path("/flatpak/Steam/steamapps/workshop/content/221100"),
+        )
+
+        self.assertEqual(
+            steam_install_summary(install),
+            "Flatpak Steam ready (not running); command: flatpak run com.valvesoftware.Steam",
+        )
+        self.assertEqual(steam_install_summary(None), "Not detected")
 
     def test_steam_mode_label_names_selection_modes(self):
         self.assertEqual(steam_mode_label("auto"), "Auto")
@@ -342,12 +359,13 @@ class PlatformDetectionTests(unittest.TestCase):
         self.assertEqual(
             report.candidates,
             [
-                "Native Steam library found, but DayZ install is not visible (not running)",
-                "Flatpak Steam ready (not running)",
+                "Native Steam library found, but DayZ install is not visible (not running); command: /usr/bin/steam",
+                "Flatpak Steam ready (not running); command: flatpak run com.valvesoftware.Steam",
             ],
         )
         self.assertIn("Native Steam library found", steam_selection_candidates_detail(report))
         self.assertIn("Flatpak Steam ready", steam_selection_candidates_detail(report))
+        self.assertIn("command: flatpak run com.valvesoftware.Steam", steam_selection_candidates_detail(report))
 
     @patch("wolflauncher.platform_detection.subprocess.run")
     def test_dayz_process_check_reports_known_dayz_processes(self, run):
