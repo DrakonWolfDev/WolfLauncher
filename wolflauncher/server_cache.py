@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import sqlite3
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -81,6 +82,11 @@ def initialize(connection: sqlite3.Connection) -> None:
 
 
 def upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> None:
+    _upsert_server(connection, server)
+    connection.commit()
+
+
+def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> None:
     connection.execute(
         """
         INSERT INTO discovered_servers (
@@ -114,13 +120,71 @@ def upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> N
         """,
         _server_params(server),
     )
-    connection.commit()
 
 
 def upsert_servers(connection: sqlite3.Connection, servers: list[DiscoveredServer]) -> int:
     for server in servers:
-        upsert_server(connection, server)
+        _upsert_server(connection, server)
+    connection.commit()
     return len(servers)
+
+
+def sync_source_servers(
+    connection: sqlite3.Connection,
+    source: str,
+    servers: list[DiscoveredServer],
+) -> tuple[int, int]:
+    source = source.strip()
+    if not source:
+        raise ValueError("Discovery source is required.")
+
+    normalized = [replace(server, source=source) for server in servers]
+    keys = {server.cache_key for server in normalized}
+
+    before = connection.execute(
+        "SELECT COUNT(*) FROM discovered_servers WHERE source = ?",
+        (source,),
+    ).fetchone()[0]
+
+    connection.execute("CREATE TEMP TABLE IF NOT EXISTS current_source_keys (cache_key TEXT PRIMARY KEY)")
+    connection.execute("DELETE FROM current_source_keys")
+    if keys:
+        connection.executemany(
+            "INSERT OR IGNORE INTO current_source_keys (cache_key) VALUES (?)",
+            [(key,) for key in keys],
+        )
+
+    connection.execute(
+        """
+        DELETE FROM discovered_servers
+        WHERE source = ?
+        AND cache_key NOT IN (SELECT cache_key FROM current_source_keys)
+        """,
+        (source,),
+    )
+
+    existing_keys = {
+        row["cache_key"]
+        for row in connection.execute(
+            "SELECT cache_key FROM discovered_servers WHERE cache_key IN (SELECT cache_key FROM current_source_keys)"
+        ).fetchall()
+    }
+    inserted = 0
+    for server in normalized:
+        if server.cache_key in existing_keys:
+            continue
+        _upsert_server(connection, server)
+        existing_keys.add(server.cache_key)
+        inserted += 1
+
+    after = connection.execute(
+        "SELECT COUNT(*) FROM discovered_servers WHERE source = ?",
+        (source,),
+    ).fetchone()[0]
+    connection.execute("DELETE FROM current_source_keys")
+    connection.commit()
+    removed = max(0, before + inserted - after)
+    return inserted, removed
 
 
 def import_servers_from_file(connection: sqlite3.Connection, path: Path) -> int:

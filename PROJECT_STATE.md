@@ -87,6 +87,7 @@ Current handling:
 - YAML is the curated server/source-of-truth format for early versions.
 - SQLite is now introduced as the discovered public server browser cache.
 - v0.6 has started with a standalone SQLite server cache foundation and read-only browser tab for discovered public servers.
+- Provider refreshes sync their discovered rows by removing stale provider-backed entries and adding only new cache keys; curated YAML remains the place for saved servers.
 - JSON is used for user settings and favourites under `~/.config/wolflauncher`.
 - The external shell launcher remains the launch engine for now.
 - The vendored shell launcher is the reference contract for future native launcher work.

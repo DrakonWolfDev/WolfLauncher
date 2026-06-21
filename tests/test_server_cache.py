@@ -101,6 +101,78 @@ class ServerCacheTests(unittest.TestCase):
         self.assertEqual(count, 2)
         self.assertEqual(len(server_cache.search_servers(connection)), 2)
 
+    def test_sync_source_servers_clears_source_when_provider_returns_no_rows(self):
+        connection = self.open_cache()
+        server_cache.upsert_server(
+            connection,
+            DiscoveredServer(
+                name="API Server",
+                source="battlemetrics",
+                host="203.0.113.10",
+                game_port=2302,
+                query_port=27016,
+            ),
+        )
+        server_cache.upsert_server(
+            connection,
+            DiscoveredServer(
+                name="Imported Server",
+                source="import",
+                host="203.0.113.20",
+                game_port=2302,
+                query_port=27016,
+            ),
+        )
+
+        inserted, removed = server_cache.sync_source_servers(connection, "battlemetrics", [])
+
+        self.assertEqual((inserted, removed), (0, 1))
+        self.assertIsNone(server_cache.get_server(connection, "203.0.113.10:2302:27016"))
+        self.assertIsNotNone(server_cache.get_server(connection, "203.0.113.20:2302:27016"))
+
+    def test_sync_source_servers_inserts_only_new_cache_keys(self):
+        connection = self.open_cache()
+        known = DiscoveredServer(
+            name="Known Enriched Name",
+            source="steam_web_api",
+            host="203.0.113.30",
+            game_port=2302,
+            query_port=27016,
+            players_current=12,
+            online=True,
+        )
+        server_cache.upsert_server(connection, known)
+
+        inserted, removed = server_cache.sync_source_servers(
+            connection,
+            "steam_web_api",
+            [
+                DiscoveredServer(
+                    name="Provider Renamed Known",
+                    source="steam_web_api",
+                    host="203.0.113.30",
+                    game_port=2302,
+                    query_port=27016,
+                    players_current=0,
+                    online=False,
+                ),
+                DiscoveredServer(
+                    name="New API Server",
+                    source="steam_web_api",
+                    host="203.0.113.40",
+                    game_port=2302,
+                    query_port=27016,
+                ),
+            ],
+        )
+
+        self.assertEqual((inserted, removed), (1, 0))
+        cached_known = server_cache.get_server(connection, known.cache_key)
+        self.assertEqual(cached_known.name, "Known Enriched Name")
+        self.assertEqual(cached_known.players_current, 12)
+        self.assertTrue(cached_known.online)
+        self.assertIsNotNone(server_cache.get_server(connection, "203.0.113.40:2302:27016"))
+
     def test_search_filters_and_sorts_cached_servers(self):
         connection = self.open_cache()
         servers = [

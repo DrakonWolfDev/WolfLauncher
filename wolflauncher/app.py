@@ -671,6 +671,7 @@ class MainWindow(QMainWindow):
     def handle_steam_discovery_ready(self, servers, error: str):
         self._set_database_refresh_enabled(True)
         if error:
+            server_cache.sync_source_servers(self.server_cache, "steam_master", [])
             self.refresh_server_browser()
             QMessageBox.warning(
                 self,
@@ -678,12 +679,12 @@ class MainWindow(QMainWindow):
                 f"{error}\n\nCheck DNS/network access to the Steam master server, or use a YAML/JSON import file.",
             )
             return
-        count = server_cache.upsert_servers(self.server_cache, servers)
+        inserted, removed = server_cache.sync_source_servers(self.server_cache, "steam_master", servers)
         self.refresh_server_browser()
         QMessageBox.information(
             self,
             "Steam discovery complete",
-            f"Imported {count} Steam master server candidate(s).",
+            f"Added {inserted} new Steam master candidate(s); removed {removed} stale row(s).",
         )
 
     def refresh_from_steam_web_api(self):
@@ -702,15 +703,16 @@ class MainWindow(QMainWindow):
     def handle_steam_web_api_ready(self, servers, error: str):
         self._set_database_refresh_enabled(True)
         if error:
+            server_cache.sync_source_servers(self.server_cache, "steam_web_api", [])
             self.refresh_server_browser()
             QMessageBox.warning(self, "Steam Web API discovery failed", error)
             return
-        count = server_cache.upsert_servers(self.server_cache, servers)
+        inserted, removed = server_cache.sync_source_servers(self.server_cache, "steam_web_api", servers)
         self.refresh_server_browser()
         QMessageBox.information(
             self,
             "Steam Web API discovery complete",
-            f"Imported {count} Steam Web API server row(s).",
+            f"Added {inserted} new Steam Web API row(s); removed {removed} stale row(s).",
         )
 
     def refresh_from_battlemetrics(self):
@@ -790,23 +792,31 @@ class MainWindow(QMainWindow):
         self._set_database_refresh_enabled(True)
         self.mark_auto_refresh("steam_master")
         if error:
+            server_cache.sync_source_servers(self.server_cache, "steam_master", [])
             self.refresh_server_browser()
             self.statusBar().showMessage(f"Steam master auto-refresh failed: {error}", 7000)
             return
-        count = server_cache.upsert_servers(self.server_cache, servers)
+        inserted, removed = server_cache.sync_source_servers(self.server_cache, "steam_master", servers)
         self.refresh_server_browser()
-        self.statusBar().showMessage(f"Steam master auto-refresh imported {count} row(s).", 7000)
+        self.statusBar().showMessage(
+            f"Steam master auto-refresh added {inserted} row(s), removed {removed}.",
+            7000,
+        )
 
     def handle_auto_web_api_ready(self, servers, error: str):
         self._set_database_refresh_enabled(True)
         self.mark_auto_refresh("steam_web_api")
         if error:
+            server_cache.sync_source_servers(self.server_cache, "steam_web_api", [])
             self.refresh_server_browser()
             self.statusBar().showMessage(f"Steam Web API auto-refresh failed: {error}", 7000)
             return
-        count = server_cache.upsert_servers(self.server_cache, servers)
+        inserted, removed = server_cache.sync_source_servers(self.server_cache, "steam_web_api", servers)
         self.refresh_server_browser()
-        self.statusBar().showMessage(f"Steam Web API auto-refresh imported {count} row(s).", 7000)
+        self.statusBar().showMessage(
+            f"Steam Web API auto-refresh added {inserted} row(s), removed {removed}.",
+            7000,
+        )
 
     def handle_battlemetrics_ready(self, servers, error: str):
         automatic = bool(self.battlemetrics_worker and self.battlemetrics_worker.automatic)
@@ -814,24 +824,25 @@ class MainWindow(QMainWindow):
         if automatic:
             self.mark_auto_refresh("battlemetrics")
         if error:
+            server_cache.sync_source_servers(self.server_cache, "battlemetrics", [])
             self.refresh_server_browser()
             if automatic:
                 self.statusBar().showMessage(f"BattleMetrics auto-refresh failed: {error}", 7000)
                 return
             QMessageBox.warning(self, "BattleMetrics discovery failed", error)
             return
-        count = server_cache.upsert_servers(self.server_cache, servers)
+        inserted, removed = server_cache.sync_source_servers(self.server_cache, "battlemetrics", servers)
         self.refresh_server_browser()
         if automatic:
             self.statusBar().showMessage(
-                f"BattleMetrics auto-refresh imported {count} server row(s).",
+                f"BattleMetrics auto-refresh added {inserted} row(s), removed {removed}.",
                 7000,
             )
             return
         QMessageBox.information(
             self,
             "BattleMetrics discovery complete",
-            f"Imported {count} BattleMetrics server row(s).",
+            f"Added {inserted} new BattleMetrics row(s); removed {removed} stale row(s).",
         )
 
     def enrich_visible_discovered_servers(self):

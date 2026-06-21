@@ -157,6 +157,8 @@ Select an imported/discovered row and use **Promote to curated** to add it to `s
 
 Choose a server API provider in Settings, then use **Refresh database** in the Server Browser tab. BattleMetrics works without a key, Steam Web API uses the saved Steam API key, and Steam Master uses Valve's legacy UDP master server path.
 
+Provider refreshes sync the provider-backed cache rather than accumulating old rows: servers no longer returned by the selected service are removed, an empty or failed provider refresh clears that provider's discovered rows, and existing cache keys are left untouched so live enrichment is not repeated unnecessarily. Keep servers you care about in the curated `servers.yaml` list.
+
 Settings also contains the refresh row limit, an opt-in automatic refresh toggle, and a comma-separated **Steam masters** endpoint list for cases where Valve's default DNS names do not resolve, for example `HOST:27011,HOST:27015`.
 
 When automatic refresh is enabled, WolfLauncher waits after startup and refreshes the selected provider at most once every 24 hours.

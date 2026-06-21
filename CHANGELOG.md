@@ -8,6 +8,7 @@
 - Added quiet rate-limited BattleMetrics startup refresh.
 - Added BattleMetrics server discovery as a documented no-key discovery source.
 - Added Steam Web API server-list discovery as the preferred HTTPS discovery path.
+- Changed provider refreshes to sync discovered rows, clearing stale API-backed cache entries and inserting only new server keys.
 - Added live enrichment for visible discovered server cache rows.
 - Added an in-app Steam master endpoint override field.
 - Added explicit Steam master endpoint-list overrides for discovery testing.
