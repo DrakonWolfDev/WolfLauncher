@@ -15,6 +15,7 @@ from wolflauncher.platform_detection import (
     parse_libraryfolders_paths,
     proton_compatdata_detail,
     select_steam_install,
+    steam_command_detail,
     steam_selection_candidates_detail,
     steam_selection_report,
     steam_mode_label,
@@ -50,6 +51,14 @@ class PlatformDetectionTests(unittest.TestCase):
         self.assertEqual(install_label(make_install("native")), "Native Steam")
         self.assertEqual(install_label(make_install("flatpak")), "Flatpak Steam")
         self.assertEqual(install_label(make_install("STEAM_ROOT env")), "STEAM_ROOT Steam library")
+
+    def test_steam_command_detail_reports_flatpak_handoff_command(self):
+        self.assertEqual(
+            steam_command_detail(make_install("flatpak", executable="com.valvesoftware.Steam")),
+            "flatpak run com.valvesoftware.Steam",
+        )
+        self.assertEqual(steam_command_detail(make_install("native", executable="/usr/bin/steam")), "/usr/bin/steam")
+        self.assertEqual(steam_command_detail(make_install("native", executable="")), "not detected")
 
     def test_steam_mode_label_names_selection_modes(self):
         self.assertEqual(steam_mode_label("auto"), "Auto")

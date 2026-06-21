@@ -303,6 +303,14 @@ def install_label(install: SteamInstall) -> str:
     return f"{install.mode} Steam"
 
 
+def steam_command_detail(install: SteamInstall | None) -> str:
+    if not install or not install.executable:
+        return "not detected"
+    if install.mode == "flatpak":
+        return f"flatpak run {FLATPAK_STEAM_ID}"
+    return install.executable
+
+
 def steam_selection_readiness(mode: str, installs: list[SteamInstall] | None = None) -> tuple[str, str]:
     report = steam_selection_report(mode, installs)
     return report.status, report.detail

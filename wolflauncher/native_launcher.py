@@ -15,6 +15,7 @@ from .platform_detection import (
     SteamInstall,
     install_label,
     proton_compatdata_detail,
+    steam_command_detail,
 )
 from .status import resolve_host
 
@@ -273,7 +274,7 @@ def format_native_launch_parity_report(
         "",
         "Validation checklist:",
         f"- Steam mode: {install_detail}",
-        f"- Steam command: {install.executable or 'not detected'}",
+        f"- Steam command: {steam_command_detail(install)}",
         f"- Steam running: {'yes' if install.running else 'no'}",
         f"- Steam root: {_path_text(install.root)}",
         f"- Steam library: {_path_text(install.steamapps)}",

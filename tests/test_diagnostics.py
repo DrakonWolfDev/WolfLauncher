@@ -196,7 +196,7 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertIn("Flatpak Steam ready", report.summary)
         self.assertIn("Selected Steam mode: Flatpak Steam", report.details)
         self.assertIn("Selected install: Flatpak Steam", report.details)
-        self.assertIn("Steam command: com.valvesoftware.Steam", report.details)
+        self.assertIn("Steam command: flatpak run com.valvesoftware.Steam", report.details)
         self.assertIn(
             "Proton compatdata: /home/user/.var/app/com.valvesoftware.Steam/data/Steam/steamapps/compatdata/221100",
             report.details,

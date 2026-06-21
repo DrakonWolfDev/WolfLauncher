@@ -15,6 +15,7 @@ from .platform_detection import (
     ok_missing,
     proton_compatdata_detail,
     select_steam_install,
+    steam_command_detail,
     steam_mode_label,
     steam_selection_candidates_detail,
     steam_selection_report,
@@ -228,7 +229,7 @@ def launch_troubleshooting_report(
         f"Selected install: {selection.selected_label}",
         f"Steam readiness: {selection.status} - {selection.detail}",
         f"Steam candidates: {steam_selection_candidates_detail(selection)}",
-        f"Steam command: {(install.executable if install and install.executable else 'not detected')}",
+        f"Steam command: {steam_command_detail(install)}",
         f"Steam running: {yes_no(bool(install and install.running))}",
         f"Steam root: {(install.root if install and install.root else 'not detected')}",
         f"Steam library: {(install.steamapps if install and install.steamapps else 'not detected')}",
@@ -313,6 +314,7 @@ def run_diagnostics(
         lines.append(f"  {label}")
         lines.append(f"    readiness: {status} - {detail}")
         lines.append(f"    executable: {install.executable or 'not found'}")
+        lines.append(f"    launch command: {steam_command_detail(install)}")
         lines.append(f"    running: {yes_no(install.running)}")
         lines.append(f"    root: {install.root or 'not found'}")
         lines.append(f"    steamapps: {install.steamapps or 'not found'}")

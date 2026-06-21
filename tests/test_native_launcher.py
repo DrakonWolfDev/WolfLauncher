@@ -439,6 +439,7 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertIn("Native launch parity report", text)
             self.assertIn("Generated at: 2026-06-21T15:16:59+00:00", text)
             self.assertIn("- Steam mode: Flatpak Steam", text)
+            self.assertIn("- Steam command: flatpak run com.valvesoftware.Steam", text)
             self.assertIn(f"- Proton compatdata: {install.compatdata_dir}", text)
             self.assertIn(f"- DayZ path: {install.dayz_dir}", text)
             self.assertIn("- Required mod count: 1", text)
