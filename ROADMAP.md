@@ -30,12 +30,14 @@ Status: complete.
 
 ## v0.7 - Health checks and Linux polish
 
+Status: complete, with the NVIDIA PRIME Steam launch-option issue still tracked as external until reproduced.
+
 - Improve hybrid-GPU/NVIDIA PRIME diagnostics; initial structured diagnostics and Settings health visibility are in place.
 - Add safer user-facing guidance for Steam launch options; initial diagnostics guidance is in place.
 - Expand native Steam and Flatpak Steam checks; secondary Steam library detection is now in place.
 - Continue improving Proton/Steam handoff failure states; launch dialogs now clarify the handoff boundary and probe for known DayZ processes after successful command exit.
 - Add Linux Mint/Ubuntu install instructions; development setup notes are in the README, packaged install notes still need future work.
-- Start carving native Python equivalents from the vendored legacy launcher behavior. Experimental native Steam handoff now has native-Steam and Flatpak-Steam success, an opt-in launch-engine setting and explicit Steam-install selection, while broader server and missing-mod parity still need testing.
+- Start carving native Python equivalents from the vendored legacy launcher behavior. Experimental native Steam handoff now has native-Steam and Flatpak-Steam success, an opt-in launch-engine setting, explicit Steam-install selection and successful testing on several servers, while broader missing-mod parity still needs testing.
 
 ## v0.8 - Native launcher engine investigation
 

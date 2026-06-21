@@ -10,9 +10,9 @@ The upstream MIT-licensed shell launcher is vendored in `external/dayz-linux-cli
 
 ## Status
 
-Current baseline: v0.6 server-browser foundation complete, with v0.7 Linux health-check polish in progress.
+Current baseline: v0.7 health checks and Linux polish complete, with native-launch parity investigation continuing behind the external launcher default.
 
-The server browser, settings health checks, mod checks and guarded launch handoff are working. The only known bug is that DayZ does not run when Steam launch options contain:
+The server browser, settings health checks, diagnostics, mod checks and guarded launch handoff are working. The experimental native engine has reached successful native Steam and Flatpak Steam handoffs in real-world testing, but the external launcher remains the default until broader parity is proven. The only known bug is that DayZ does not run when Steam launch options contain:
 
 ```text
 __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%
@@ -292,16 +292,16 @@ or via a native `.deb` package.
 
 ## Roadmap
 
-Next active target: v0.7 health checks and Linux polish.
+Next active target: v0.8 native launcher engine investigation.
 
 Planned future work includes:
 
 - Continued Server Browser polish.
-- Hybrid-GPU/NVIDIA PRIME diagnostics and launch-option guidance.
-- Improved Steam/Proton handoff diagnostics.
-- Expanded native and Flatpak Steam checks, including secondary Steam library detection.
+- Continued hybrid-GPU/NVIDIA PRIME investigation after reproducible data is available.
+- Improved Steam/Proton handoff diagnostics from real-world failures.
+- Broader native and Flatpak Steam parity testing across servers and missing-mod cases.
 - Native packaging and installation.
-- Eventual internal launcher engine investigation.
+- Eventual internal launcher engine replacement once parity is proven.
 
 ## License
 

@@ -1,6 +1,6 @@
 # WolfLauncher Project State
 
-Current snapshot: v0.6 server-browser foundation complete.
+Current snapshot: v0.7 health checks and Linux polish complete.
 
 WolfLauncher is a Linux-first DayZ launcher GUI built with Python and PySide6. It currently wraps the existing MIT-licensed `dayz-linux-cli-launcher` style shell launcher instead of replacing it.
 
@@ -8,7 +8,7 @@ The upstream shell launcher is now vendored under `external/dayz-linux-cli-launc
 
 ## Current status
 
-The v0.6 launch, status, settings health checks, mod-checking and discovered-server browser work is considered functional. The application can be used as the working project base for the next improvement cycle.
+The v0.7 launch, status, settings health checks, diagnostics, mod-checking, discovered-server browser and Linux handoff polish are considered functional. The application can be used as the working project base for the native-launch parity improvement cycle.
 
 Working:
 
@@ -156,12 +156,12 @@ Current handling:
 
 ## Next step
 
-Use v0.7 as the next active development target:
+Use v0.8 as the next active development target:
 
-- Continue refining hybrid-GPU/NVIDIA PRIME diagnostics and safer user-facing Steam launch-option guidance after the initial consolidated launch troubleshooting report.
-- Continue refining hybrid-GPU guidance after real-world NVIDIA PRIME reproduction data is available.
-- Expand native and Flatpak Steam checks beyond secondary-library detection.
-- Keep refining Proton/Steam handoff failure states after the initial selected-install/process/PRIME troubleshooting report.
+- Broaden native and Flatpak Steam parity testing across more servers, Steam install modes and missing-mod cases.
+- Keep the external launcher as the default launch path until native parity is proven with broader real-world testing.
+- Continue refining hybrid-GPU/NVIDIA PRIME guidance after reproducible data is available.
+- Keep refining Proton/Steam handoff failure states from real-world failures.
 - Continue refining Linux Mint/Ubuntu install instructions toward packaged installs.
 - Defer packaging work until late pre-1.0 polish; launcher parity and Steam/Proton reliability should come first.
 - Continue improving curated server organisation beyond basic edit/remove flows.
