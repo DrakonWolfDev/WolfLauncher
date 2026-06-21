@@ -23,6 +23,7 @@ class SteamInstall:
     steamapps: Path | None
     dayz_dir: Path | None
     workshop_dir: Path | None
+    compatdata_dir: Path | None = None
     library_steamapps: list[Path] = field(default_factory=list)
 
 
@@ -136,6 +137,13 @@ def _workshop_from_steamapps(steamapps: Path | None) -> Path | None:
     return workshop if workshop.exists() else None
 
 
+def _compatdata_from_steamapps(steamapps: Path | None) -> Path | None:
+    if not steamapps:
+        return None
+    compatdata = steamapps / "compatdata" / str(STEAM_APP_ID_DAYZ)
+    return compatdata if compatdata.exists() else None
+
+
 def _dayz_from_libraries(libraries: list[Path]) -> Path | None:
     for steamapps in libraries:
         dayz = _dayz_from_steamapps(steamapps)
@@ -149,6 +157,14 @@ def _workshop_from_libraries(libraries: list[Path]) -> Path | None:
         workshop = _workshop_from_steamapps(steamapps)
         if workshop:
             return workshop
+    return None
+
+
+def _compatdata_from_libraries(libraries: list[Path]) -> Path | None:
+    for steamapps in libraries:
+        compatdata = _compatdata_from_steamapps(steamapps)
+        if compatdata:
+            return compatdata
     return None
 
 
@@ -181,6 +197,7 @@ def detect_steam() -> list[SteamInstall]:
             steamapps=native_steamapps,
             dayz_dir=_dayz_from_libraries(native_libraries),
             workshop_dir=_workshop_from_libraries(native_libraries),
+            compatdata_dir=_compatdata_from_libraries(native_libraries),
             library_steamapps=native_libraries,
         )
     )
@@ -197,6 +214,7 @@ def detect_steam() -> list[SteamInstall]:
             steamapps=flatpak_steamapps,
             dayz_dir=_dayz_from_libraries(flatpak_libraries),
             workshop_dir=_workshop_from_libraries(flatpak_libraries),
+            compatdata_dir=_compatdata_from_libraries(flatpak_libraries),
             library_steamapps=flatpak_libraries,
         )
     )
@@ -215,6 +233,7 @@ def detect_steam() -> list[SteamInstall]:
                 steamapps=_select_visible_steamapps(env_libraries),
                 dayz_dir=_dayz_from_libraries(env_libraries),
                 workshop_dir=_workshop_from_libraries(env_libraries),
+                compatdata_dir=_compatdata_from_libraries(env_libraries),
                 library_steamapps=env_libraries,
             )
         )

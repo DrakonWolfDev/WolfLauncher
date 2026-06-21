@@ -45,6 +45,7 @@ Working:
 - Settings health rows can be copied as a support snapshot.
 - Full diagnostics reports can be copied from Settings for support and bug reports.
 - Copied diagnostics reports include generated-at and selected launch-engine metadata.
+- Settings health, diagnostics and native parity reports show the selected install's DayZ Proton compatdata folder when visible; this is informational and does not gate launch.
 - Steam health reporting distinguishes native, Flatpak and `STEAM_ROOT` installs and explains partial detection states.
 - Settings health and diagnostics explain the selected Steam install and list detected Steam candidates so Auto selection is easier to troubleshoot.
 - Discovery provider, API key, endpoint and refresh-limit settings persistence.

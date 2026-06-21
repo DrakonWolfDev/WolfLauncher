@@ -157,6 +157,7 @@ def launch_troubleshooting_report(
         f"Steam library: {(install.steamapps if install and install.steamapps else 'not detected')}",
         f"DayZ install: {(install.dayz_dir if install and install.dayz_dir else 'not detected')}",
         f"Workshop folder: {(install.workshop_dir if install and install.workshop_dir else 'not detected')}",
+        f"Proton compatdata: {(install.compatdata_dir if install and install.compatdata_dir else 'not detected')}",
         f"Post-handoff process visibility: {process.detail}",
         f"PRIME status: {prime.status} - {prime.summary}",
         "Steam launch options: not readable by WolfLauncher",
@@ -234,6 +235,7 @@ def run_diagnostics(
         lines.append(f"    running: {yes_no(install.running)}")
         lines.append(f"    root: {install.root or 'not found'}")
         lines.append(f"    steamapps: {install.steamapps or 'not found'}")
+        lines.append(f"    compatdata: {install.compatdata_dir or 'not found'}")
         if install.library_steamapps:
             lines.append("    libraries:")
             for library in install.library_steamapps:

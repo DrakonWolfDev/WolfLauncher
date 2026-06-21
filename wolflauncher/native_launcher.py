@@ -264,6 +264,7 @@ def format_native_launch_parity_report(report: NativeLaunchParityReport) -> str:
         f"- Steam running: {'yes' if install.running else 'no'}",
         f"- Steam root: {_path_text(install.root)}",
         f"- Steam library: {_path_text(install.steamapps)}",
+        f"- Proton compatdata: {_path_text(install.compatdata_dir)}",
         f"- DayZ path: {_path_text(install.dayz_dir)}",
         f"- Workshop path: {_path_text(install.workshop_dir)}",
         f"- Server: {preview.server.name}",

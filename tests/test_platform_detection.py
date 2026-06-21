@@ -29,6 +29,7 @@ def make_install(
     steamapps: Path | None = None,
     dayz_dir: Path | None = None,
     workshop_dir: Path | None = None,
+    compatdata_dir: Path | None = None,
 ) -> SteamInstall:
     return SteamInstall(
         mode=mode,
@@ -38,6 +39,7 @@ def make_install(
         steamapps=steamapps,
         dayz_dir=dayz_dir,
         workshop_dir=workshop_dir,
+        compatdata_dir=compatdata_dir,
     )
 
 
@@ -123,9 +125,11 @@ class PlatformDetectionTests(unittest.TestCase):
             secondary_steamapps = secondary_root / "steamapps"
             dayz_dir = secondary_steamapps / "common" / "DayZ"
             workshop_dir = secondary_steamapps / "workshop" / "content" / "221100"
+            compatdata_dir = secondary_steamapps / "compatdata" / "221100"
             primary_steamapps.mkdir(parents=True)
             dayz_dir.mkdir(parents=True)
             workshop_dir.mkdir(parents=True)
+            compatdata_dir.mkdir(parents=True)
             (primary_steamapps / "libraryfolders.vdf").write_text(
                 f'"libraryfolders" {{ "1" {{ "path" "{secondary_root}" }} }}',
                 encoding="utf-8",
@@ -143,6 +147,7 @@ class PlatformDetectionTests(unittest.TestCase):
         self.assertEqual(native.library_steamapps, [primary_steamapps, secondary_steamapps])
         self.assertEqual(native.dayz_dir, dayz_dir)
         self.assertEqual(native.workshop_dir, workshop_dir)
+        self.assertEqual(native.compatdata_dir, compatdata_dir)
 
     def test_best_install_prefers_complete_flatpak_over_partial_native(self):
         native = make_install(root=Path("/steam"), steamapps=Path("/steam/steamapps"))

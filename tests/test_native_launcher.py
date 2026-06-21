@@ -32,8 +32,10 @@ def make_install(root: Path, mode: str = "native") -> SteamInstall:
     steamapps = root / "steamapps"
     dayz_dir = steamapps / "common" / "DayZ"
     workshop_dir = steamapps / "workshop" / "content" / "221100"
+    compatdata_dir = steamapps / "compatdata" / "221100"
     dayz_dir.mkdir(parents=True)
     workshop_dir.mkdir(parents=True)
+    compatdata_dir.mkdir(parents=True)
     return SteamInstall(
         mode=mode,
         executable=FLATPAK_STEAM_ID if mode == "flatpak" else "steam",
@@ -42,6 +44,7 @@ def make_install(root: Path, mode: str = "native") -> SteamInstall:
         steamapps=steamapps,
         dayz_dir=dayz_dir,
         workshop_dir=workshop_dir,
+        compatdata_dir=compatdata_dir,
     )
 
 
@@ -378,6 +381,7 @@ class NativeLauncherTests(unittest.TestCase):
 
             self.assertIn("Native launch parity report", text)
             self.assertIn("- Steam mode: Flatpak Steam", text)
+            self.assertIn(f"- Proton compatdata: {install.compatdata_dir}", text)
             self.assertIn(f"- DayZ path: {install.dayz_dir}", text)
             self.assertIn("- Required mod count: 1", text)
             self.assertIn("- Prepared native mod links: 1", text)

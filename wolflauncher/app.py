@@ -2245,6 +2245,13 @@ class MainWindow(QMainWindow):
                 str(steam.workshop_dir) if steam and steam.workshop_dir else "Not detected",
             ),
             (
+                "Proton compatdata",
+                "OK",
+                str(steam.compatdata_dir)
+                if steam and steam.compatdata_dir
+                else "Not detected yet; Steam may create it on first Proton launch",
+            ),
+            (
                 "Configured Steam installs",
                 "OK" if any(item.root or item.executable for item in install_rows) else "WARN",
                 ", ".join(self._install_summary(item) for item in install_rows if item.root or item.executable)

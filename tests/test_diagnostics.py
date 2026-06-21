@@ -114,6 +114,7 @@ class DiagnosticsTests(unittest.TestCase):
             workshop_dir=Path(
                 "/home/user/.var/app/com.valvesoftware.Steam/data/Steam/steamapps/workshop/content/221100"
             ),
+            compatdata_dir=Path("/home/user/.var/app/com.valvesoftware.Steam/data/Steam/steamapps/compatdata/221100"),
         )
 
         report = launch_troubleshooting_report(
@@ -128,6 +129,10 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertIn("Selected mode: Flatpak Steam", report.details)
         self.assertIn("Selected install: Flatpak Steam", report.details)
         self.assertIn("Steam command: com.valvesoftware.Steam", report.details)
+        self.assertIn(
+            "Proton compatdata: /home/user/.var/app/com.valvesoftware.Steam/data/Steam/steamapps/compatdata/221100",
+            report.details,
+        )
         self.assertIn("Post-handoff process visibility: Detected known DayZ process: DayZ_x64.exe", report.details)
         self.assertTrue(any("compare native versus Flatpak Steam" in step for step in report.next_steps))
 

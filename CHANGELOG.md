@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Added informational DayZ Proton compatdata detection to Settings health, diagnostics and native launch parity reports.
 - Added generated-at and selected launch-engine metadata to copied diagnostics reports.
 - Added a Settings diagnostics copy action that copies the full diagnostics report without opening a separate tab.
 - Added a Settings health copy action and right-click menu so support snapshots can be copied from the health table.
