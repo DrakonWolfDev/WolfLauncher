@@ -1,6 +1,9 @@
 # Changelog
 
 ## Unreleased
+- Added an experimental native launch action behind the Mods tab preview, with first real-world native Steam handoff confirmed.
+- Added a saved launch-engine setting so the main Launch button can opt into the native experimental engine while keeping the external launcher as default.
+- Added native launch preview output for prepared mod symlinks, missing Workshop directories and generated Steam commands.
 - Added the first native Python launcher-engine foundation for legacy-compatible mod symlink preparation and Steam launch command generation.
 - Added data-aware Server Browser sorting for numeric ports, players, ping, status and freshness columns.
 - Added fuller NVIDIA PRIME and Steam launch-option troubleshooting guidance.

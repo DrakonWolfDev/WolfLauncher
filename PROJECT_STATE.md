@@ -58,6 +58,9 @@ Working:
 - Steam-not-running warning.
 - Launch output dialog with generated command and launcher output.
 - Successful external-launcher exit code is presented as a handoff to Steam.
+- Experimental native launch preview from the Mods tab, including prepared mod-link output, missing Workshop directory reporting and generated Steam command display.
+- Experimental native Steam handoff from the preview dialog, with first real-world native launch success confirmed against native Steam. The external launcher remains the default launch path while parity testing continues.
+- Saved launch-engine setting in Settings. `External launcher` remains the default, while `Native experimental` routes the main Launch button through the Python native engine.
 
 ## Known bug
 
@@ -104,8 +107,10 @@ Current handling:
 - JSON is used for user settings and favourites under `~/.config/wolflauncher`.
 - The external shell launcher remains the launch engine for now.
 - The vendored shell launcher is the reference contract for future native launcher work.
-- Native launcher replacement work has started behind a separate Python interface, with tests covering compact mod symlink names, relative symlink creation and Steam launch command generation.
-- Mod management is read-only and advisory: it detects installed/missing mods and opens Workshop pages, but does not attempt automatic downloads.
+- Native launcher replacement work has started behind a separate Python interface, with tests covering compact mod symlink names, relative symlink creation, missing-mod preview handling and Steam launch command generation.
+- The native engine has one confirmed real-world native Steam handoff, including starting Steam when it was not already running, but still needs broader testing before replacing the external launcher path.
+- The main Launch button can opt into the native engine through Settings, but this should remain experimental until more servers, missing-mod cases, native Steam and Flatpak Steam are tested.
+- Mod management is read-only and advisory: it detects installed/missing mods and opens Workshop pages, but does not attempt automatic downloads. Future mod installation work should investigate Steam-native subscription/download routes first and require explicit user confirmation.
 - Launch remains guarded: WolfLauncher warns about missing mods and Steam state before calling the external launcher.
 - Hostnames are resolved before launch where possible to mirror the original terminal menu behaviour and avoid DayZSA API issues with DNS-based servers.
 - Python bytecode caches are ignored and should not be tracked as source.
@@ -122,4 +127,5 @@ Use v0.7 as the next active development target:
 - Continue improving curated server organisation beyond basic edit/remove flows.
 - Keep `servers.yaml` for curated, personal and import/export server lists.
 - Continue carving native Python equivalents from the vendored launcher's behavior while expanding the new native launcher engine behind WolfLauncher interfaces.
+- Keep mod installation as a future investigated design, not part of the current read-only mod-management contract.
 - Keep the NVIDIA PRIME Steam launch-option issue visible as the only known bug until it is reproduced and diagnosed.

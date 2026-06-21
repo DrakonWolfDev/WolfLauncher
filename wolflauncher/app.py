@@ -1,4 +1,5 @@
 import os
+import shlex
 import shutil
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
@@ -40,6 +41,7 @@ from .config import (
 )
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from .models import Server
+from .native_launcher import NativeLaunchError, prepare_native_launch, prepare_native_launch_preview
 from .platform_detection import best_install, detect_steam
 from .mods import ModCheckResult, check_server_mods
 from . import server_cache
@@ -242,6 +244,81 @@ class LaunchDialog(QDialog):
         self.close_button.setEnabled(True)
 
 
+class NativeLaunchPreviewDialog(QDialog):
+    def __init__(self, parent, title: str, preview_text: str, command: list[str]):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.resize(860, 540)
+        self.command = command
+        self.process = QProcess(self)
+        self.process.setProcessChannelMode(QProcess.MergedChannels)
+
+        layout = QVBoxLayout(self)
+        self.output = QTextEdit()
+        self.output.setReadOnly(True)
+        self.output.setPlainText(preview_text)
+        layout.addWidget(self.output)
+
+        button_row = QHBoxLayout()
+        copy = QPushButton("Copy")
+        copy.clicked.connect(self.copy_preview)
+        self.launch_button = QPushButton("Launch native experimental")
+        self.launch_button.setEnabled(bool(command))
+        self.launch_button.clicked.connect(self.launch_native_experimental)
+        close = QPushButton("Close")
+        close.clicked.connect(self.close)
+        button_row.addStretch(1)
+        button_row.addWidget(copy)
+        button_row.addWidget(self.launch_button)
+        button_row.addWidget(close)
+        layout.addLayout(button_row)
+
+        self.process.readyReadStandardOutput.connect(self.read_output)
+        self.process.finished.connect(self.handle_finished)
+
+    def copy_preview(self):
+        QApplication.clipboard().setText(self.output.toPlainText())
+
+    def launch_native_experimental(self):
+        reply = QMessageBox.warning(
+            self,
+            "Experimental native launch",
+            "This bypasses the external dayz-launcher.sh script and hands the previewed command directly to Steam.\n\n"
+            "Use it only for testing the new native launcher path. Continue?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if reply != QMessageBox.Yes:
+            return
+        if not self.command:
+            return
+
+        self.launch_button.setEnabled(False)
+        self.output.moveCursor(QTextCursor.End)
+        self.output.append("\n\nStarting experimental native launch...\n")
+        self.process.start(self.command[0], self.command[1:])
+
+    def read_output(self):
+        data = bytes(self.process.readAllStandardOutput()).decode("utf-8", errors="replace")
+        if data:
+            self.output.moveCursor(QTextCursor.End)
+            self.output.insertPlainText(data)
+            self.output.moveCursor(QTextCursor.End)
+
+    def handle_finished(self, exit_code: int, exit_status):
+        self.read_output()
+        if exit_code == 0:
+            self.output.append(
+                "\nExperimental native command handed off to Steam successfully. "
+                "If DayZ does not appear, check Steam/Proton or existing DayZ processes."
+            )
+        else:
+            self.output.append(
+                f"\nExperimental native command exited with code {exit_code}. "
+                "Check the messages above for the Steam error."
+            )
+
+
 class PromoteServerDialog(QDialog):
     def __init__(self, parent, name: str, group: str = "Discovered"):
         super().__init__(parent)
@@ -346,6 +423,14 @@ class MainWindow(QMainWindow):
             str(self.settings.get("launcher_path") or find_default_launcher_path())
         )
         self.player_name = QLineEdit(str(self.settings.get("player_name") or DEFAULT_PLAYER_NAME))
+        self.launch_engine = QComboBox()
+        self.launch_engine.addItems(["External launcher", "Native experimental"])
+        self.launch_engine.setCurrentText(
+            "Native experimental"
+            if str(self.settings.get("launch_engine") or "external") == "native"
+            else "External launcher"
+        )
+        self.launch_engine.currentTextChanged.connect(self.handle_settings_changed)
         self.refresh_seconds = QSpinBox()
         self.refresh_seconds.setRange(0, 3600)
         self.refresh_seconds.setValue(int(self.settings.get("refresh_seconds", 30)))
@@ -581,11 +666,14 @@ class MainWindow(QMainWindow):
         buttons = QHBoxLayout()
         check = QPushButton("Recheck selected server mods")
         check.clicked.connect(lambda _checked=False: self.check_selected_server_mods(force=True))
+        native_preview = QPushButton("Native launch preview")
+        native_preview.clicked.connect(self.preview_native_launch)
         open_selected = QPushButton("Open selected Workshop page")
         open_selected.clicked.connect(self.open_selected_workshop_page)
         open_missing = QPushButton("Open missing Workshop pages")
         open_missing.clicked.connect(self.open_missing_workshop_pages)
         buttons.addWidget(check)
+        buttons.addWidget(native_preview)
         self.mod_filter = QComboBox()
         self.mod_filter.addItems(["All mods", "Missing only", "Installed only"])
         self.mod_filter.currentTextChanged.connect(self.apply_mod_filter)
@@ -618,6 +706,8 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(widget)
 
         launcher_settings = QFormLayout()
+        launcher_settings.addRow("Launch engine", self.launch_engine)
+
         self.discovery_provider = QComboBox()
         self.discovery_provider.addItems([
             "BattleMetrics",
@@ -1039,6 +1129,11 @@ class MainWindow(QMainWindow):
         }
         return keys.get(self.discovery_provider.currentText(), "battlemetrics")
 
+    def launch_engine_key(self) -> str:
+        if not hasattr(self, "launch_engine"):
+            return str(self.settings.get("launch_engine") or "external")
+        return "native" if self.launch_engine.currentText() == "Native experimental" else "external"
+
     def handle_settings_changed(self, *_args):
         self.save_user_settings(silent=True)
         self.update_settings_health()
@@ -1058,6 +1153,7 @@ class MainWindow(QMainWindow):
         self.settings = {
             "launcher_path": self.launcher_path.text(),
             "player_name": self.player_name.text(),
+            "launch_engine": self.launch_engine_key(),
             "refresh_seconds": self.refresh_seconds.value(),
             "last_selected_row": self.table.currentRow(),
             "discovery_provider": self.discovery_provider_key(),
@@ -1785,6 +1881,91 @@ class MainWindow(QMainWindow):
         for mod in missing:
             QDesktopServices.openUrl(QUrl(mod.workshop_url))
 
+    def preview_native_launch(self):
+        if not self.last_mod_result or not self.last_mod_result.ok:
+            QMessageBox.warning(
+                self,
+                "No mod check yet",
+                "Check selected server mods successfully before preparing a native launch preview.",
+            )
+            return
+
+        row = self.table.currentRow()
+        if row < 0:
+            QMessageBox.warning(self, "No server selected", "Select a curated server first.")
+            return
+        server = self.servers[row]
+        if server_key(server) != server_key(self.last_mod_result.server):
+            QMessageBox.warning(
+                self,
+                "Mods are for another server",
+                "Recheck selected server mods before preparing a native launch preview.",
+            )
+            return
+
+        install = best_install()
+        if not install:
+            QMessageBox.critical(self, "Steam not detected", "WolfLauncher could not detect a Steam installation.")
+            return
+
+        try:
+            preview = prepare_native_launch_preview(
+                install,
+                server,
+                self.player_name.text().strip() or DEFAULT_PLAYER_NAME,
+                self.last_mod_result.required_mods,
+            )
+        except NativeLaunchError as exc:
+            QMessageBox.critical(self, "Native preview failed", str(exc))
+            return
+
+        dialog = NativeLaunchPreviewDialog(
+            self,
+            f"Native launch preview for {server.name}",
+            self.native_launch_preview_text(preview),
+            preview.command,
+        )
+        dialog.exec()
+
+    def native_launch_preview_text(self, preview) -> str:
+        lines = [
+            "Native launch preview",
+            "",
+            "This prepared the legacy-compatible DayZ mod symlinks for installed mods only.",
+            "It did not launch Steam or DayZ.",
+            "",
+            f"Server: {preview.server.name}",
+            f"Connect: {preview.server.host}:{preview.server.game_port}",
+            "",
+        ]
+
+        if preview.mod_setup.prepared_mods:
+            lines.append("Prepared mod links:")
+            for prepared in preview.mod_setup.prepared_mods:
+                state = "created" if prepared.created else "already existed"
+                lines.append(
+                    f"- {prepared.name} ({prepared.workshop_id}) -> "
+                    f"{prepared.link_name} [{state}]"
+                )
+        else:
+            lines.append("Prepared mod links: none")
+
+        if preview.mod_setup.missing_mod_ids:
+            lines.extend([
+                "",
+                "Missing Workshop mod directories:",
+                *[f"- {workshop_id}" for workshop_id in preview.mod_setup.missing_mod_ids],
+                "",
+                "Steam command: not ready until all required mods are installed.",
+            ])
+        else:
+            lines.extend([
+                "",
+                "Steam command:",
+                shlex.join(preview.command),
+            ])
+        return "\n".join(lines)
+
     def update_settings_health(self):
         if not hasattr(self, "health_table"):
             return
@@ -1799,6 +1980,7 @@ class MainWindow(QMainWindow):
             self.system_summary.setText("Steam/DayZ not detected")
 
         path = Path(self.launcher_path.text()).expanduser()
+        launch_engine = self.launch_engine_key()
         provider = self.discovery_provider_key()
         provider_detail = self.discovery_provider.currentText()
         if provider == "steam_web_api":
@@ -1828,9 +2010,14 @@ class MainWindow(QMainWindow):
 
         rows = [
             (
+                "Launch engine",
+                "WARN" if launch_engine == "native" else "OK",
+                "Native experimental" if launch_engine == "native" else "External launcher",
+            ),
+            (
                 "Launcher script",
-                "OK" if path.exists() and path.is_file() else "MISSING",
-                str(path),
+                "OK" if launch_engine == "native" or (path.exists() and path.is_file()) else "MISSING",
+                "Not required for native experimental mode" if launch_engine == "native" else str(path),
             ),
             (
                 "Server API",
@@ -1908,6 +2095,16 @@ class MainWindow(QMainWindow):
         if not self.confirm_launch_preflight(server):
             return
 
+        try:
+            command = self.build_selected_launch_command(server, row)
+        except (LaunchError, NativeLaunchError) as exc:
+            QMessageBox.critical(self, "Launch failed", str(exc))
+            return
+
+        dialog = LaunchDialog(self, command, f"Launching {server.name}")
+        dialog.exec()
+
+    def build_selected_launch_command(self, server: Server, row: int) -> list[str]:
         # Launch with the resolved IP address when available. This mirrors the
         # original terminal menu and avoids DayZSA API failures with some DNS
         # hostnames.
@@ -1924,18 +2121,18 @@ class MainWindow(QMainWindow):
                 favourite=server.favourite,
             )
 
-        try:
-            command = build_launch_command(
-                self.launcher_path.text(),
-                self.player_name.text().strip() or DEFAULT_PLAYER_NAME,
-                launch_server,
-            )
-        except LaunchError as exc:
-            QMessageBox.critical(self, "Launch failed", str(exc))
-            return
+        player_name = self.player_name.text().strip() or DEFAULT_PLAYER_NAME
+        if self.launch_engine_key() == "native":
+            install = best_install()
+            if not install:
+                raise NativeLaunchError("Steam installation not detected")
+            required_mods = None
+            if self.last_mod_result and server_key(self.last_mod_result.server) == server_key(server):
+                required_mods = self.last_mod_result.required_mods
+            prepared = prepare_native_launch(install, launch_server, player_name, required_mods)
+            return prepared.command
 
-        dialog = LaunchDialog(self, command, f"Launching {server.name}")
-        dialog.exec()
+        return build_launch_command(self.launcher_path.text(), player_name, launch_server)
 
     def confirm_launch_preflight(self, server: Server) -> bool:
         install = best_install()
@@ -1960,7 +2157,7 @@ class MainWindow(QMainWindow):
                 self,
                 "Steam is not running",
                 f"{install.mode.title()} Steam was detected, but it does not appear to be running.\n\n"
-                "The external launcher may still be able to start Steam, but starting Steam first is recommended.\n\n"
+                "The selected launch engine may still be able to start Steam, but starting Steam first is recommended.\n\n"
                 "Launch anyway?",
                 QMessageBox.Yes | QMessageBox.No,
                 QMessageBox.No,

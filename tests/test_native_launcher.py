@@ -9,7 +9,9 @@ from wolflauncher.native_launcher import (
     NativeLaunchError,
     build_steam_launch_command,
     compact_mod_link_name,
+    prepare_mod_links,
     prepare_native_launch,
+    prepare_native_launch_preview,
 )
 from wolflauncher.platform_detection import FLATPAK_STEAM_ID, SteamInstall
 
@@ -132,8 +134,82 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertTrue(link_path.is_symlink())
             self.assertEqual(Path(link_path.readlink()), Path("../../workshop/content/221100/256"))
             self.assertEqual(prepared.mod_links, ["@AAE"])
+            self.assertEqual(prepared.prepared_mods[0].name, "Example Mod")
+            self.assertTrue(prepared.prepared_mods[0].created)
             self.assertIn("-mod=@AAE", prepared.command)
             self.assertIn("-connect=203.0.113.10:2302", prepared.command)
+
+    def test_prepare_mod_links_collects_missing_mods_without_aborting_installed_mods(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+            mod_dir = install.workshop_dir / "256"
+            mod_dir.mkdir()
+            (mod_dir / "meta.cpp").write_text('name = "Example Mod";\n', encoding="utf-8")
+
+            setup = prepare_mod_links(
+                install.dayz_dir,
+                install.workshop_dir,
+                [RequiredMod("111"), RequiredMod("256")],
+            )
+
+            self.assertEqual(setup.missing_mod_ids, ["111"])
+            self.assertEqual(setup.mod_links, ["@AAE"])
+            self.assertEqual(setup.prepared_mods[0].workshop_id, "256")
+            self.assertEqual(setup.prepared_mods[0].link_path, install.dayz_dir / "@AAE")
+
+    def test_prepare_mod_links_reports_existing_symlink_without_recreating_it(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+            mod_dir = install.workshop_dir / "256"
+            mod_dir.mkdir()
+            (mod_dir / "meta.cpp").write_text('name = "Example Mod";\n', encoding="utf-8")
+            link_path = install.dayz_dir / "@AAE"
+            link_path.symlink_to("../../workshop/content/221100/256")
+
+            setup = prepare_mod_links(install.dayz_dir, install.workshop_dir, [RequiredMod("256")])
+
+            self.assertFalse(setup.prepared_mods[0].created)
+            self.assertEqual(Path(link_path.readlink()), Path("../../workshop/content/221100/256"))
+
+    def test_prepare_native_launch_preview_reports_missing_mods_without_command(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+            mod_dir = install.workshop_dir / "256"
+            mod_dir.mkdir()
+            (mod_dir / "meta.cpp").write_text('name = "Example Mod";\n', encoding="utf-8")
+
+            with patch("wolflauncher.native_launcher.resolve_host", return_value="203.0.113.10"):
+                preview = prepare_native_launch_preview(
+                    install,
+                    make_server(),
+                    "PlayerOne",
+                    [RequiredMod("111"), RequiredMod("256")],
+                )
+
+            self.assertFalse(preview.ready)
+            self.assertEqual(preview.command, [])
+            self.assertEqual(preview.server.host, "203.0.113.10")
+            self.assertEqual(preview.mod_setup.missing_mod_ids, ["111"])
+            self.assertEqual(preview.mod_setup.mod_links, ["@AAE"])
+
+    def test_prepare_native_launch_preview_builds_command_when_ready(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+            mod_dir = install.workshop_dir / "256"
+            mod_dir.mkdir()
+            (mod_dir / "meta.cpp").write_text('name = "Example Mod";\n', encoding="utf-8")
+
+            with patch("wolflauncher.native_launcher.resolve_host", return_value="203.0.113.10"):
+                preview = prepare_native_launch_preview(
+                    install,
+                    make_server(),
+                    "PlayerOne",
+                    [RequiredMod("256")],
+                )
+
+            self.assertTrue(preview.ready)
+            self.assertIn("-mod=@AAE", preview.command)
+            self.assertIn("-connect=203.0.113.10:2302", preview.command)
 
     def test_prepare_native_launch_reports_missing_mods(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -150,6 +226,17 @@ class NativeLauncherTests(unittest.TestCase):
 
             with patch("wolflauncher.native_launcher.resolve_host", return_value="203.0.113.10"):
                 with self.assertRaisesRegex(NativeLaunchError, "Missing mod metadata for: 111"):
+                    prepare_native_launch(install, make_server(), "PlayerOne", [RequiredMod("111")])
+
+    def test_prepare_native_launch_requires_mod_name(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+            mod_dir = install.workshop_dir / "111"
+            mod_dir.mkdir()
+            (mod_dir / "meta.cpp").write_text("// no display name\n", encoding="utf-8")
+
+            with patch("wolflauncher.native_launcher.resolve_host", return_value="203.0.113.10"):
+                with self.assertRaisesRegex(NativeLaunchError, "Missing mod name for: 111"):
                     prepare_native_launch(install, make_server(), "PlayerOne", [RequiredMod("111")])
 
     def test_prepare_native_launch_wraps_dns_failures(self):
