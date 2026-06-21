@@ -69,14 +69,15 @@ def _flatpak_steam_running() -> bool:
 
 def _matching_process_lines(patterns: tuple[str, ...]) -> list[str]:
     try:
-        result = subprocess.run(["pgrep", "-af", "|".join(patterns)], capture_output=True, text=True, timeout=2)
+        result = subprocess.run(["pgrep", "-afi", "|".join(patterns)], capture_output=True, text=True, timeout=2)
     except Exception:
         return []
     if result.returncode != 0:
         return []
     lines = []
     for line in result.stdout.splitlines():
-        if any(pattern in line for pattern in patterns):
+        lower_line = line.lower()
+        if any(pattern.lower() in lower_line for pattern in patterns):
             lines.append(line)
     return lines
 
@@ -353,8 +354,9 @@ def dayz_process_check() -> ProcessCheck:
         return ProcessCheck(False, "No known DayZ process detected")
     names = []
     for line in lines:
+        lower_line = line.lower()
         for pattern in DAYZ_PROCESS_PATTERNS:
-            if pattern in line and pattern not in names:
+            if pattern.lower() in lower_line and pattern not in names:
                 names.append(pattern)
     detail = "Detected known DayZ process: " + ", ".join(names)
     if len(lines) > len(names):

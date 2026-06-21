@@ -98,6 +98,7 @@ Current handling:
 - Diagnostics list detected Steam library folders for each configured install.
 - Diagnostics include known DayZ process visibility for Steam/Proton handoff troubleshooting.
 - Diagnostics and Settings health include a consolidated launch troubleshooting report covering selected Steam mode, detected Steam command and paths, DayZ process visibility, PRIME status and suggested next steps.
+- Known DayZ process checks are case-insensitive so Proton command lines with different executable casing still count as visible.
 - Post-handoff process checks should avoid warning too early; observed native launches can report no DayZ process initially, then show DayZ roughly 10 seconds later, matching the slower behavior seen with the original CLI launcher.
 - Hybrid-GPU testing should start outside WolfLauncher, for example with `prime-run glxinfo -B`, `prime-run steam` and direct DayZ launch from Steam before testing the WolfLauncher handoff.
 - Useful bug reports should capture native-vs-Flatpak Steam, GPU driver/PRIME helper, Proton version, whether DayZ starts directly from Steam without per-game launch options, and WolfLauncher diagnostics output.

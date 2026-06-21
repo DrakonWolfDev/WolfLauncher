@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Made post-handoff DayZ process detection case-insensitive so Proton command lines with different executable casing are still recognized.
 - Expanded DayZ install detection to read Steam `appmanifest_221100.acf` `installdir` values before falling back to the conventional `steamapps/common/DayZ` path.
 - Clarified Proton compatdata diagnostics so missing prefixes are reported as first-run Steam/Proton state rather than a launch blocker, with matching Settings health, diagnostics and native parity report wording.
 - Added a Copy button to the external launch output dialog so the generated command and handoff logs can be pasted into support reports.

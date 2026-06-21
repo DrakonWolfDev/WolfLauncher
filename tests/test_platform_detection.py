@@ -318,6 +318,22 @@ class PlatformDetectionTests(unittest.TestCase):
         self.assertTrue(check.running)
         self.assertIn("DayZ_x64.exe", check.detail)
         self.assertIn("DayZ_BE.exe", check.detail)
+        run.assert_called_once()
+        self.assertEqual(run.call_args.args[0][:2], ["pgrep", "-afi"])
+
+    @patch("wolflauncher.platform_detection.subprocess.run")
+    def test_dayz_process_check_matches_process_names_case_insensitively(self, run):
+        run.return_value = subprocess.CompletedProcess(
+            ["pgrep"],
+            0,
+            stdout="1234 z:\\home\\steam\\dayz_x64.exe\n",
+            stderr="",
+        )
+
+        check = dayz_process_check()
+
+        self.assertTrue(check.running)
+        self.assertIn("DayZ_x64.exe", check.detail)
 
     @patch("wolflauncher.platform_detection.subprocess.run")
     def test_dayz_process_check_reports_no_known_processes(self, run):
