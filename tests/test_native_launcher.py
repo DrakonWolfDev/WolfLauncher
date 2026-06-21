@@ -244,6 +244,38 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertFalse(setup.prepared_mods[0].created)
             self.assertEqual(Path(link_path.readlink()), Path("../../workshop/content/221100/256"))
 
+    def test_prepare_mod_links_reuses_symlink_created_by_previous_preview(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+            mod_dir = install.workshop_dir / "256"
+            mod_dir.mkdir()
+            (mod_dir / "meta.cpp").write_text('name = "Example Mod";\n', encoding="utf-8")
+
+            first = prepare_mod_links(install.dayz_dir, install.workshop_dir, [RequiredMod("256")])
+            second = prepare_mod_links(install.dayz_dir, install.workshop_dir, [RequiredMod("256")])
+
+            self.assertTrue(first.prepared_mods[0].created)
+            self.assertFalse(second.prepared_mods[0].created)
+            self.assertEqual(first.mod_links, second.mod_links)
+            self.assertEqual(Path((install.dayz_dir / "@AAE").readlink()), Path("../../workshop/content/221100/256"))
+
+    def test_prepare_mod_links_rejects_stale_mod_symlink(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+            mod_dir = install.workshop_dir / "256"
+            stale_dir = install.workshop_dir / "999"
+            mod_dir.mkdir()
+            stale_dir.mkdir()
+            (mod_dir / "meta.cpp").write_text('name = "Example Mod";\n', encoding="utf-8")
+            link_path = install.dayz_dir / "@AAE"
+            link_path.symlink_to("../../workshop/content/221100/999")
+
+            with self.assertRaisesRegex(NativeLaunchError, "points somewhere else") as raised:
+                prepare_mod_links(install.dayz_dir, install.workshop_dir, [RequiredMod("256")])
+
+            self.assertEqual(raised.exception.stage, "mod setup")
+            self.assertIn("Remove the stale @mod symlink", raised.exception.user_message())
+
     def test_prepare_native_launch_preview_reports_missing_mods_without_command(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             install = make_install(Path(tmpdir))
@@ -349,6 +381,8 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertIn(f"- DayZ path: {install.dayz_dir}", text)
             self.assertIn("- Required mod count: 1", text)
             self.assertIn("- Prepared native mod links: 1", text)
+            self.assertIn("- Created native mod links: 1", text)
+            self.assertIn("- Reused native mod links: 0", text)
             self.assertIn("- Missing Workshop directories: 0", text)
             self.assertIn("- Native ready: yes", text)
             self.assertIn("Native command is ready for 203.0.113.10:2302 with 1 prepared mod link(s).", text)
@@ -356,6 +390,30 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertIn("Example Mod (256) -> @AAE", text)
             self.assertIn("-connect=203.0.113.10:2302", text)
             self.assertIn("-s 203.0.113.10:2302", text)
+
+    def test_format_native_launch_parity_report_counts_reused_mod_links(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+            launcher = Path(tmpdir) / "dayz-launcher.sh"
+            launcher.write_text("#!/bin/sh\n", encoding="utf-8")
+            mod_dir = install.workshop_dir / "256"
+            mod_dir.mkdir()
+            (mod_dir / "meta.cpp").write_text('name = "Example Mod";\n', encoding="utf-8")
+            prepare_mod_links(install.dayz_dir, install.workshop_dir, [RequiredMod("256")])
+
+            report = prepare_native_launch_parity_report(
+                install,
+                str(launcher),
+                make_server("203.0.113.10"),
+                "PlayerOne",
+                [RequiredMod("256", "Example Mod")],
+            )
+
+            text = format_native_launch_parity_report(report)
+
+            self.assertIn("- Created native mod links: 0", text)
+            self.assertIn("- Reused native mod links: 1", text)
+            self.assertIn("Example Mod (256) -> @AAE [already existed]", text)
 
     def test_format_native_launch_parity_report_keeps_missing_mod_preview_copyable(self):
         with tempfile.TemporaryDirectory() as tmpdir:
