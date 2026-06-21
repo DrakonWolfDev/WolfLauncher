@@ -266,6 +266,89 @@ class ServerCacheTests(unittest.TestCase):
 
         self.assertEqual([server.name for server in results], ["Busy Namalsk"])
 
+    def test_search_sorts_numeric_values_with_unknowns_last(self):
+        connection = self.open_cache()
+        for server in [
+            DiscoveredServer(
+                name="Unknown Ping",
+                host="203.0.113.10",
+                game_port=2302,
+                query_port=27016,
+                players_current=None,
+                ping_ms=None,
+            ),
+            DiscoveredServer(
+                name="Low Ping",
+                host="203.0.113.20",
+                game_port=2302,
+                query_port=27016,
+                players_current=12,
+                ping_ms=12,
+            ),
+            DiscoveredServer(
+                name="High Ping",
+                host="203.0.113.30",
+                game_port=2302,
+                query_port=27016,
+                players_current=48,
+                ping_ms=90,
+            ),
+        ]:
+            server_cache.upsert_server(connection, server)
+
+        ping_ascending = server_cache.search_servers(connection, sort_by="ping")
+        players_descending = server_cache.search_servers(
+            connection,
+            sort_by="players",
+            descending=True,
+        )
+
+        self.assertEqual(
+            [server.name for server in ping_ascending],
+            ["Low Ping", "High Ping", "Unknown Ping"],
+        )
+        self.assertEqual(
+            [server.name for server in players_descending],
+            ["High Ping", "Low Ping", "Unknown Ping"],
+        )
+
+    def test_search_sorts_checked_dates_with_unknowns_last(self):
+        connection = self.open_cache()
+        for server in [
+            DiscoveredServer(
+                name="Never Checked",
+                host="203.0.113.10",
+                game_port=2302,
+                query_port=27016,
+            ),
+            DiscoveredServer(
+                name="Old Checked",
+                host="203.0.113.20",
+                game_port=2302,
+                query_port=27016,
+                last_checked="2026-06-20T12:00:00+00:00",
+            ),
+            DiscoveredServer(
+                name="Fresh Checked",
+                host="203.0.113.30",
+                game_port=2302,
+                query_port=27016,
+                last_checked="2026-06-21T12:00:00+00:00",
+            ),
+        ]:
+            server_cache.upsert_server(connection, server)
+
+        results = server_cache.search_servers(
+            connection,
+            sort_by="last_checked",
+            descending=True,
+        )
+
+        self.assertEqual(
+            [server.name for server in results],
+            ["Fresh Checked", "Old Checked", "Never Checked"],
+        )
+
     def test_search_filters_by_source(self):
         connection = self.open_cache()
         server_cache.upsert_server(

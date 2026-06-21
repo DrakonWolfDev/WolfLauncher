@@ -18,11 +18,12 @@ SERVER_CACHE_PATH = DATA_DIR / "server_cache.sqlite3"
 
 SORT_COLUMNS = {
     "name": "display_name COLLATE NOCASE",
-    "players": "players_current",
-    "ping": "ping_ms",
+    "players": "players_current IS NULL, players_current",
+    "ping": "ping_ms IS NULL, ping_ms",
     "map": "map_name COLLATE NOCASE",
     "version": "version COLLATE NOCASE",
-    "last_seen": "last_seen",
+    "last_checked": "TRIM(last_checked) = '', last_checked",
+    "last_seen": "TRIM(last_seen) = '', last_seen",
 }
 
 FILTER_COLUMNS = {

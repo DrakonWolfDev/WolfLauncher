@@ -1,6 +1,6 @@
 # WolfLauncher Project State
 
-Current snapshot: end of v0.5.2.
+Current snapshot: v0.6 server-browser foundation complete.
 
 WolfLauncher is a Linux-first DayZ launcher GUI built with Python and PySide6. It currently wraps the existing MIT-licensed `dayz-linux-cli-launcher` style shell launcher instead of replacing it.
 
@@ -8,7 +8,7 @@ The upstream shell launcher is now vendored under `external/dayz-linux-cli-launc
 
 ## Current status
 
-The v0.5.2 launch, status, settings health checks and mod-checking work is considered functional. The application can be used as the working project base for the next improvement cycle.
+The v0.6 launch, status, settings health checks, mod-checking and discovered-server browser work is considered functional. The application can be used as the working project base for the next improvement cycle.
 
 Working:
 
@@ -30,6 +30,7 @@ Working:
 - Failed provider refreshes preserve existing discovered-server cache rows.
 - Server Browser map and version filters populated from cached/enriched values.
 - Server Browser source/style filtering, result-limit controls, reset controls and cache summary counts.
+- Server Browser data-aware sorting for cached rows, including numeric player/ping values and checked/seen timestamps.
 - Server Browser double-click promotion and context actions for connect/host/detail copying.
 - DNS hostname and direct IP support.
 - Live DayZ server querying through `gamedig`.
@@ -98,7 +99,7 @@ Current handling:
 
 - YAML is the curated server/source-of-truth format for early versions.
 - SQLite is now introduced as the discovered public server browser cache.
-- v0.6 has started with a standalone SQLite server cache foundation and read-only browser tab for discovered public servers.
+- v0.6 provides a standalone SQLite server cache foundation and read-only browser tab for discovered public servers.
 - Provider refreshes sync their discovered rows after successful responses by removing stale provider-backed entries and adding only new cache keys; failed refreshes preserve existing cache rows. Curated YAML remains the place for saved servers.
 - JSON is used for user settings and favourites under `~/.config/wolflauncher`.
 - The external shell launcher remains the launch engine for now.
@@ -112,12 +113,13 @@ Current handling:
 
 ## Next step
 
-Use v0.6 as the next active development target:
+Use v0.7 as the next active development target:
 
-- Keep BattleMetrics as the default no-key discovery source while allowing users to choose Steam Web API or UDP master discovery in Settings.
-- Improve bulk enrichment controls and keep refining candidate port probing from real-world server data.
+- Improve hybrid-GPU/NVIDIA PRIME diagnostics and safer user-facing Steam launch-option guidance.
+- Expand native and Flatpak Steam checks.
+- Add clearer failure states for Proton/Steam handoff problems.
+- Add Linux Mint/Ubuntu install instructions.
 - Continue improving curated server organisation beyond basic edit/remove flows.
 - Keep `servers.yaml` for curated, personal and import/export server lists.
-- Improve filtering, sorting, source/style-focused browsing and settings health checks around the existing stable launch flow.
-- Continue extracting tests and documentation from the vendored launcher's behavior while expanding the new native launcher engine behind WolfLauncher interfaces.
+- Continue carving native Python equivalents from the vendored launcher's behavior while expanding the new native launcher engine behind WolfLauncher interfaces.
 - Keep the NVIDIA PRIME Steam launch-option issue visible as the only known bug until it is reproduced and diagnosed.

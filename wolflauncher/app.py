@@ -170,6 +170,25 @@ class ServerEnrichmentWorker(QThread):
             self.enrichment_ready.emit(enriched, "")
 
 
+class SortableTableWidgetItem(QTableWidgetItem):
+    def __init__(self, text: str, sort_value=None):
+        super().__init__(text)
+        self.sort_value = sort_value if sort_value is not None else text.casefold()
+
+    def __lt__(self, other):
+        if isinstance(other, SortableTableWidgetItem):
+            return self._normalized_sort_value() < other._normalized_sort_value()
+        return super().__lt__(other)
+
+    def _normalized_sort_value(self):
+        value = self.sort_value
+        if value is None or value == "":
+            return (1, "")
+        if isinstance(value, str):
+            return (0, value.casefold())
+        return (0, value)
+
+
 class LaunchDialog(QDialog):
     def __init__(self, parent, command: list[str], title: str):
         super().__init__(parent)
@@ -488,7 +507,7 @@ class MainWindow(QMainWindow):
         filters.addWidget(self.browser_source)
 
         self.browser_sort = QComboBox()
-        self.browser_sort.addItems(["Name", "Players", "Ping", "Map", "Version", "Last seen"])
+        self.browser_sort.addItems(["Name", "Players", "Ping", "Map", "Version", "Last checked", "Last seen"])
         self.browser_sort.currentTextChanged.connect(self.refresh_server_browser)
         filters.addWidget(QLabel("Sort"))
         filters.addWidget(self.browser_sort)
@@ -1139,8 +1158,24 @@ class MainWindow(QMainWindow):
                 server.last_seen,
                 server.source,
             ]
+            sort_values = [
+                server.name,
+                live_name or server.name,
+                server.host,
+                server.game_port,
+                server.query_port,
+                0 if server.online else 1,
+                server.map_name,
+                server.players_current,
+                server.ping_ms,
+                server.version,
+                ", ".join(flags) if flags else "Vanilla/unknown",
+                server.last_checked,
+                server.last_seen,
+                server.source,
+            ]
             for column, value in enumerate(values):
-                item = QTableWidgetItem(value)
+                item = SortableTableWidgetItem(value, sort_values[column])
                 item.setData(Qt.UserRole, server.cache_key)
                 if column == 0 and live_name:
                     item.setToolTip(f"Live name: {server.server_name}")

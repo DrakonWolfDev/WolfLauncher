@@ -12,9 +12,12 @@ Status: complete, with one known external launch-option issue.
 
 ## v0.6 - Server browser foundation
 
+Status: complete.
+
 - Add SQLite cache for discovered public servers.
 - Keep YAML as the curated, personal and import/export format.
 - Add search, filtering and sorting for cached public server rows.
+- Add data-aware sorting for numeric player/ping fields and checked/seen timestamps.
 - Add documented no-key BattleMetrics discovery as the preferred public-list fallback.
 - Keep Steam Web API and legacy UDP master discovery as optional paths.
 - Add quiet, bounded and rate-limited background refresh for discovery data.
