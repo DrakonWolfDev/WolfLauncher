@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Added fuller NVIDIA PRIME and Steam launch-option troubleshooting guidance.
 - Added Server Browser result-limit controls and clearer matching-vs-cached summary text.
 - Added name-derived Server Browser style filtering for PvE and PvP servers.
 - Added Server Browser source filtering, reset controls and cache summary counts.

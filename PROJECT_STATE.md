@@ -66,7 +66,11 @@ Current handling:
 
 - Treat this as an external Steam/Proton/DayZ launch-option compatibility issue, not a WolfLauncher command-generation failure.
 - Do not recommend that option as the default workaround.
-- Future work should investigate hybrid-GPU/NVIDIA PRIME diagnostics and safer launch-option guidance.
+- WolfLauncher does not set, rewrite or reliably read per-game Steam launch options.
+- Diagnostics report PRIME-related environment variables visible to WolfLauncher, but Steam launch options must be checked in Steam itself.
+- Hybrid-GPU testing should start outside WolfLauncher, for example with `prime-run glxinfo -B`, `prime-run steam` and direct DayZ launch from Steam before testing the WolfLauncher handoff.
+- Useful bug reports should capture native-vs-Flatpak Steam, GPU driver/PRIME helper, Proton version, whether DayZ starts directly from Steam without per-game launch options, and WolfLauncher diagnostics output.
+- Future work should improve hybrid-GPU/NVIDIA PRIME diagnostics and safer launch-option guidance.
 
 ## Key files
 

@@ -137,6 +137,18 @@ __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%
 
 This is tracked as the only known bug at the end of v0.5.2. Keep it visible in docs and diagnostics planning, but do not make it the default launch recommendation until it is reproduced and a safe workaround is confirmed.
 
+WolfLauncher should continue to treat Steam launch options as external state. The app may surface diagnostics that help users reason about PRIME, such as visible `__NV_PRIME_RENDER_OFFLOAD`, `__GLX_VENDOR_LIBRARY_NAME` and `DRI_PRIME` environment values, but it should not infer the effective per-game Steam launch option unless a future implementation has a reliable source of truth.
+
+Recommended investigation flow:
+
+- Confirm whether the user is running native Steam or Flatpak Steam.
+- Confirm GPU driver, PRIME helper and Proton version.
+- Test GPU offload outside WolfLauncher, for example `prime-run glxinfo -B` and `prime-run steam`.
+- Test DayZ directly from Steam with no per-game launch option.
+- Compare that direct-Steam result with the WolfLauncher handoff command and diagnostics report.
+
+Until the issue is reproduced, the app should avoid writing, suggesting or defaulting to the known-bad `__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%` launch option.
+
 ## Platform Support
 
 Primary target:

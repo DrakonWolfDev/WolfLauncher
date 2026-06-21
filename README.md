@@ -20,6 +20,33 @@ __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%
 
 That issue is tracked as a Steam/Proton/DayZ launch-option compatibility problem until it is reproduced and diagnosed.
 
+## NVIDIA PRIME / Steam Launch Options
+
+WolfLauncher does not currently set or rewrite Steam launch options. Steam stores those per game, and WolfLauncher cannot reliably read them from the outside. The diagnostics report can show PRIME-related environment variables visible to WolfLauncher, but it cannot prove which launch options Steam applies when Proton starts DayZ.
+
+Known-bad option while this issue is under investigation:
+
+```text
+__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%
+```
+
+For hybrid-GPU systems, prefer testing GPU offload outside WolfLauncher first:
+
+```bash
+prime-run glxinfo -B
+prime-run steam
+```
+
+Then test DayZ directly from Steam with no WolfLauncher involvement. If DayZ only fails when the per-game Steam launch option above is present, remove that option and launch through WolfLauncher again. Do not add the known-bad option as a WolfLauncher default or recommended workaround.
+
+Useful evidence for debugging:
+
+- Whether Steam is native or Flatpak.
+- GPU driver and PRIME helper in use, for example `prime-run`, `switcherooctl` or manual environment variables.
+- Proton version selected for DayZ.
+- Whether DayZ starts directly from Steam with no per-game launch option.
+- WolfLauncher diagnostics output, especially the PRIME environment values and Steam/DayZ detection section.
+
 ## Features
 
 ### Server Management
