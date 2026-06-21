@@ -1,3 +1,4 @@
+import os
 import shutil
 from pathlib import Path
 
@@ -5,6 +6,13 @@ from .config import DEFAULT_LAUNCHER_PATHS
 from .models import Server
 from .platform_detection import detect_steam, ok_missing, yes_no
 from .status import resolve_host
+
+
+PRIME_ENV_VARS = (
+    "__NV_PRIME_RENDER_OFFLOAD",
+    "__GLX_VENDOR_LIBRARY_NAME",
+    "DRI_PRIME",
+)
 
 
 def run_diagnostics(launcher_path: str, servers: list[Server]) -> str:
@@ -39,6 +47,12 @@ def run_diagnostics(launcher_path: str, servers: list[Server]) -> str:
         lines.append(f"    steamapps: {install.steamapps or 'not found'}")
         lines.append(f"    DayZ: {ok_missing(bool(install.dayz_dir))} {install.dayz_dir or ''}")
         lines.append(f"    Workshop: {ok_missing(bool(install.workshop_dir))} {install.workshop_dir or ''}")
+    lines.append("")
+
+    lines.append("Launch option environment:")
+    for name in PRIME_ENV_VARS:
+        lines.append(f"  {name}: {os.environ.get(name) or 'not set'}")
+    lines.append("  Steam launch options: not readable by WolfLauncher")
     lines.append("")
 
     lines.append("Default launcher path candidates:")

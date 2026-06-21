@@ -45,6 +45,21 @@ class BuildLaunchCommandTests(unittest.TestCase):
 
         self.assertEqual(command[command.index("-n") + 1], DEFAULT_PLAYER_NAME)
 
+    def test_non_default_game_and_query_ports_are_not_confused(self):
+        server = Server(
+            name="High Port",
+            group="Tests",
+            host="dayz.example.test",
+            game_port=3302,
+            query_port=3303,
+        )
+        with tempfile.NamedTemporaryFile() as launcher:
+            with patch("wolflauncher.launcher.resolve_host", return_value="203.0.113.10"):
+                command = build_launch_command(launcher.name, "PlayerOne", server)
+
+        self.assertEqual(command[command.index("-s") + 1], "203.0.113.10:3302")
+        self.assertEqual(command[command.index("-p") + 1], "3303")
+
     def test_player_name_is_preserved_as_single_argument(self):
         with tempfile.NamedTemporaryFile() as launcher:
             with patch("wolflauncher.launcher.resolve_host", return_value="203.0.113.10"):
@@ -55,6 +70,17 @@ class BuildLaunchCommandTests(unittest.TestCase):
                 )
 
         self.assertEqual(command[command.index("-n") + 1], "Wolf Player; echo nope")
+
+    def test_launcher_path_expands_user_home(self):
+        with tempfile.TemporaryDirectory() as home:
+            launcher_path = Path(home) / "dayz-launcher.sh"
+            launcher_path.write_text("#!/usr/bin/env bash\n", encoding="utf-8")
+
+            with patch.dict("os.environ", {"HOME": home}):
+                with patch("wolflauncher.launcher.resolve_host", return_value="203.0.113.10"):
+                    command = build_launch_command("~/dayz-launcher.sh", "PlayerOne", self.make_server())
+
+        self.assertEqual(command[1], str(launcher_path))
 
     def test_missing_launcher_path_raises_launch_error(self):
         missing_path = str(Path(tempfile.gettempdir()) / "wolflauncher-missing-launcher.sh")

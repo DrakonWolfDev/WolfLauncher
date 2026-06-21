@@ -25,7 +25,7 @@ That issue is tracked as a Steam/Proton/DayZ launch-option compatibility problem
 ### Server Management
 
 - YAML-based server configuration.
-- SQLite cache foundation for future discovered public servers.
+- SQLite-backed cache for discovered public servers.
 - Read-only discovered server browser with search, filters and cache sorting.
 - YAML/JSON import for discovered server cache rows.
 - Promote discovered servers into the curated `servers.yaml` list with editable name/group.

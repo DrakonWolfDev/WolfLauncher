@@ -78,7 +78,7 @@ Current handling:
 - `wolflauncher/server_cache.py` - SQLite cache for discovered public servers.
 - `wolflauncher/settings.py` - user settings and favourites.
 - `wolflauncher/config.py` - YAML server loading and default launcher path candidates.
-- `tests/` - standard-library unit tests for launcher commands, path discovery, YAML loading, status parsing and mod parsing.
+- `tests/` - standard-library unit tests for launcher commands, vendored launcher handoff contract, path discovery, YAML loading, status parsing and mod parsing.
 - `servers.yaml` - curated server registry.
 - `external/dayz-linux-cli-launcher/dayz-launcher.sh` - vendored MIT legacy launch engine.
 - `LICENSE` - WolfLauncher MIT license.

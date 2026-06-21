@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- Added tests that pin WolfLauncher's command generation to the vendored launcher handoff contract.
+- Added PRIME-related environment values to diagnostics output for launch-option troubleshooting.
 - Added bounded query-port fallback probing when enriching discovered server rows with uncertain port data.
 - Added in-app editing for curated YAML server entries.
 - Changed discovered-server enrichment to preserve display names while storing differing live names separately.
