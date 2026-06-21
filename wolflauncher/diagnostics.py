@@ -45,6 +45,13 @@ class PrimeHelperReport:
 
 
 @dataclass(frozen=True)
+class SteamLaunchOptionsReport:
+    status: str
+    summary: str
+    details: list[str]
+
+
+@dataclass(frozen=True)
 class LaunchTroubleshootingReport:
     status: str
     summary: str
@@ -118,6 +125,45 @@ def prime_helper_report(which=shutil.which) -> PrimeHelperReport:
     )
 
 
+def steam_launch_options_report(environ=None) -> SteamLaunchOptionsReport:
+    prime = prime_environment_report(environ)
+    details = [
+        "WolfLauncher cannot reliably read Steam's per-game DayZ launch options.",
+        "Open Steam, DayZ, Properties, General, Launch Options to inspect the effective value.",
+        "For baseline testing, leave DayZ launch options empty and start DayZ directly from Steam once before testing WolfLauncher.",
+    ]
+
+    if prime.status == "WARN":
+        return SteamLaunchOptionsReport(
+            status="WARN",
+            summary="Check Steam's DayZ launch options for the known bad NVIDIA PRIME option.",
+            details=details
+            + [
+                "Remove __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command% while testing this issue.",
+                "Do not add that option as a WolfLauncher default or workaround.",
+            ],
+        )
+
+    return SteamLaunchOptionsReport(
+        status="OK",
+        summary="Steam launch options are external to WolfLauncher; check them in Steam if DayZ does not start.",
+        details=details
+        + [
+            "Visible WolfLauncher PRIME environment does not prove which variables Steam will apply to Proton.",
+        ],
+    )
+
+
+def post_handoff_launch_option_guidance(environ=None) -> str:
+    launch_options = steam_launch_options_report(environ)
+    if launch_options.status == "WARN":
+        return (
+            "Check Steam's DayZ launch options and remove the known bad "
+            "__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command% option while testing this issue."
+        )
+    return "Check Steam's DayZ launch options in Steam if Proton or DayZ does not start after handoff."
+
+
 def format_settings_health_report(
     summary: str,
     rows: Sequence[Sequence[str]],
@@ -169,15 +215,16 @@ def launch_troubleshooting_report(
     install = select_steam_install(selected_mode, detected)
     process = process_check if process_check is not None else dayz_process_check()
     prime = prime_environment_report(environ)
+    launch_options = steam_launch_options_report(environ)
 
     status = "OK"
     if selection.status == "MISSING":
         status = "MISSING"
-    elif selection.status == "WARN" or prime.status == "WARN":
+    elif selection.status == "WARN" or prime.status == "WARN" or launch_options.status == "WARN":
         status = "WARN"
 
     details = [
-        f"Selected mode: {steam_mode_label(selected_mode)}",
+        f"Selected Steam mode: {steam_mode_label(selected_mode)}",
         f"Selected install: {selection.selected_label}",
         f"Steam readiness: {selection.status} - {selection.detail}",
         f"Steam candidates: {steam_selection_candidates_detail(selection)}",
@@ -188,9 +235,9 @@ def launch_troubleshooting_report(
         f"DayZ install: {(install.dayz_dir if install and install.dayz_dir else 'not detected')}",
         f"Workshop folder: {(install.workshop_dir if install and install.workshop_dir else 'not detected')}",
         f"Proton compatdata: {proton_compatdata_detail(install)}",
-        f"Post-handoff process visibility: {process.detail}",
+        f"Known DayZ process visibility: {process.detail}",
         f"PRIME status: {prime.status} - {prime.summary}",
-        "Steam launch options: not readable by WolfLauncher",
+        f"Steam launch options: {launch_options.status} - {launch_options.summary}",
     ]
 
     next_steps: list[str] = []
@@ -199,7 +246,8 @@ def launch_troubleshooting_report(
     elif selection.status == "WARN":
         next_steps.append("Fix the selected Steam install warning before launch, especially missing DayZ or Workshop paths.")
     if install and install.dayz_dir and install.workshop_dir and not process.running:
-        next_steps.append("After a successful handoff, allow Steam/Proton time to start DayZ, then check Steam downloads, Proton prompts and BattlEye prompts.")
+        next_steps.append("If this was captured after a successful handoff, allow Steam/Proton time to start DayZ, then check Steam downloads, Proton prompts and BattlEye prompts.")
+        next_steps.append(post_handoff_launch_option_guidance(environ))
     if install and install.dayz_dir and install.workshop_dir and not install.compatdata_dir:
         next_steps.append("If DayZ has not been launched through this Steam install yet, start it once directly from Steam so Proton can create compatdata and show first-run prompts.")
     if prime.status == "WARN":
@@ -253,8 +301,8 @@ def run_diagnostics(
     selected_selection = steam_selection_report(selected_steam_mode, installs)
     lines.append(f"  Auto selection: {selection.status} - {selection.detail}")
     lines.append(f"  Auto candidates: {steam_selection_candidates_detail(selection)}")
-    lines.append(f"  Selected launch mode: {steam_mode_label(selected_steam_mode)}")
-    lines.append(f"  Selected launch install: {selected_selection.status} - {selected_selection.detail}")
+    lines.append(f"  Selected Steam mode: {steam_mode_label(selected_steam_mode)}")
+    lines.append(f"  Selected Steam install: {selected_selection.status} - {selected_selection.detail}")
     for install in installs:
         has_install = bool(install.executable or install.root or install.steamapps)
         label = install_label(install)
@@ -288,7 +336,10 @@ def run_diagnostics(
     lines.append(f"  PRIME helpers: {helper_report.status} - {helper_report.summary}")
     for detail in helper_report.details:
         lines.append(f"  PRIME helper detail: {detail}")
-    lines.append("  Steam launch options: not readable by WolfLauncher")
+    launch_options = steam_launch_options_report(environment)
+    lines.append(f"  Steam launch options: {launch_options.status} - {launch_options.summary}")
+    for detail in launch_options.details:
+        lines.append(f"  Steam launch option guidance: {detail}")
     lines.append("")
 
     process_check = dayz_process_check()

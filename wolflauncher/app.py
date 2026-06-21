@@ -42,9 +42,11 @@ from .diagnostics import (
     format_launch_output_report,
     format_settings_health_report,
     launch_troubleshooting_report,
+    post_handoff_launch_option_guidance,
     prime_environment_report,
     prime_helper_report,
     run_diagnostics,
+    steam_launch_options_report,
 )
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from .models import Server
@@ -244,9 +246,8 @@ class PostHandoffProcessCheckMixin:
         self.output.append(
             f"\nPost-handoff process check: no known DayZ process detected after about {elapsed_seconds} seconds. "
             "Steam may still be preparing Proton, but if there is no Steam activity, check downloads, Proton/BattlEye prompts, "
-            "the selected Steam install in Settings health, and Steam launch options. "
-            "On NVIDIA PRIME systems, remove the known problematic "
-            "__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command% option and test DayZ directly from Steam."
+            "and the selected Steam install in Settings health. "
+            f"{post_handoff_launch_option_guidance()}"
         )
 
 
@@ -802,7 +803,7 @@ class MainWindow(QMainWindow):
 
         launcher_settings = QFormLayout()
         launcher_settings.addRow("Launch engine", self.launch_engine)
-        launcher_settings.addRow("Native Steam install", self.native_steam_mode)
+        launcher_settings.addRow("Steam install mode", self.native_steam_mode)
 
         self.discovery_provider = QComboBox()
         self.discovery_provider.addItems([
@@ -2189,6 +2190,7 @@ class MainWindow(QMainWindow):
         launcher_candidates = [str(candidate) for candidate in DEFAULT_LAUNCHER_PATHS if candidate.exists()]
         prime_report = prime_environment_report()
         prime_helpers = prime_helper_report()
+        launch_options = steam_launch_options_report()
         process_check = dayz_process_check()
         launch_report = launch_troubleshooting_report(
             self.native_steam_mode_key(),
@@ -2226,6 +2228,11 @@ class MainWindow(QMainWindow):
                 "PRIME helpers",
                 prime_helpers.status,
                 prime_helpers.summary,
+            ),
+            (
+                "Steam launch options",
+                launch_options.status,
+                launch_options.summary,
             ),
             (
                 "Selected Steam",

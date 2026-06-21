@@ -1,6 +1,10 @@
 # Changelog
 
 ## Unreleased
+- Added explicit Steam launch-options guidance to diagnostics, Settings health and post-handoff warnings, including a warning for the known bad NVIDIA PRIME option while keeping launch options external to WolfLauncher.
+- Clarified diagnostics wording so copied reports show general DayZ process visibility rather than implying a launch handoff just happened.
+- Clarified Settings and diagnostics labels for the selected Steam install mode so they are not confused with the selected launch engine.
+- Softened copied troubleshooting next-step wording so diagnostics do not imply a launch handoff happened before the report was captured.
 - Added generated-at metadata to copied Settings health reports.
 - Added generated-at metadata to copied external launch output reports.
 - Added generated-at metadata to native launch parity reports.

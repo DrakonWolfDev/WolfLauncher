@@ -8,9 +8,11 @@ from wolflauncher.diagnostics import (
     format_launch_output_report,
     format_settings_health_report,
     launch_troubleshooting_report,
+    post_handoff_launch_option_guidance,
     prime_environment_report,
     prime_helper_report,
     run_diagnostics,
+    steam_launch_options_report,
 )
 from wolflauncher.models import Server
 from wolflauncher.platform_detection import ProcessCheck, SteamInstall
@@ -91,15 +93,27 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertIn("PRIME helpers:", report)
         self.assertIn("PRIME helper detail: prime-run:", report)
         self.assertIn("PRIME helper detail: switcherooctl:", report)
-        self.assertIn("Steam launch options: not readable by WolfLauncher", report)
+        self.assertIn(
+            "Steam launch options: WARN - Check Steam's DayZ launch options for the known bad NVIDIA PRIME option.",
+            report,
+        )
+        self.assertIn("Steam launch option guidance: Open Steam, DayZ, Properties, General, Launch Options", report)
+        self.assertIn(
+            "Steam launch option guidance: Remove __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%",
+            report,
+        )
         self.assertIn("DayZ process check:", report)
         self.assertIn("No known DayZ process detected", report)
         self.assertIn("Auto selection: MISSING - Auto selection found no Steam install", report)
         self.assertIn("Auto candidates: No native, Flatpak or STEAM_ROOT Steam installs detected", report)
         self.assertIn("Launch troubleshooting:", report)
-        self.assertIn("Detail: Selected mode: Auto", report)
+        self.assertIn("Detail: Selected Steam mode: Auto", report)
         self.assertIn("Detail: Steam command: not detected", report)
-        self.assertIn("Detail: Post-handoff process visibility: No known DayZ process detected", report)
+        self.assertIn("Detail: Known DayZ process visibility: No known DayZ process detected", report)
+        self.assertIn(
+            "Detail: Steam launch options: WARN - Check Steam's DayZ launch options for the known bad NVIDIA PRIME option.",
+            report,
+        )
         self.assertIn("Next step: Open Settings health", report)
 
     def test_diagnostics_report_uses_one_environment_snapshot(self):
@@ -130,6 +144,10 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertIn("__GLX_VENDOR_LIBRARY_NAME: nvidia", report)
         self.assertIn("PRIME status: WARN", report)
         self.assertIn("Detail: PRIME status: WARN", report)
+        self.assertIn(
+            "Detail: Steam launch options: WARN - Check Steam's DayZ launch options for the known bad NVIDIA PRIME option.",
+            report,
+        )
         self.assertIn("Next step: Remove the known bad NVIDIA PRIME Steam launch option", report)
 
     def test_diagnostics_report_includes_selected_launch_engine_when_provided(self):
@@ -150,7 +168,8 @@ class DiagnosticsTests(unittest.TestCase):
 
         self.assertIn("Generated at: 2026-06-21T15:16:59+00:00", report)
         self.assertIn("Launch engine: Native experimental", report)
-        self.assertIn("Selected launch mode: Flatpak Steam", report)
+        self.assertIn("Selected Steam mode: Flatpak Steam", report)
+        self.assertIn("Selected Steam install: MISSING - Flatpak Steam not detected", report)
 
     def test_launch_troubleshooting_report_summarizes_selected_flatpak_install(self):
         install = SteamInstall(
@@ -175,14 +194,14 @@ class DiagnosticsTests(unittest.TestCase):
 
         self.assertEqual("OK", report.status)
         self.assertIn("Flatpak Steam ready", report.summary)
-        self.assertIn("Selected mode: Flatpak Steam", report.details)
+        self.assertIn("Selected Steam mode: Flatpak Steam", report.details)
         self.assertIn("Selected install: Flatpak Steam", report.details)
         self.assertIn("Steam command: com.valvesoftware.Steam", report.details)
         self.assertIn(
             "Proton compatdata: /home/user/.var/app/com.valvesoftware.Steam/data/Steam/steamapps/compatdata/221100",
             report.details,
         )
-        self.assertIn("Post-handoff process visibility: Detected known DayZ process: DayZ_x64.exe", report.details)
+        self.assertIn("Known DayZ process visibility: Detected known DayZ process: DayZ_x64.exe", report.details)
         self.assertTrue(any("compare native versus Flatpak Steam" in step for step in report.next_steps))
 
     def test_launch_troubleshooting_report_explains_missing_compatdata_for_ready_install(self):
@@ -207,7 +226,9 @@ class DiagnosticsTests(unittest.TestCase):
             "Proton compatdata: not detected yet; Steam may create it on first Proton launch",
             report.details,
         )
+        self.assertTrue(any("If this was captured after a successful handoff" in step for step in report.next_steps))
         self.assertTrue(any("start it once directly from Steam" in step for step in report.next_steps))
+        self.assertTrue(any("Check Steam's DayZ launch options in Steam" in step for step in report.next_steps))
 
     def test_launch_troubleshooting_report_warns_for_known_bad_prime_pair(self):
         report = launch_troubleshooting_report(
@@ -269,6 +290,45 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertIn("may be normal on non-hybrid systems", report.summary)
         self.assertIn("prime-run: not found", report.details)
         self.assertIn("switcherooctl: not found", report.details)
+
+    def test_steam_launch_options_report_warns_for_known_bad_prime_pair(self):
+        report = steam_launch_options_report(
+            {
+                "__NV_PRIME_RENDER_OFFLOAD": "1",
+                "__GLX_VENDOR_LIBRARY_NAME": "nvidia",
+            }
+        )
+
+        self.assertEqual("WARN", report.status)
+        self.assertIn("known bad NVIDIA PRIME option", report.summary)
+        self.assertTrue(any("Open Steam, DayZ, Properties" in detail for detail in report.details))
+        self.assertTrue(any("__NV_PRIME_RENDER_OFFLOAD=1" in detail for detail in report.details))
+        self.assertTrue(any("Do not add that option as a WolfLauncher default" in detail for detail in report.details))
+
+    def test_steam_launch_options_report_is_advisory_without_known_bad_pair(self):
+        report = steam_launch_options_report({})
+
+        self.assertEqual("OK", report.status)
+        self.assertIn("external to WolfLauncher", report.summary)
+        self.assertTrue(any("baseline testing" in detail for detail in report.details))
+        self.assertTrue(any("does not prove which variables Steam will apply" in detail for detail in report.details))
+
+    def test_post_handoff_launch_option_guidance_warns_for_known_bad_prime_pair(self):
+        guidance = post_handoff_launch_option_guidance(
+            {
+                "__NV_PRIME_RENDER_OFFLOAD": "1",
+                "__GLX_VENDOR_LIBRARY_NAME": "nvidia",
+            }
+        )
+
+        self.assertIn("remove the known bad", guidance)
+        self.assertIn("__NV_PRIME_RENDER_OFFLOAD=1", guidance)
+
+    def test_post_handoff_launch_option_guidance_is_advisory_without_known_bad_pair(self):
+        guidance = post_handoff_launch_option_guidance({})
+
+        self.assertIn("Check Steam's DayZ launch options in Steam", guidance)
+        self.assertIn("after handoff", guidance)
 
 
 if __name__ == "__main__":

@@ -77,6 +77,7 @@ Working:
 - Experimental native Steam handoff from the preview dialog, with real-world native Steam and Flatpak Steam launch success confirmed. The external launcher remains the default launch path while parity testing continues.
 - Saved launch-engine setting in Settings. `External launcher` remains the default, while `Native experimental` routes the main Launch button through the Python native engine.
 - Saved native Steam install selection in Settings, with Auto, Native Steam, Flatpak Steam and `STEAM_ROOT` options so parity testing can target a specific detected install.
+- Settings and diagnostics label this as the Steam install mode so it is not confused with the external/native launch-engine selector.
 - Structured native-launch failure stages with user-facing recovery guidance for Steam detection, library detection, DNS and mod setup failures.
 - README Linux Mint / Ubuntu development setup instructions with dependency notes and Settings health fallback guidance.
 
@@ -92,12 +93,15 @@ Current handling:
 - Diagnostics report PRIME-related environment variables visible to WolfLauncher, but Steam launch options must be checked in Steam itself; confirmed testing showed Steam can have the known option set while WolfLauncher sees no PRIME variables in its own environment.
 - Diagnostics use a single environment snapshot for the visible PRIME values and launch troubleshooting summary so copied reports stay internally consistent.
 - Diagnostics classify visible PRIME/DRI environment state and warn when WolfLauncher itself is running with the known problematic NVIDIA PRIME offload environment combination.
+- Diagnostics, Settings health and post-handoff warnings include explicit Steam launch-options guidance that points users to Steam's DayZ Properties page, while preserving the rule that WolfLauncher does not read, write or default per-game launch options.
 - Settings health includes a PRIME environment row so the known problematic environment is visible without opening a full diagnostics report.
 - Diagnostics and Settings health report whether common PRIME helper commands such as `prime-run` and `switcherooctl` are visible, without treating their absence as a problem on non-hybrid systems.
 - Diagnostics include per-install Steam readiness summaries for native, Flatpak and `STEAM_ROOT` library detection.
 - Diagnostics include Auto Steam selection and candidate summaries for native, Flatpak and `STEAM_ROOT` troubleshooting.
 - Diagnostics list detected Steam library folders for each configured install.
 - Diagnostics include known DayZ process visibility for Steam/Proton handoff troubleshooting.
+- Copied diagnostics label known DayZ process visibility as general process state, while launch dialogs keep the more specific post-handoff process-check wording.
+- Copied diagnostics use conditional handoff troubleshooting wording so reports captured before launch still make sense.
 - Diagnostics and Settings health include a consolidated launch troubleshooting report covering selected Steam mode, detected Steam command and paths, DayZ process visibility, PRIME status and suggested next steps.
 - Known DayZ process checks are case-insensitive so Proton command lines with different executable casing still count as visible.
 - Post-handoff process checks should avoid warning too early; observed native launches can report no DayZ process initially, then show DayZ roughly 10 seconds later, matching the slower behavior seen with the original CLI launcher.
