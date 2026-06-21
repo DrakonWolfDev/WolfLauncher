@@ -271,7 +271,10 @@ class LaunchDialog(PostHandoffProcessCheckMixin, QDialog):
         self.close_button = QPushButton("Close")
         self.close_button.clicked.connect(self.close)
         self.close_button.setEnabled(False)
+        copy_button = QPushButton("Copy")
+        copy_button.clicked.connect(self.copy_output)
         button_row.addStretch(1)
+        button_row.addWidget(copy_button)
         button_row.addWidget(self.close_button)
         layout.addLayout(button_row)
 
@@ -280,6 +283,10 @@ class LaunchDialog(PostHandoffProcessCheckMixin, QDialog):
         self.process.errorOccurred.connect(self.handle_process_error)
         self.output.append("Starting launcher...\n")
         self.process.start(command[0], command[1:])
+
+    def copy_output(self):
+        QApplication.clipboard().setText(self.output.toPlainText())
+        self.output.append("\nLaunch output copied to clipboard.")
 
     def read_output(self):
         data = bytes(self.process.readAllStandardOutput()).decode("utf-8", errors="replace")

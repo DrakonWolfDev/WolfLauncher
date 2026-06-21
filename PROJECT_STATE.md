@@ -65,6 +65,7 @@ Working:
 - Missing-mod warning with Open Workshop / Launch Anyway / Cancel.
 - Steam-not-running warning.
 - Launch output dialog with generated command and launcher output.
+- External launch output can be copied from the launch dialog for support reports.
 - Successful external-launcher exit code is presented as a handoff to Steam.
 - Launch dialogs clarify that a successful handoff does not prove Proton initialized or DayZ reached the menu.
 - Launch dialogs watch for known DayZ processes for up to 45 seconds after handoff, because Steam/Proton can take tens of seconds before DayZ appears.
