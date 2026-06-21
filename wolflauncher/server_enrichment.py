@@ -30,14 +30,14 @@ def enrich_discovered_server(
         )
 
     players_current, players_max = parse_players(status.players)
-    display_name = status.server_name or server.name
+    game_port = parse_connect_port(status.connect) or server.game_port
 
     return DiscoveredServer(
-        name=display_name,
+        name=server.name,
         source=server.source,
         server_name=status.server_name,
         host=server.host,
-        game_port=server.game_port,
+        game_port=game_port,
         query_port=server.query_port,
         map_name=status.map_name,
         players_current=players_current,
@@ -57,6 +57,16 @@ def parse_players(value: str) -> tuple[int | None, int | None]:
         return None, None
     current, maximum = value.split("/", 1)
     return _optional_int(current), _optional_int(maximum)
+
+
+def parse_connect_port(value: str) -> int | None:
+    if not value or ":" not in value:
+        return None
+    _host, port_text = value.rsplit(":", 1)
+    port = _optional_int(port_text)
+    if port is None or port <= 0 or port > 65535:
+        return None
+    return port
 
 
 def _optional_int(value) -> int | None:

@@ -36,6 +36,7 @@ from .config import (
     find_default_launcher_path,
     load_servers,
     remove_curated_server,
+    update_curated_server,
 )
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from .models import Server
@@ -252,6 +253,49 @@ class PromoteServerDialog(QDialog):
         return self.group.text().strip() or "Discovered"
 
 
+class EditCuratedServerDialog(QDialog):
+    def __init__(self, parent, server: Server):
+        super().__init__(parent)
+        self.setWindowTitle("Edit curated server")
+        self.resize(440, 240)
+
+        layout = QVBoxLayout(self)
+        form = QFormLayout()
+        self.name = QLineEdit(server.name)
+        self.group = QLineEdit(server.group)
+        self.host = QLineEdit(server.host)
+        self.game_port = QSpinBox()
+        self.game_port.setRange(1, 65535)
+        self.game_port.setValue(server.game_port)
+        self.query_port = QSpinBox()
+        self.query_port.setRange(1, 65535)
+        self.query_port.setValue(server.query_port)
+        self.favourite = QCheckBox("Favourite")
+        self.favourite.setChecked(server.favourite)
+        form.addRow("Name", self.name)
+        form.addRow("Group", self.group)
+        form.addRow("Host", self.host)
+        form.addRow("Game port", self.game_port)
+        form.addRow("Query port", self.query_port)
+        form.addRow("", self.favourite)
+        layout.addLayout(form)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        layout.addWidget(buttons)
+
+    def curated_server(self) -> Server:
+        return Server(
+            name=self.name.text().strip(),
+            group=self.group.text().strip() or "Community",
+            host=self.host.text().strip(),
+            game_port=self.game_port.value(),
+            query_port=self.query_port.value(),
+            favourite=self.favourite.isChecked(),
+        )
+
+
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -450,7 +494,7 @@ class MainWindow(QMainWindow):
         self.browser_summary = QLabel("Cached discovered servers: loading")
         layout.addWidget(self.browser_summary)
 
-        self.browser_table = QTableWidget(0, 13)
+        self.browser_table = QTableWidget(0, 14)
         self.browser_table.setHorizontalHeaderLabels([
             "Name",
             "Live Name",
@@ -463,6 +507,7 @@ class MainWindow(QMainWindow):
             "Ping",
             "Version",
             "Flags",
+            "Last Checked",
             "Last Seen",
             "Source",
         ])
@@ -1044,9 +1089,10 @@ class MainWindow(QMainWindow):
                 flags.append("Password")
             if server.modded:
                 flags.append("Mods")
+            live_name = self._browser_live_name_text(server)
             values = [
                 server.name,
-                server.server_name,
+                live_name,
                 server.host,
                 str(server.game_port),
                 str(server.query_port),
@@ -1056,12 +1102,21 @@ class MainWindow(QMainWindow):
                 f"{server.ping_ms}ms" if server.ping_ms is not None else "",
                 server.version,
                 ", ".join(flags) if flags else "Vanilla/unknown",
+                server.last_checked,
                 server.last_seen,
                 server.source,
             ]
             for column, value in enumerate(values):
                 item = QTableWidgetItem(value)
                 item.setData(Qt.UserRole, server.cache_key)
+                if column == 0 and live_name:
+                    item.setToolTip(f"Live name: {server.server_name}")
+                elif column == 1 and not live_name:
+                    item.setToolTip("Same as display name, or not reported yet.")
+                elif column == 11 and not server.last_checked:
+                    item.setToolTip("This row has not been live-checked yet.")
+                elif column == 12 and not server.last_seen:
+                    item.setToolTip("This row has not been seen online yet.")
                 if column == 5:
                     item.setForeground(QColor("#6ee16e" if server.online else "#ff6b6b"))
                 self.browser_table.setItem(row, column, item)
@@ -1178,6 +1233,68 @@ class MainWindow(QMainWindow):
         self.table.removeRow(row)
         self._reindex_server_rows()
         self.update_launch_button_text()
+
+    def edit_curated_server_row(self, row: int):
+        if row < 0 or row >= len(self.servers):
+            return
+        original = self.servers[row]
+        dialog = EditCuratedServerDialog(self, original)
+        if dialog.exec() != QDialog.Accepted:
+            return
+
+        updated = dialog.curated_server()
+        if not updated.name or not updated.host:
+            QMessageBox.warning(self, "Server details required", "Enter a server name and host.")
+            return
+
+        try:
+            changed = update_curated_server(self.config_path, original, updated)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Could not edit server", str(exc))
+            return
+        if not changed:
+            QMessageBox.warning(
+                self,
+                "Could not edit server",
+                "This server was not found in servers.yaml.",
+            )
+            return
+
+        self.favourites.discard(server_key(original))
+        if updated.favourite:
+            self.favourites.add(server_key(updated))
+        save_favourites(self.favourites)
+        self.servers[row] = updated
+        self.update_curated_server_row(row)
+        self.update_launch_button_text()
+
+    def update_curated_server_row(self, row: int):
+        if row < 0 or row >= len(self.servers):
+            return
+        server = self.servers[row]
+        values = {
+            0: "★" if server.favourite else "☆",
+            1: server.group,
+            2: server.name,
+            3: "",
+            4: server.host,
+            5: "Not checked",
+            6: str(server.game_port),
+            7: str(server.query_port),
+            8: "Not checked",
+            9: "",
+            10: "",
+            11: "",
+            12: "",
+            13: "",
+            14: "",
+            15: "",
+        }
+        for column, value in values.items():
+            item = QTableWidgetItem(value)
+            item.setData(Qt.UserRole, row)
+            self.table.setItem(row, column, item)
+        self.table.resizeColumnsToContents()
 
     def _reindex_server_rows(self):
         for row in range(self.table.rowCount()):
@@ -1455,16 +1572,30 @@ class MainWindow(QMainWindow):
             flags.append("Password")
         if server.modded:
             flags.append("Mods")
-        return "\n".join([
-            server.server_name or server.name,
+        lines = [
+            server.name,
+        ]
+        if self._browser_live_name_text(server):
+            lines.append(f"Live name: {server.server_name}")
+        lines.extend([
             server.connect_target,
             f"Query port: {server.query_port}",
             f"Map: {server.map_name}",
             f"Players: {self._players_text(server.players_current, server.players_max)}",
             f"Version: {server.version}",
             f"Flags: {', '.join(flags) if flags else 'Vanilla/unknown'}",
+            f"Last checked: {server.last_checked or 'Never'}",
+            f"Last seen: {server.last_seen or 'Never'}",
             f"Source: {server.source}",
-        ]).strip()
+        ])
+        return "\n".join(lines).strip()
+
+    def _browser_live_name_text(self, server) -> str:
+        live_name = (server.server_name or "").strip()
+        display_name = (server.name or "").strip()
+        if not live_name or live_name.casefold() == display_name.casefold():
+            return ""
+        return live_name
 
     def _mods_cell(self, row: int, column: int) -> str:
         item = self.mods_table.item(row, column)
@@ -1478,14 +1609,17 @@ class MainWindow(QMainWindow):
         menu = QMenu(self)
         copy_connect_action = QAction("Copy connect address", self)
         copy_details_action = QAction("Copy server details", self)
+        edit_action = QAction("Edit curated server", self)
         toggle_fav_action = QAction("Toggle favourite", self)
         remove_action = QAction("Remove from curated list", self)
         copy_connect_action.triggered.connect(lambda: self.copy_to_clipboard(self._server_cell(row, 15), "Connect address"))
         copy_details_action.triggered.connect(lambda: self.copy_to_clipboard(self.server_details_text(row), "Server details"))
+        edit_action.triggered.connect(lambda: self.edit_curated_server_row(row))
         toggle_fav_action.triggered.connect(lambda: self.toggle_favourite(row))
         remove_action.triggered.connect(lambda: self.remove_curated_server_row(row))
         menu.addAction(copy_connect_action)
         menu.addAction(copy_details_action)
+        menu.addAction(edit_action)
         menu.addAction(toggle_fav_action)
         menu.addSeparator()
         menu.addAction(remove_action)

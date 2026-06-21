@@ -291,6 +291,26 @@ class ServerCacheTests(unittest.TestCase):
 
         self.assertEqual([server.name for server in results], ["100% Survival"])
 
+    def test_search_matches_display_name_and_live_server_name(self):
+        connection = self.open_cache()
+        server_cache.upsert_server(
+            connection,
+            DiscoveredServer(
+                name="Imported Alias",
+                server_name="Live Community Server",
+                host="203.0.113.40",
+                game_port=2302,
+                query_port=27016,
+            ),
+        )
+
+        display_results = server_cache.search_servers(connection, text="Imported")
+        live_results = server_cache.search_servers(connection, text="Community")
+
+        self.assertEqual([server.name for server in display_results], ["Imported Alias"])
+        self.assertEqual([server.name for server in live_results], ["Imported Alias"])
+        self.assertEqual(live_results[0].server_name, "Live Community Server")
+
     def test_distinct_values_returns_sorted_non_empty_filter_values(self):
         connection = self.open_cache()
         for server in [

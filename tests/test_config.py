@@ -232,5 +232,139 @@ servers:
             self.assertEqual(len(config.load_servers(path)), 1)
 
 
+class UpdateCuratedServerTests(unittest.TestCase):
+    def test_update_curated_server_rewrites_matching_yaml_entry(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "servers.yaml"
+            path.write_text(
+                """
+servers:
+  - name: Keep
+    group: Existing Group
+    host: 203.0.113.10
+    game_port: 2302
+    query_port: 27016
+  - name: Edit Me
+    group: Old Group
+    host: 203.0.113.20
+    game_port: 2402
+    query_port: 27017
+""",
+                encoding="utf-8",
+            )
+
+            updated = config.update_curated_server(
+                path,
+                Server(
+                    name="Edit Me",
+                    group="Old Group",
+                    host="203.0.113.20",
+                    game_port=2402,
+                    query_port=27017,
+                ),
+                Server(
+                    name="Edited",
+                    group="New Group",
+                    host="203.0.113.30",
+                    game_port=2502,
+                    query_port=27018,
+                    favourite=True,
+                ),
+            )
+
+            self.assertTrue(updated)
+            self.assertEqual(
+                config.load_servers(path),
+                [
+                    Server(
+                        name="Keep",
+                        group="Existing Group",
+                        host="203.0.113.10",
+                        game_port=2302,
+                        query_port=27016,
+                    ),
+                    Server(
+                        name="Edited",
+                        group="New Group",
+                        host="203.0.113.30",
+                        game_port=2502,
+                        query_port=27018,
+                        favourite=True,
+                    ),
+                ],
+            )
+
+    def test_update_curated_server_rejects_duplicate_updated_endpoint(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "servers.yaml"
+            path.write_text(
+                """
+servers:
+  - name: Existing
+    host: 203.0.113.10
+    game_port: 2302
+    query_port: 27016
+  - name: Edit Me
+    host: 203.0.113.20
+    game_port: 2402
+    query_port: 27017
+""",
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "Another curated server"):
+                config.update_curated_server(
+                    path,
+                    Server(
+                        name="Edit Me",
+                        group="Community",
+                        host="203.0.113.20",
+                        game_port=2402,
+                        query_port=27017,
+                    ),
+                    Server(
+                        name="Duplicate",
+                        group="Community",
+                        host="203.0.113.10",
+                        game_port=2302,
+                        query_port=27016,
+                    ),
+                )
+
+    def test_update_curated_server_reports_missing_entry(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "servers.yaml"
+            path.write_text(
+                """
+servers:
+  - name: Existing
+    host: 203.0.113.10
+    game_port: 2302
+    query_port: 27016
+""",
+                encoding="utf-8",
+            )
+
+            updated = config.update_curated_server(
+                path,
+                Server(
+                    name="Missing",
+                    group="Community",
+                    host="203.0.113.99",
+                    game_port=2302,
+                    query_port=27016,
+                ),
+                Server(
+                    name="Still Missing",
+                    group="Community",
+                    host="203.0.113.99",
+                    game_port=2303,
+                    query_port=27017,
+                ),
+            )
+
+            self.assertFalse(updated)
+
+
 if __name__ == "__main__":
     unittest.main()

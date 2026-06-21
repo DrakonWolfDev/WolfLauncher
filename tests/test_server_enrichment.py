@@ -1,7 +1,7 @@
 import unittest
 
 from wolflauncher.models import DiscoveredServer
-from wolflauncher.server_enrichment import enrich_discovered_server, parse_players
+from wolflauncher.server_enrichment import enrich_discovered_server, parse_connect_port, parse_players
 from wolflauncher.status import ServerStatus
 
 
@@ -23,7 +23,7 @@ class ServerEnrichmentTests(unittest.TestCase):
         self.assertEqual(parse_players("0/?"), (0, None))
         self.assertEqual(parse_players(""), (None, None))
 
-    def test_online_status_updates_browser_fields(self):
+    def test_online_status_updates_browser_fields_without_renaming_display_name(self):
         enriched = enrich_discovered_server(
             self.make_candidate(),
             ServerStatus(
@@ -40,9 +40,9 @@ class ServerEnrichmentTests(unittest.TestCase):
             "2026-06-20T14:00:00+00:00",
         )
 
-        self.assertEqual(enriched.name, "Live Server")
+        self.assertEqual(enriched.name, "203.0.113.10:27016")
         self.assertEqual(enriched.server_name, "Live Server")
-        self.assertEqual(enriched.game_port, 27016)
+        self.assertEqual(enriched.game_port, 2302)
         self.assertEqual(enriched.query_port, 27016)
         self.assertEqual(enriched.map_name, "namalsk")
         self.assertEqual(enriched.players_current, 12)
@@ -64,6 +64,14 @@ class ServerEnrichmentTests(unittest.TestCase):
         self.assertFalse(enriched.online)
         self.assertEqual(enriched.last_checked, "2026-06-20T14:00:00+00:00")
         self.assertEqual(enriched.last_seen, "2026-06-20T12:00:00Z")
+
+    def test_parse_connect_port_reads_port_from_gamedig_connect_address(self):
+        self.assertEqual(parse_connect_port("203.0.113.10:2302"), 2302)
+        self.assertEqual(parse_connect_port("example.test:3302"), 3302)
+        self.assertIsNone(parse_connect_port(""))
+        self.assertIsNone(parse_connect_port("203.0.113.10"))
+        self.assertIsNone(parse_connect_port("203.0.113.10:not-a-port"))
+        self.assertIsNone(parse_connect_port("203.0.113.10:70000"))
 
 
 if __name__ == "__main__":

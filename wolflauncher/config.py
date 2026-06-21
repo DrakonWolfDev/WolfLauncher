@@ -93,6 +93,50 @@ def remove_curated_server(path: Path, server: Server) -> bool:
     return False
 
 
+def update_curated_server(path: Path, original: Server, updated: Server) -> bool:
+    data = _load_server_yaml(path)
+    servers = data.setdefault("servers", [])
+    if not isinstance(servers, list):
+        raise ValueError("servers.yaml must contain a 'servers' list.")
+
+    match_index = None
+    for index, item in enumerate(servers):
+        if not isinstance(item, dict):
+            continue
+        if _same_server_entry(item, original):
+            match_index = index
+            break
+
+    if match_index is None:
+        return False
+
+    for index, item in enumerate(servers):
+        if index == match_index or not isinstance(item, dict):
+            continue
+        if _same_server_entry(item, updated):
+            raise ValueError("Another curated server already uses that host and port combination.")
+
+    servers[match_index] = {
+        "name": updated.name,
+        "group": updated.group,
+        "host": updated.host,
+        "game_port": updated.game_port,
+        "query_port": updated.query_port,
+        "favourite": updated.favourite,
+    }
+    with path.open("w", encoding="utf-8") as handle:
+        yaml.safe_dump(data, handle, sort_keys=False)
+    return True
+
+
+def _same_server_entry(item: dict, server: Server) -> bool:
+    return (
+        str(item.get("host")) == server.host
+        and int(item.get("game_port", 0)) == server.game_port
+        and int(item.get("query_port", 0)) == server.query_port
+    )
+
+
 def _load_server_yaml(path: Path) -> dict:
     if not path.exists():
         return {"servers": []}

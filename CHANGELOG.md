@@ -1,6 +1,10 @@
 # Changelog
 
 ## Unreleased
+- Added in-app editing for curated YAML server entries.
+- Changed discovered-server enrichment to preserve display names while storing differing live names separately.
+- Changed live enrichment to update a discovered server's game port from the queried connect address when available.
+- Added Server Browser freshness/identity polish with Last Checked and non-duplicated Live Name display.
 - Added SQLite cache schema-version checks and migration scaffolding.
 - Changed failed provider refreshes to keep existing cached rows while still pruning stale rows after successful refreshes.
 - Restored Server Browser map and version filters as cache-populated dropdowns.
