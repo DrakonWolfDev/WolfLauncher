@@ -1,7 +1,11 @@
 from __future__ import annotations
 
-from .models import DiscoveredServer
+from .models import DiscoveredServer, Server
 from .status import ServerStatus
+
+
+COMMON_DAYZ_QUERY_PORT = 27016
+COMMON_GAME_TO_QUERY_OFFSET = COMMON_DAYZ_QUERY_PORT - 2302
 
 
 def enrich_discovered_server(
@@ -52,6 +56,39 @@ def enrich_discovered_server(
     )
 
 
+def enrichment_probe_servers(server: DiscoveredServer) -> list[Server]:
+    return [
+        Server(
+            name=server.name,
+            group="Discovered",
+            host=server.host,
+            game_port=server.game_port,
+            query_port=query_port,
+        )
+        for query_port in candidate_query_ports(server)
+    ]
+
+
+def candidate_query_ports(server: DiscoveredServer) -> list[int]:
+    candidates = [
+        server.query_port,
+        server.game_port,
+    ]
+
+    if server.query_port == server.game_port:
+        candidates.extend([
+            server.game_port + 1,
+            server.game_port + 10,
+        ])
+        if server.game_port < COMMON_DAYZ_QUERY_PORT:
+            candidates.extend([
+                server.game_port + COMMON_GAME_TO_QUERY_OFFSET,
+                COMMON_DAYZ_QUERY_PORT,
+            ])
+
+    return _unique_valid_ports(candidates)
+
+
 def parse_players(value: str) -> tuple[int | None, int | None]:
     if not value or "/" not in value:
         return None, None
@@ -76,3 +113,14 @@ def _optional_int(value) -> int | None:
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
+def _unique_valid_ports(values: list[int]) -> list[int]:
+    ports = []
+    seen = set()
+    for value in values:
+        if value <= 0 or value > 65535 or value in seen:
+            continue
+        ports.append(value)
+        seen.add(value)
+    return ports

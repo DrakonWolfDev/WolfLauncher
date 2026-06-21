@@ -45,6 +45,17 @@ class BuildLaunchCommandTests(unittest.TestCase):
 
         self.assertEqual(command[command.index("-n") + 1], DEFAULT_PLAYER_NAME)
 
+    def test_player_name_is_preserved_as_single_argument(self):
+        with tempfile.NamedTemporaryFile() as launcher:
+            with patch("wolflauncher.launcher.resolve_host", return_value="203.0.113.10"):
+                command = build_launch_command(
+                    launcher.name,
+                    "Wolf Player; echo nope",
+                    self.make_server(),
+                )
+
+        self.assertEqual(command[command.index("-n") + 1], "Wolf Player; echo nope")
+
     def test_missing_launcher_path_raises_launch_error(self):
         missing_path = str(Path(tempfile.gettempdir()) / "wolflauncher-missing-launcher.sh")
 

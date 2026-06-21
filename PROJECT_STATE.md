@@ -26,6 +26,7 @@ Working:
 - Optional quiet rate-limited startup refresh for the selected discovery provider, throttled to once per day.
 - Enrichment of visible discovered servers with live status data.
 - Live enrichment preserves cached display names, stores differing live server names separately and updates game ports from queried connect addresses when available.
+- Live enrichment probes a bounded set of likely query ports when discovered rows have uncertain port data.
 - Failed provider refreshes preserve existing discovered-server cache rows.
 - Server Browser map and version filters populated from cached/enriched values.
 - DNS hostname and direct IP support.
@@ -106,7 +107,7 @@ Current handling:
 Use v0.6 as the next active development target:
 
 - Keep BattleMetrics as the default no-key discovery source while allowing users to choose Steam Web API or UDP master discovery in Settings.
-- Improve bulk enrichment controls and broader candidate port probing.
+- Improve bulk enrichment controls and keep refining candidate port probing from real-world server data.
 - Continue improving curated server organisation beyond basic edit/remove flows.
 - Keep `servers.yaml` for curated, personal and import/export server lists.
 - Improve filtering, sorting and settings health checks around the existing stable launch flow.

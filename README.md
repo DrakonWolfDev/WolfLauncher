@@ -183,7 +183,7 @@ Use `--master HOST[:PORT]` to test specific Steam master endpoints if local DNS 
 
 The app honors `WOLFLAUNCHER_STEAM_MASTER_ENDPOINTS` as a comma-separated endpoint list, plus the older `WOLFLAUNCHER_STEAM_MASTER_HOST` / `WOLFLAUNCHER_STEAM_MASTER_PORT` overrides. Steam discovery rows are treated as candidates until later status enrichment confirms display names, maps, player counts and port details.
 
-Use **Enrich visible** in the Server Browser tab to query the currently visible cached rows and fill in live status fields such as server name, map, players, ping, version and online state. The Server Browser map and version filters are populated from cached/enriched values when those fields are available.
+Use **Enrich visible** in the Server Browser tab to query the currently visible cached rows and fill in live status fields such as server name, map, players, ping, version and online state. Enrichment tries the cached query port first, then a small set of likely DayZ query-port fallbacks when discovered rows have uncertain port data. The Server Browser map and version filters are populated from cached/enriched values when those fields are available.
 
 ## Project Documentation
 
@@ -232,8 +232,9 @@ Next active target: v0.6 server browser foundation.
 
 Planned future work includes:
 
-- SQLite-backed discovered server cache.
-- Improved search, filtering and sorting.
+- Continued Server Browser polish.
+- Bulk enrichment controls.
+- Candidate port probing refinements from real-world server data.
 - Hybrid-GPU/NVIDIA PRIME diagnostics.
 - Improved Steam/Proton handoff diagnostics.
 - Native packaging and installation.

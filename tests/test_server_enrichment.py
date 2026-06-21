@@ -1,7 +1,13 @@
 import unittest
 
 from wolflauncher.models import DiscoveredServer
-from wolflauncher.server_enrichment import enrich_discovered_server, parse_connect_port, parse_players
+from wolflauncher.server_enrichment import (
+    candidate_query_ports,
+    enrich_discovered_server,
+    enrichment_probe_servers,
+    parse_connect_port,
+    parse_players,
+)
 from wolflauncher.status import ServerStatus
 
 
@@ -72,6 +78,38 @@ class ServerEnrichmentTests(unittest.TestCase):
         self.assertIsNone(parse_connect_port("203.0.113.10"))
         self.assertIsNone(parse_connect_port("203.0.113.10:not-a-port"))
         self.assertIsNone(parse_connect_port("203.0.113.10:70000"))
+
+    def test_candidate_query_ports_prefers_cached_query_port(self):
+        self.assertEqual(
+            candidate_query_ports(
+                DiscoveredServer(
+                    name="BattleMetrics",
+                    host="203.0.113.10",
+                    game_port=2302,
+                    query_port=27016,
+                )
+            ),
+            [27016, 2302],
+        )
+
+    def test_candidate_query_ports_adds_bounded_dayz_fallbacks_when_ports_are_uncertain(self):
+        self.assertEqual(
+            candidate_query_ports(
+                DiscoveredServer(
+                    name="Candidate",
+                    host="203.0.113.10",
+                    game_port=2302,
+                    query_port=2302,
+                )
+            ),
+            [2302, 2303, 2312, 27016],
+        )
+
+    def test_enrichment_probe_servers_keeps_game_port_while_varying_query_port(self):
+        probes = enrichment_probe_servers(self.make_candidate())
+
+        self.assertEqual([probe.query_port for probe in probes], [27016, 27017, 27026])
+        self.assertTrue(all(probe.game_port == 27016 for probe in probes))
 
 
 if __name__ == "__main__":

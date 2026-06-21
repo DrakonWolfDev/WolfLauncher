@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Added bounded query-port fallback probing when enriching discovered server rows with uncertain port data.
 - Added in-app editing for curated YAML server entries.
 - Changed discovered-server enrichment to preserve display names while storing differing live names separately.
 - Changed live enrichment to update a discovered server's game port from the queried connect address when available.

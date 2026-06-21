@@ -49,7 +49,7 @@ from .server_discovery import (
     discover_dayz_servers_web_api,
     parse_master_address,
 )
-from .server_enrichment import enrich_discovered_server
+from .server_enrichment import enrich_discovered_server, enrichment_probe_servers
 from .settings import (
     load_favourites,
     load_settings,
@@ -158,15 +158,11 @@ class ServerEnrichmentWorker(QThread):
         enriched = []
         try:
             for server in self.servers:
-                status = check_server(
-                    Server(
-                        name=server.name,
-                        group="Discovered",
-                        host=server.host,
-                        game_port=server.game_port,
-                        query_port=server.query_port,
-                    )
-                )
+                status = ServerStatus(False, error="No valid query ports to probe.")
+                for probe in enrichment_probe_servers(server):
+                    status = check_server(probe)
+                    if status.online:
+                        break
                 enriched.append(enrich_discovered_server(server, status, checked_at))
         except Exception as exc:
             self.enrichment_ready.emit(enriched, str(exc))
