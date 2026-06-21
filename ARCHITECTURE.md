@@ -136,6 +136,10 @@ GUI still uses the external shell handoff by default until native launch parity
 is proven with broader real-world testing. Real-world native Steam and Flatpak
 Steam handoffs have both reached DayZ process detection through the experimental
 path; broader multi-server and missing-mod parity still need coverage.
+The Mods tab native preview produces a copyable parity report with a validation
+checklist for selected Steam install, resolved connect target, external command,
+native command, required Workshop IDs, prepared mod links and missing Workshop
+directories.
 
 When the native engine is selected, Settings can target Auto, Native Steam,
 Flatpak Steam or `STEAM_ROOT` for native-launch testing. Mod checks, preview and

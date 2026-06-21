@@ -1,13 +1,14 @@
 import base64
 import os
 import re
+import shlex
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from .launcher import LaunchError, build_launch_command
 from .models import Server
 from .mods import RequiredMod, fetch_required_mods
-from .platform_detection import FLATPAK_STEAM_ID, STEAM_APP_ID_DAYZ, SteamInstall
+from .platform_detection import FLATPAK_STEAM_ID, STEAM_APP_ID_DAYZ, SteamInstall, install_label
 from .status import resolve_host
 
 
@@ -78,6 +79,14 @@ class NativeLaunchParityReport:
     @property
     def resolved_connect(self) -> str:
         return f"{self.preview.server.host}:{self.preview.server.game_port}"
+
+    @property
+    def native_command_text(self) -> str:
+        return shlex.join(self.preview.command) if self.preview.command else ""
+
+    @property
+    def external_command_text(self) -> str:
+        return shlex.join(self.external_command) if self.external_command else ""
 
 
 def compact_mod_link_name(workshop_id: str | int) -> str:
@@ -216,6 +225,93 @@ def prepare_native_launch_parity_report(
     )
 
 
+def format_native_launch_parity_report(report: NativeLaunchParityReport) -> str:
+    """Return a copyable native-launch parity report for testing and bug reports."""
+    preview = report.preview
+    install = report.install
+    install_detail = install_label(install)
+    lines = [
+        "Native launch parity report",
+        "",
+        "This compares the configured external launcher handoff with the experimental native path.",
+        "It did not launch Steam or DayZ.",
+        "",
+        "Validation checklist:",
+        f"- Steam mode: {install_detail}",
+        f"- Steam command: {install.executable or 'not detected'}",
+        f"- Steam running: {'yes' if install.running else 'no'}",
+        f"- Steam root: {_path_text(install.root)}",
+        f"- Steam library: {_path_text(install.steamapps)}",
+        f"- DayZ path: {_path_text(install.dayz_dir)}",
+        f"- Workshop path: {_path_text(install.workshop_dir)}",
+        f"- Server: {preview.server.name}",
+        f"- Resolved connect: {report.resolved_connect}",
+        f"- Query port: {preview.server.query_port}",
+        f"- Required mod count: {len(report.required_mod_ids)}",
+        f"- Prepared native mod links: {len(preview.mod_setup.prepared_mods)}",
+        f"- Missing Workshop directories: {len(preview.mod_setup.missing_mod_ids)}",
+        f"- Native ready: {'yes' if preview.ready else 'no'}",
+        "",
+        "External launcher handoff:",
+    ]
+
+    if report.external_command:
+        lines.extend([
+            f"- Command: {report.external_command_text}",
+            f"- Server argument: {report.resolved_connect}",
+            f"- Query port: {preview.server.query_port}",
+        ])
+    else:
+        lines.extend([
+            "- Command: not available",
+            f"- Reason: {report.external_error or 'external launcher command could not be built'}",
+        ])
+
+    lines.extend([
+        "",
+        "Native launcher candidate:",
+        f"- Ready: {'yes' if preview.ready else 'no'}",
+        f"- Connect argument: {report.resolved_connect}",
+        "",
+    ])
+
+    if report.required_mod_ids:
+        lines.append("Required Workshop IDs:")
+        lines.extend(f"- {workshop_id}" for workshop_id in report.required_mod_ids)
+    else:
+        lines.append("Required Workshop IDs: none")
+    lines.append("")
+
+    if preview.mod_setup.prepared_mods:
+        lines.append("Native prepared mod links:")
+        for prepared in preview.mod_setup.prepared_mods:
+            state = "created" if prepared.created else "already existed"
+            lines.append(
+                f"- {prepared.name} ({prepared.workshop_id}) -> "
+                f"{prepared.link_name} [{state}]"
+            )
+            lines.append(f"  source: {prepared.source_path}")
+            lines.append(f"  link: {prepared.link_path}")
+    else:
+        lines.append("Native prepared mod links: none")
+
+    if preview.mod_setup.missing_mod_ids:
+        lines.extend([
+            "",
+            "Missing Workshop mod directories:",
+            *[f"- {workshop_id}" for workshop_id in preview.mod_setup.missing_mod_ids],
+            "",
+            "Native Steam command: not ready until all required mods are installed.",
+        ])
+    else:
+        lines.extend([
+            "",
+            "Native Steam command:",
+            report.native_command_text,
+        ])
+    return "\n".join(lines)
+
+
 def prepare_mod_links(dayz_dir: Path, workshop_dir: Path, required_mods: list[RequiredMod]) -> NativeModSetup:
     """Prepare the legacy-compatible DayZ @mod symlinks for installed mods."""
     setup = NativeModSetup()
@@ -299,6 +395,10 @@ def _require_dir(path: Path | None, label: str) -> Path:
             guidance="Check Settings health and confirm DayZ is installed in the detected Steam library.",
         )
     return path
+
+
+def _path_text(path: Path | None) -> str:
+    return str(path) if path else "not detected"
 
 
 def _resolved_server(server: Server) -> Server:

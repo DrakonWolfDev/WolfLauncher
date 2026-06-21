@@ -1,5 +1,4 @@
 import os
-import shlex
 import shutil
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
@@ -42,7 +41,12 @@ from .config import (
 from .diagnostics import launch_troubleshooting_report, prime_environment_report
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from .models import Server
-from .native_launcher import NativeLaunchError, prepare_native_launch, prepare_native_launch_parity_report
+from .native_launcher import (
+    NativeLaunchError,
+    format_native_launch_parity_report,
+    prepare_native_launch,
+    prepare_native_launch_parity_report,
+)
 from .platform_detection import (
     SteamInstall,
     best_install,
@@ -2050,87 +2054,10 @@ class MainWindow(QMainWindow):
         dialog = NativeLaunchPreviewDialog(
             self,
             f"Native launch preview for {server.name}",
-            self.native_launch_preview_text(report),
+            format_native_launch_parity_report(report),
             report.preview.command,
         )
         dialog.exec()
-
-    def native_launch_preview_text(self, report) -> str:
-        preview = report.preview
-        install = report.install
-        install_detail = install_label(install) if install else self._native_steam_mode_label(self.native_steam_mode_key())
-        lines = [
-            "Native launch parity preview",
-            "",
-            "This compares the configured external launcher handoff with the experimental native path.",
-            "It did not launch Steam or DayZ.",
-            "",
-            f"Steam install: {install_detail}",
-            f"Steam command: {install.executable or 'not detected'}",
-            f"DayZ path: {install.dayz_dir or 'not detected'}",
-            f"Workshop path: {install.workshop_dir or 'not detected'}",
-            f"Server: {preview.server.name}",
-            f"Resolved connect: {report.resolved_connect}",
-            "",
-            "External launcher handoff:",
-        ]
-
-        if report.external_command:
-            lines.extend([
-                f"- Command: {shlex.join(report.external_command)}",
-                f"- Server argument: {report.resolved_connect}",
-                f"- Query port: {preview.server.query_port}",
-            ])
-        else:
-            lines.extend([
-                "- Command: not available",
-                f"- Reason: {report.external_error or 'external launcher command could not be built'}",
-            ])
-
-        lines.extend([
-            "",
-            "Native launcher candidate:",
-            f"- Ready: {'yes' if preview.ready else 'no'}",
-            f"- Connect argument: {report.resolved_connect}",
-            "",
-        ])
-
-        if report.required_mod_ids:
-            lines.append("Required Workshop IDs:")
-            for workshop_id in report.required_mod_ids:
-                lines.append(f"- {workshop_id}")
-        else:
-            lines.append("Required Workshop IDs: none")
-        lines.append("")
-
-        if preview.mod_setup.prepared_mods:
-            lines.append("Native prepared mod links:")
-            for prepared in preview.mod_setup.prepared_mods:
-                state = "created" if prepared.created else "already existed"
-                lines.append(
-                    f"- {prepared.name} ({prepared.workshop_id}) -> "
-                    f"{prepared.link_name} [{state}]"
-                )
-                lines.append(f"  source: {prepared.source_path}")
-                lines.append(f"  link: {prepared.link_path}")
-        else:
-            lines.append("Native prepared mod links: none")
-
-        if preview.mod_setup.missing_mod_ids:
-            lines.extend([
-                "",
-                "Missing Workshop mod directories:",
-                *[f"- {workshop_id}" for workshop_id in preview.mod_setup.missing_mod_ids],
-                "",
-                "Steam command: not ready until all required mods are installed.",
-            ])
-        else:
-            lines.extend([
-                "",
-                "Native Steam command:",
-                shlex.join(preview.command),
-            ])
-        return "\n".join(lines)
 
     def update_settings_health(self):
         if not hasattr(self, "health_table"):

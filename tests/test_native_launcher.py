@@ -9,6 +9,7 @@ from wolflauncher.native_launcher import (
     NativeLaunchError,
     build_steam_launch_command,
     compact_mod_link_name,
+    format_native_launch_parity_report,
     prepare_mod_links,
     prepare_native_launch,
     prepare_native_launch_parity_report,
@@ -284,6 +285,8 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertEqual(report.resolved_connect, "203.0.113.10:2302")
             self.assertEqual(report.required_mod_ids, ["256"])
             self.assertEqual(report.preview.mod_setup.mod_links, ["@AAE"])
+            self.assertIn("-connect=203.0.113.10:2302", report.native_command_text)
+            self.assertIn("-s 203.0.113.10:2302", report.external_command_text)
             self.assertEqual(
                 report.external_command,
                 [
@@ -299,6 +302,59 @@ class NativeLauncherTests(unittest.TestCase):
                 ],
             )
             self.assertIn("-connect=203.0.113.10:2302", report.preview.command)
+
+    def test_format_native_launch_parity_report_includes_copyable_validation_details(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir), mode="flatpak")
+            launcher = Path(tmpdir) / "dayz-launcher.sh"
+            launcher.write_text("#!/bin/sh\n", encoding="utf-8")
+            mod_dir = install.workshop_dir / "256"
+            mod_dir.mkdir()
+            (mod_dir / "meta.cpp").write_text('name = "Example Mod";\n', encoding="utf-8")
+
+            report = prepare_native_launch_parity_report(
+                install,
+                str(launcher),
+                make_server("203.0.113.10"),
+                "PlayerOne",
+                [RequiredMod("256", "Example Mod")],
+            )
+
+            text = format_native_launch_parity_report(report)
+
+            self.assertIn("Native launch parity report", text)
+            self.assertIn("- Steam mode: Flatpak Steam", text)
+            self.assertIn(f"- DayZ path: {install.dayz_dir}", text)
+            self.assertIn("- Required mod count: 1", text)
+            self.assertIn("- Prepared native mod links: 1", text)
+            self.assertIn("- Missing Workshop directories: 0", text)
+            self.assertIn("- Native ready: yes", text)
+            self.assertIn("Example Mod (256) -> @AAE", text)
+            self.assertIn("-connect=203.0.113.10:2302", text)
+            self.assertIn("-s 203.0.113.10:2302", text)
+
+    def test_format_native_launch_parity_report_keeps_missing_mod_preview_copyable(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+            launcher = Path(tmpdir) / "dayz-launcher.sh"
+            launcher.write_text("#!/bin/sh\n", encoding="utf-8")
+
+            report = prepare_native_launch_parity_report(
+                install,
+                str(launcher),
+                make_server("203.0.113.10"),
+                "PlayerOne",
+                [RequiredMod("111", "Missing Mod")],
+            )
+
+            text = format_native_launch_parity_report(report)
+
+            self.assertFalse(report.preview.ready)
+            self.assertEqual(report.native_command_text, "")
+            self.assertIn("- Missing Workshop directories: 1", text)
+            self.assertIn("- Native ready: no", text)
+            self.assertIn("Missing Workshop mod directories:\n- 111", text)
+            self.assertIn("Native Steam command: not ready until all required mods are installed.", text)
 
     def test_prepare_native_launch_parity_report_keeps_native_preview_when_external_path_missing(self):
         with tempfile.TemporaryDirectory() as tmpdir:

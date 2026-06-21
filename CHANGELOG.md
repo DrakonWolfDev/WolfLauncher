@@ -1,7 +1,7 @@
 # Changelog
 
 ## Unreleased
-- Expanded the native launch preview into a parity report comparing the external launcher handoff with the experimental native command, selected Steam install, resolved connect target, required mod IDs and prepared mod links.
+- Expanded the native launch preview into a copyable parity report with a validation checklist comparing the external launcher handoff with the experimental native command, selected Steam install, resolved connect target, required mod IDs, prepared mod links and missing Workshop directories.
 - Fixed Mods tab recovery when a cached mod result exists but the visible table is empty, and made missing Workshop detection visible during silent startup checks.
 - Added a consolidated launch troubleshooting report to diagnostics and Settings health, covering selected Steam mode, detected command/paths, DayZ process visibility, PRIME status and suggested next steps.
 - Fixed initial startup mod checks so the restored or default selected server is checked after the Mods tab is ready.
