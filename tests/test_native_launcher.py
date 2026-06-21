@@ -138,8 +138,24 @@ class NativeLauncherTests(unittest.TestCase):
                 "-connect=203.0.113.10:2302",
                 "-nolauncher",
                 "-world=empty",
+                "-name=Survivor",
             ],
         )
+
+    def test_build_native_command_defaults_blank_player_name_to_external_launcher_default(self):
+        install = SteamInstall(
+            mode="native",
+            executable="/usr/bin/steam",
+            running=True,
+            root=None,
+            steamapps=None,
+            dayz_dir=None,
+            workshop_dir=None,
+        )
+
+        command = build_steam_launch_command(install, make_server("203.0.113.10"), "  ", [])
+
+        self.assertIn("-name=Survivor", command)
 
     def test_build_native_command_requires_detected_steam_executable(self):
         install = SteamInstall(

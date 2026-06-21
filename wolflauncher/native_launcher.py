@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .launcher import LaunchError, build_launch_command
+from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from .models import Server
 from .mods import RequiredMod, fetch_required_mods
 from .platform_detection import (
@@ -151,15 +151,14 @@ def build_steam_launch_command(
     mod_links: list[str],
     extra_params: list[str] | None = None,
 ) -> list[str]:
-    safe_name = player_name.strip()
+    safe_name = player_name.strip() or DEFAULT_PLAYER_NAME
     command = _steam_command_prefix(install)
     command.extend(["-applaunch", str(STEAM_APP_ID_DAYZ)])
 
     if mod_links:
         command.append(f"-mod={';'.join(mod_links)}")
     command.extend([f"-connect={server.host}:{server.game_port}", "-nolauncher", "-world=empty"])
-    if safe_name:
-        command.append(f"-name={safe_name}")
+    command.append(f"-name={safe_name}")
     if extra_params:
         command.extend(extra_params)
     return command
