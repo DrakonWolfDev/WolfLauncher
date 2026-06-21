@@ -26,6 +26,17 @@ class ServerCacheTests(unittest.TestCase):
         self.assertEqual(version, server_cache.SCHEMA_VERSION)
         self.assertIn("discovered_servers", {row["name"] for row in tables})
 
+    def test_initialize_rejects_newer_schema_version(self):
+        tmpdir = tempfile.TemporaryDirectory()
+        path = Path(tmpdir.name) / "server_cache.sqlite3"
+        self.addCleanup(tmpdir.cleanup)
+        connection = server_cache.sqlite3.connect(path)
+        connection.execute(f"PRAGMA user_version = {server_cache.SCHEMA_VERSION + 1}")
+        connection.close()
+
+        with self.assertRaisesRegex(RuntimeError, "newer"):
+            server_cache.connect(path)
+
     def test_upsert_and_get_server_round_trips_discovered_server(self):
         connection = self.open_cache()
         server = DiscoveredServer(
@@ -127,6 +138,35 @@ class ServerCacheTests(unittest.TestCase):
         inserted, removed = server_cache.sync_source_servers(connection, "battlemetrics", [])
 
         self.assertEqual((inserted, removed), (0, 1))
+        self.assertIsNone(server_cache.get_server(connection, "203.0.113.10:2302:27016"))
+        self.assertIsNotNone(server_cache.get_server(connection, "203.0.113.20:2302:27016"))
+
+    def test_clear_source_servers_removes_only_that_source(self):
+        connection = self.open_cache()
+        server_cache.upsert_server(
+            connection,
+            DiscoveredServer(
+                name="API Server",
+                source="battlemetrics",
+                host="203.0.113.10",
+                game_port=2302,
+                query_port=27016,
+            ),
+        )
+        server_cache.upsert_server(
+            connection,
+            DiscoveredServer(
+                name="Imported Server",
+                source="import",
+                host="203.0.113.20",
+                game_port=2302,
+                query_port=27016,
+            ),
+        )
+
+        removed = server_cache.clear_source_servers(connection, "battlemetrics")
+
+        self.assertEqual(removed, 1)
         self.assertIsNone(server_cache.get_server(connection, "203.0.113.10:2302:27016"))
         self.assertIsNotNone(server_cache.get_server(connection, "203.0.113.20:2302:27016"))
 
@@ -250,6 +290,42 @@ class ServerCacheTests(unittest.TestCase):
         results = server_cache.search_servers(connection, text="100%")
 
         self.assertEqual([server.name for server in results], ["100% Survival"])
+
+    def test_distinct_values_returns_sorted_non_empty_filter_values(self):
+        connection = self.open_cache()
+        for server in [
+            DiscoveredServer(
+                name="One",
+                host="203.0.113.40",
+                game_port=2302,
+                query_port=27016,
+                map_name="namalsk",
+                version="1.26",
+            ),
+            DiscoveredServer(
+                name="Two",
+                host="203.0.113.50",
+                game_port=2302,
+                query_port=27016,
+                map_name="chernarusplus",
+                version="",
+            ),
+            DiscoveredServer(
+                name="Three",
+                host="203.0.113.60",
+                game_port=2302,
+                query_port=27016,
+                map_name="namalsk",
+                version="1.25",
+            ),
+        ]:
+            server_cache.upsert_server(connection, server)
+
+        self.assertEqual(
+            server_cache.distinct_values(connection, "map"),
+            ["chernarusplus", "namalsk"],
+        )
+        self.assertEqual(server_cache.distinct_values(connection, "version"), ["1.25", "1.26"])
 
     def test_import_servers_from_yaml_file_populates_cache(self):
         connection = self.open_cache()

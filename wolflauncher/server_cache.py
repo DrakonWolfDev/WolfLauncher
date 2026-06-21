@@ -25,6 +25,12 @@ SORT_COLUMNS = {
     "last_seen": "last_seen",
 }
 
+FILTER_COLUMNS = {
+    "map": "map_name",
+    "version": "version",
+    "source": "source",
+}
+
 
 def ensure_data_dir(path: Path = DATA_DIR) -> None:
     path.mkdir(parents=True, exist_ok=True)
@@ -40,6 +46,21 @@ def connect(path: Path = SERVER_CACHE_PATH) -> sqlite3.Connection:
 
 def initialize(connection: sqlite3.Connection) -> None:
     connection.execute("PRAGMA foreign_keys = ON")
+    version = int(connection.execute("PRAGMA user_version").fetchone()[0])
+    if version > SCHEMA_VERSION:
+        raise RuntimeError(
+            f"Server cache schema version {version} is newer than WolfLauncher supports ({SCHEMA_VERSION})."
+        )
+    if version == 0:
+        _initialize_schema_v1(connection)
+    elif version < SCHEMA_VERSION:
+        _migrate(connection, version, SCHEMA_VERSION)
+    else:
+        _initialize_schema_v1(connection)
+    connection.commit()
+
+
+def _initialize_schema_v1(connection: sqlite3.Connection) -> None:
     connection.execute(
         """
         CREATE TABLE IF NOT EXISTS discovered_servers (
@@ -78,7 +99,14 @@ def initialize(connection: sqlite3.Connection) -> None:
         "ON discovered_servers(online)"
     )
     connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
-    connection.commit()
+
+
+def _migrate(connection: sqlite3.Connection, current_version: int, target_version: int) -> None:
+    # Future schema changes should step version-by-version here so user caches are preserved.
+    if current_version != target_version:
+        raise RuntimeError(
+            f"Unsupported server cache migration from version {current_version} to {target_version}."
+        )
 
 
 def upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> None:
@@ -187,6 +215,19 @@ def sync_source_servers(
     return inserted, removed
 
 
+def clear_source_servers(connection: sqlite3.Connection, source: str) -> int:
+    source = source.strip()
+    if not source:
+        raise ValueError("Discovery source is required.")
+    before = connection.execute(
+        "SELECT COUNT(*) FROM discovered_servers WHERE source = ?",
+        (source,),
+    ).fetchone()[0]
+    connection.execute("DELETE FROM discovered_servers WHERE source = ?", (source,))
+    connection.commit()
+    return int(before)
+
+
 def import_servers_from_file(connection: sqlite3.Connection, path: Path) -> int:
     servers = load_discovered_servers(path)
     return upsert_servers(connection, servers)
@@ -259,6 +300,24 @@ def search_servers(
         [*params, limit],
     ).fetchall()
     return [_row_to_server(row) for row in rows]
+
+
+def distinct_values(connection: sqlite3.Connection, field: str, limit: int = 250) -> list[str]:
+    column = FILTER_COLUMNS.get(field)
+    if not column:
+        raise ValueError(f"Unsupported distinct server field: {field}")
+    limit = max(1, min(int(limit), 1000))
+    rows = connection.execute(
+        f"""
+        SELECT DISTINCT {column} AS value
+        FROM discovered_servers
+        WHERE {column} IS NOT NULL AND TRIM({column}) != ''
+        ORDER BY {column} COLLATE NOCASE ASC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    return [str(row["value"]) for row in rows]
 
 
 def _server_params(server: DiscoveredServer) -> dict[str, Any]:

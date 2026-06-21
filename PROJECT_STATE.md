@@ -24,6 +24,8 @@ Working:
 - BattleMetrics server discovery.
 - Optional quiet rate-limited startup refresh for the selected discovery provider, throttled to once per day.
 - Enrichment of visible discovered servers with live status data.
+- Failed provider refreshes preserve existing discovered-server cache rows.
+- Server Browser map and version filters populated from cached/enriched values.
 - DNS hostname and direct IP support.
 - Live DayZ server querying through `gamedig`.
 - Partial `gamedig` restart responses are treated as offline/restarting rather than as healthy online rows.
@@ -87,7 +89,7 @@ Current handling:
 - YAML is the curated server/source-of-truth format for early versions.
 - SQLite is now introduced as the discovered public server browser cache.
 - v0.6 has started with a standalone SQLite server cache foundation and read-only browser tab for discovered public servers.
-- Provider refreshes sync their discovered rows by removing stale provider-backed entries and adding only new cache keys; curated YAML remains the place for saved servers.
+- Provider refreshes sync their discovered rows after successful responses by removing stale provider-backed entries and adding only new cache keys; failed refreshes preserve existing cache rows. Curated YAML remains the place for saved servers.
 - JSON is used for user settings and favourites under `~/.config/wolflauncher`.
 - The external shell launcher remains the launch engine for now.
 - The vendored shell launcher is the reference contract for future native launcher work.

@@ -157,7 +157,7 @@ Select an imported/discovered row and use **Promote to curated** to add it to `s
 
 Choose a server API provider in Settings, then use **Refresh database** in the Server Browser tab. BattleMetrics works without a key, Steam Web API uses the saved Steam API key, and Steam Master uses Valve's legacy UDP master server path.
 
-Provider refreshes sync the provider-backed cache rather than accumulating old rows: servers no longer returned by the selected service are removed, an empty or failed provider refresh clears that provider's discovered rows, and existing cache keys are left untouched so live enrichment is not repeated unnecessarily. Keep servers you care about in the curated `servers.yaml` list.
+Provider refreshes sync the provider-backed cache rather than accumulating old rows: servers no longer returned by a successful selected-service refresh are removed, a successful empty refresh clears that provider's discovered rows, and existing cache keys are left untouched so live enrichment is not repeated unnecessarily. Failed provider refreshes keep existing cached rows. Keep servers you care about in the curated `servers.yaml` list.
 
 Settings also contains the refresh row limit, an opt-in automatic refresh toggle, and a comma-separated **Steam masters** endpoint list for cases where Valve's default DNS names do not resolve, for example `HOST:27011,HOST:27015`.
 
@@ -183,7 +183,7 @@ Use `--master HOST[:PORT]` to test specific Steam master endpoints if local DNS 
 
 The app honors `WOLFLAUNCHER_STEAM_MASTER_ENDPOINTS` as a comma-separated endpoint list, plus the older `WOLFLAUNCHER_STEAM_MASTER_HOST` / `WOLFLAUNCHER_STEAM_MASTER_PORT` overrides. Steam discovery rows are treated as candidates until later status enrichment confirms display names, maps, player counts and port details.
 
-Use **Enrich visible** in the Server Browser tab to query the currently visible cached rows and fill in live status fields such as server name, map, players, ping, version and online state.
+Use **Enrich visible** in the Server Browser tab to query the currently visible cached rows and fill in live status fields such as server name, map, players, ping, version and online state. The Server Browser map and version filters are populated from cached/enriched values when those fields are available.
 
 ## Project Documentation
 

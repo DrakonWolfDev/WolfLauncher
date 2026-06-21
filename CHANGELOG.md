@@ -1,10 +1,13 @@
 # Changelog
 
 ## Unreleased
+- Added SQLite cache schema-version checks and migration scaffolding.
+- Changed failed provider refreshes to keep existing cached rows while still pruning stale rows after successful refreshes.
+- Restored Server Browser map and version filters as cache-populated dropdowns.
+- Reduced routine Server Browser completion popups by reporting successful refresh/enrichment results in the status bar.
 - Replaced the separate Diagnostics tab with a Settings tab containing compact health checks.
 - Moved discovery provider configuration, API key, refresh limit, endpoint overrides and server-list import into Settings.
 - Simplified the Server Browser tab to a single configured-provider **Refresh database** button.
-- Removed the Server Browser map and version filter boxes because provider rows often lack those fields before enrichment.
 - Changed startup discovery refresh from hard-coded BattleMetrics to opt-in refresh for the selected provider.
 - Added quiet rate-limited BattleMetrics startup refresh.
 - Added BattleMetrics server discovery as a documented no-key discovery source.

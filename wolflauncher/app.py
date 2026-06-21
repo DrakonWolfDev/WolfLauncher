@@ -424,6 +424,18 @@ class MainWindow(QMainWindow):
         self.browser_modded.currentTextChanged.connect(self.refresh_server_browser)
         filters.addWidget(self.browser_modded)
 
+        self.browser_map = QComboBox()
+        self.browser_map.addItem("Any map")
+        self.browser_map.currentTextChanged.connect(self.refresh_server_browser)
+        filters.addWidget(QLabel("Map"))
+        filters.addWidget(self.browser_map)
+
+        self.browser_version = QComboBox()
+        self.browser_version.addItem("Any version")
+        self.browser_version.currentTextChanged.connect(self.refresh_server_browser)
+        filters.addWidget(QLabel("Version"))
+        filters.addWidget(self.browser_version)
+
         self.browser_sort = QComboBox()
         self.browser_sort.addItems(["Name", "Players", "Ping", "Map", "Version", "Last seen"])
         self.browser_sort.currentTextChanged.connect(self.refresh_server_browser)
@@ -662,20 +674,18 @@ class MainWindow(QMainWindow):
     def handle_steam_discovery_ready(self, servers, error: str):
         self._set_database_refresh_enabled(True)
         if error:
-            server_cache.sync_source_servers(self.server_cache, "steam_master", [])
             self.refresh_server_browser()
             QMessageBox.warning(
                 self,
                 "Steam discovery failed",
-                f"{error}\n\nCheck DNS/network access to the Steam master server, or use a YAML/JSON import file.",
+                f"{error}\n\nExisting cached Steam master rows were kept. Check DNS/network access to the Steam master server, or use a YAML/JSON import file.",
             )
             return
         inserted, removed = server_cache.sync_source_servers(self.server_cache, "steam_master", servers)
         self.refresh_server_browser()
-        QMessageBox.information(
-            self,
-            "Steam discovery complete",
-            f"Added {inserted} new Steam master candidate(s); removed {removed} stale row(s).",
+        self.statusBar().showMessage(
+            f"Steam discovery complete: added {inserted} candidate(s), removed {removed} stale row(s).",
+            7000,
         )
 
     def refresh_from_steam_web_api(self):
@@ -694,16 +704,18 @@ class MainWindow(QMainWindow):
     def handle_steam_web_api_ready(self, servers, error: str):
         self._set_database_refresh_enabled(True)
         if error:
-            server_cache.sync_source_servers(self.server_cache, "steam_web_api", [])
             self.refresh_server_browser()
-            QMessageBox.warning(self, "Steam Web API discovery failed", error)
+            QMessageBox.warning(
+                self,
+                "Steam Web API discovery failed",
+                f"{error}\n\nExisting cached Steam Web API rows were kept.",
+            )
             return
         inserted, removed = server_cache.sync_source_servers(self.server_cache, "steam_web_api", servers)
         self.refresh_server_browser()
-        QMessageBox.information(
-            self,
-            "Steam Web API discovery complete",
-            f"Added {inserted} new Steam Web API row(s); removed {removed} stale row(s).",
+        self.statusBar().showMessage(
+            f"Steam Web API discovery complete: added {inserted} row(s), removed {removed} stale row(s).",
+            7000,
         )
 
     def refresh_from_battlemetrics(self):
@@ -783,9 +795,11 @@ class MainWindow(QMainWindow):
         self._set_database_refresh_enabled(True)
         self.mark_auto_refresh("steam_master")
         if error:
-            server_cache.sync_source_servers(self.server_cache, "steam_master", [])
             self.refresh_server_browser()
-            self.statusBar().showMessage(f"Steam master auto-refresh failed: {error}", 7000)
+            self.statusBar().showMessage(
+                f"Steam master auto-refresh failed; cached rows kept: {error}",
+                7000,
+            )
             return
         inserted, removed = server_cache.sync_source_servers(self.server_cache, "steam_master", servers)
         self.refresh_server_browser()
@@ -798,9 +812,11 @@ class MainWindow(QMainWindow):
         self._set_database_refresh_enabled(True)
         self.mark_auto_refresh("steam_web_api")
         if error:
-            server_cache.sync_source_servers(self.server_cache, "steam_web_api", [])
             self.refresh_server_browser()
-            self.statusBar().showMessage(f"Steam Web API auto-refresh failed: {error}", 7000)
+            self.statusBar().showMessage(
+                f"Steam Web API auto-refresh failed; cached rows kept: {error}",
+                7000,
+            )
             return
         inserted, removed = server_cache.sync_source_servers(self.server_cache, "steam_web_api", servers)
         self.refresh_server_browser()
@@ -815,12 +831,18 @@ class MainWindow(QMainWindow):
         if automatic:
             self.mark_auto_refresh("battlemetrics")
         if error:
-            server_cache.sync_source_servers(self.server_cache, "battlemetrics", [])
             self.refresh_server_browser()
             if automatic:
-                self.statusBar().showMessage(f"BattleMetrics auto-refresh failed: {error}", 7000)
+                self.statusBar().showMessage(
+                    f"BattleMetrics auto-refresh failed; cached rows kept: {error}",
+                    7000,
+                )
                 return
-            QMessageBox.warning(self, "BattleMetrics discovery failed", error)
+            QMessageBox.warning(
+                self,
+                "BattleMetrics discovery failed",
+                f"{error}\n\nExisting cached BattleMetrics rows were kept.",
+            )
             return
         inserted, removed = server_cache.sync_source_servers(self.server_cache, "battlemetrics", servers)
         self.refresh_server_browser()
@@ -830,10 +852,9 @@ class MainWindow(QMainWindow):
                 7000,
             )
             return
-        QMessageBox.information(
-            self,
-            "BattleMetrics discovery complete",
-            f"Added {inserted} new BattleMetrics row(s); removed {removed} stale row(s).",
+        self.statusBar().showMessage(
+            f"BattleMetrics discovery complete: added {inserted} row(s), removed {removed} stale row(s).",
+            7000,
         )
 
     def enrich_visible_discovered_servers(self):
@@ -860,10 +881,9 @@ class MainWindow(QMainWindow):
                 f"Updated {count} row(s) before enrichment stopped:\n\n{error}",
             )
             return
-        QMessageBox.information(
-            self,
-            "Enrichment complete",
-            f"Updated {count} discovered server row(s).",
+        self.statusBar().showMessage(
+            f"Enrichment complete: updated {count} discovered server row(s).",
+            7000,
         )
 
     def promote_selected_discovered_server(self):
@@ -994,17 +1014,22 @@ class MainWindow(QMainWindow):
         if not hasattr(self, "browser_table"):
             return
 
+        self._refresh_browser_filter_options()
         sort_key = self.browser_sort.currentText().lower().replace(" ", "_")
         modded = None
         if self.browser_modded.currentText() == "Modded":
             modded = True
         elif self.browser_modded.currentText() == "Vanilla":
             modded = False
+        map_name = self._combo_filter_value(self.browser_map, "Any map")
+        version = self._combo_filter_value(self.browser_version, "Any version")
 
         servers = server_cache.search_servers(
             self.server_cache,
             text=self.browser_search.text(),
             online_only=self.browser_online_only.isChecked(),
+            map_name=map_name,
+            version=version,
             modded=modded,
             sort_by=sort_key,
             descending=self.browser_descending.isChecked(),
@@ -1047,6 +1072,35 @@ class MainWindow(QMainWindow):
             self.browser_summary.setText(f"Cached discovered servers: {len(servers)} shown")
         else:
             self.browser_summary.setText("Cached discovered servers: none found")
+
+    def _refresh_browser_filter_options(self):
+        self._set_combo_filter_options(
+            self.browser_map,
+            "Any map",
+            server_cache.distinct_values(self.server_cache, "map"),
+        )
+        self._set_combo_filter_options(
+            self.browser_version,
+            "Any version",
+            server_cache.distinct_values(self.server_cache, "version"),
+        )
+
+    def _set_combo_filter_options(self, combo: QComboBox, any_label: str, values: list[str]):
+        choices = [any_label, *values]
+        existing = [combo.itemText(index) for index in range(combo.count())]
+        if existing == choices:
+            return
+
+        current = combo.currentText()
+        combo.blockSignals(True)
+        combo.clear()
+        combo.addItems(choices)
+        combo.setCurrentText(current if current in choices else any_label)
+        combo.blockSignals(False)
+
+    def _combo_filter_value(self, combo: QComboBox, any_label: str) -> str:
+        value = combo.currentText().strip()
+        return "" if value == any_label else value
 
     def _players_text(self, current: int | None, maximum: int | None) -> str:
         if current is None and maximum is None:
