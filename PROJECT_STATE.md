@@ -52,6 +52,7 @@ Working:
 - Local Workshop folder scan.
 - Required-vs-installed mod comparison.
 - Missing mod list and Steam Workshop links.
+- Mods tab repopulates from the cached selected-server mod result if the visible table is empty, and silent startup checks show a clear Workshop-folder message when detection blocks mod checking.
 - Mods table double-click and right-click actions.
 - Mods filtering for all/missing/installed.
 - Copy Workshop ID, mod name, Workshop URL, connect address and server details.
@@ -86,6 +87,7 @@ Current handling:
 - Diagnostics include Auto Steam selection and candidate summaries for native, Flatpak and `STEAM_ROOT` troubleshooting.
 - Diagnostics list detected Steam library folders for each configured install.
 - Diagnostics include known DayZ process visibility for Steam/Proton handoff troubleshooting.
+- Diagnostics and Settings health include a consolidated launch troubleshooting report covering selected Steam mode, detected Steam command and paths, DayZ process visibility, PRIME status and suggested next steps.
 - Post-handoff process checks should avoid warning too early; observed native launches can report no DayZ process initially, then show DayZ roughly 10 seconds later, matching the slower behavior seen with the original CLI launcher.
 - Hybrid-GPU testing should start outside WolfLauncher, for example with `prime-run glxinfo -B`, `prime-run steam` and direct DayZ launch from Steam before testing the WolfLauncher handoff.
 - Useful bug reports should capture native-vs-Flatpak Steam, GPU driver/PRIME helper, Proton version, whether DayZ starts directly from Steam without per-game launch options, and WolfLauncher diagnostics output.
@@ -138,10 +140,10 @@ Current handling:
 
 Use v0.7 as the next active development target:
 
-- Improve hybrid-GPU/NVIDIA PRIME diagnostics and safer user-facing Steam launch-option guidance.
+- Continue refining hybrid-GPU/NVIDIA PRIME diagnostics and safer user-facing Steam launch-option guidance after the initial consolidated launch troubleshooting report.
 - Continue refining hybrid-GPU guidance after real-world NVIDIA PRIME reproduction data is available.
 - Expand native and Flatpak Steam checks beyond secondary-library detection.
-- Add clearer failure states for Proton/Steam handoff problems.
+- Keep refining Proton/Steam handoff failure states after the initial selected-install/process/PRIME troubleshooting report.
 - Continue refining Linux Mint/Ubuntu install instructions toward packaged installs.
 - Defer packaging work until late pre-1.0 polish; launcher parity and Steam/Proton reliability should come first.
 - Continue improving curated server organisation beyond basic edit/remove flows.

@@ -11,6 +11,8 @@ from .platform_detection import (
     install_label,
     install_readiness,
     ok_missing,
+    select_steam_install,
+    steam_mode_label,
     steam_selection_candidates_detail,
     steam_selection_report,
     yes_no,
@@ -30,6 +32,14 @@ class PrimeEnvironmentReport:
     status: str
     summary: str
     details: list[str]
+
+
+@dataclass(frozen=True)
+class LaunchTroubleshootingReport:
+    status: str
+    summary: str
+    details: list[str]
+    next_steps: list[str]
 
 
 def prime_environment_report(environ=None) -> PrimeEnvironmentReport:
@@ -70,7 +80,61 @@ def prime_environment_report(environ=None) -> PrimeEnvironmentReport:
     )
 
 
-def run_diagnostics(launcher_path: str, servers: list[Server]) -> str:
+def launch_troubleshooting_report(
+    selected_mode: str = "auto",
+    installs=None,
+    process_check=None,
+    environ=None,
+) -> LaunchTroubleshootingReport:
+    detected = installs if installs is not None else detect_steam()
+    selection = steam_selection_report(selected_mode, detected)
+    install = select_steam_install(selected_mode, detected)
+    process = process_check if process_check is not None else dayz_process_check()
+    prime = prime_environment_report(environ)
+
+    status = "OK"
+    if selection.status == "MISSING":
+        status = "MISSING"
+    elif selection.status == "WARN" or prime.status == "WARN":
+        status = "WARN"
+
+    details = [
+        f"Selected mode: {steam_mode_label(selected_mode)}",
+        f"Selected install: {selection.selected_label}",
+        f"Steam readiness: {selection.status} - {selection.detail}",
+        f"Steam candidates: {steam_selection_candidates_detail(selection)}",
+        f"Steam command: {(install.executable if install and install.executable else 'not detected')}",
+        f"Steam running: {yes_no(bool(install and install.running))}",
+        f"Steam root: {(install.root if install and install.root else 'not detected')}",
+        f"Steam library: {(install.steamapps if install and install.steamapps else 'not detected')}",
+        f"DayZ install: {(install.dayz_dir if install and install.dayz_dir else 'not detected')}",
+        f"Workshop folder: {(install.workshop_dir if install and install.workshop_dir else 'not detected')}",
+        f"Post-handoff process visibility: {process.detail}",
+        f"PRIME status: {prime.status} - {prime.summary}",
+        "Steam launch options: not readable by WolfLauncher",
+    ]
+
+    next_steps: list[str] = []
+    if selection.status == "MISSING":
+        next_steps.append("Open Settings health and choose a Steam install mode that detects native Steam, Flatpak Steam or STEAM_ROOT.")
+    elif selection.status == "WARN":
+        next_steps.append("Fix the selected Steam install warning before launch, especially missing DayZ or Workshop paths.")
+    if install and install.dayz_dir and install.workshop_dir and not process.running:
+        next_steps.append("After a successful handoff, allow Steam/Proton time to start DayZ, then check Steam downloads, Proton prompts and BattlEye prompts.")
+    if prime.status == "WARN":
+        next_steps.append("Remove the known bad NVIDIA PRIME Steam launch option and test DayZ directly from Steam without WolfLauncher.")
+    if not next_steps:
+        next_steps.append("If DayZ still does not start, compare native versus Flatpak Steam and test DayZ directly from Steam with the same Proton version.")
+
+    return LaunchTroubleshootingReport(
+        status=status,
+        summary=f"{selection.detail}; {process.detail}; {prime.summary}",
+        details=details,
+        next_steps=next_steps,
+    )
+
+
+def run_diagnostics(launcher_path: str, servers: list[Server], selected_steam_mode: str = "auto") -> str:
     lines: list[str] = []
     lines.append("WolfLauncher diagnostics")
     lines.append("========================")
@@ -91,8 +155,11 @@ def run_diagnostics(launcher_path: str, servers: list[Server]) -> str:
     lines.append("Steam / DayZ detection:")
     installs = detect_steam()
     selection = steam_selection_report("auto", installs)
+    selected_selection = steam_selection_report(selected_steam_mode, installs)
     lines.append(f"  Auto selection: {selection.status} - {selection.detail}")
     lines.append(f"  Auto candidates: {steam_selection_candidates_detail(selection)}")
+    lines.append(f"  Selected launch mode: {steam_mode_label(selected_steam_mode)}")
+    lines.append(f"  Selected launch install: {selected_selection.status} - {selected_selection.detail}")
     for install in installs:
         has_install = bool(install.executable or install.root or install.steamapps)
         label = install_label(install)
@@ -127,6 +194,16 @@ def run_diagnostics(launcher_path: str, servers: list[Server]) -> str:
     process_check = dayz_process_check()
     lines.append("DayZ process check:")
     lines.append(f"  {process_check.detail}")
+    lines.append("")
+
+    launch_report = launch_troubleshooting_report(selected_steam_mode, installs, process_check)
+    lines.append("Launch troubleshooting:")
+    lines.append(f"  Status: {launch_report.status}")
+    lines.append(f"  Summary: {launch_report.summary}")
+    for detail in launch_report.details:
+        lines.append(f"  Detail: {detail}")
+    for step in launch_report.next_steps:
+        lines.append(f"  Next step: {step}")
     lines.append("")
 
     lines.append("Default launcher path candidates:")

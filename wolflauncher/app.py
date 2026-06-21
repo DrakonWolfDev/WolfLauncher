@@ -39,7 +39,7 @@ from .config import (
     remove_curated_server,
     update_curated_server,
 )
-from .diagnostics import prime_environment_report
+from .diagnostics import launch_troubleshooting_report, prime_environment_report
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from .models import Server
 from .native_launcher import NativeLaunchError, prepare_native_launch, prepare_native_launch_preview
@@ -1717,6 +1717,8 @@ class MainWindow(QMainWindow):
             and self.last_mod_result
             and server_key(self.last_mod_result.server) == selected_key
         ):
+            if self.mods_table.rowCount() == 0:
+                self.display_mods_result(self.last_mod_result)
             return
 
         if self.mod_worker and self.mod_worker.isRunning():
@@ -1727,6 +1729,12 @@ class MainWindow(QMainWindow):
         install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
         workshop_dir = install.workshop_dir if install else None
         if not workshop_dir:
+            self.last_mod_result = None
+            self.mod_summary.setText(
+                "Workshop folder not detected for the current launch mode. "
+                "Open Settings health to check the selected Steam install."
+            )
+            self.mods_table.setRowCount(0)
             if not silent:
                 QMessageBox.warning(
                     self,
@@ -1754,11 +1762,15 @@ class MainWindow(QMainWindow):
             return
 
         self.last_mod_result = result
+        self.display_mods_result(result)
+        self._check_pending_server_mods()
+
+    def display_mods_result(self, result: ModCheckResult):
         self.mods_table.setSortingEnabled(False)
         if not result.ok:
             self.mod_summary.setText(f"Could not check mods for {result.server.name}: {result.error}")
             self.mods_table.setRowCount(0)
-            self._check_pending_server_mods()
+            self.mods_table.setSortingEnabled(True)
             return
 
         required = result.required_mods
@@ -1797,7 +1809,6 @@ class MainWindow(QMainWindow):
         self.mods_table.setSortingEnabled(True)
         self.mods_table.sortItems(0, Qt.DescendingOrder)
         self.apply_mod_filter()
-        self._check_pending_server_mods()
 
     def _check_pending_server_mods(self):
         if self.pending_mod_check_row is None:
@@ -2129,6 +2140,12 @@ class MainWindow(QMainWindow):
         missing_tools = [command for command in tools if not shutil.which(command)]
         launcher_candidates = [str(candidate) for candidate in DEFAULT_LAUNCHER_PATHS if candidate.exists()]
         prime_report = prime_environment_report()
+        process_check = dayz_process_check()
+        launch_report = launch_troubleshooting_report(
+            self.native_steam_mode_key(),
+            install_rows,
+            process_check,
+        )
 
         rows = [
             (
@@ -2162,9 +2179,19 @@ class MainWindow(QMainWindow):
                 steam_detail,
             ),
             (
+                "Launch troubleshooting",
+                launch_report.status,
+                "; ".join(launch_report.next_steps),
+            ),
+            (
                 "Steam candidates",
                 "OK" if steam_report.candidates else "WARN",
                 steam_selection_candidates_detail(steam_report),
+            ),
+            (
+                "DayZ process",
+                "OK",
+                process_check.detail,
             ),
             (
                 "DayZ",

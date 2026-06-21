@@ -1,10 +1,11 @@
+from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
 
-from wolflauncher.diagnostics import prime_environment_report, run_diagnostics
+from wolflauncher.diagnostics import launch_troubleshooting_report, prime_environment_report, run_diagnostics
 from wolflauncher.models import Server
-from wolflauncher.platform_detection import ProcessCheck
+from wolflauncher.platform_detection import ProcessCheck, SteamInstall
 
 
 class DiagnosticsTests(unittest.TestCase):
@@ -50,6 +51,53 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertIn("No known DayZ process detected", report)
         self.assertIn("Auto selection: MISSING - Auto selection found no Steam install", report)
         self.assertIn("Auto candidates: No native, Flatpak or STEAM_ROOT Steam installs detected", report)
+        self.assertIn("Launch troubleshooting:", report)
+        self.assertIn("Detail: Selected mode: Auto", report)
+        self.assertIn("Detail: Steam command: not detected", report)
+        self.assertIn("Detail: Post-handoff process visibility: No known DayZ process detected", report)
+        self.assertIn("Next step: Open Settings health", report)
+
+    def test_launch_troubleshooting_report_summarizes_selected_flatpak_install(self):
+        install = SteamInstall(
+            mode="flatpak",
+            executable="com.valvesoftware.Steam",
+            running=True,
+            root=Path("/home/user/.var/app/com.valvesoftware.Steam/data/Steam"),
+            steamapps=Path("/home/user/.var/app/com.valvesoftware.Steam/data/Steam/steamapps"),
+            dayz_dir=Path("/home/user/.var/app/com.valvesoftware.Steam/data/Steam/steamapps/common/DayZ"),
+            workshop_dir=Path(
+                "/home/user/.var/app/com.valvesoftware.Steam/data/Steam/steamapps/workshop/content/221100"
+            ),
+        )
+
+        report = launch_troubleshooting_report(
+            "flatpak",
+            [install],
+            ProcessCheck(True, "Detected known DayZ process: DayZ_x64.exe"),
+            {},
+        )
+
+        self.assertEqual("OK", report.status)
+        self.assertIn("Flatpak Steam ready", report.summary)
+        self.assertIn("Selected mode: Flatpak Steam", report.details)
+        self.assertIn("Selected install: Flatpak Steam", report.details)
+        self.assertIn("Steam command: com.valvesoftware.Steam", report.details)
+        self.assertIn("Post-handoff process visibility: Detected known DayZ process: DayZ_x64.exe", report.details)
+        self.assertTrue(any("compare native versus Flatpak Steam" in step for step in report.next_steps))
+
+    def test_launch_troubleshooting_report_warns_for_known_bad_prime_pair(self):
+        report = launch_troubleshooting_report(
+            "auto",
+            [],
+            ProcessCheck(False, "No known DayZ process detected"),
+            {
+                "__NV_PRIME_RENDER_OFFLOAD": "1",
+                "__GLX_VENDOR_LIBRARY_NAME": "nvidia",
+            },
+        )
+
+        self.assertEqual("MISSING", report.status)
+        self.assertTrue(any("known bad NVIDIA PRIME" in step for step in report.next_steps))
 
     def test_prime_report_warns_only_for_known_bad_nvidia_pair(self):
         report = prime_environment_report(

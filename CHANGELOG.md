@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- Fixed Mods tab recovery when a cached mod result exists but the visible table is empty, and made missing Workshop detection visible during silent startup checks.
+- Added a consolidated launch troubleshooting report to diagnostics and Settings health, covering selected Steam mode, detected command/paths, DayZ process visibility, PRIME status and suggested next steps.
 - Fixed initial startup mod checks so the restored or default selected server is checked after the Mods tab is ready.
 - Added Settings health and diagnostics summaries that show which Steam install Auto selects and what other detected install candidates report.
 - Expanded native and Flatpak Steam detection to read Steam `libraryfolders.vdf`, so DayZ and Workshop can be found in secondary Steam libraries.
