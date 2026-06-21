@@ -84,6 +84,12 @@ Working:
 - Structured native-launch failure stages with user-facing recovery guidance for Steam detection, library detection, DNS and mod setup failures.
 - README Linux Mint / Ubuntu development setup instructions with dependency notes and Settings health fallback guidance.
 
+Planned WolfAPI follow-up:
+
+- `ROADMAP.md` tracks a v0.8.x WolfAPI discovery-quality and submission side-track.
+- The intent is to combine Steam's capped list with slow BattleMetrics ingestion, freshness/stale tracking, roughly 30-day stale retention, stronger retention for user-submitted rows, and a future in-app "Add your server to WolfLauncher" submission flow.
+- Current WolfLauncher behavior remains read-only for remote WolfAPI data; users can already promote discovered rows or add their own servers to the local curated YAML list.
+
 ## Known bug
 
 - DayZ currently does not run when the Steam launch options contain `__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%`.

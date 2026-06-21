@@ -48,6 +48,22 @@ Status: complete, with the NVIDIA PRIME Steam launch-option issue still tracked 
 - Investigate Steam Workshop mod installation routes, with Steam-native subscription/download flows preferred over custom file management.
 - Keep the external launcher path as a fallback until native launch parity is proven.
 
+## v0.8.x - WolfAPI discovery quality and submissions
+
+Goal: turn WolfAPI from a Steam-capped cache into a resilient community server directory while keeping WolfLauncher usable offline and with curated local rows.
+
+- Keep WolfAPI as the preferred read-only discovered-server provider in WolfLauncher.
+- Treat Steam's 10,000-row server-list cap as a fast baseline rather than the complete directory.
+- Add slow, rate-limited BattleMetrics ingestion on the API side so WolfAPI can fill gaps without hammering public services.
+- Track source freshness per server, including `last_seen`, `last_checked`, and which upstream source last confirmed the row.
+- Mark servers as stale/offline when they disappear from a refresh instead of deleting them immediately.
+- Keep stale rows for roughly 30 days before deletion so temporary downtime, refresh gaps and upstream quirks do not erase valid servers.
+- Give user-submitted or locally curated servers stronger retention than discovered-only rows.
+- Add an in-app "Add your server to WolfLauncher" flow that saves locally first, then submits to a dedicated WolfAPI endpoint.
+- Design the submission contract before implementation: host, game port, query port, optional display name, duplicate handling, validation status, rate limiting and abuse prevention.
+- Have WolfAPI validate or enrich submitted servers before promoting them into the public cache.
+- Later expose freshness/source state in the Server Browser so players can tell live, stale, API-cached and user-added rows apart.
+
 ## v0.9 - Native launcher engine hardening
 
 - Make the native engine the default candidate only after broader missing-mod and multi-server parity testing.
