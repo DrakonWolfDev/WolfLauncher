@@ -60,11 +60,12 @@ Working:
 - Launch output dialog with generated command and launcher output.
 - Successful external-launcher exit code is presented as a handoff to Steam.
 - Launch dialogs clarify that a successful handoff does not prove Proton initialized or DayZ reached the menu.
-- Launch dialogs run a delayed post-handoff check for known DayZ processes.
+- Launch dialogs watch for known DayZ processes for up to 45 seconds after handoff, because Steam/Proton can take tens of seconds before DayZ appears.
 - Experimental native launch preview from the Mods tab, including prepared mod-link output, missing Workshop directory reporting and generated Steam command display.
 - Experimental native Steam handoff from the preview dialog, with first real-world native launch success confirmed against native Steam. The external launcher remains the default launch path while parity testing continues.
 - Saved launch-engine setting in Settings. `External launcher` remains the default, while `Native experimental` routes the main Launch button through the Python native engine.
 - Structured native-launch failure stages with user-facing recovery guidance for Steam detection, library detection, DNS and mod setup failures.
+- README Linux Mint / Ubuntu development setup instructions with dependency notes and Settings health fallback guidance.
 
 ## Known bug
 
@@ -75,10 +76,12 @@ Current handling:
 - Treat this as an external Steam/Proton/DayZ launch-option compatibility issue, not a WolfLauncher command-generation failure.
 - Do not recommend that option as the default workaround.
 - WolfLauncher does not set, rewrite or reliably read per-game Steam launch options.
-- Diagnostics report PRIME-related environment variables visible to WolfLauncher, but Steam launch options must be checked in Steam itself.
-- Diagnostics warn when WolfLauncher itself is running with the known problematic NVIDIA PRIME offload environment combination.
+- Diagnostics report PRIME-related environment variables visible to WolfLauncher, but Steam launch options must be checked in Steam itself; confirmed testing showed Steam can have the known option set while WolfLauncher sees no PRIME variables in its own environment.
+- Diagnostics classify visible PRIME/DRI environment state and warn when WolfLauncher itself is running with the known problematic NVIDIA PRIME offload environment combination.
+- Settings health includes a PRIME environment row so the known problematic environment is visible without opening a full diagnostics report.
 - Diagnostics include per-install Steam readiness summaries for native, Flatpak and `STEAM_ROOT` library detection.
 - Diagnostics include known DayZ process visibility for Steam/Proton handoff troubleshooting.
+- Post-handoff process checks should avoid warning too early; observed native launches can report no DayZ process initially, then show DayZ roughly 10 seconds later, matching the slower behavior seen with the original CLI launcher.
 - Hybrid-GPU testing should start outside WolfLauncher, for example with `prime-run glxinfo -B`, `prime-run steam` and direct DayZ launch from Steam before testing the WolfLauncher handoff.
 - Useful bug reports should capture native-vs-Flatpak Steam, GPU driver/PRIME helper, Proton version, whether DayZ starts directly from Steam without per-game launch options, and WolfLauncher diagnostics output.
 - Future work should improve hybrid-GPU/NVIDIA PRIME diagnostics and safer launch-option guidance.
@@ -128,9 +131,10 @@ Current handling:
 Use v0.7 as the next active development target:
 
 - Improve hybrid-GPU/NVIDIA PRIME diagnostics and safer user-facing Steam launch-option guidance.
+- Continue refining hybrid-GPU guidance after real-world NVIDIA PRIME reproduction data is available.
 - Expand native and Flatpak Steam checks.
 - Add clearer failure states for Proton/Steam handoff problems.
-- Add Linux Mint/Ubuntu install instructions.
+- Continue refining Linux Mint/Ubuntu install instructions toward packaged installs.
 - Continue improving curated server organisation beyond basic edit/remove flows.
 - Keep `servers.yaml` for curated, personal and import/export server lists.
 - Continue carving native Python equivalents from the vendored launcher's behavior while expanding the new native launcher engine behind WolfLauncher interfaces.

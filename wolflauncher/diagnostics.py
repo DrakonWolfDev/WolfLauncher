@@ -1,5 +1,6 @@
 import os
 import shutil
+from dataclasses import dataclass
 from pathlib import Path
 
 from .config import DEFAULT_LAUNCHER_PATHS
@@ -13,6 +14,51 @@ PRIME_ENV_VARS = (
     "__GLX_VENDOR_LIBRARY_NAME",
     "DRI_PRIME",
 )
+
+
+@dataclass(frozen=True)
+class PrimeEnvironmentReport:
+    status: str
+    summary: str
+    details: list[str]
+
+
+def prime_environment_report(environ=None) -> PrimeEnvironmentReport:
+    env = environ if environ is not None else os.environ
+    offload = env.get("__NV_PRIME_RENDER_OFFLOAD")
+    glx_vendor = env.get("__GLX_VENDOR_LIBRARY_NAME")
+    dri_prime = env.get("DRI_PRIME")
+
+    if offload == "1" and glx_vendor == "nvidia":
+        return PrimeEnvironmentReport(
+            status="WARN",
+            summary="Known problematic NVIDIA PRIME offload variables are visible to WolfLauncher.",
+            details=[
+                "This matches the known bad Steam launch-option pattern for DayZ.",
+                "WolfLauncher cannot confirm whether Steam applies the same per-game launch option.",
+                "Test DayZ directly from Steam with no per-game launch options before testing WolfLauncher handoff.",
+                "For hybrid-GPU checks, test PRIME outside WolfLauncher first, for example prime-run glxinfo -B and prime-run steam.",
+            ],
+        )
+
+    if offload or glx_vendor or dri_prime:
+        return PrimeEnvironmentReport(
+            status="OK",
+            summary="PRIME-related variables are present, but not the known bad NVIDIA launch-option pair.",
+            details=[
+                "WolfLauncher reports only the environment it can see.",
+                "Per-game Steam launch options still need to be checked in Steam if DayZ does not start.",
+            ],
+        )
+
+    return PrimeEnvironmentReport(
+        status="OK",
+        summary="No PRIME-related variables are visible to WolfLauncher; Steam launch options may still set them.",
+        details=[
+            "This does not prove Steam has no per-game launch options.",
+            "Check Steam's DayZ launch options directly if Proton or DayZ does not start after handoff.",
+        ],
+    )
 
 
 def run_diagnostics(launcher_path: str, servers: list[Server]) -> str:
@@ -54,15 +100,10 @@ def run_diagnostics(launcher_path: str, servers: list[Server]) -> str:
     lines.append("Launch option environment:")
     for name in PRIME_ENV_VARS:
         lines.append(f"  {name}: {os.environ.get(name) or 'not set'}")
-    if _known_bad_prime_environment():
-        lines.append(
-            "  PRIME note: this process has the same NVIDIA offload variables as the known problematic "
-            "Steam launch-option combination."
-        )
-        lines.append(
-            "  PRIME guidance: test DayZ directly from Steam without per-game launch options before "
-            "testing WolfLauncher handoff."
-        )
+    prime = prime_environment_report()
+    lines.append(f"  PRIME status: {prime.status} - {prime.summary}")
+    for detail in prime.details:
+        lines.append(f"  PRIME guidance: {detail}")
     lines.append("  Steam launch options: not readable by WolfLauncher")
     lines.append("")
 
@@ -85,10 +126,3 @@ def run_diagnostics(launcher_path: str, servers: list[Server]) -> str:
             lines.append(f"  {server.name}: {server.host} -> DNS failed: {exc}")
 
     return "\n".join(lines)
-
-
-def _known_bad_prime_environment() -> bool:
-    return (
-        os.environ.get("__NV_PRIME_RENDER_OFFLOAD") == "1"
-        and os.environ.get("__GLX_VENDOR_LIBRARY_NAME") == "nvidia"
-    )

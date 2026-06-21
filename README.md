@@ -10,7 +10,7 @@ The upstream MIT-licensed shell launcher is vendored in `external/dayz-linux-cli
 
 ## Status
 
-Current baseline: end of v0.5.2.
+Current baseline: v0.6 server-browser foundation complete, with v0.7 Linux health-check polish in progress.
 
 The server browser, settings health checks, mod checks and guarded launch handoff are working. The only known bug is that DayZ does not run when Steam launch options contain:
 
@@ -95,6 +95,22 @@ Useful evidence for debugging:
 
 ## Installation
 
+These instructions target Linux Mint 21/22 and Ubuntu 22.04/24.04 family systems.
+
+Steam and DayZ should already be installed through native Steam or Flatpak Steam. WolfLauncher does not install DayZ, Proton or Workshop content for you.
+
+### Quick Development Setup
+
+From the repository root:
+
+```bash
+./install-dev-linux-mint.sh
+source .venv/bin/activate
+python main.py
+```
+
+### Manual Linux Mint / Ubuntu Setup
+
 Install system dependencies:
 
 ```bash
@@ -102,6 +118,14 @@ sudo apt update
 sudo apt install python3 python3-venv python3-pip nodejs npm dnsutils libxcb-cursor0 curl jq gawk
 sudo npm install -g gamedig
 ```
+
+Dependency notes:
+
+- `python3`, `python3-venv` and `python3-pip` run WolfLauncher in a local virtual environment.
+- `nodejs`, `npm` and `gamedig` power live DayZ server status checks.
+- `dnsutils` provides `dig` for DNS troubleshooting and the vendored legacy launcher.
+- `curl`, `jq` and `gawk` are required by the vendored `dayz-launcher.sh` compatibility path.
+- `libxcb-cursor0` is commonly needed for PySide6/Qt startup on Mint and Ubuntu desktops.
 
 Create a virtual environment and start the application:
 
@@ -117,6 +141,8 @@ Run the test suite:
 ```bash
 PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest discover
 ```
+
+If the app starts but launch preflight fails, open **Settings** and press **Check health**. That table reports native Steam, Flatpak Steam, DayZ, Workshop, required tools and visible PRIME/offload environment state.
 
 ## Launching
 
@@ -255,15 +281,14 @@ or via a native `.deb` package.
 
 ## Roadmap
 
-Next active target: v0.6 server browser foundation.
+Next active target: v0.7 health checks and Linux polish.
 
 Planned future work includes:
 
 - Continued Server Browser polish.
-- Bulk enrichment controls.
-- Candidate port probing refinements from real-world server data.
-- Hybrid-GPU/NVIDIA PRIME diagnostics.
+- Hybrid-GPU/NVIDIA PRIME diagnostics and launch-option guidance.
 - Improved Steam/Proton handoff diagnostics.
+- Expanded native and Flatpak Steam checks.
 - Native packaging and installation.
 - Eventual internal launcher engine investigation.
 

@@ -39,6 +39,7 @@ from .config import (
     remove_curated_server,
     update_curated_server,
 )
+from .diagnostics import prime_environment_report
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from .models import Server
 from .native_launcher import NativeLaunchError, prepare_native_launch, prepare_native_launch_preview
@@ -191,7 +192,41 @@ class SortableTableWidgetItem(QTableWidgetItem):
         return (0, value)
 
 
-class LaunchDialog(QDialog):
+POST_HANDOFF_PROCESS_CHECK_INTERVAL_MS = 5000
+POST_HANDOFF_PROCESS_CHECK_ATTEMPTS = 9
+
+
+class PostHandoffProcessCheckMixin:
+    def start_post_handoff_process_checks(self):
+        self.post_handoff_check_attempt = 0
+        self.output.append("Watching for known DayZ processes for up to 45 seconds...")
+        QTimer.singleShot(POST_HANDOFF_PROCESS_CHECK_INTERVAL_MS, self.append_dayz_process_check)
+
+    def append_dayz_process_check(self):
+        self.post_handoff_check_attempt += 1
+        check = dayz_process_check()
+        elapsed_seconds = (
+            self.post_handoff_check_attempt * POST_HANDOFF_PROCESS_CHECK_INTERVAL_MS // 1000
+        )
+        if check.running:
+            self.output.append(
+                f"\nPost-handoff process check: {check.detail} after about {elapsed_seconds} seconds."
+            )
+            return
+
+        if self.post_handoff_check_attempt < POST_HANDOFF_PROCESS_CHECK_ATTEMPTS:
+            QTimer.singleShot(POST_HANDOFF_PROCESS_CHECK_INTERVAL_MS, self.append_dayz_process_check)
+            return
+
+        self.output.append(
+            f"\nPost-handoff process check: no known DayZ process detected after about {elapsed_seconds} seconds. "
+            "If Steam showed no activity, check Steam downloads, Proton/BattlEye prompts, and Steam launch options. "
+            "On NVIDIA PRIME systems, remove the known problematic "
+            "__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command% option and test DayZ directly from Steam."
+        )
+
+
+class LaunchDialog(PostHandoffProcessCheckMixin, QDialog):
     def __init__(self, parent, command: list[str], title: str, handoff_label: str = "launch command"):
         super().__init__(parent)
         self.setWindowTitle(title)
@@ -238,8 +273,7 @@ class LaunchDialog(QDialog):
                 f"\n{self.handoff_label.title()} exited successfully, which means WolfLauncher handed control "
                 "to Steam. It does not prove that Proton initialized or DayZ reached the menu."
             )
-            self.output.append("Checking for known DayZ processes shortly...")
-            QTimer.singleShot(3000, self.append_dayz_process_check)
+            self.start_post_handoff_process_checks()
         else:
             self.output.append(
                 f"\nLauncher exited with code {exit_code}. "
@@ -254,18 +288,7 @@ class LaunchDialog(QDialog):
             )
             self.close_button.setEnabled(True)
 
-    def append_dayz_process_check(self):
-        check = dayz_process_check()
-        if check.running:
-            self.output.append(f"\nPost-handoff process check: {check.detail}.")
-        else:
-            self.output.append(
-                "\nPost-handoff process check: no known DayZ process detected yet. "
-                "If Steam showed no activity, check Steam downloads, Proton/BattlEye prompts, and Steam launch options."
-            )
-
-
-class NativeLaunchPreviewDialog(QDialog):
+class NativeLaunchPreviewDialog(PostHandoffProcessCheckMixin, QDialog):
     def __init__(self, parent, title: str, preview_text: str, command: list[str]):
         super().__init__(parent)
         self.setWindowTitle(title)
@@ -334,24 +357,13 @@ class NativeLaunchPreviewDialog(QDialog):
                 "\nExperimental native command handed off to Steam successfully. "
                 "This means Steam accepted the command; it does not prove that Proton initialized or DayZ reached the menu."
             )
-            self.output.append("Checking for known DayZ processes shortly...")
-            QTimer.singleShot(3000, self.append_dayz_process_check)
+            self.start_post_handoff_process_checks()
         else:
             self.output.append(
                 f"\nExperimental native command exited with code {exit_code}. "
                 "Check the messages above for the Steam error."
             )
         self.launch_button.setEnabled(bool(self.command))
-
-    def append_dayz_process_check(self):
-        check = dayz_process_check()
-        if check.running:
-            self.output.append(f"\nPost-handoff process check: {check.detail}.")
-        else:
-            self.output.append(
-                "\nPost-handoff process check: no known DayZ process detected yet. "
-                "If Steam showed no activity, check Steam downloads, Proton/BattlEye prompts, and Steam launch options."
-            )
 
     def handle_process_error(self, error):
         if error == QProcess.ProcessError.FailedToStart:
@@ -2050,6 +2062,7 @@ class MainWindow(QMainWindow):
         tools = ["python3", "gamedig", "node", "npm", "dig", "curl", "jq", "gawk"]
         missing_tools = [command for command in tools if not shutil.which(command)]
         launcher_candidates = [str(candidate) for candidate in DEFAULT_LAUNCHER_PATHS if candidate.exists()]
+        prime_report = prime_environment_report()
 
         rows = [
             (
@@ -2071,6 +2084,11 @@ class MainWindow(QMainWindow):
                 "Required tools",
                 "OK" if not missing_tools else "WARN",
                 "All found" if not missing_tools else "Missing: " + ", ".join(missing_tools),
+            ),
+            (
+                "PRIME environment",
+                prime_report.status,
+                prime_report.summary,
             ),
             (
                 "Steam",

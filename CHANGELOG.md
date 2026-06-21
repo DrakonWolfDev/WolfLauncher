@@ -1,6 +1,11 @@
 # Changelog
 
 ## Unreleased
+- Added a Settings health row for visible NVIDIA PRIME / DRI PRIME environment state.
+- Expanded diagnostics with structured PRIME status and safer hybrid-GPU troubleshooting steps.
+- Clarified that absent visible PRIME variables do not rule out Steam per-game launch options, and expanded no-process post-handoff guidance for the known NVIDIA PRIME option.
+- Changed post-handoff DayZ process detection from a single early check to a 45-second watch window to account for slow Steam/Proton startup.
+- Added clearer Linux Mint / Ubuntu development setup instructions to the README.
 - Added post-handoff DayZ process checks to external and native launch dialogs.
 - Added DayZ process visibility to diagnostics for Steam/Proton troubleshooting.
 - Clarified launch dialog wording so successful handoff is not presented as proof that Proton or DayZ fully started.
