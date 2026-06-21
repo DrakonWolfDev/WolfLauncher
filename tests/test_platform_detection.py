@@ -355,7 +355,7 @@ class PlatformDetectionTests(unittest.TestCase):
 
         self.assertEqual(
             steam_selection_readiness("auto", [ready_native]),
-            ("OK", "Auto selected Native Steam ready (running)"),
+            ("OK", "Auto selected Native Steam ready (running); command: /usr/bin/steam"),
         )
         self.assertEqual(
             steam_selection_readiness("flatpak", [ready_native]),
@@ -382,7 +382,10 @@ class PlatformDetectionTests(unittest.TestCase):
 
         self.assertEqual(report.status, "OK")
         self.assertEqual(report.selected_label, "Flatpak Steam")
-        self.assertEqual(report.detail, "Auto selected Flatpak Steam ready (not running)")
+        self.assertEqual(
+            report.detail,
+            "Auto selected Flatpak Steam ready (not running); command: flatpak run com.valvesoftware.Steam",
+        )
         self.assertEqual(
             report.candidates,
             [

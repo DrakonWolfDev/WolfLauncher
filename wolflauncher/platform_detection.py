@@ -342,12 +342,12 @@ def steam_selection_report(mode: str, installs: list[SteamInstall] | None = None
     if mode == "auto":
         if not install:
             return SteamSelectionReport("MISSING", "Auto selection found no Steam install", "None", candidates)
-        status, detail = install_readiness(install)
-        return SteamSelectionReport(status, f"Auto selected {detail}", install_label(install), candidates)
+        status, _detail = install_readiness(install)
+        return SteamSelectionReport(status, f"Auto selected {steam_install_summary(install)}", install_label(install), candidates)
     if not install:
         return SteamSelectionReport("MISSING", f"{steam_mode_label(mode)} not detected", "None", candidates)
-    status, detail = install_readiness(install)
-    return SteamSelectionReport(status, detail, install_label(install), candidates)
+    status, _detail = install_readiness(install)
+    return SteamSelectionReport(status, steam_install_summary(install), install_label(install), candidates)
 
 
 def steam_selection_candidates_detail(report: SteamSelectionReport) -> str:

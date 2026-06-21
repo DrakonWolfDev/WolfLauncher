@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Added Steam command details to selected and Auto Steam readiness text.
 - Added Steam command details to the Settings health header summary.
 - Documented command-aware Steam install summaries in README and handoff notes.
 - Added Steam command details to Auto/selected Steam candidate summaries in Settings health and diagnostics.
