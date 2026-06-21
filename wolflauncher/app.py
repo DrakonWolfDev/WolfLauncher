@@ -60,6 +60,7 @@ from .platform_detection import (
     detect_steam,
     install_label,
     install_readiness,
+    proton_compatdata_detail,
     select_steam_install,
     steam_mode_label,
     steam_selection_candidates_detail,
@@ -2267,9 +2268,7 @@ class MainWindow(QMainWindow):
             (
                 "Proton compatdata",
                 "OK",
-                str(steam.compatdata_dir)
-                if steam and steam.compatdata_dir
-                else "Not detected yet; Steam may create it on first Proton launch",
+                proton_compatdata_detail(steam),
             ),
             (
                 "Configured Steam installs",

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Clarified Proton compatdata diagnostics so missing prefixes are reported as first-run Steam/Proton state rather than a launch blocker, with matching Settings health, diagnostics and native parity report wording.
 - Added a Copy button to the external launch output dialog so the generated command and handoff logs can be pasted into support reports.
 - Added informational DayZ Proton compatdata detection to Settings health, diagnostics and native launch parity reports.
 - Added generated-at and selected launch-engine metadata to copied diagnostics reports.

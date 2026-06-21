@@ -419,6 +419,41 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertIn("- Reused native mod links: 1", text)
             self.assertIn("Example Mod (256) -> @AAE [already existed]", text)
 
+    def test_format_native_launch_parity_report_explains_missing_compatdata(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            steamapps = root / "steamapps"
+            dayz_dir = steamapps / "common" / "DayZ"
+            workshop_dir = steamapps / "workshop" / "content" / "221100"
+            dayz_dir.mkdir(parents=True)
+            workshop_dir.mkdir(parents=True)
+            launcher = root / "dayz-launcher.sh"
+            launcher.write_text("#!/bin/sh\n", encoding="utf-8")
+            install = SteamInstall(
+                mode="native",
+                executable="steam",
+                running=False,
+                root=root,
+                steamapps=steamapps,
+                dayz_dir=dayz_dir,
+                workshop_dir=workshop_dir,
+            )
+
+            report = prepare_native_launch_parity_report(
+                install,
+                str(launcher),
+                make_server("203.0.113.10"),
+                "PlayerOne",
+                [],
+            )
+
+            text = format_native_launch_parity_report(report)
+
+            self.assertIn(
+                "- Proton compatdata: not detected yet; Steam may create it on first Proton launch",
+                text,
+            )
+
     def test_format_native_launch_parity_report_keeps_missing_mod_preview_copyable(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             install = make_install(Path(tmpdir))

@@ -353,3 +353,11 @@ def ok_missing(value: bool) -> str:
 
 def yes_no(value: bool) -> str:
     return "Yes" if value else "No"
+
+
+def proton_compatdata_detail(install: SteamInstall | None) -> str:
+    if install and install.compatdata_dir:
+        return str(install.compatdata_dir)
+    if install and (install.root or install.steamapps or install.dayz_dir):
+        return "not detected yet; Steam may create it on first Proton launch"
+    return "not detected"

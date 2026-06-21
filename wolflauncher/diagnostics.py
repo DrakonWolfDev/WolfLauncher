@@ -13,6 +13,7 @@ from .platform_detection import (
     install_label,
     install_readiness,
     ok_missing,
+    proton_compatdata_detail,
     select_steam_install,
     steam_mode_label,
     steam_selection_candidates_detail,
@@ -157,7 +158,7 @@ def launch_troubleshooting_report(
         f"Steam library: {(install.steamapps if install and install.steamapps else 'not detected')}",
         f"DayZ install: {(install.dayz_dir if install and install.dayz_dir else 'not detected')}",
         f"Workshop folder: {(install.workshop_dir if install and install.workshop_dir else 'not detected')}",
-        f"Proton compatdata: {(install.compatdata_dir if install and install.compatdata_dir else 'not detected')}",
+        f"Proton compatdata: {proton_compatdata_detail(install)}",
         f"Post-handoff process visibility: {process.detail}",
         f"PRIME status: {prime.status} - {prime.summary}",
         "Steam launch options: not readable by WolfLauncher",
@@ -170,6 +171,8 @@ def launch_troubleshooting_report(
         next_steps.append("Fix the selected Steam install warning before launch, especially missing DayZ or Workshop paths.")
     if install and install.dayz_dir and install.workshop_dir and not process.running:
         next_steps.append("After a successful handoff, allow Steam/Proton time to start DayZ, then check Steam downloads, Proton prompts and BattlEye prompts.")
+    if install and install.dayz_dir and install.workshop_dir and not install.compatdata_dir:
+        next_steps.append("If DayZ has not been launched through this Steam install yet, start it once directly from Steam so Proton can create compatdata and show first-run prompts.")
     if prime.status == "WARN":
         next_steps.append("Remove the known bad NVIDIA PRIME Steam launch option and test DayZ directly from Steam without WolfLauncher.")
     if not next_steps:
@@ -235,7 +238,7 @@ def run_diagnostics(
         lines.append(f"    running: {yes_no(install.running)}")
         lines.append(f"    root: {install.root or 'not found'}")
         lines.append(f"    steamapps: {install.steamapps or 'not found'}")
-        lines.append(f"    compatdata: {install.compatdata_dir or 'not found'}")
+        lines.append(f"    compatdata: {proton_compatdata_detail(install)}")
         if install.library_steamapps:
             lines.append("    libraries:")
             for library in install.library_steamapps:

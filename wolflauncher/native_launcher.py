@@ -8,7 +8,13 @@ from pathlib import Path
 from .launcher import LaunchError, build_launch_command
 from .models import Server
 from .mods import RequiredMod, fetch_required_mods
-from .platform_detection import FLATPAK_STEAM_ID, STEAM_APP_ID_DAYZ, SteamInstall, install_label
+from .platform_detection import (
+    FLATPAK_STEAM_ID,
+    STEAM_APP_ID_DAYZ,
+    SteamInstall,
+    install_label,
+    proton_compatdata_detail,
+)
 from .status import resolve_host
 
 
@@ -264,7 +270,7 @@ def format_native_launch_parity_report(report: NativeLaunchParityReport) -> str:
         f"- Steam running: {'yes' if install.running else 'no'}",
         f"- Steam root: {_path_text(install.root)}",
         f"- Steam library: {_path_text(install.steamapps)}",
-        f"- Proton compatdata: {_path_text(install.compatdata_dir)}",
+        f"- Proton compatdata: {proton_compatdata_detail(install)}",
         f"- DayZ path: {_path_text(install.dayz_dir)}",
         f"- Workshop path: {_path_text(install.workshop_dir)}",
         f"- Server: {preview.server.name}",

@@ -12,6 +12,7 @@ from wolflauncher.platform_detection import (
     install_label,
     install_readiness,
     parse_libraryfolders_paths,
+    proton_compatdata_detail,
     select_steam_install,
     steam_selection_candidates_detail,
     steam_selection_report,
@@ -87,6 +88,34 @@ class PlatformDetectionTests(unittest.TestCase):
             install_readiness(install),
             ("WARN", "Flatpak Steam executable found, but Steam data root was not detected (not running)"),
         )
+
+    def test_proton_compatdata_detail_reports_visible_prefix(self):
+        install = make_install(
+            root=Path("/steam"),
+            steamapps=Path("/steam/steamapps"),
+            compatdata_dir=Path("/steam/steamapps/compatdata/221100"),
+        )
+
+        self.assertEqual(
+            proton_compatdata_detail(install),
+            "/steam/steamapps/compatdata/221100",
+        )
+
+    def test_proton_compatdata_detail_explains_missing_prefix_for_detected_install(self):
+        install = make_install(
+            root=Path("/steam"),
+            steamapps=Path("/steam/steamapps"),
+            dayz_dir=Path("/steam/steamapps/common/DayZ"),
+            workshop_dir=Path("/steam/steamapps/workshop/content/221100"),
+        )
+
+        self.assertEqual(
+            proton_compatdata_detail(install),
+            "not detected yet; Steam may create it on first Proton launch",
+        )
+
+    def test_proton_compatdata_detail_reports_missing_without_install(self):
+        self.assertEqual(proton_compatdata_detail(None), "not detected")
 
     def test_parse_libraryfolders_paths_reads_steam_vdf_paths(self):
         text = r'''

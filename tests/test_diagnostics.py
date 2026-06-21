@@ -136,6 +136,30 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertIn("Post-handoff process visibility: Detected known DayZ process: DayZ_x64.exe", report.details)
         self.assertTrue(any("compare native versus Flatpak Steam" in step for step in report.next_steps))
 
+    def test_launch_troubleshooting_report_explains_missing_compatdata_for_ready_install(self):
+        install = SteamInstall(
+            mode="native",
+            executable="steam",
+            running=False,
+            root=Path("/steam"),
+            steamapps=Path("/steam/steamapps"),
+            dayz_dir=Path("/steam/steamapps/common/DayZ"),
+            workshop_dir=Path("/steam/steamapps/workshop/content/221100"),
+        )
+
+        report = launch_troubleshooting_report(
+            "native",
+            [install],
+            ProcessCheck(False, "No known DayZ process detected"),
+            {},
+        )
+
+        self.assertIn(
+            "Proton compatdata: not detected yet; Steam may create it on first Proton launch",
+            report.details,
+        )
+        self.assertTrue(any("start it once directly from Steam" in step for step in report.next_steps))
+
     def test_launch_troubleshooting_report_warns_for_known_bad_prime_pair(self):
         report = launch_troubleshooting_report(
             "auto",
