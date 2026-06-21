@@ -30,7 +30,13 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QColor, QDesktopServices, QAction, QTextCursor
 
-from .config import DEFAULT_LAUNCHER_PATHS, add_curated_server, find_default_launcher_path, load_servers
+from .config import (
+    DEFAULT_LAUNCHER_PATHS,
+    add_curated_server,
+    find_default_launcher_path,
+    load_servers,
+    remove_curated_server,
+)
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from .models import Server
 from .platform_detection import best_install, detect_steam
@@ -1085,7 +1091,50 @@ class MainWindow(QMainWindow):
             self.table.setItem(row, column, item)
         self.table.resizeColumnsToContents()
 
+    def remove_curated_server_row(self, row: int):
+        if row < 0 or row >= len(self.servers):
+            return
+        server = self.servers[row]
+        answer = QMessageBox.question(
+            self,
+            "Remove curated server",
+            f"Remove {server.name} from the curated Servers list?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if answer != QMessageBox.Yes:
+            return
+
+        try:
+            removed = remove_curated_server(self.config_path, server)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Could not remove server", str(exc))
+            return
+        if not removed:
+            QMessageBox.warning(
+                self,
+                "Could not remove server",
+                "This server was not found in servers.yaml.",
+            )
+            return
+
+        self.favourites.discard(server_key(server))
+        save_favourites(self.favourites)
+        del self.servers[row]
+        self.table.removeRow(row)
+        self._reindex_server_rows()
+        self.update_launch_button_text()
+
+    def _reindex_server_rows(self):
+        for row in range(self.table.rowCount()):
+            for column in range(self.table.columnCount()):
+                item = self.table.item(row, column)
+                if item:
+                    item.setData(Qt.UserRole, row)
+
     def update_status_row(self, row: int, status: ServerStatus):
+        if row < 0 or row >= len(self.servers) or row >= self.table.rowCount():
+            return
         self._set_item(row, 5, status.resolved_ip)
         if status.online:
             flags = []
@@ -1328,12 +1377,16 @@ class MainWindow(QMainWindow):
         copy_connect_action = QAction("Copy connect address", self)
         copy_details_action = QAction("Copy server details", self)
         toggle_fav_action = QAction("Toggle favourite", self)
+        remove_action = QAction("Remove from curated list", self)
         copy_connect_action.triggered.connect(lambda: self.copy_to_clipboard(self._server_cell(row, 15), "Connect address"))
         copy_details_action.triggered.connect(lambda: self.copy_to_clipboard(self.server_details_text(row), "Server details"))
         toggle_fav_action.triggered.connect(lambda: self.toggle_favourite(row))
+        remove_action.triggered.connect(lambda: self.remove_curated_server_row(row))
         menu.addAction(copy_connect_action)
         menu.addAction(copy_details_action)
         menu.addAction(toggle_fav_action)
+        menu.addSeparator()
+        menu.addAction(remove_action)
         menu.exec(self.table.viewport().mapToGlobal(pos))
 
     def _server_cell(self, row: int, column: int) -> str:

@@ -71,6 +71,28 @@ def add_curated_server(path: Path, server: Server) -> None:
         yaml.safe_dump(data, handle, sort_keys=False)
 
 
+def remove_curated_server(path: Path, server: Server) -> bool:
+    data = _load_server_yaml(path)
+    servers = data.setdefault("servers", [])
+    if not isinstance(servers, list):
+        raise ValueError("servers.yaml must contain a 'servers' list.")
+
+    for index, item in enumerate(servers):
+        if not isinstance(item, dict):
+            continue
+        if (
+            str(item.get("host")) == server.host
+            and int(item.get("game_port", 0)) == server.game_port
+            and int(item.get("query_port", 0)) == server.query_port
+        ):
+            del servers[index]
+            with path.open("w", encoding="utf-8") as handle:
+                yaml.safe_dump(data, handle, sort_keys=False)
+            return True
+
+    return False
+
+
 def _load_server_yaml(path: Path) -> dict:
     if not path.exists():
         return {"servers": []}

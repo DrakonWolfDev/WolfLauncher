@@ -157,5 +157,80 @@ servers:
                 )
 
 
+class RemoveCuratedServerTests(unittest.TestCase):
+    def test_remove_curated_server_deletes_matching_yaml_entry(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "servers.yaml"
+            path.write_text(
+                """
+servers:
+  - name: Keep
+    group: Existing Group
+    host: 203.0.113.10
+    game_port: 2302
+    query_port: 27016
+  - name: Remove
+    group: Mistake
+    host: 203.0.113.20
+    game_port: 2402
+    query_port: 27017
+""",
+                encoding="utf-8",
+            )
+
+            removed = config.remove_curated_server(
+                path,
+                Server(
+                    name="Remove",
+                    group="Mistake",
+                    host="203.0.113.20",
+                    game_port=2402,
+                    query_port=27017,
+                ),
+            )
+
+            self.assertTrue(removed)
+            self.assertEqual(
+                config.load_servers(path),
+                [
+                    Server(
+                        name="Keep",
+                        group="Existing Group",
+                        host="203.0.113.10",
+                        game_port=2302,
+                        query_port=27016,
+                    ),
+                ],
+            )
+
+    def test_remove_curated_server_reports_missing_entry(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "servers.yaml"
+            path.write_text(
+                """
+servers:
+  - name: Keep
+    host: 203.0.113.10
+    game_port: 2302
+    query_port: 27016
+""",
+                encoding="utf-8",
+            )
+
+            removed = config.remove_curated_server(
+                path,
+                Server(
+                    name="Missing",
+                    group="Community",
+                    host="203.0.113.99",
+                    game_port=2302,
+                    query_port=27016,
+                ),
+            )
+
+            self.assertFalse(removed)
+            self.assertEqual(len(config.load_servers(path)), 1)
+
+
 if __name__ == "__main__":
     unittest.main()
