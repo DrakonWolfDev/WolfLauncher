@@ -269,6 +269,8 @@ class MainWindow(QMainWindow):
         self.battlemetrics_worker = None
         self.enrichment_worker = None
         self.last_mod_result = None
+        self.active_mod_server_key = ""
+        self.pending_mod_check_row = None
         self.browser_servers = []
         self.server_cache = server_cache.connect()
 
@@ -307,6 +309,7 @@ class MainWindow(QMainWindow):
         self.refresh_statuses()
         self.refresh_server_browser()
         self.update_settings_health()
+        QTimer.singleShot(0, lambda: self.check_selected_server_mods(silent=True))
         QTimer.singleShot(30000, self.maybe_auto_refresh_configured_provider)
 
     def _build_servers_tab(self) -> QWidget:
@@ -354,7 +357,7 @@ class MainWindow(QMainWindow):
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.table.cellClicked.connect(self.handle_cell_clicked)
         self.table.cellDoubleClicked.connect(self.handle_cell_double_clicked)
-        self.table.itemSelectionChanged.connect(self.update_launch_button_text)
+        self.table.itemSelectionChanged.connect(self.handle_server_selection_changed)
         self.table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self.show_server_context_menu)
 
@@ -479,12 +482,12 @@ class MainWindow(QMainWindow):
         widget = QWidget()
         layout = QVBoxLayout(widget)
 
-        self.mod_summary = QLabel("Select a server, then click Check selected server mods.")
+        self.mod_summary = QLabel("Select a server to check its required mods.")
         layout.addWidget(self.mod_summary)
 
         buttons = QHBoxLayout()
-        check = QPushButton("Check selected server mods")
-        check.clicked.connect(self.check_selected_server_mods)
+        check = QPushButton("Recheck selected server mods")
+        check.clicked.connect(lambda _checked=False: self.check_selected_server_mods(force=True))
         open_selected = QPushButton("Open selected Workshop page")
         open_selected.clicked.connect(self.open_selected_workshop_page)
         open_missing = QPushButton("Open missing Workshop pages")
@@ -1196,39 +1199,76 @@ class MainWindow(QMainWindow):
         else:
             self.launch_button.setText("Launch selected server")
 
+    def handle_server_selection_changed(self):
+        self.update_launch_button_text()
+        if not hasattr(self, "mod_summary"):
+            return
+        self.check_selected_server_mods(silent=True)
 
-    def check_selected_server_mods(self):
+    def check_selected_server_mods(self, silent: bool = False, force: bool = False):
         row = self.table.currentRow()
         if row < 0:
-            QMessageBox.warning(self, "No server selected", "Select a server first.")
+            if not silent:
+                QMessageBox.warning(self, "No server selected", "Select a server first.")
+            return
+
+        self.check_server_mods_for_row(row, silent=silent, force=force)
+
+    def check_server_mods_for_row(self, row: int, silent: bool = False, force: bool = False):
+        if row < 0 or row >= len(self.servers):
+            return
+
+        server = self.servers[row]
+        if not hasattr(self, "mod_summary") or not hasattr(self, "mods_table"):
+            return
+        selected_key = server_key(server)
+        if (
+            not force
+            and self.last_mod_result
+            and server_key(self.last_mod_result.server) == selected_key
+        ):
             return
 
         if self.mod_worker and self.mod_worker.isRunning():
+            if self.active_mod_server_key != selected_key:
+                self.pending_mod_check_row = row
             return
 
         install = best_install()
         workshop_dir = install.workshop_dir if install else None
         if not workshop_dir:
-            QMessageBox.warning(
-                self,
-                "Workshop folder not found",
-                "WolfLauncher could not find the DayZ Workshop folder. Check Settings health.",
-            )
+            if not silent:
+                QMessageBox.warning(
+                    self,
+                    "Workshop folder not found",
+                    "WolfLauncher could not find the DayZ Workshop folder. Check Settings health.",
+                )
             return
 
-        server = self.servers[row]
         self.mod_summary.setText(f"Checking required mods for {server.name}...")
         self.mods_table.setRowCount(0)
+        self.active_mod_server_key = selected_key
+        self.pending_mod_check_row = None
         self.mod_worker = ModWorker(server, workshop_dir)
         self.mod_worker.mods_ready.connect(self.update_mods_table)
         self.mod_worker.start()
 
     def update_mods_table(self, result: ModCheckResult):
+        self.active_mod_server_key = ""
+        current_row = self.table.currentRow()
+        current_server = self.servers[current_row] if 0 <= current_row < len(self.servers) else None
+        if current_server and server_key(current_server) != server_key(result.server):
+            pending_row = self.pending_mod_check_row if self.pending_mod_check_row is not None else current_row
+            self.pending_mod_check_row = pending_row
+            self._check_pending_server_mods()
+            return
+
         self.last_mod_result = result
         self.mods_table.setSortingEnabled(False)
         if not result.ok:
             self.mod_summary.setText(f"Could not check mods for {result.server.name}: {result.error}")
             self.mods_table.setRowCount(0)
+            self._check_pending_server_mods()
             return
 
         required = result.required_mods
@@ -1267,6 +1307,17 @@ class MainWindow(QMainWindow):
         self.mods_table.setSortingEnabled(True)
         self.mods_table.sortItems(0, Qt.DescendingOrder)
         self.apply_mod_filter()
+        self._check_pending_server_mods()
+
+    def _check_pending_server_mods(self):
+        if self.pending_mod_check_row is None:
+            return
+        if self.mod_worker and self.mod_worker.isRunning():
+            QTimer.singleShot(50, self._check_pending_server_mods)
+            return
+        row = self.pending_mod_check_row
+        self.pending_mod_check_row = None
+        self.check_server_mods_for_row(row, silent=True)
 
     def apply_mod_filter(self):
         mode = self.mod_filter.currentText() if hasattr(self, "mod_filter") else "All mods"
