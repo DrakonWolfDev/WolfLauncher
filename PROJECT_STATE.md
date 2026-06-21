@@ -86,6 +86,7 @@ Current handling:
 - Diagnostics report PRIME-related environment variables visible to WolfLauncher, but Steam launch options must be checked in Steam itself; confirmed testing showed Steam can have the known option set while WolfLauncher sees no PRIME variables in its own environment.
 - Diagnostics classify visible PRIME/DRI environment state and warn when WolfLauncher itself is running with the known problematic NVIDIA PRIME offload environment combination.
 - Settings health includes a PRIME environment row so the known problematic environment is visible without opening a full diagnostics report.
+- Diagnostics and Settings health report whether common PRIME helper commands such as `prime-run` and `switcherooctl` are visible, without treating their absence as a problem on non-hybrid systems.
 - Diagnostics include per-install Steam readiness summaries for native, Flatpak and `STEAM_ROOT` library detection.
 - Diagnostics include Auto Steam selection and candidate summaries for native, Flatpak and `STEAM_ROOT` troubleshooting.
 - Diagnostics list detected Steam library folders for each configured install.

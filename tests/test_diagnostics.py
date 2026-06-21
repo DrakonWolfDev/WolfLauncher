@@ -3,7 +3,12 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from wolflauncher.diagnostics import launch_troubleshooting_report, prime_environment_report, run_diagnostics
+from wolflauncher.diagnostics import (
+    launch_troubleshooting_report,
+    prime_environment_report,
+    prime_helper_report,
+    run_diagnostics,
+)
 from wolflauncher.models import Server
 from wolflauncher.platform_detection import ProcessCheck, SteamInstall
 
@@ -46,6 +51,9 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertIn("known bad Steam launch-option pattern", report)
         self.assertIn("Test DayZ directly from Steam with no per-game launch options", report)
         self.assertIn("prime-run glxinfo -B", report)
+        self.assertIn("PRIME helpers:", report)
+        self.assertIn("PRIME helper detail: prime-run:", report)
+        self.assertIn("PRIME helper detail: switcherooctl:", report)
         self.assertIn("Steam launch options: not readable by WolfLauncher", report)
         self.assertIn("DayZ process check:", report)
         self.assertIn("No known DayZ process detected", report)
@@ -124,6 +132,27 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertIn("No PRIME-related variables are visible to WolfLauncher", report.summary)
         self.assertIn("Steam launch options may still set them", report.summary)
         self.assertTrue(any("does not prove Steam has no per-game launch options" in detail for detail in report.details))
+
+    def test_prime_helper_report_lists_visible_helpers(self):
+        report = prime_helper_report(
+            {
+                "prime-run": "/usr/bin/prime-run",
+                "switcherooctl": None,
+            }.get
+        )
+
+        self.assertEqual("OK", report.status)
+        self.assertIn("prime-run", report.summary)
+        self.assertIn("prime-run: /usr/bin/prime-run", report.details)
+        self.assertIn("switcherooctl: not found", report.details)
+
+    def test_prime_helper_report_is_informational_when_helpers_are_absent(self):
+        report = prime_helper_report({}.get)
+
+        self.assertEqual("OK", report.status)
+        self.assertIn("may be normal on non-hybrid systems", report.summary)
+        self.assertIn("prime-run: not found", report.details)
+        self.assertIn("switcherooctl: not found", report.details)
 
 
 if __name__ == "__main__":

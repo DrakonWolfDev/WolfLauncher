@@ -35,6 +35,13 @@ class PrimeEnvironmentReport:
 
 
 @dataclass(frozen=True)
+class PrimeHelperReport:
+    status: str
+    summary: str
+    details: list[str]
+
+
+@dataclass(frozen=True)
 class LaunchTroubleshootingReport:
     status: str
     summary: str
@@ -76,6 +83,34 @@ def prime_environment_report(environ=None) -> PrimeEnvironmentReport:
         details=[
             "This does not prove Steam has no per-game launch options.",
             "Check Steam's DayZ launch options directly if Proton or DayZ does not start after handoff.",
+        ],
+    )
+
+
+def prime_helper_report(which=shutil.which) -> PrimeHelperReport:
+    helpers = {
+        "prime-run": which("prime-run"),
+        "switcherooctl": which("switcherooctl"),
+    }
+    found = [name for name, path in helpers.items() if path]
+    details = [f"{name}: {path or 'not found'}" for name, path in helpers.items()]
+
+    if found:
+        return PrimeHelperReport(
+            status="OK",
+            summary="PRIME helper commands visible: " + ", ".join(found),
+            details=details
+            + [
+                "Use helper commands outside WolfLauncher first when reproducing hybrid-GPU launch issues.",
+            ],
+        )
+
+    return PrimeHelperReport(
+        status="OK",
+        summary="No PRIME helper commands are visible on PATH; this may be normal on non-hybrid systems.",
+        details=details
+        + [
+            "If this is a hybrid-GPU system, confirm the distro's PRIME/offload tool is installed before testing DayZ.",
         ],
     )
 
@@ -188,6 +223,10 @@ def run_diagnostics(launcher_path: str, servers: list[Server], selected_steam_mo
     lines.append(f"  PRIME status: {prime.status} - {prime.summary}")
     for detail in prime.details:
         lines.append(f"  PRIME guidance: {detail}")
+    helper_report = prime_helper_report()
+    lines.append(f"  PRIME helpers: {helper_report.status} - {helper_report.summary}")
+    for detail in helper_report.details:
+        lines.append(f"  PRIME helper detail: {detail}")
     lines.append("  Steam launch options: not readable by WolfLauncher")
     lines.append("")
 

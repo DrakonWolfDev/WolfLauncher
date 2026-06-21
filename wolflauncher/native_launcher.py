@@ -416,10 +416,20 @@ def _steam_command_prefix(install: SteamInstall) -> list[str]:
 
 def _require_dir(path: Path | None, label: str) -> Path:
     if not path or not path.is_dir():
+        if label == "DayZ install":
+            guidance = "Check Settings health and confirm DayZ is installed in the selected Steam library."
+        elif label == "DayZ Workshop":
+            guidance = (
+                "Check Settings health and confirm the DayZ Workshop folder is visible for the selected Steam library. "
+                "If DayZ is installed but no Workshop folder appears, subscribe to at least one DayZ Workshop item "
+                "and let Steam finish downloading it."
+            )
+        else:
+            guidance = "Check Settings health and confirm the selected Steam library paths are detected."
         raise NativeLaunchError(
             f"{label} directory not detected",
             stage="Steam library detection",
-            guidance="Check Settings health and confirm DayZ is installed in the detected Steam library.",
+            guidance=guidance,
         )
     return path
 

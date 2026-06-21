@@ -165,7 +165,7 @@ DayZ currently does not run when Steam launch options contain:
 __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%
 ```
 
-This is tracked as the only known bug at the end of v0.5.2. Keep it visible in docs and diagnostics planning, but do not make it the default launch recommendation until it is reproduced and a safe workaround is confirmed.
+This remains tracked as the only known bug while v0.7 health-check polish continues. Keep it visible in docs and diagnostics planning, but do not make it the default launch recommendation until it is reproduced and a safe workaround is confirmed.
 
 WolfLauncher should continue to treat Steam launch options as external state. The app may surface diagnostics that help users reason about PRIME, such as visible `__NV_PRIME_RENDER_OFFLOAD`, `__GLX_VENDOR_LIBRARY_NAME` and `DRI_PRIME` environment values, but it should not infer the effective per-game Steam launch option unless a future implementation has a reliable source of truth.
 

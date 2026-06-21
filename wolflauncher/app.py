@@ -38,7 +38,7 @@ from .config import (
     remove_curated_server,
     update_curated_server,
 )
-from .diagnostics import launch_troubleshooting_report, prime_environment_report
+from .diagnostics import launch_troubleshooting_report, prime_environment_report, prime_helper_report
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from .models import Server
 from .native_launcher import (
@@ -2103,6 +2103,7 @@ class MainWindow(QMainWindow):
         missing_tools = [command for command in tools if not shutil.which(command)]
         launcher_candidates = [str(candidate) for candidate in DEFAULT_LAUNCHER_PATHS if candidate.exists()]
         prime_report = prime_environment_report()
+        prime_helpers = prime_helper_report()
         process_check = dayz_process_check()
         launch_report = launch_troubleshooting_report(
             self.native_steam_mode_key(),
@@ -2135,6 +2136,11 @@ class MainWindow(QMainWindow):
                 "PRIME environment",
                 prime_report.status,
                 prime_report.summary,
+            ),
+            (
+                "PRIME helpers",
+                prime_helpers.status,
+                prime_helpers.summary,
             ),
             (
                 "Selected Steam",

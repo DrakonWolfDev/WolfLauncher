@@ -2,7 +2,7 @@
 
 ## Project Orientation
 
-WolfLauncher is a Linux-first DayZ launcher GUI built with Python and PySide6. The current working baseline is end of v0.5.2.
+WolfLauncher is a Linux-first DayZ launcher GUI built with Python and PySide6. The current working baseline is v0.6 complete, with v0.7 Linux health-check polish in progress.
 
 The app validates the local Steam/DayZ/Workshop setup, checks server status, compares required server mods with locally installed Workshop mods, then hands launch control to an external `dayz-launcher.sh` script.
 
@@ -40,6 +40,12 @@ wolflauncher/models.py          shared dataclasses
 wolflauncher/mods.py            required mod lookup and Workshop scan
 wolflauncher/platform_detection.py
                                 native/Flatpak Steam, DayZ and Workshop detection
+wolflauncher/native_launcher.py experimental Python launch-engine foundation
+wolflauncher/server_cache.py    SQLite discovered-server cache
+wolflauncher/server_discovery.py
+                                public server discovery providers
+wolflauncher/server_enrichment.py
+                                live discovered-server status enrichment
 wolflauncher/settings.py        JSON settings and favourites persistence
 wolflauncher/status.py          gamedig status checks and DNS resolution
 servers.yaml                    curated server list
@@ -71,11 +77,12 @@ The vendored script then:
 
 ## Development Notes
 
-- Keep v0.5.2 behaviour stable while working on v0.6.
+- Keep v0.6 behaviour stable while working on v0.7 health checks and Linux polish.
 - Keep `servers.yaml` as the curated source even after adding SQLite for discovered servers.
 - Mod management is read-only and advisory; do not auto-subscribe or auto-download Workshop content without an explicit future design.
 - User settings and favourites live under `~/.config/wolflauncher`.
 - Prefer small, testable changes around launch command generation and platform detection.
+- Keep the external launcher as the default path until native launch parity is proven with broader real-world testing.
 - Keep the vendored launcher untouched unless deliberately updating the legacy reference; build replacement Python behavior behind WolfLauncher interfaces first.
 - Preserve third-party license notices when moving or replacing vendored code.
 
@@ -85,11 +92,11 @@ The vendored script then:
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python main.py
+.venv/bin/python main.py
 ```
 
 ## Tests
 
 ```text
-PYTHONDONTWRITEBYTECODE=1 python -m unittest discover
+PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest discover
 ```

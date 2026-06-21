@@ -467,6 +467,45 @@ class NativeLauncherTests(unittest.TestCase):
         self.assertEqual(raised.exception.stage, "mod setup")
         self.assertIn("Open the missing Workshop pages", raised.exception.user_message())
 
+    def test_prepare_native_launch_guides_missing_dayz_install(self):
+        install = SteamInstall(
+            mode="native",
+            executable="steam",
+            running=True,
+            root=Path("/steam"),
+            steamapps=Path("/steam/steamapps"),
+            dayz_dir=None,
+            workshop_dir=Path("/steam/steamapps/workshop/content/221100"),
+        )
+
+        with self.assertRaisesRegex(NativeLaunchError, "DayZ install directory not detected") as raised:
+            prepare_native_launch(install, make_server(), "PlayerOne", [])
+
+        self.assertEqual(raised.exception.stage, "Steam library detection")
+        self.assertIn("confirm DayZ is installed", raised.exception.user_message())
+
+    def test_prepare_native_launch_guides_missing_workshop_folder(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            dayz_dir = root / "steamapps" / "common" / "DayZ"
+            dayz_dir.mkdir(parents=True)
+            install = SteamInstall(
+                mode="native",
+                executable="steam",
+                running=True,
+                root=root,
+                steamapps=root / "steamapps",
+                dayz_dir=dayz_dir,
+                workshop_dir=None,
+            )
+
+            with self.assertRaisesRegex(NativeLaunchError, "DayZ Workshop directory not detected") as raised:
+                prepare_native_launch(install, make_server(), "PlayerOne", [])
+
+        self.assertEqual(raised.exception.stage, "Steam library detection")
+        self.assertIn("Workshop folder is visible", raised.exception.user_message())
+        self.assertIn("subscribe to at least one DayZ Workshop item", raised.exception.user_message())
+
     def test_prepare_native_launch_reports_missing_mod_names_when_available(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             install = make_install(Path(tmpdir))
