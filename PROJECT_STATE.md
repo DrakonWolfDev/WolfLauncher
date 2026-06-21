@@ -43,6 +43,8 @@ Working:
 - Secondary Steam library detection through `steamapps/libraryfolders.vdf` for native and Flatpak Steam installs.
 - Settings tab with compact green/yellow/red health checks.
 - Settings health rows can be copied as a support snapshot.
+- Full diagnostics reports can be copied from Settings for support and bug reports.
+- Copied diagnostics reports include generated-at and selected launch-engine metadata.
 - Steam health reporting distinguishes native, Flatpak and `STEAM_ROOT` installs and explains partial detection states.
 - Settings health and diagnostics explain the selected Steam install and list detected Steam candidates so Auto selection is easier to troubleshoot.
 - Discovery provider, API key, endpoint and refresh-limit settings persistence.

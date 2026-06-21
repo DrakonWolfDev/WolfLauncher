@@ -143,7 +143,7 @@ Run the test suite:
 PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest discover
 ```
 
-If the app starts but launch preflight fails, open **Settings** and press **Check health**. That table reports the selected Steam install, other detected Steam candidates, DayZ, Workshop, required tools and visible PRIME/offload environment state. Use **Copy health** or the health-table right-click menu to copy a support snapshot. WolfLauncher reads Steam `libraryfolders.vdf` for native and Flatpak Steam, so DayZ and Workshop can be detected from secondary Steam libraries as well as the primary Steam folder.
+If the app starts but launch preflight fails, open **Settings** and press **Check health**. That table reports the selected Steam install, other detected Steam candidates, DayZ, Workshop, required tools and visible PRIME/offload environment state. Use **Copy health** or the health-table right-click menu to copy a compact support snapshot, or **Copy diagnostics** for the full diagnostics report. WolfLauncher reads Steam `libraryfolders.vdf` for native and Flatpak Steam, so DayZ and Workshop can be detected from secondary Steam libraries as well as the primary Steam folder.
 
 The health table and diagnostics also show whether common PRIME helper commands such as `prime-run` and `switcherooctl` are visible. Missing helper commands are informational only, because non-hybrid systems usually do not have them.
 

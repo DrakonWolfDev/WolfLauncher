@@ -1,6 +1,7 @@
 import os
 import shutil
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Sequence
 
@@ -181,10 +182,23 @@ def launch_troubleshooting_report(
     )
 
 
-def run_diagnostics(launcher_path: str, servers: list[Server], selected_steam_mode: str = "auto") -> str:
+def run_diagnostics(
+    launcher_path: str,
+    servers: list[Server],
+    selected_steam_mode: str = "auto",
+    launch_engine: str = "",
+    generated_at: datetime | None = None,
+) -> str:
     lines: list[str] = []
     lines.append("WolfLauncher diagnostics")
     lines.append("========================")
+    lines.append("")
+    timestamp = generated_at or datetime.now(timezone.utc)
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
+    lines.append(f"Generated at: {timestamp.astimezone(timezone.utc).replace(microsecond=0).isoformat()}")
+    if launch_engine:
+        lines.append(f"Launch engine: {launch_engine_label(launch_engine)}")
     lines.append("")
 
     path = Path(launcher_path).expanduser()
@@ -271,3 +285,11 @@ def run_diagnostics(launcher_path: str, servers: list[Server], selected_steam_mo
             lines.append(f"  {server.name}: {server.host} -> DNS failed: {exc}")
 
     return "\n".join(lines)
+
+
+def launch_engine_label(value: str) -> str:
+    labels = {
+        "external": "External launcher",
+        "native": "Native experimental",
+    }
+    return labels.get(value, value)

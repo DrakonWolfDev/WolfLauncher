@@ -1,4 +1,5 @@
 from pathlib import Path
+from datetime import datetime, timezone
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -56,8 +57,10 @@ class DiagnosticsTests(unittest.TestCase):
                                         query_port=27016,
                                     )
                                 ],
+                                generated_at=datetime(2026, 6, 21, 15, 16, 59, tzinfo=timezone.utc),
                             )
 
+        self.assertIn("Generated at: 2026-06-21T15:16:59+00:00", report)
         self.assertIn("Launch option environment:", report)
         self.assertIn("__NV_PRIME_RENDER_OFFLOAD: 1", report)
         self.assertIn("__GLX_VENDOR_LIBRARY_NAME: nvidia", report)
@@ -79,6 +82,26 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertIn("Detail: Steam command: not detected", report)
         self.assertIn("Detail: Post-handoff process visibility: No known DayZ process detected", report)
         self.assertIn("Next step: Open Settings health", report)
+
+    def test_diagnostics_report_includes_selected_launch_engine_when_provided(self):
+        with tempfile.NamedTemporaryFile() as launcher:
+            with patch("wolflauncher.diagnostics.detect_steam", return_value=[]):
+                with patch("wolflauncher.diagnostics.resolve_host", return_value="203.0.113.10"):
+                    with patch(
+                        "wolflauncher.diagnostics.dayz_process_check",
+                        return_value=ProcessCheck(False, "No known DayZ process detected"),
+                    ):
+                        report = run_diagnostics(
+                            launcher.name,
+                            [],
+                            selected_steam_mode="flatpak",
+                            launch_engine="native",
+                            generated_at=datetime(2026, 6, 21, 15, 16, 59, tzinfo=timezone.utc),
+                        )
+
+        self.assertIn("Generated at: 2026-06-21T15:16:59+00:00", report)
+        self.assertIn("Launch engine: Native experimental", report)
+        self.assertIn("Selected launch mode: Flatpak Steam", report)
 
     def test_launch_troubleshooting_report_summarizes_selected_flatpak_install(self):
         install = SteamInstall(

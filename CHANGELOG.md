@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- Added generated-at and selected launch-engine metadata to copied diagnostics reports.
+- Added a Settings diagnostics copy action that copies the full diagnostics report without opening a separate tab.
 - Added a Settings health copy action and right-click menu so support snapshots can be copied from the health table.
 - Added PRIME helper command visibility to diagnostics and Settings health, showing whether `prime-run` or `switcherooctl` are available without warning non-hybrid systems.
 - Improved native launch Steam-library error guidance so missing DayZ installs and missing Workshop folders point to different recovery steps.

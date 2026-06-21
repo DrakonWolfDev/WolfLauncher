@@ -43,6 +43,7 @@ from .diagnostics import (
     launch_troubleshooting_report,
     prime_environment_report,
     prime_helper_report,
+    run_diagnostics,
 )
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from .models import Server
@@ -836,6 +837,8 @@ class MainWindow(QMainWindow):
         health.clicked.connect(self.update_settings_health)
         copy_health = QPushButton("Copy health")
         copy_health.clicked.connect(self.copy_settings_health)
+        copy_diagnostics = QPushButton("Copy diagnostics")
+        copy_diagnostics.clicked.connect(self.copy_diagnostics_report)
         import_file = QPushButton("Import server list")
         import_file.clicked.connect(self.import_server_cache_file)
         save = QPushButton("Save settings")
@@ -843,6 +846,7 @@ class MainWindow(QMainWindow):
         row.addStretch(1)
         row.addWidget(health)
         row.addWidget(copy_health)
+        row.addWidget(copy_diagnostics)
         row.addWidget(import_file)
         row.addWidget(save)
         layout.addLayout(row)
@@ -1875,6 +1879,17 @@ class MainWindow(QMainWindow):
             self.update_settings_health()
         self.copy_to_clipboard(self.settings_health_text(), "Settings health")
 
+    def copy_diagnostics_report(self):
+        self.copy_to_clipboard(
+            run_diagnostics(
+                self.launcher_path.text(),
+                self.servers,
+                self.native_steam_mode_key(),
+                self.launch_engine_key(),
+            ),
+            "Diagnostics report",
+        )
+
     def copy_selected_health_row(self):
         row = self.health_table.currentRow()
         if row < 0:
@@ -1889,11 +1904,14 @@ class MainWindow(QMainWindow):
         menu = QMenu(self)
         copy_row_action = QAction("Copy selected row", self)
         copy_report_action = QAction("Copy health report", self)
+        copy_diagnostics_action = QAction("Copy diagnostics report", self)
         copy_row_action.setEnabled(row >= 0)
         copy_row_action.triggered.connect(self.copy_selected_health_row)
         copy_report_action.triggered.connect(self.copy_settings_health)
+        copy_diagnostics_action.triggered.connect(self.copy_diagnostics_report)
         menu.addAction(copy_row_action)
         menu.addAction(copy_report_action)
+        menu.addAction(copy_diagnostics_action)
         menu.exec(self.health_table.viewport().mapToGlobal(pos))
 
     def settings_health_text(self) -> str:
