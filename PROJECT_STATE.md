@@ -49,6 +49,7 @@ Working:
 - Missing Proton compatdata is reported as a possible first-run Steam/Proton state, with guidance to launch DayZ directly from Steam once so Proton can create the prefix and show prompts.
 - Steam health reporting distinguishes native, Flatpak and `STEAM_ROOT` installs and explains partial detection states.
 - Settings health and diagnostics explain the selected Steam install and list detected Steam candidates so Auto selection is easier to troubleshoot.
+- Settings health includes a dedicated Auto Steam row so users can compare the selected Steam install mode with the install WolfLauncher would choose automatically.
 - Discovery provider, API key, endpoint and refresh-limit settings persistence.
 - Favourites persistence.
 - Last selected server persistence.

@@ -2183,6 +2183,7 @@ class MainWindow(QMainWindow):
             provider_detail = "BattleMetrics public API"
 
         steam = selected_install
+        auto_steam_report = steam_selection_report("auto", install_rows)
         steam_report = steam_selection_report(self.native_steam_mode_key(), install_rows)
         steam_status, steam_detail = steam_report.status, steam_report.detail
         tools = ["python3", "gamedig", "node", "npm", "dig", "curl", "jq", "gawk"]
@@ -2238,6 +2239,11 @@ class MainWindow(QMainWindow):
                 "Selected Steam",
                 steam_status,
                 steam_detail,
+            ),
+            (
+                "Auto Steam",
+                auto_steam_report.status,
+                auto_steam_report.detail,
             ),
             (
                 "Launch troubleshooting",

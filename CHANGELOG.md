@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Added an explicit Auto Steam row to Settings health so selected Steam mode and automatic install selection can be compared at a glance.
 - Added explicit Steam launch-options guidance to diagnostics, Settings health and post-handoff warnings, including a warning for the known bad NVIDIA PRIME option while keeping launch options external to WolfLauncher.
 - Clarified diagnostics wording so copied reports show general DayZ process visibility rather than implying a launch handoff just happened.
 - Clarified Settings and diagnostics labels for the selected Steam install mode so they are not confused with the selected launch engine.
