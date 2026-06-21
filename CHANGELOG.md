@@ -1,6 +1,10 @@
 # Changelog
 
 ## Unreleased
+- Added Server Browser result-limit controls and clearer matching-vs-cached summary text.
+- Added name-derived Server Browser style filtering for PvE and PvP servers.
+- Added Server Browser source filtering, reset controls and cache summary counts.
+- Added Server Browser double-click promotion and a copy-host context action.
 - Added tests that pin WolfLauncher's command generation to the vendored launcher handoff contract.
 - Added PRIME-related environment values to diagnostics output for launch-option troubleshooting.
 - Added bounded query-port fallback probing when enriching discovered server rows with uncertain port data.

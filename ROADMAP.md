@@ -20,6 +20,7 @@ Status: complete, with one known external launch-option issue.
 - Add quiet, bounded and rate-limited background refresh for discovery data.
 - Add live enrichment for visible discovered rows.
 - Refine discovered-row query-port fallback probing from real-world server data.
+- Improve Server Browser source/style filtering, result limits, reset flow and cache visibility.
 - Preserve promotion into the current curated server workflow.
 - Expand tests around launch-engine compatibility.
 - Document the vendored shell launcher's behavior as the compatibility contract.

@@ -29,6 +29,8 @@ Working:
 - Live enrichment probes a bounded set of likely query ports when discovered rows have uncertain port data.
 - Failed provider refreshes preserve existing discovered-server cache rows.
 - Server Browser map and version filters populated from cached/enriched values.
+- Server Browser source/style filtering, result-limit controls, reset controls and cache summary counts.
+- Server Browser double-click promotion and context actions for connect/host/detail copying.
 - DNS hostname and direct IP support.
 - Live DayZ server querying through `gamedig`.
 - Partial `gamedig` restart responses are treated as offline/restarting rather than as healthy online rows.
@@ -110,6 +112,6 @@ Use v0.6 as the next active development target:
 - Improve bulk enrichment controls and keep refining candidate port probing from real-world server data.
 - Continue improving curated server organisation beyond basic edit/remove flows.
 - Keep `servers.yaml` for curated, personal and import/export server lists.
-- Improve filtering, sorting and settings health checks around the existing stable launch flow.
+- Improve filtering, sorting, source/style-focused browsing and settings health checks around the existing stable launch flow.
 - Continue extracting tests and documentation from the vendored launcher's behavior before rewriting it.
 - Keep the NVIDIA PRIME Steam launch-option issue visible as the only known bug until it is reproduced and diagnosed.

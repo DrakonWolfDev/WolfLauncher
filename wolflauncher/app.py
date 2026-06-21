@@ -464,6 +464,11 @@ class MainWindow(QMainWindow):
         self.browser_modded.currentTextChanged.connect(self.refresh_server_browser)
         filters.addWidget(self.browser_modded)
 
+        self.browser_style = QComboBox()
+        self.browser_style.addItems(["Any style", "PvE", "PvP"])
+        self.browser_style.currentTextChanged.connect(self.refresh_server_browser)
+        filters.addWidget(self.browser_style)
+
         self.browser_map = QComboBox()
         self.browser_map.addItem("Any map")
         self.browser_map.currentTextChanged.connect(self.refresh_server_browser)
@@ -476,6 +481,12 @@ class MainWindow(QMainWindow):
         filters.addWidget(QLabel("Version"))
         filters.addWidget(self.browser_version)
 
+        self.browser_source = QComboBox()
+        self.browser_source.addItem("Any source")
+        self.browser_source.currentTextChanged.connect(self.refresh_server_browser)
+        filters.addWidget(QLabel("Source"))
+        filters.addWidget(self.browser_source)
+
         self.browser_sort = QComboBox()
         self.browser_sort.addItems(["Name", "Players", "Ping", "Map", "Version", "Last seen"])
         self.browser_sort.currentTextChanged.connect(self.refresh_server_browser)
@@ -485,6 +496,12 @@ class MainWindow(QMainWindow):
         self.browser_descending = QCheckBox("Desc")
         self.browser_descending.stateChanged.connect(self.refresh_server_browser)
         filters.addWidget(self.browser_descending)
+
+        self.browser_limit = QComboBox()
+        self.browser_limit.addItems(["200", "500", "1000"])
+        self.browser_limit.currentTextChanged.connect(self.refresh_server_browser)
+        filters.addWidget(QLabel("Limit"))
+        filters.addWidget(self.browser_limit)
         layout.addLayout(filters)
 
         self.browser_summary = QLabel("Cached discovered servers: loading")
@@ -510,6 +527,7 @@ class MainWindow(QMainWindow):
         self.browser_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.browser_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.browser_table.setSortingEnabled(True)
+        self.browser_table.cellDoubleClicked.connect(self.handle_browser_double_clicked)
         self.browser_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.browser_table.customContextMenuRequested.connect(self.show_browser_context_menu)
         layout.addWidget(self.browser_table)
@@ -521,12 +539,15 @@ class MainWindow(QMainWindow):
         self.enrich_visible_button.clicked.connect(self.enrich_visible_discovered_servers)
         promote = QPushButton("Promote to curated")
         promote.clicked.connect(self.promote_selected_discovered_server)
+        clear_filters = QPushButton("Reset filters")
+        clear_filters.clicked.connect(self.reset_browser_filters)
         refresh = QPushButton("Refresh cache view")
         refresh.clicked.connect(self.refresh_server_browser)
         buttons.addStretch(1)
         buttons.addWidget(self.refresh_database_button)
         buttons.addWidget(self.enrich_visible_button)
         buttons.addWidget(promote)
+        buttons.addWidget(clear_filters)
         buttons.addWidget(refresh)
         layout.addLayout(buttons)
         return widget
@@ -1064,6 +1085,9 @@ class MainWindow(QMainWindow):
             modded = False
         map_name = self._combo_filter_value(self.browser_map, "Any map")
         version = self._combo_filter_value(self.browser_version, "Any version")
+        source = self._combo_filter_value(self.browser_source, "Any source")
+        style_terms = self._browser_style_terms()
+        limit = int(self.browser_limit.currentText())
 
         servers = server_cache.search_servers(
             self.server_cache,
@@ -1071,9 +1095,22 @@ class MainWindow(QMainWindow):
             online_only=self.browser_online_only.isChecked(),
             map_name=map_name,
             version=version,
+            source=source,
+            style_terms=style_terms,
             modded=modded,
             sort_by=sort_key,
             descending=self.browser_descending.isChecked(),
+            limit=limit,
+        )
+        match_count = server_cache.count_search_servers(
+            self.server_cache,
+            text=self.browser_search.text(),
+            online_only=self.browser_online_only.isChecked(),
+            map_name=map_name,
+            version=version,
+            source=source,
+            style_terms=style_terms,
+            modded=modded,
         )
         self.browser_servers = servers
 
@@ -1119,10 +1156,7 @@ class MainWindow(QMainWindow):
 
         self.browser_table.resizeColumnsToContents()
         self.browser_table.setSortingEnabled(True)
-        if servers:
-            self.browser_summary.setText(f"Cached discovered servers: {len(servers)} shown")
-        else:
-            self.browser_summary.setText("Cached discovered servers: none found")
+        self.browser_summary.setText(self._browser_summary_text(servers, match_count, limit))
 
     def _refresh_browser_filter_options(self):
         self._set_combo_filter_options(
@@ -1134,6 +1168,11 @@ class MainWindow(QMainWindow):
             self.browser_version,
             "Any version",
             server_cache.distinct_values(self.server_cache, "version"),
+        )
+        self._set_combo_filter_options(
+            self.browser_source,
+            "Any source",
+            server_cache.distinct_values(self.server_cache, "source"),
         )
 
     def _set_combo_filter_options(self, combo: QComboBox, any_label: str, values: list[str]):
@@ -1152,6 +1191,47 @@ class MainWindow(QMainWindow):
     def _combo_filter_value(self, combo: QComboBox, any_label: str) -> str:
         value = combo.currentText().strip()
         return "" if value == any_label else value
+
+    def _browser_style_terms(self) -> list[str]:
+        style = self.browser_style.currentText()
+        if style == "PvE":
+            return ["pve", "p.v.e", "no pvp", "no kos", "no-kos", "no kill on sight"]
+        if style == "PvP":
+            return ["pvp", "p.v.p"]
+        return []
+
+    def _browser_summary_text(self, servers, match_count: int, limit: int) -> str:
+        summary = server_cache.cache_summary(self.server_cache)
+        shown = len(servers)
+        total = summary["total"]
+        if total == 0:
+            return "Cached discovered servers: empty"
+
+        parts = [
+            f"Showing {shown} of {match_count} matching",
+            f"{total} cached",
+            f"{summary['online']} online",
+            f"{summary['checked']} checked",
+            f"{summary['seen']} seen online",
+        ]
+        if shown == limit and match_count > shown:
+            parts[0] = f"Showing first {shown} of {match_count} matching"
+        elif shown == 0:
+            parts[0] = f"No matches from {total} cached"
+        return "Cached discovered servers: " + " | ".join(parts)
+
+    def reset_browser_filters(self):
+        self.browser_search.clear()
+        self.browser_online_only.setChecked(False)
+        self.browser_modded.setCurrentText("Any mods")
+        self.browser_style.setCurrentText("Any style")
+        self.browser_map.setCurrentText("Any map")
+        self.browser_version.setCurrentText("Any version")
+        self.browser_source.setCurrentText("Any source")
+        self.browser_sort.setCurrentText("Name")
+        self.browser_descending.setChecked(False)
+        self.browser_limit.setCurrentText("200")
+        self.refresh_server_browser()
 
     def _players_text(self, current: int | None, maximum: int | None) -> str:
         if current is None and maximum is None:
@@ -1501,6 +1581,10 @@ class MainWindow(QMainWindow):
     def handle_mod_double_clicked(self, row: int, column: int):
         self.open_workshop_page_for_mod_row(row)
 
+    def handle_browser_double_clicked(self, row: int, column: int):
+        self.browser_table.selectRow(row)
+        self.promote_selected_discovered_server()
+
     def open_workshop_page_for_mod_row(self, row: int):
         if row < 0:
             return
@@ -1549,16 +1633,22 @@ class MainWindow(QMainWindow):
         menu = QMenu(self)
         promote_action = QAction("Promote to curated", self)
         copy_connect_action = QAction("Copy connect address", self)
+        copy_host_action = QAction("Copy host", self)
         copy_details_action = QAction("Copy server details", self)
         promote_action.triggered.connect(self.promote_selected_discovered_server)
         copy_connect_action.triggered.connect(
             lambda: self.copy_to_clipboard(server.connect_target, "Connect address")
         )
+        copy_host_action.triggered.connect(
+            lambda: self.copy_to_clipboard(server.host, "Server host")
+        )
         copy_details_action.triggered.connect(
             lambda: self.copy_to_clipboard(self.discovered_server_details_text(server), "Server details")
         )
         menu.addAction(promote_action)
+        menu.addSeparator()
         menu.addAction(copy_connect_action)
+        menu.addAction(copy_host_action)
         menu.addAction(copy_details_action)
         menu.exec(self.browser_table.viewport().mapToGlobal(pos))
 

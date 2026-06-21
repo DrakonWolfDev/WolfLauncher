@@ -266,6 +266,119 @@ class ServerCacheTests(unittest.TestCase):
 
         self.assertEqual([server.name for server in results], ["Busy Namalsk"])
 
+    def test_search_filters_by_source(self):
+        connection = self.open_cache()
+        server_cache.upsert_server(
+            connection,
+            DiscoveredServer(
+                name="BattleMetrics Server",
+                source="battlemetrics",
+                host="203.0.113.10",
+                game_port=2302,
+                query_port=27016,
+            ),
+        )
+        server_cache.upsert_server(
+            connection,
+            DiscoveredServer(
+                name="Imported Server",
+                source="import",
+                host="203.0.113.20",
+                game_port=2302,
+                query_port=27016,
+            ),
+        )
+
+        results = server_cache.search_servers(connection, source="import")
+
+        self.assertEqual([server.name for server in results], ["Imported Server"])
+
+    def test_search_filters_by_style_terms(self):
+        connection = self.open_cache()
+        server_cache.upsert_server(
+            connection,
+            DiscoveredServer(
+                name="Quiet Chernarus PvE",
+                host="203.0.113.10",
+                game_port=2302,
+                query_port=27016,
+            ),
+        )
+        server_cache.upsert_server(
+            connection,
+            DiscoveredServer(
+                name="Coastal Combat",
+                server_name="Weekend PvP",
+                host="203.0.113.20",
+                game_port=2302,
+                query_port=27016,
+            ),
+        )
+
+        pve_results = server_cache.search_servers(connection, style_terms=["pve"])
+        pvp_results = server_cache.search_servers(connection, style_terms=["pvp"])
+
+        self.assertEqual([server.name for server in pve_results], ["Quiet Chernarus PvE"])
+        self.assertEqual([server.name for server in pvp_results], ["Coastal Combat"])
+
+    def test_count_search_servers_uses_same_filters_without_result_limit(self):
+        connection = self.open_cache()
+        for index in range(3):
+            server_cache.upsert_server(
+                connection,
+                DiscoveredServer(
+                    name=f"PvE Server {index}",
+                    host=f"203.0.113.{index}",
+                    game_port=2302,
+                    query_port=27016,
+                    online=True,
+                ),
+            )
+
+        results = server_cache.search_servers(
+            connection,
+            online_only=True,
+            style_terms=["pve"],
+            limit=2,
+        )
+        count = server_cache.count_search_servers(
+            connection,
+            online_only=True,
+            style_terms=["pve"],
+        )
+
+        self.assertEqual(len(results), 2)
+        self.assertEqual(count, 3)
+
+    def test_cache_summary_counts_total_online_checked_and_seen(self):
+        connection = self.open_cache()
+        server_cache.upsert_server(
+            connection,
+            DiscoveredServer(
+                name="Online Checked",
+                host="203.0.113.10",
+                game_port=2302,
+                query_port=27016,
+                online=True,
+                last_checked="2026-06-20T12:00:00Z",
+                last_seen="2026-06-20T12:00:00Z",
+            ),
+        )
+        server_cache.upsert_server(
+            connection,
+            DiscoveredServer(
+                name="Offline Unchecked",
+                host="203.0.113.20",
+                game_port=2302,
+                query_port=27016,
+            ),
+        )
+
+        self.assertEqual(
+            server_cache.cache_summary(connection),
+            {"total": 2, "online": 1, "checked": 1, "seen": 1},
+        )
+
     def test_search_treats_sql_wildcards_as_literal_text(self):
         connection = self.open_cache()
         server_cache.upsert_server(

@@ -255,37 +255,22 @@ def search_servers(
     online_only: bool = False,
     map_name: str = "",
     version: str = "",
+    source: str = "",
+    style_terms: list[str] | None = None,
     modded: bool | None = None,
     sort_by: str = "name",
     descending: bool = False,
     limit: int = 200,
 ) -> list[DiscoveredServer]:
-    clauses = []
-    params: list[Any] = []
-
-    text = text.strip()
-    if text:
-        clauses.append(
-            "(display_name COLLATE NOCASE LIKE ? ESCAPE '\\' "
-            "OR server_name COLLATE NOCASE LIKE ? ESCAPE '\\' "
-            "OR host COLLATE NOCASE LIKE ? ESCAPE '\\')"
-        )
-        pattern = f"%{_escape_like(text)}%"
-        params.extend([pattern, pattern, pattern])
-
-    if online_only:
-        clauses.append("online = 1")
-    if map_name:
-        clauses.append("map_name = ? COLLATE NOCASE")
-        params.append(map_name)
-    if version:
-        clauses.append("version = ? COLLATE NOCASE")
-        params.append(version)
-    if modded is not None:
-        clauses.append("modded = ?")
-        params.append(1 if modded else 0)
-
-    where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+    where_sql, params = _search_where(
+        text=text,
+        online_only=online_only,
+        map_name=map_name,
+        version=version,
+        source=source,
+        style_terms=style_terms,
+        modded=modded,
+    )
     order_sql = SORT_COLUMNS.get(sort_by, SORT_COLUMNS["name"])
     direction = "DESC" if descending else "ASC"
     limit = max(1, min(int(limit), 1000))
@@ -300,6 +285,55 @@ def search_servers(
         [*params, limit],
     ).fetchall()
     return [_row_to_server(row) for row in rows]
+
+
+def count_search_servers(
+    connection: sqlite3.Connection,
+    text: str = "",
+    online_only: bool = False,
+    map_name: str = "",
+    version: str = "",
+    source: str = "",
+    style_terms: list[str] | None = None,
+    modded: bool | None = None,
+) -> int:
+    where_sql, params = _search_where(
+        text=text,
+        online_only=online_only,
+        map_name=map_name,
+        version=version,
+        source=source,
+        style_terms=style_terms,
+        modded=modded,
+    )
+    row = connection.execute(
+        f"""
+        SELECT COUNT(*) AS count
+        FROM discovered_servers
+        {where_sql}
+        """,
+        params,
+    ).fetchone()
+    return int(row["count"])
+
+
+def cache_summary(connection: sqlite3.Connection) -> dict[str, int]:
+    row = connection.execute(
+        """
+        SELECT
+            COUNT(*) AS total,
+            COALESCE(SUM(CASE WHEN online = 1 THEN 1 ELSE 0 END), 0) AS online,
+            COALESCE(SUM(CASE WHEN TRIM(last_checked) != '' THEN 1 ELSE 0 END), 0) AS checked,
+            COALESCE(SUM(CASE WHEN TRIM(last_seen) != '' THEN 1 ELSE 0 END), 0) AS seen
+        FROM discovered_servers
+        """
+    ).fetchone()
+    return {
+        "total": int(row["total"]),
+        "online": int(row["online"]),
+        "checked": int(row["checked"]),
+        "seen": int(row["seen"]),
+    }
 
 
 def distinct_values(connection: sqlite3.Connection, field: str, limit: int = 250) -> list[str]:
@@ -318,6 +352,59 @@ def distinct_values(connection: sqlite3.Connection, field: str, limit: int = 250
         (limit,),
     ).fetchall()
     return [str(row["value"]) for row in rows]
+
+
+def _search_where(
+    text: str = "",
+    online_only: bool = False,
+    map_name: str = "",
+    version: str = "",
+    source: str = "",
+    style_terms: list[str] | None = None,
+    modded: bool | None = None,
+) -> tuple[str, list[Any]]:
+    clauses = []
+    params: list[Any] = []
+
+    text = text.strip()
+    if text:
+        clauses.append(
+            "(display_name COLLATE NOCASE LIKE ? ESCAPE '\\' "
+            "OR server_name COLLATE NOCASE LIKE ? ESCAPE '\\' "
+            "OR host COLLATE NOCASE LIKE ? ESCAPE '\\')"
+        )
+        pattern = f"%{_escape_like(text)}%"
+        params.extend([pattern, pattern, pattern])
+
+    terms = [term.strip() for term in (style_terms or []) if term.strip()]
+    if terms:
+        term_clauses = []
+        for term in terms:
+            term_clauses.append(
+                "(display_name COLLATE NOCASE LIKE ? ESCAPE '\\' "
+                "OR server_name COLLATE NOCASE LIKE ? ESCAPE '\\')"
+            )
+            pattern = f"%{_escape_like(term)}%"
+            params.extend([pattern, pattern])
+        clauses.append(f"({' OR '.join(term_clauses)})")
+
+    if online_only:
+        clauses.append("online = 1")
+    if map_name:
+        clauses.append("map_name = ? COLLATE NOCASE")
+        params.append(map_name)
+    if version:
+        clauses.append("version = ? COLLATE NOCASE")
+        params.append(version)
+    if source:
+        clauses.append("source = ? COLLATE NOCASE")
+        params.append(source)
+    if modded is not None:
+        clauses.append("modded = ?")
+        params.append(1 if modded else 0)
+
+    where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+    return where_sql, params
 
 
 def _server_params(server: DiscoveredServer) -> dict[str, Any]:
