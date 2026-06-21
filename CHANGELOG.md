@@ -1,6 +1,11 @@
 # Changelog
 
 ## Unreleased
+- Confirmed real-world experimental native launch success through Flatpak Steam, with DayZ detected roughly 10 seconds after handoff.
+- Added a native Steam install selector for Auto, Native Steam, Flatpak Steam and `STEAM_ROOT` so experimental native-launch testing can target a specific Steam install.
+- Changed native-engine mod checks, launch preview and launch preflight to use the selected Steam install, clearing stale mod results when the selection changes.
+- Changed native launch command generation to fail early with mode-specific guidance when native Steam, Flatpak Steam or `STEAM_ROOT` lacks a detected launch command.
+- Moved packaging preparation later in the roadmap so native launcher parity and Steam/Proton reliability stay ahead of installer polish.
 - Added a Settings health row for visible NVIDIA PRIME / DRI PRIME environment state.
 - Expanded diagnostics with structured PRIME status and safer hybrid-GPU troubleshooting steps.
 - Clarified that absent visible PRIME variables do not rule out Steam per-game launch options, and expanded no-process post-handoff guidance for the known NVIDIA PRIME option.

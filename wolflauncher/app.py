@@ -43,7 +43,14 @@ from .diagnostics import prime_environment_report
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from .models import Server
 from .native_launcher import NativeLaunchError, prepare_native_launch, prepare_native_launch_preview
-from .platform_detection import best_install, dayz_process_check, detect_steam, install_label, install_readiness
+from .platform_detection import (
+    SteamInstall,
+    best_install,
+    dayz_process_check,
+    detect_steam,
+    install_label,
+    install_readiness,
+)
 from .mods import ModCheckResult, check_server_mods
 from . import server_cache
 from .server_discovery import (
@@ -485,6 +492,12 @@ class MainWindow(QMainWindow):
             else "External launcher"
         )
         self.launch_engine.currentTextChanged.connect(self.handle_settings_changed)
+        self.native_steam_mode = QComboBox()
+        self.native_steam_mode.addItems(["Auto", "Native Steam", "Flatpak Steam", "STEAM_ROOT Steam library"])
+        self.native_steam_mode.setCurrentText(
+            self._native_steam_mode_label(str(self.settings.get("native_steam_mode") or "auto"))
+        )
+        self.native_steam_mode.currentTextChanged.connect(self.handle_native_steam_mode_changed)
         self.refresh_seconds = QSpinBox()
         self.refresh_seconds.setRange(0, 3600)
         self.refresh_seconds.setValue(int(self.settings.get("refresh_seconds", 30)))
@@ -761,6 +774,7 @@ class MainWindow(QMainWindow):
 
         launcher_settings = QFormLayout()
         launcher_settings.addRow("Launch engine", self.launch_engine)
+        launcher_settings.addRow("Native Steam install", self.native_steam_mode)
 
         self.discovery_provider = QComboBox()
         self.discovery_provider.addItems([
@@ -1172,6 +1186,15 @@ class MainWindow(QMainWindow):
         }
         return labels.get(key, "BattleMetrics")
 
+    def _native_steam_mode_label(self, key: str) -> str:
+        labels = {
+            "auto": "Auto",
+            "native": "Native Steam",
+            "flatpak": "Flatpak Steam",
+            "STEAM_ROOT env": "STEAM_ROOT Steam library",
+        }
+        return labels.get(key, "Auto")
+
     def discovery_provider_key(self) -> str:
         if not hasattr(self, "discovery_provider"):
             return str(self.settings.get("discovery_provider") or "battlemetrics")
@@ -1188,9 +1211,49 @@ class MainWindow(QMainWindow):
             return str(self.settings.get("launch_engine") or "external")
         return "native" if self.launch_engine.currentText() == "Native experimental" else "external"
 
+    def native_steam_mode_key(self) -> str:
+        if not hasattr(self, "native_steam_mode"):
+            return str(self.settings.get("native_steam_mode") or "auto")
+        keys = {
+            "Auto": "auto",
+            "Native Steam": "native",
+            "Flatpak Steam": "flatpak",
+            "STEAM_ROOT Steam library": "STEAM_ROOT env",
+        }
+        return keys.get(self.native_steam_mode.currentText(), "auto")
+
+    def selected_steam_install(self) -> SteamInstall | None:
+        mode = self.native_steam_mode_key()
+        if mode == "auto":
+            return best_install()
+        for install in detect_steam():
+            if install.mode == mode:
+                return install
+        return None
+
+    def selected_steam_install_detail(self) -> tuple[str, str]:
+        mode = self.native_steam_mode_key()
+        install = self.selected_steam_install()
+        if mode == "auto":
+            if not install:
+                return "MISSING", "Auto selection found no Steam install"
+            status, detail = install_readiness(install)
+            return status, f"Auto selected {detail}"
+        if not install:
+            return "MISSING", f"{self._native_steam_mode_label(mode)} not detected"
+        return install_readiness(install)
+
     def handle_settings_changed(self, *_args):
         self.save_user_settings(silent=True)
         self.update_settings_health()
+
+    def handle_native_steam_mode_changed(self, *_args):
+        self.last_mod_result = None
+        if hasattr(self, "mod_summary"):
+            self.mod_summary.setText("Steam install changed. Recheck selected server mods.")
+        if hasattr(self, "mods_table"):
+            self.mods_table.setRowCount(0)
+        self.handle_settings_changed()
 
     def save_player_name(self):
         if not self.player_name.text().strip():
@@ -1208,6 +1271,7 @@ class MainWindow(QMainWindow):
             "launcher_path": self.launcher_path.text(),
             "player_name": self.player_name.text(),
             "launch_engine": self.launch_engine_key(),
+            "native_steam_mode": self.native_steam_mode_key(),
             "refresh_seconds": self.refresh_seconds.value(),
             "last_selected_row": self.table.currentRow(),
             "discovery_provider": self.discovery_provider_key(),
@@ -1666,14 +1730,14 @@ class MainWindow(QMainWindow):
                 self.pending_mod_check_row = row
             return
 
-        install = best_install()
+        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
         workshop_dir = install.workshop_dir if install else None
         if not workshop_dir:
             if not silent:
                 QMessageBox.warning(
                     self,
                     "Workshop folder not found",
-                    "WolfLauncher could not find the DayZ Workshop folder. Check Settings health.",
+                    "WolfLauncher could not find the DayZ Workshop folder for the current launch mode. Check Settings health.",
                 )
             return
 
@@ -1957,9 +2021,13 @@ class MainWindow(QMainWindow):
             )
             return
 
-        install = best_install()
+        install = self.selected_steam_install()
         if not install:
-            QMessageBox.critical(self, "Steam not detected", "WolfLauncher could not detect a Steam installation.")
+            QMessageBox.critical(
+                self,
+                "Steam not detected",
+                "WolfLauncher could not detect the selected Steam installation.",
+            )
             return
 
         try:
@@ -1982,12 +2050,15 @@ class MainWindow(QMainWindow):
         dialog.exec()
 
     def native_launch_preview_text(self, preview) -> str:
+        install = self.selected_steam_install()
+        install_detail = install_label(install) if install else self._native_steam_mode_label(self.native_steam_mode_key())
         lines = [
             "Native launch preview",
             "",
             "This prepared the legacy-compatible DayZ mod symlinks for installed mods only.",
             "It did not launch Steam or DayZ.",
             "",
+            f"Steam install: {install_detail}",
             f"Server: {preview.server.name}",
             f"Connect: {preview.server.host}:{preview.server.game_port}",
             "",
@@ -2023,15 +2094,15 @@ class MainWindow(QMainWindow):
     def update_settings_health(self):
         if not hasattr(self, "health_table"):
             return
-        install = best_install()
-        if install and install.dayz_dir and install.workshop_dir:
-            self.system_summary.setText(f"Detected {install_label(install)} | DayZ OK | Workshop OK")
-        elif install and install.dayz_dir:
-            self.system_summary.setText(f"Detected {install_label(install)} | DayZ OK | Workshop missing")
-        elif install and (install.root or install.executable):
-            self.system_summary.setText(f"Detected {install_label(install)} | DayZ not found yet")
+        selected_install = self.selected_steam_install()
+        if selected_install and selected_install.dayz_dir and selected_install.workshop_dir:
+            self.system_summary.setText(f"Selected {install_label(selected_install)} | DayZ OK | Workshop OK")
+        elif selected_install and selected_install.dayz_dir:
+            self.system_summary.setText(f"Selected {install_label(selected_install)} | DayZ OK | Workshop missing")
+        elif selected_install and (selected_install.root or selected_install.executable):
+            self.system_summary.setText(f"Selected {install_label(selected_install)} | DayZ not found yet")
         else:
-            self.system_summary.setText("Steam/DayZ not detected")
+            self.system_summary.setText("Selected Steam/DayZ not detected")
 
         path = Path(self.launcher_path.text()).expanduser()
         launch_engine = self.launch_engine_key()
@@ -2057,8 +2128,8 @@ class MainWindow(QMainWindow):
             provider_detail = "BattleMetrics public API"
 
         install_rows = detect_steam()
-        steam = best_install()
-        steam_status, steam_detail = install_readiness(steam)
+        steam = selected_install
+        steam_status, steam_detail = self.selected_steam_install_detail()
         tools = ["python3", "gamedig", "node", "npm", "dig", "curl", "jq", "gawk"]
         missing_tools = [command for command in tools if not shutil.which(command)]
         launcher_candidates = [str(candidate) for candidate in DEFAULT_LAUNCHER_PATHS if candidate.exists()]
@@ -2091,7 +2162,7 @@ class MainWindow(QMainWindow):
                 prime_report.summary,
             ),
             (
-                "Steam",
+                "Selected Steam",
                 steam_status,
                 steam_detail,
             ),
@@ -2187,12 +2258,12 @@ class MainWindow(QMainWindow):
 
         player_name = self.player_name.text().strip() or DEFAULT_PLAYER_NAME
         if self.launch_engine_key() == "native":
-            install = best_install()
+            install = self.selected_steam_install()
             if not install:
                 raise NativeLaunchError(
-                    "Steam installation not detected",
+                    "Selected Steam installation not detected",
                     stage="Steam detection",
-                    guidance="Open Settings health and confirm native or Flatpak Steam can be detected.",
+                    guidance="Open Settings health and confirm the selected native or Flatpak Steam install can be detected.",
                 )
             required_mods = None
             if self.last_mod_result and server_key(self.last_mod_result.server) == server_key(server):
@@ -2203,7 +2274,7 @@ class MainWindow(QMainWindow):
         return build_launch_command(self.launcher_path.text(), player_name, launch_server)
 
     def confirm_launch_preflight(self, server: Server) -> bool:
-        install = best_install()
+        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
         if not install or not install.dayz_dir:
             QMessageBox.critical(
                 self,

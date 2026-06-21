@@ -62,8 +62,9 @@ Working:
 - Launch dialogs clarify that a successful handoff does not prove Proton initialized or DayZ reached the menu.
 - Launch dialogs watch for known DayZ processes for up to 45 seconds after handoff, because Steam/Proton can take tens of seconds before DayZ appears.
 - Experimental native launch preview from the Mods tab, including prepared mod-link output, missing Workshop directory reporting and generated Steam command display.
-- Experimental native Steam handoff from the preview dialog, with first real-world native launch success confirmed against native Steam. The external launcher remains the default launch path while parity testing continues.
+- Experimental native Steam handoff from the preview dialog, with real-world native Steam and Flatpak Steam launch success confirmed. The external launcher remains the default launch path while parity testing continues.
 - Saved launch-engine setting in Settings. `External launcher` remains the default, while `Native experimental` routes the main Launch button through the Python native engine.
+- Saved native Steam install selection in Settings, with Auto, Native Steam, Flatpak Steam and `STEAM_ROOT` options so parity testing can target a specific detected install.
 - Structured native-launch failure stages with user-facing recovery guidance for Steam detection, library detection, DNS and mod setup failures.
 - README Linux Mint / Ubuntu development setup instructions with dependency notes and Settings health fallback guidance.
 
@@ -118,8 +119,10 @@ Current handling:
 - The external shell launcher remains the launch engine for now.
 - The vendored shell launcher is the reference contract for future native launcher work.
 - Native launcher replacement work has started behind a separate Python interface, with tests covering compact mod symlink names, relative symlink creation, missing-mod preview handling and Steam launch command generation.
-- The native engine has one confirmed real-world native Steam handoff, including starting Steam when it was not already running, but still needs broader testing before replacing the external launcher path.
-- The main Launch button can opt into the native engine through Settings, but this should remain experimental until more servers, missing-mod cases, native Steam and Flatpak Steam are tested.
+- The native engine has confirmed real-world native Steam and Flatpak Steam handoff success, including starting Steam when it was not already running and a Flatpak DayZ launch reaching process detection in roughly 10 seconds.
+- The main Launch button can opt into the native engine through Settings, but this should remain experimental until more servers and missing-mod cases are tested.
+- When the native engine is selected, mod checks, native launch preview and launch preflight use the selected Steam install rather than always using automatic best-install detection.
+- Native launch command generation now fails before handoff when the selected Steam mode lacks a detected command, with mode-specific guidance for native Steam, Flatpak Steam and `STEAM_ROOT`.
 - Mod management is read-only and advisory: it detects installed/missing mods and opens Workshop pages, but does not attempt automatic downloads. Future mod installation work should investigate Steam-native subscription/download routes first and require explicit user confirmation.
 - Launch remains guarded: WolfLauncher warns about missing mods and Steam state before calling the external launcher.
 - Hostnames are resolved before launch where possible to mirror the original terminal menu behaviour and avoid DayZSA API issues with DNS-based servers.
@@ -135,6 +138,7 @@ Use v0.7 as the next active development target:
 - Expand native and Flatpak Steam checks.
 - Add clearer failure states for Proton/Steam handoff problems.
 - Continue refining Linux Mint/Ubuntu install instructions toward packaged installs.
+- Defer packaging work until late pre-1.0 polish; launcher parity and Steam/Proton reliability should come first.
 - Continue improving curated server organisation beyond basic edit/remove flows.
 - Keep `servers.yaml` for curated, personal and import/export server lists.
 - Continue carving native Python equivalents from the vendored launcher's behavior while expanding the new native launcher engine behind WolfLauncher interfaces.

@@ -35,29 +35,34 @@ Status: complete.
 - Expand native Steam and Flatpak Steam checks.
 - Continue improving Proton/Steam handoff failure states; launch dialogs now clarify the handoff boundary and probe for known DayZ processes after successful command exit.
 - Add Linux Mint/Ubuntu install instructions; development setup notes are in the README, packaged install notes still need future work.
-- Start carving native Python equivalents from the vendored legacy launcher behavior. Experimental native Steam handoff now has an initial native-Steam success and an opt-in launch-engine setting, while Flatpak and broader server parity still need testing.
+- Start carving native Python equivalents from the vendored legacy launcher behavior. Experimental native Steam handoff now has native-Steam and Flatpak-Steam success, an opt-in launch-engine setting and explicit Steam-install selection, while broader server and missing-mod parity still need testing.
 
-## v0.8 - Packaging preparation
+## v0.8 - Native launcher engine investigation
+
+- Document the current handoff contract with `dayz-linux-cli-launcher`.
+- Build an internal launcher-engine module behind the existing GUI workflow. Initial foundation is in place for compact mod symlink names, mod link preparation, launch previews, experimental native handoff and Steam command generation.
+- Reproduce the current external launcher command behaviour with test coverage.
+- Continue direct Steam/Proton launch handling tests for native and Flatpak Steam.
+- Investigate Steam Workshop mod installation routes, with Steam-native subscription/download flows preferred over custom file management.
+- Keep the external launcher path as a fallback until native launch parity is proven.
+
+## v0.9 - Native launcher engine hardening
+
+- Make the native engine the default candidate only after broader missing-mod and multi-server parity testing.
+- Keep the external launcher path as a visible fallback during the transition.
+- Improve structured launch errors and user-facing diagnostics.
+- Add regression tests for launch command generation, host resolution and Steam mode detection.
+
+## v0.9.9 - Packaging preparation
 
 - Explore AppImage.
 - Explore `.deb` packaging.
 - Add desktop file and icon.
 - Document user config and data directories.
 
-## v0.9 - Native launcher engine investigation
-
-- Document the current handoff contract with `dayz-linux-cli-launcher`.
-- Build an internal launcher-engine module behind the existing GUI workflow. Initial foundation is in place for compact mod symlink names, mod link preparation, launch previews, experimental native handoff and Steam command generation.
-- Reproduce the current external launcher command behaviour with test coverage.
-- Investigate direct Steam/Proton launch handling for native and Flatpak Steam.
-- Investigate Steam Workshop mod installation routes, with Steam-native subscription/download flows preferred over custom file management.
-- Keep the external launcher path as a fallback until native launch parity is proven.
-
 ## v1.0 - Native launcher engine replacement
 
 - Move server launch flow from shell-script handoff to the internal engine.
-- Improve structured launch errors and user-facing diagnostics.
-- Add regression tests for launch command generation, host resolution and Steam mode detection.
 - Remove the external launcher dependency once real-world launch testing is stable.
 
 ## Later

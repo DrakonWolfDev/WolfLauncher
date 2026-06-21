@@ -133,7 +133,17 @@ It currently prepares the shell launcher's shortened `@base64modid` symlinks,
 checks installed Workshop mod directories and metadata, resolves the server host,
 and generates the native or Flatpak Steam `-applaunch 221100` command line. The
 GUI still uses the external shell handoff by default until native launch parity
-is proven with broader real-world testing.
+is proven with broader real-world testing. Real-world native Steam and Flatpak
+Steam handoffs have both reached DayZ process detection through the experimental
+path; broader multi-server and missing-mod parity still need coverage.
+
+When the native engine is selected, Settings can target Auto, Native Steam,
+Flatpak Steam or `STEAM_ROOT` for native-launch testing. Mod checks, preview and
+launch preflight should use that selected install so native and Flatpak parity
+testing cannot accidentally read Workshop state from a different Steam library.
+Native command generation should fail before handoff when the selected Steam
+mode does not have a detected launch command, so users get Steam-mode-specific
+recovery guidance instead of a generic process-start failure.
 
 ## Known Launch-Option Issue
 

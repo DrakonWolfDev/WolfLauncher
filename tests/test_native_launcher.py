@@ -115,6 +115,57 @@ class NativeLauncherTests(unittest.TestCase):
             ],
         )
 
+    def test_build_native_command_requires_detected_steam_executable(self):
+        install = SteamInstall(
+            mode="native",
+            executable="",
+            running=False,
+            root=Path("/steam"),
+            steamapps=Path("/steam/steamapps"),
+            dayz_dir=None,
+            workshop_dir=None,
+        )
+
+        with self.assertRaisesRegex(NativeLaunchError, "native Steam executable not detected") as raised:
+            build_steam_launch_command(install, make_server("203.0.113.10"), "PlayerOne", [])
+
+        self.assertEqual(raised.exception.stage, "Steam detection")
+        self.assertIn("steam command available on PATH", raised.exception.user_message())
+
+    def test_build_flatpak_command_requires_detected_flatpak_command(self):
+        install = SteamInstall(
+            mode="flatpak",
+            executable="",
+            running=False,
+            root=Path("/flatpak/Steam"),
+            steamapps=Path("/flatpak/Steam/steamapps"),
+            dayz_dir=None,
+            workshop_dir=None,
+        )
+
+        with self.assertRaisesRegex(NativeLaunchError, "Flatpak Steam command not detected") as raised:
+            build_steam_launch_command(install, make_server("203.0.113.10"), "PlayerOne", [])
+
+        self.assertEqual(raised.exception.stage, "Steam detection")
+        self.assertIn("flatpak command is available", raised.exception.user_message())
+
+    def test_build_steam_root_command_requires_native_steam_executable(self):
+        install = SteamInstall(
+            mode="STEAM_ROOT env",
+            executable="",
+            running=False,
+            root=Path("/steam"),
+            steamapps=Path("/steam/steamapps"),
+            dayz_dir=None,
+            workshop_dir=None,
+        )
+
+        with self.assertRaisesRegex(NativeLaunchError, "STEAM_ROOT env Steam executable not detected") as raised:
+            build_steam_launch_command(install, make_server("203.0.113.10"), "PlayerOne", [])
+
+        self.assertEqual(raised.exception.stage, "Steam detection")
+        self.assertIn("points WolfLauncher at a Steam library", raised.exception.user_message())
+
     def test_prepare_native_launch_creates_relative_mod_symlinks(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             install = make_install(Path(tmpdir))

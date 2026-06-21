@@ -218,14 +218,32 @@ def _steam_command_prefix(install: SteamInstall) -> list[str]:
     if install.mode == "flatpak":
         if not install.executable:
             raise NativeLaunchError(
-                "Flatpak executable not detected",
+                "Flatpak Steam command not detected",
                 stage="Steam detection",
-                guidance="Install Flatpak Steam or switch to a detected native Steam installation.",
+                guidance=(
+                    "Install Flatpak Steam, confirm the flatpak command is available, "
+                    "or switch to a detected native Steam installation."
+                ),
             )
         return ["flatpak", "run", *FLATPAK_STEAM_PARAMS, FLATPAK_STEAM_ID]
 
-    executable = install.executable or "steam"
-    return [executable]
+    if not install.executable:
+        if install.mode == "STEAM_ROOT env":
+            guidance = (
+                "STEAM_ROOT points WolfLauncher at a Steam library, but the native Steam executable "
+                "was not found. Install native Steam or make the steam command available on PATH."
+            )
+        else:
+            guidance = (
+                "Install native Steam, make the steam command available on PATH, "
+                "or switch to a detected Flatpak Steam installation."
+            )
+        raise NativeLaunchError(
+            f"{install.mode} Steam executable not detected",
+            stage="Steam detection",
+            guidance=guidance,
+        )
+    return [install.executable]
 
 
 def _require_dir(path: Path | None, label: str) -> Path:
