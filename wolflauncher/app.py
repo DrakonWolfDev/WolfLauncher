@@ -412,18 +412,6 @@ class MainWindow(QMainWindow):
         filters.addWidget(QLabel("Search"))
         filters.addWidget(self.browser_search, 2)
 
-        self.browser_map = QLineEdit()
-        self.browser_map.setPlaceholderText("Any map")
-        self.browser_map.textChanged.connect(self.refresh_server_browser)
-        filters.addWidget(QLabel("Map"))
-        filters.addWidget(self.browser_map)
-
-        self.browser_version = QLineEdit()
-        self.browser_version.setPlaceholderText("Any version")
-        self.browser_version.textChanged.connect(self.refresh_server_browser)
-        filters.addWidget(QLabel("Version"))
-        filters.addWidget(self.browser_version)
-
         self.browser_online_only = QCheckBox("Online")
         self.browser_online_only.stateChanged.connect(self.refresh_server_browser)
         filters.addWidget(self.browser_online_only)
@@ -1014,8 +1002,6 @@ class MainWindow(QMainWindow):
             self.server_cache,
             text=self.browser_search.text(),
             online_only=self.browser_online_only.isChecked(),
-            map_name=self.browser_map.text().strip(),
-            version=self.browser_version.text().strip(),
             modded=modded,
             sort_by=sort_key,
             descending=self.browser_descending.isChecked(),

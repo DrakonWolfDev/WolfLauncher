@@ -23,9 +23,3 @@ servers:
   game_port: 2702
   query_port: 2703
   favourite: true
-- name: Sample Chernarus
-  group: Discovered
-  host: 203.0.113.70
-  game_port: 2302
-  query_port: 27016
-  favourite: false
