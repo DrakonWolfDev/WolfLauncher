@@ -11,6 +11,7 @@ from wolflauncher.platform_detection import (
     detect_steam,
     install_label,
     install_readiness,
+    parse_appmanifest_installdir,
     parse_libraryfolders_paths,
     proton_compatdata_detail,
     select_steam_install,
@@ -144,6 +145,42 @@ class PlatformDetectionTests(unittest.TestCase):
                 Path("D:\\SteamLibrary"),
             ],
         )
+
+    def test_parse_appmanifest_installdir_reads_dayz_install_folder(self):
+        text = r'''
+        "AppState"
+        {
+            "appid"     "221100"
+            "installdir"        "DayZ Experimental \"Test\""
+        }
+        '''
+
+        self.assertEqual(parse_appmanifest_installdir(text), 'DayZ Experimental "Test"')
+
+    def test_detect_steam_uses_dayz_appmanifest_installdir(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            home = Path(tmpdir)
+            native_root = home / ".local/share/Steam"
+            steamapps = native_root / "steamapps"
+            dayz_dir = steamapps / "common" / "DayZ Custom"
+            workshop_dir = steamapps / "workshop" / "content" / "221100"
+            steamapps.mkdir(parents=True)
+            dayz_dir.mkdir(parents=True)
+            workshop_dir.mkdir(parents=True)
+            (steamapps / "appmanifest_221100.acf").write_text(
+                '"AppState" { "appid" "221100" "installdir" "DayZ Custom" }',
+                encoding="utf-8",
+            )
+
+            with patch("wolflauncher.platform_detection.NATIVE_STEAM_ROOTS", [native_root]):
+                with patch("wolflauncher.platform_detection.FLATPAK_STEAM_ROOT", home / "missing-flatpak"):
+                    with patch("wolflauncher.platform_detection.shutil.which") as which:
+                        which.side_effect = lambda command: "/usr/bin/steam" if command == "steam" else None
+                        with patch("wolflauncher.platform_detection._is_running", return_value=False):
+                            installs = detect_steam()
+
+        self.assertEqual(installs[0].dayz_dir, dayz_dir)
+        self.assertEqual(installs[0].workshop_dir, workshop_dir)
 
     def test_detect_steam_finds_dayz_in_secondary_native_library(self):
         with tempfile.TemporaryDirectory() as tmpdir:

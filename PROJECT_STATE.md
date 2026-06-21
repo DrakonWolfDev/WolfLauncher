@@ -38,7 +38,7 @@ Working:
 - Server status table with map, players, time, ping, version, flags and connect address.
 - Native Steam detection.
 - Flatpak Steam detection.
-- DayZ install detection.
+- DayZ install detection, including Steam `appmanifest_221100.acf` `installdir` parsing when available.
 - DayZ Workshop folder detection.
 - Secondary Steam library detection through `steamapps/libraryfolders.vdf` for native and Flatpak Steam installs.
 - Settings tab with compact green/yellow/red health checks.

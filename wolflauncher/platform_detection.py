@@ -82,6 +82,7 @@ def _matching_process_lines(patterns: tuple[str, ...]) -> list[str]:
 
 
 LIBRARY_PATH_RE = re.compile(r'"path"\s+"((?:\\.|[^"\\])*)"')
+INSTALLDIR_RE = re.compile(r'"installdir"\s+"((?:\\.|[^"\\])*)"', re.IGNORECASE)
 
 
 def _unescape_vdf_string(value: str) -> str:
@@ -95,6 +96,11 @@ def parse_libraryfolders_paths(text: str) -> list[Path]:
         if path not in paths:
             paths.append(path)
     return paths
+
+
+def parse_appmanifest_installdir(text: str) -> str:
+    match = INSTALLDIR_RE.search(text)
+    return _unescape_vdf_string(match.group(1)).strip() if match else ""
 
 
 def _steamapps_from_root(root: Path | None) -> Path | None:
@@ -126,6 +132,15 @@ def _library_steamapps_from_root(root: Path | None) -> list[Path]:
 def _dayz_from_steamapps(steamapps: Path | None) -> Path | None:
     if not steamapps:
         return None
+    manifest = steamapps / f"appmanifest_{STEAM_APP_ID_DAYZ}.acf"
+    try:
+        installdir = parse_appmanifest_installdir(manifest.read_text(errors="ignore"))
+    except OSError:
+        installdir = ""
+    if installdir:
+        dayz = steamapps / "common" / installdir
+        if dayz.exists():
+            return dayz
     dayz = steamapps / "common" / "DayZ"
     return dayz if dayz.exists() else None
 
