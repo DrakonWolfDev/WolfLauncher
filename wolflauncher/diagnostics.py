@@ -5,7 +5,16 @@ from pathlib import Path
 
 from .config import DEFAULT_LAUNCHER_PATHS
 from .models import Server
-from .platform_detection import dayz_process_check, detect_steam, install_label, install_readiness, ok_missing, yes_no
+from .platform_detection import (
+    dayz_process_check,
+    detect_steam,
+    install_label,
+    install_readiness,
+    ok_missing,
+    steam_selection_candidates_detail,
+    steam_selection_report,
+    yes_no,
+)
 from .status import resolve_host
 
 
@@ -80,7 +89,11 @@ def run_diagnostics(launcher_path: str, servers: list[Server]) -> str:
     lines.append("")
 
     lines.append("Steam / DayZ detection:")
-    for install in detect_steam():
+    installs = detect_steam()
+    selection = steam_selection_report("auto", installs)
+    lines.append(f"  Auto selection: {selection.status} - {selection.detail}")
+    lines.append(f"  Auto candidates: {steam_selection_candidates_detail(selection)}")
+    for install in installs:
         has_install = bool(install.executable or install.root or install.steamapps)
         label = install_label(install)
         if not has_install:

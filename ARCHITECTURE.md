@@ -144,6 +144,9 @@ testing cannot accidentally read Workshop state from a different Steam library.
 Native command generation should fail before handoff when the selected Steam
 mode does not have a detected launch command, so users get Steam-mode-specific
 recovery guidance instead of a generic process-start failure.
+Settings health and diagnostics should show the selected Steam mode alongside
+the other detected install candidates, making Auto selection explainable when
+native Steam, Flatpak Steam and `STEAM_ROOT` disagree.
 
 Native and Flatpak Steam detection reads `steamapps/libraryfolders.vdf` from the
 detected Steam root and scans secondary Steam libraries for DayZ and Workshop

@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- Fixed initial startup mod checks so the restored or default selected server is checked after the Mods tab is ready.
+- Added Settings health and diagnostics summaries that show which Steam install Auto selects and what other detected install candidates report.
 - Expanded native and Flatpak Steam detection to read Steam `libraryfolders.vdf`, so DayZ and Workshop can be found in secondary Steam libraries.
 - Added diagnostics output for all detected Steam library folders.
 - Added unit-tested Steam install selection helpers for Auto, Native Steam, Flatpak Steam and `STEAM_ROOT` launch modes.

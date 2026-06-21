@@ -32,6 +32,14 @@ class ProcessCheck:
     detail: str
 
 
+@dataclass(frozen=True)
+class SteamSelectionReport:
+    status: str
+    detail: str
+    selected_label: str
+    candidates: list[str]
+
+
 NATIVE_STEAM_ROOTS = [
     Path.home() / ".local/share/Steam",
     Path.home() / ".steam/steam",
@@ -259,15 +267,29 @@ def install_label(install: SteamInstall) -> str:
 
 
 def steam_selection_readiness(mode: str, installs: list[SteamInstall] | None = None) -> tuple[str, str]:
-    install = select_steam_install(mode, installs)
+    report = steam_selection_report(mode, installs)
+    return report.status, report.detail
+
+
+def steam_selection_report(mode: str, installs: list[SteamInstall] | None = None) -> SteamSelectionReport:
+    detected = installs if installs is not None else detect_steam()
+    install = select_steam_install(mode, detected)
+    candidates = [install_readiness(candidate)[1] for candidate in detected if candidate.root or candidate.executable]
     if mode == "auto":
         if not install:
-            return "MISSING", "Auto selection found no Steam install"
+            return SteamSelectionReport("MISSING", "Auto selection found no Steam install", "None", candidates)
         status, detail = install_readiness(install)
-        return status, f"Auto selected {detail}"
+        return SteamSelectionReport(status, f"Auto selected {detail}", install_label(install), candidates)
     if not install:
-        return "MISSING", f"{steam_mode_label(mode)} not detected"
-    return install_readiness(install)
+        return SteamSelectionReport("MISSING", f"{steam_mode_label(mode)} not detected", "None", candidates)
+    status, detail = install_readiness(install)
+    return SteamSelectionReport(status, detail, install_label(install), candidates)
+
+
+def steam_selection_candidates_detail(report: SteamSelectionReport) -> str:
+    if not report.candidates:
+        return "No native, Flatpak or STEAM_ROOT Steam installs detected"
+    return "; ".join(report.candidates)
 
 
 def install_readiness(install: SteamInstall | None) -> tuple[str, str]:

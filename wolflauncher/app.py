@@ -52,7 +52,8 @@ from .platform_detection import (
     install_readiness,
     select_steam_install,
     steam_mode_label,
-    steam_selection_readiness,
+    steam_selection_candidates_detail,
+    steam_selection_report,
 )
 from .mods import ModCheckResult, check_server_mods
 from . import server_cache
@@ -524,7 +525,7 @@ class MainWindow(QMainWindow):
         self.refresh_statuses()
         self.refresh_server_browser()
         self.update_settings_health()
-        QTimer.singleShot(0, lambda: self.check_selected_server_mods(silent=True))
+        QTimer.singleShot(0, self.check_initial_server_mods)
         QTimer.singleShot(30000, self.maybe_auto_refresh_configured_provider)
 
     def _build_servers_tab(self) -> QWidget:
@@ -601,7 +602,7 @@ class MainWindow(QMainWindow):
                 self.table.setItem(row, column, item)
 
         self.table.resizeColumnsToContents()
-        last_row = int(self.settings.get("last_selected_row", -1))
+        last_row = self.saved_selected_row()
         if 0 <= last_row < len(self.servers):
             self.table.selectRow(last_row)
         layout.addWidget(self.table)
@@ -1223,8 +1224,11 @@ class MainWindow(QMainWindow):
     def selected_steam_install(self) -> SteamInstall | None:
         return select_steam_install(self.native_steam_mode_key())
 
-    def selected_steam_install_detail(self) -> tuple[str, str]:
-        return steam_selection_readiness(self.native_steam_mode_key())
+    def saved_selected_row(self) -> int:
+        try:
+            return int(self.settings.get("last_selected_row", -1))
+        except (TypeError, ValueError):
+            return -1
 
     def handle_settings_changed(self, *_args):
         self.save_user_settings(silent=True)
@@ -1678,6 +1682,13 @@ class MainWindow(QMainWindow):
         else:
             self.launch_button.setText("Launch selected server")
 
+    def check_initial_server_mods(self):
+        if self.servers and self.table.currentRow() < 0:
+            last_row = self.saved_selected_row()
+            row = last_row if 0 <= last_row < len(self.servers) else 0
+            self.table.selectRow(row)
+        self.check_selected_server_mods(silent=True)
+
     def handle_server_selection_changed(self):
         self.update_launch_button_text()
         if not hasattr(self, "mod_summary"):
@@ -2077,7 +2088,8 @@ class MainWindow(QMainWindow):
     def update_settings_health(self):
         if not hasattr(self, "health_table"):
             return
-        selected_install = self.selected_steam_install()
+        install_rows = detect_steam()
+        selected_install = select_steam_install(self.native_steam_mode_key(), install_rows)
         if selected_install and selected_install.dayz_dir and selected_install.workshop_dir:
             self.system_summary.setText(f"Selected {install_label(selected_install)} | DayZ OK | Workshop OK")
         elif selected_install and selected_install.dayz_dir:
@@ -2110,9 +2122,9 @@ class MainWindow(QMainWindow):
             provider_status = "OK"
             provider_detail = "BattleMetrics public API"
 
-        install_rows = detect_steam()
         steam = selected_install
-        steam_status, steam_detail = self.selected_steam_install_detail()
+        steam_report = steam_selection_report(self.native_steam_mode_key(), install_rows)
+        steam_status, steam_detail = steam_report.status, steam_report.detail
         tools = ["python3", "gamedig", "node", "npm", "dig", "curl", "jq", "gawk"]
         missing_tools = [command for command in tools if not shutil.which(command)]
         launcher_candidates = [str(candidate) for candidate in DEFAULT_LAUNCHER_PATHS if candidate.exists()]
@@ -2148,6 +2160,11 @@ class MainWindow(QMainWindow):
                 "Selected Steam",
                 steam_status,
                 steam_detail,
+            ),
+            (
+                "Steam candidates",
+                "OK" if steam_report.candidates else "WARN",
+                steam_selection_candidates_detail(steam_report),
             ),
             (
                 "DayZ",

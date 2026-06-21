@@ -13,6 +13,8 @@ from wolflauncher.platform_detection import (
     install_readiness,
     parse_libraryfolders_paths,
     select_steam_install,
+    steam_selection_candidates_detail,
+    steam_selection_report,
     steam_mode_label,
     steam_selection_readiness,
 )
@@ -196,6 +198,37 @@ class PlatformDetectionTests(unittest.TestCase):
             steam_selection_readiness("flatpak", [ready_native]),
             ("MISSING", "Flatpak Steam not detected"),
         )
+
+    def test_steam_selection_report_lists_auto_selection_candidates(self):
+        native = make_install(
+            mode="native",
+            executable="/usr/bin/steam",
+            root=Path("/steam"),
+            steamapps=Path("/steam/steamapps"),
+        )
+        flatpak = make_install(
+            mode="flatpak",
+            executable="com.valvesoftware.Steam",
+            root=Path("/flatpak/Steam"),
+            steamapps=Path("/flatpak/Steam/steamapps"),
+            dayz_dir=Path("/flatpak/Steam/steamapps/common/DayZ"),
+            workshop_dir=Path("/flatpak/Steam/steamapps/workshop/content/221100"),
+        )
+
+        report = steam_selection_report("auto", [native, flatpak])
+
+        self.assertEqual(report.status, "OK")
+        self.assertEqual(report.selected_label, "Flatpak Steam")
+        self.assertEqual(report.detail, "Auto selected Flatpak Steam ready (not running)")
+        self.assertEqual(
+            report.candidates,
+            [
+                "Native Steam library found, but DayZ install is not visible (not running)",
+                "Flatpak Steam ready (not running)",
+            ],
+        )
+        self.assertIn("Native Steam library found", steam_selection_candidates_detail(report))
+        self.assertIn("Flatpak Steam ready", steam_selection_candidates_detail(report))
 
     @patch("wolflauncher.platform_detection.subprocess.run")
     def test_dayz_process_check_reports_known_dayz_processes(self, run):

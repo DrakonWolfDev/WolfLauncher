@@ -48,6 +48,8 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertIn("Steam launch options: not readable by WolfLauncher", report)
         self.assertIn("DayZ process check:", report)
         self.assertIn("No known DayZ process detected", report)
+        self.assertIn("Auto selection: MISSING - Auto selection found no Steam install", report)
+        self.assertIn("Auto candidates: No native, Flatpak or STEAM_ROOT Steam installs detected", report)
 
     def test_prime_report_warns_only_for_known_bad_nvidia_pair(self):
         report = prime_environment_report(

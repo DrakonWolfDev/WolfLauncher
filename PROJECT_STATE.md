@@ -43,6 +43,7 @@ Working:
 - Secondary Steam library detection through `steamapps/libraryfolders.vdf` for native and Flatpak Steam installs.
 - Settings tab with compact green/yellow/red health checks.
 - Steam health reporting distinguishes native, Flatpak and `STEAM_ROOT` installs and explains partial detection states.
+- Settings health and diagnostics explain the selected Steam install and list detected Steam candidates so Auto selection is easier to troubleshoot.
 - Discovery provider, API key, endpoint and refresh-limit settings persistence.
 - Favourites persistence.
 - Last selected server persistence.
@@ -82,6 +83,7 @@ Current handling:
 - Diagnostics classify visible PRIME/DRI environment state and warn when WolfLauncher itself is running with the known problematic NVIDIA PRIME offload environment combination.
 - Settings health includes a PRIME environment row so the known problematic environment is visible without opening a full diagnostics report.
 - Diagnostics include per-install Steam readiness summaries for native, Flatpak and `STEAM_ROOT` library detection.
+- Diagnostics include Auto Steam selection and candidate summaries for native, Flatpak and `STEAM_ROOT` troubleshooting.
 - Diagnostics list detected Steam library folders for each configured install.
 - Diagnostics include known DayZ process visibility for Steam/Proton handoff troubleshooting.
 - Post-handoff process checks should avoid warning too early; observed native launches can report no DayZ process initially, then show DayZ roughly 10 seconds later, matching the slower behavior seen with the original CLI launcher.
@@ -124,6 +126,7 @@ Current handling:
 - The native engine has confirmed real-world native Steam and Flatpak Steam handoff success, including starting Steam when it was not already running and a Flatpak DayZ launch reaching process detection in roughly 10 seconds.
 - The main Launch button can opt into the native engine through Settings, but this should remain experimental until more servers and missing-mod cases are tested.
 - When the native engine is selected, mod checks, native launch preview and launch preflight use the selected Steam install rather than always using automatic best-install detection.
+- Auto Steam selection is reported from the same detection snapshot as the candidate list so users can see why native or Flatpak Steam was chosen.
 - Native launch command generation now fails before handoff when the selected Steam mode lacks a detected command, with mode-specific guidance for native Steam, Flatpak Steam and `STEAM_ROOT`.
 - Mod management is read-only and advisory: it detects installed/missing mods and opens Workshop pages, but does not attempt automatic downloads. Future mod installation work should investigate Steam-native subscription/download routes first and require explicit user confirmation.
 - Launch remains guarded: WolfLauncher warns about missing mods and Steam state before calling the external launcher.
