@@ -318,6 +318,18 @@ def steam_install_summary(install: SteamInstall | None) -> str:
     return f"{detail}; command: {steam_command_detail(install)}"
 
 
+def selected_install_summary(install: SteamInstall | None) -> str:
+    if install and install.dayz_dir and install.workshop_dir:
+        state = "DayZ OK | Workshop OK"
+    elif install and install.dayz_dir:
+        state = "DayZ OK | Workshop missing"
+    elif install and (install.root or install.executable):
+        state = "DayZ not found yet"
+    else:
+        return "Selected Steam/DayZ not detected"
+    return f"Selected {install_label(install)} | {state} | command: {steam_command_detail(install)}"
+
+
 def steam_selection_readiness(mode: str, installs: list[SteamInstall] | None = None) -> tuple[str, str]:
     report = steam_selection_report(mode, installs)
     return report.status, report.detail

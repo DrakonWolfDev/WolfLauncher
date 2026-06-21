@@ -15,6 +15,7 @@ from wolflauncher.platform_detection import (
     parse_libraryfolders_paths,
     proton_compatdata_detail,
     select_steam_install,
+    selected_install_summary,
     steam_command_detail,
     steam_install_summary,
     steam_selection_candidates_detail,
@@ -76,6 +77,32 @@ class PlatformDetectionTests(unittest.TestCase):
             "Flatpak Steam ready (not running); command: flatpak run com.valvesoftware.Steam",
         )
         self.assertEqual(steam_install_summary(None), "Not detected")
+
+    def test_selected_install_summary_includes_state_and_command_detail(self):
+        ready = make_install(
+            "flatpak",
+            executable="com.valvesoftware.Steam",
+            root=Path("/flatpak/Steam"),
+            steamapps=Path("/flatpak/Steam/steamapps"),
+            dayz_dir=Path("/flatpak/Steam/steamapps/common/DayZ"),
+            workshop_dir=Path("/flatpak/Steam/steamapps/workshop/content/221100"),
+        )
+        partial = make_install(
+            "native",
+            executable="/usr/bin/steam",
+            root=Path("/steam"),
+            steamapps=Path("/steam/steamapps"),
+        )
+
+        self.assertEqual(
+            selected_install_summary(ready),
+            "Selected Flatpak Steam | DayZ OK | Workshop OK | command: flatpak run com.valvesoftware.Steam",
+        )
+        self.assertEqual(
+            selected_install_summary(partial),
+            "Selected Native Steam | DayZ not found yet | command: /usr/bin/steam",
+        )
+        self.assertEqual(selected_install_summary(None), "Selected Steam/DayZ not detected")
 
     def test_steam_mode_label_names_selection_modes(self):
         self.assertEqual(steam_mode_label("auto"), "Auto")

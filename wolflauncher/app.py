@@ -61,9 +61,9 @@ from .platform_detection import (
     best_install,
     dayz_process_check,
     detect_steam,
-    install_label,
     proton_compatdata_detail,
     select_steam_install,
+    selected_install_summary,
     steam_install_summary,
     steam_mode_label,
     steam_selection_candidates_detail,
@@ -2150,14 +2150,7 @@ class MainWindow(QMainWindow):
             return
         install_rows = detect_steam()
         selected_install = select_steam_install(self.native_steam_mode_key(), install_rows)
-        if selected_install and selected_install.dayz_dir and selected_install.workshop_dir:
-            self.system_summary.setText(f"Selected {install_label(selected_install)} | DayZ OK | Workshop OK")
-        elif selected_install and selected_install.dayz_dir:
-            self.system_summary.setText(f"Selected {install_label(selected_install)} | DayZ OK | Workshop missing")
-        elif selected_install and (selected_install.root or selected_install.executable):
-            self.system_summary.setText(f"Selected {install_label(selected_install)} | DayZ not found yet")
-        else:
-            self.system_summary.setText("Selected Steam/DayZ not detected")
+        self.system_summary.setText(selected_install_summary(selected_install))
 
         path = Path(self.launcher_path.text()).expanduser()
         launch_engine = self.launch_engine_key()
