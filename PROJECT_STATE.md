@@ -51,6 +51,7 @@ Working:
 - Full diagnostics reports can be copied from Settings for support and bug reports.
 - Copied diagnostics reports include generated-at and selected launch-engine metadata.
 - Native launch parity reports include an external-vs-native readiness comparison for the shared connect target, query port, current required-mod count and missing local Workshop directories.
+- Launch dialogs save the latest copyable launch output report locally so Settings can copy it again after the dialog is closed.
 - Settings health, diagnostics and native parity reports show the selected install's DayZ Proton compatdata folder when visible; this is informational and does not gate launch.
 - Missing Proton compatdata is reported as a possible first-run Steam/Proton state, with guidance to launch DayZ directly from Steam once so Proton can create the prefix and show prompts.
 - Steam health reporting distinguishes native, Flatpak and `STEAM_ROOT` installs and explains partial detection states.
@@ -74,7 +75,7 @@ Working:
 - Missing-mod warning with Open Workshop / Launch Anyway / Cancel.
 - Steam-not-running warning.
 - Launch output dialog with generated command and launcher output.
-- External launch output can be copied from the launch dialog for timestamped support reports.
+- External and native launch output can be copied from the launch dialog for timestamped support reports, and the most recent closed launch dialog is saved at `~/.local/share/wolflauncher/last_launch_report.txt`.
 - Successful external-launcher exit code is presented as a handoff to Steam.
 - Launch dialogs clarify that a successful handoff does not prove Proton initialized or DayZ reached the menu.
 - Launch dialogs watch for known DayZ processes for up to 45 seconds after handoff, because Steam/Proton can take tens of seconds before DayZ appears.

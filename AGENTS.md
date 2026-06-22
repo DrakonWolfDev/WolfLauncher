@@ -35,6 +35,7 @@ main.py                         application entry point
 wolflauncher/app.py             PySide6 GUI and launch workflow
 wolflauncher/config.py          server YAML loading and launcher path candidates
 wolflauncher/diagnostics.py     diagnostics report text
+wolflauncher/launch_history.py  last launch report persistence
 wolflauncher/launcher.py        external launcher command generation
 wolflauncher/models.py          shared dataclasses
 wolflauncher/mods.py            required mod lookup and Workshop scan

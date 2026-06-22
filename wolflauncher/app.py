@@ -57,6 +57,7 @@ from .curated_status_cache import (
     update_status_cache,
 )
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
+from .launch_history import load_last_launch_report, save_last_launch_report
 from .models import Server
 from .native_launcher import (
     NativeLaunchError,
@@ -907,6 +908,8 @@ class MainWindow(QMainWindow):
         copy_health.clicked.connect(self.copy_settings_health)
         copy_diagnostics = QPushButton("Copy diagnostics")
         copy_diagnostics.clicked.connect(self.copy_diagnostics_report)
+        copy_last_launch = QPushButton("Copy last launch")
+        copy_last_launch.clicked.connect(self.copy_last_launch_report)
         import_file = QPushButton("Import server list")
         import_file.clicked.connect(self.import_server_cache_file)
         save = QPushButton("Save settings")
@@ -915,6 +918,7 @@ class MainWindow(QMainWindow):
         row.addWidget(health)
         row.addWidget(copy_health)
         row.addWidget(copy_diagnostics)
+        row.addWidget(copy_last_launch)
         row.addWidget(import_file)
         row.addWidget(save)
         layout.addLayout(row)
@@ -2153,6 +2157,17 @@ class MainWindow(QMainWindow):
             "Diagnostics report",
         )
 
+    def copy_last_launch_report(self):
+        report = load_last_launch_report()
+        if not report:
+            QMessageBox.information(
+                self,
+                "No launch report yet",
+                "Launch a server once before copying the last launch report.",
+            )
+            return
+        self.copy_to_clipboard(report, "Last launch report")
+
     def copy_selected_health_row(self):
         row = self.health_table.currentRow()
         if row < 0:
@@ -2605,6 +2620,7 @@ class MainWindow(QMainWindow):
         handoff_label = "native launch command" if self.launch_engine_key() == "native" else "external launcher"
         dialog = LaunchDialog(self, command, f"Launching {server.name}", handoff_label)
         dialog.exec()
+        save_last_launch_report(dialog.copyable_output_text())
 
     def build_selected_launch_command(self, server: Server, row: int) -> list[str]:
         # Launch with the resolved IP address when available. This mirrors the

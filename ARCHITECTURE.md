@@ -67,6 +67,7 @@ servers.yaml                      local ignored curated server list
 ~/.config/wolflauncher/settings.json
 ~/.config/wolflauncher/favourites.json
 ~/.local/share/wolflauncher/curated_status.json
+~/.local/share/wolflauncher/last_launch_report.txt
 ~/.local/share/wolflauncher/server_cache.sqlite3
 ```
 

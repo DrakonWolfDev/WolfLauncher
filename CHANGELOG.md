@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Added a Settings **Copy last launch** action backed by `~/.local/share/wolflauncher/last_launch_report.txt`.
 - Added a clearer external-vs-native readiness comparison to copied native launch parity reports.
 - Added a local last-known status cache for curated server rows so startup can show previous live data while fresh checks run.
 - Added tracked `example.servers.yaml`, ignored local `servers.yaml`, and startup seeding for missing local server lists.
