@@ -1,5 +1,6 @@
 import os
 import shutil
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 import sys
@@ -89,17 +90,37 @@ from .settings import (
 from .status import ServerStatus, check_server
 
 
+MAX_STATUS_WORKERS = 8
+
+
+def _checked_server_status(server: Server) -> ServerStatus:
+    try:
+        return check_server(server)
+    except Exception as exc:
+        return ServerStatus(False, error=f"status check failed: {exc}")
+
+
 class StatusWorker(QThread):
     status_ready = Signal(int, object)
     finished_all = Signal()
 
     def __init__(self, servers: list[Server]):
         super().__init__()
-        self.servers = servers
+        self.servers = list(servers)
 
     def run(self):
-        for index, server in enumerate(self.servers):
-            self.status_ready.emit(index, check_server(server))
+        if not self.servers:
+            self.finished_all.emit()
+            return
+
+        max_workers = min(MAX_STATUS_WORKERS, len(self.servers))
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = {
+                executor.submit(_checked_server_status, server): index
+                for index, server in enumerate(self.servers)
+            }
+            for future in as_completed(futures):
+                self.status_ready.emit(futures[future], future.result())
         self.finished_all.emit()
 
 
@@ -1391,8 +1412,6 @@ class MainWindow(QMainWindow):
     def refresh_statuses(self):
         if self.worker and self.worker.isRunning():
             return
-        for row in range(len(self.servers)):
-            self.table.setItem(row, 8, QTableWidgetItem("Checking..."))
         self.worker = StatusWorker(self.servers)
         self.worker.status_ready.connect(self.update_status_row)
         self.worker.finished_all.connect(self.handle_refresh_finished)
@@ -1748,7 +1767,6 @@ class MainWindow(QMainWindow):
             self._set_item(row, 9, status.error)
             for column in range(10, 16):
                 self._set_item(row, column, "")
-        self.table.resizeColumnsToContents()
 
     def handle_cell_clicked(self, row: int, column: int):
         if column == 0:
@@ -1772,6 +1790,7 @@ class MainWindow(QMainWindow):
         save_favourites(self.favourites)
 
     def handle_refresh_finished(self):
+        self.table.resizeColumnsToContents()
         self.last_refresh_label.setText(f"Last updated: {datetime.now().strftime('%H:%M:%S')}")
         self.update_launch_button_text()
 

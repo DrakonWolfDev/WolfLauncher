@@ -23,9 +23,3 @@ servers:
   game_port: 2702
   query_port: 2703
   favourite: true
-- name: COLD AS F**K Australian Namalsk
-  group: Discovered
-  host: 103.193.80.10
-  game_port: 2302
-  query_port: 2303
-  favourite: false
