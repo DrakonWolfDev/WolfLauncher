@@ -167,13 +167,14 @@ is proven with broader real-world testing. Real-world native Steam and Flatpak
 Steam handoffs have both reached DayZ process detection through the experimental
 path; broader multi-server and missing-mod parity still need coverage.
 The Mods tab native preview produces a copyable parity report with a validation
-checklist and readiness comparison for selected Steam install, resolved connect
-target, query port, external command, native command, required Workshop IDs,
-prepared mod links and missing Workshop directories. The report calls out that
-the external launcher refetches server requirements at launch while the native
-candidate uses the current WolfLauncher mod check and prepared local Workshop
-links. When the native command is ready, the preview dialog can copy only that
-command for terminal parity testing while keeping the full report copy action.
+checklist and readiness comparison for selected Steam install setting, detected
+Steam install, resolved connect target, query port, external command, native
+command, required Workshop IDs, prepared mod links and missing Workshop
+directories. The report calls out that the external launcher refetches server
+requirements at launch while the native candidate uses the current WolfLauncher
+mod check and prepared local Workshop links. When the native command is ready,
+the preview dialog can copy only that command for terminal parity testing while
+keeping the full report copy action.
 Stale `@mod` symlink conflicts are reported with expected and actual targets so
 native failure reports remain easy to compare with filesystem state.
 

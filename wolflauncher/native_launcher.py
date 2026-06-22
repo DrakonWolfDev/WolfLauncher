@@ -101,6 +101,7 @@ class NativeLaunchPreview:
 class NativeLaunchParityReport:
     preview: NativeLaunchPreview
     install: SteamInstall
+    selected_steam_mode: str = ""
     required_mod_ids: list[str] = field(default_factory=list)
     required_mod_labels: list[str] = field(default_factory=list)
     missing_mod_labels: list[str] = field(default_factory=list)
@@ -231,6 +232,7 @@ def prepare_native_launch_parity_report(
     player_name: str,
     required_mods: list[RequiredMod],
     extra_params: list[str] | None = None,
+    selected_steam_mode: str = "",
 ) -> NativeLaunchParityReport:
     """Prepare a non-launching native preview and compare it with external handoff."""
     preview = prepare_native_launch_preview(
@@ -249,6 +251,7 @@ def prepare_native_launch_parity_report(
     return NativeLaunchParityReport(
         preview=preview,
         install=install,
+        selected_steam_mode=selected_steam_mode,
         required_mod_ids=[str(mod.workshop_id).strip() for mod in required_mods],
         required_mod_labels=_mod_labels(required_mods),
         missing_mod_labels=_missing_mod_labels(required_mods, preview.mod_setup.missing_mod_ids),
@@ -276,6 +279,7 @@ def format_native_launch_parity_report(
         "It did not launch Steam or DayZ.",
         "",
         "Validation checklist:",
+        f"- Steam install setting: {_selected_steam_mode_label(report.selected_steam_mode)}",
         f"- Steam mode: {install_detail}",
         f"- Steam command: {steam_command_detail(install)}",
         f"- Steam running: {'yes' if install.running else 'no'}",
@@ -465,6 +469,16 @@ def _require_dir(path: Path | None, label: str) -> Path:
 
 def _path_text(path: Path | None) -> str:
     return str(path) if path else "not detected"
+
+
+def _selected_steam_mode_label(selected_steam_mode: str) -> str:
+    labels = {
+        "auto": "Auto",
+        "native": "Native Steam",
+        "flatpak": "Flatpak Steam",
+        "steam_root": "STEAM_ROOT Steam library",
+    }
+    return labels.get(selected_steam_mode, "not recorded")
 
 
 def _created_mod_link_count(mod_setup: NativeModSetup) -> int:

@@ -2490,6 +2490,7 @@ class MainWindow(QMainWindow):
                 server,
                 self.player_name.text().strip() or DEFAULT_PLAYER_NAME,
                 self.last_mod_result.required_mods,
+                selected_steam_mode=self.native_steam_mode_key(),
             )
         except NativeLaunchError as exc:
             QMessageBox.critical(self, "Native preview failed", exc.user_message())
@@ -2766,6 +2767,7 @@ class MainWindow(QMainWindow):
                 server,
                 player_name,
                 required_mods,
+                selected_steam_mode=self.native_steam_mode_key(),
             )
         except NativeLaunchError as detail_error:
             text = (

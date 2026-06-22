@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Added the selected Steam install setting to copied native parity reports so Auto, Native Steam, Flatpak Steam and `STEAM_ROOT` test runs are easier to compare.
 - Expanded native missing-mod parity tests for no required mods, all missing mods, mixed installed/missing mods and missing selected-mode Workshop folders.
 - Added selected Steam install context to Mods summaries and copied mod reports so native, Flatpak and `STEAM_ROOT` Workshop checks are easier to distinguish.
 - Added a native preview **Copy native command** action that is enabled only when the experimental native command is ready.

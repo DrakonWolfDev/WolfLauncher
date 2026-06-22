@@ -497,9 +497,11 @@ class NativeLauncherTests(unittest.TestCase):
                 make_server("203.0.113.10"),
                 "PlayerOne",
                 [RequiredMod("256", "Example Mod")],
+                selected_steam_mode="flatpak",
             )
 
             self.assertTrue(report.preview.ready)
+            self.assertEqual(report.selected_steam_mode, "flatpak")
             self.assertEqual(report.resolved_connect, "203.0.113.10:2302")
             self.assertEqual(report.required_mod_ids, ["256"])
             self.assertEqual(report.required_mod_labels, ["Example Mod (256)"])
@@ -558,6 +560,7 @@ class NativeLauncherTests(unittest.TestCase):
                 make_server("203.0.113.10"),
                 "PlayerOne",
                 [RequiredMod("256", "Example Mod")],
+                selected_steam_mode="auto",
             )
 
             text = format_native_launch_parity_report(
@@ -567,6 +570,7 @@ class NativeLauncherTests(unittest.TestCase):
 
             self.assertIn("Native launch parity report", text)
             self.assertIn("Generated at: 2026-06-21T15:16:59+00:00", text)
+            self.assertIn("- Steam install setting: Auto", text)
             self.assertIn("- Steam mode: Flatpak Steam", text)
             self.assertIn("- Steam command: flatpak run com.valvesoftware.Steam", text)
             self.assertIn(f"- Proton compatdata: {install.compatdata_dir}", text)
