@@ -380,6 +380,62 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertEqual(preview.mod_setup.missing_mod_ids, ["111"])
             self.assertEqual(preview.mod_setup.mod_links, ["@AAE"])
 
+    def test_prepare_native_launch_preview_handles_no_required_mods_as_ready(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+
+            with patch("wolflauncher.native_launcher.resolve_host", return_value="203.0.113.10"):
+                preview = prepare_native_launch_preview(
+                    install,
+                    make_server(),
+                    "PlayerOne",
+                    [],
+                )
+
+            self.assertTrue(preview.ready)
+            self.assertEqual(preview.mod_setup.missing_mod_ids, [])
+            self.assertEqual(preview.mod_setup.prepared_mods, [])
+            self.assertNotIn("-mod=", " ".join(preview.command))
+            self.assertIn("-connect=203.0.113.10:2302", preview.command)
+
+    def test_prepare_native_launch_preview_blocks_when_all_mods_are_missing(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+
+            with patch("wolflauncher.native_launcher.resolve_host", return_value="203.0.113.10"):
+                preview = prepare_native_launch_preview(
+                    install,
+                    make_server(),
+                    "PlayerOne",
+                    [RequiredMod("111", "First Missing"), RequiredMod("222", "Second Missing")],
+                )
+
+            self.assertFalse(preview.ready)
+            self.assertEqual(preview.command, [])
+            self.assertEqual(preview.mod_setup.mod_links, [])
+            self.assertEqual(preview.mod_setup.missing_mod_ids, ["111", "222"])
+
+    def test_prepare_native_launch_preview_keeps_installed_links_when_some_mods_are_missing(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+            mod_dir = install.workshop_dir / "256"
+            mod_dir.mkdir()
+            (mod_dir / "meta.cpp").write_text('name = "Installed Mod";\n', encoding="utf-8")
+
+            with patch("wolflauncher.native_launcher.resolve_host", return_value="203.0.113.10"):
+                preview = prepare_native_launch_preview(
+                    install,
+                    make_server(),
+                    "PlayerOne",
+                    [RequiredMod("111", "Missing Mod"), RequiredMod("256", "Installed Mod")],
+                )
+
+            self.assertFalse(preview.ready)
+            self.assertEqual(preview.command, [])
+            self.assertEqual(preview.mod_setup.missing_mod_ids, ["111"])
+            self.assertEqual(preview.mod_setup.mod_links, ["@AAE"])
+            self.assertEqual(preview.mod_setup.prepared_mods[0].workshop_id, "256")
+
     def test_prepare_native_launch_preview_builds_command_when_ready(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             install = make_install(Path(tmpdir))
@@ -398,6 +454,33 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertTrue(preview.ready)
             self.assertIn("-mod=@AAE", preview.command)
             self.assertIn("-connect=203.0.113.10:2302", preview.command)
+
+    def test_prepare_native_launch_preview_reports_selected_mode_missing_workshop_folder(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            dayz_dir = root / "steamapps" / "common" / "DayZ"
+            dayz_dir.mkdir(parents=True)
+            install = SteamInstall(
+                mode="flatpak",
+                executable=FLATPAK_STEAM_ID,
+                running=True,
+                root=root,
+                steamapps=root / "steamapps",
+                dayz_dir=dayz_dir,
+                workshop_dir=None,
+            )
+
+            with self.assertRaisesRegex(NativeLaunchError, "DayZ Workshop directory not detected") as raised:
+                prepare_native_launch_preview(
+                    install,
+                    make_server("203.0.113.10"),
+                    "PlayerOne",
+                    [RequiredMod("111")],
+                )
+
+        self.assertEqual(raised.exception.stage, "Steam library detection")
+        self.assertIn("selected Steam library", raised.exception.user_message())
+        self.assertIn("Workshop folder is visible", raised.exception.user_message())
 
     def test_prepare_native_launch_parity_report_compares_external_and_native_paths(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -601,6 +684,64 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertIn("- Native ready: no", text)
             self.assertIn("- Native launcher: blocked; 1 required Workshop directory is missing", text)
             self.assertIn("Native command is not ready because 1 Workshop directory is missing.", text)
+            self.assertIn("Missing Workshop mod directories:\n- Missing Mod (111)", text)
+            self.assertIn("Native Steam command: not ready until all required mods are installed.", text)
+
+    def test_format_native_launch_parity_report_handles_all_missing_mods(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+            launcher = Path(tmpdir) / "dayz-launcher.sh"
+            launcher.write_text("#!/bin/sh\n", encoding="utf-8")
+
+            report = prepare_native_launch_parity_report(
+                install,
+                str(launcher),
+                make_server("203.0.113.10"),
+                "PlayerOne",
+                [RequiredMod("111", "First Missing"), RequiredMod("222", "Second Missing")],
+            )
+
+            text = format_native_launch_parity_report(report)
+
+            self.assertFalse(report.preview.ready)
+            self.assertEqual(report.preview.mod_setup.prepared_mods, [])
+            self.assertEqual(report.preview.mod_setup.missing_mod_ids, ["111", "222"])
+            self.assertEqual(report.missing_mod_labels, ["First Missing (111)", "Second Missing (222)"])
+            self.assertIn("- Required mod count: 2", text)
+            self.assertIn("- Prepared native mod links: 0", text)
+            self.assertIn("- Missing Workshop directories: 2", text)
+            self.assertIn("- Native launcher: blocked; 2 required Workshop directories are missing", text)
+            self.assertIn("Native command is not ready because 2 Workshop directories are missing.", text)
+            self.assertIn("Missing Workshop mod directories:\n- First Missing (111)\n- Second Missing (222)", text)
+            self.assertIn("Native Steam command: not ready until all required mods are installed.", text)
+
+    def test_format_native_launch_parity_report_handles_mixed_installed_and_missing_mods(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+            launcher = Path(tmpdir) / "dayz-launcher.sh"
+            launcher.write_text("#!/bin/sh\n", encoding="utf-8")
+            mod_dir = install.workshop_dir / "256"
+            mod_dir.mkdir()
+            (mod_dir / "meta.cpp").write_text('name = "Installed Mod";\n', encoding="utf-8")
+
+            report = prepare_native_launch_parity_report(
+                install,
+                str(launcher),
+                make_server("203.0.113.10"),
+                "PlayerOne",
+                [RequiredMod("111", "Missing Mod"), RequiredMod("256", "Installed Mod")],
+            )
+
+            text = format_native_launch_parity_report(report)
+
+            self.assertFalse(report.preview.ready)
+            self.assertEqual(report.preview.mod_setup.missing_mod_ids, ["111"])
+            self.assertEqual(report.preview.mod_setup.mod_links, ["@AAE"])
+            self.assertEqual(report.missing_mod_labels, ["Missing Mod (111)"])
+            self.assertIn("- Required mod count: 2", text)
+            self.assertIn("- Prepared native mod links: 1", text)
+            self.assertIn("- Missing Workshop directories: 1", text)
+            self.assertIn("Native prepared mod links:\n- Installed Mod (256) -> @AAE [created]", text)
             self.assertIn("Missing Workshop mod directories:\n- Missing Mod (111)", text)
             self.assertIn("Native Steam command: not ready until all required mods are installed.", text)
 

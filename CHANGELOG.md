@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Expanded native missing-mod parity tests for no required mods, all missing mods, mixed installed/missing mods and missing selected-mode Workshop folders.
 - Added selected Steam install context to Mods summaries and copied mod reports so native, Flatpak and `STEAM_ROOT` Workshop checks are easier to distinguish.
 - Added a native preview **Copy native command** action that is enabled only when the experimental native command is ready.
 - Clarified stale native `@mod` symlink failures with copyable expected-vs-actual target details in native failure reports.

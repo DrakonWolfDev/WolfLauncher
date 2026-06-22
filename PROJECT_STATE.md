@@ -158,7 +158,7 @@ Current handling:
 - JSON is used for user settings and favourites under `~/.config/wolflauncher`.
 - The external shell launcher remains the launch engine for now.
 - The vendored shell launcher is the reference contract for future native launcher work.
-- Native launcher replacement work has started behind a separate Python interface, with tests covering compact mod symlink names, relative symlink creation, missing-mod preview handling, Steam launch command generation and external-vs-native parity report formatting.
+- Native launcher replacement work has started behind a separate Python interface, with tests covering compact mod symlink names, relative symlink creation, no-mod/all-missing/mixed missing-mod preview handling, missing selected-mode Workshop folders, Steam launch command generation and external-vs-native parity report formatting.
 - The native engine has confirmed real-world native Steam and Flatpak Steam handoff success, including starting Steam when it was not already running and a Flatpak DayZ launch reaching process detection in roughly 10 seconds.
 - The main Launch button can opt into the native engine through Settings, but this should remain experimental until more servers and missing-mod cases are tested.
 - When the native engine is selected, mod checks, native launch preview and launch preflight use the selected Steam install rather than always using automatic best-install detection.
