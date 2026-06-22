@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Added tracked `example.servers.yaml`, ignored local `servers.yaml`, and startup seeding for missing local server lists.
 - Added curated add/edit handling for pasted `host:port` values, splitting the host and game port before saving YAML.
 - Added selected-row curated status refresh, including an automatic one-row refresh after manually adding a curated server.
 - Added a curated-server context action for saving a live status connect-port correction back to `servers.yaml`.

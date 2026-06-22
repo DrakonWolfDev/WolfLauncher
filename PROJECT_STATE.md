@@ -135,7 +135,8 @@ Current handling:
 - `wolflauncher/settings.py` - user settings and favourites.
 - `wolflauncher/config.py` - YAML server loading and default launcher path candidates.
 - `tests/` - standard-library unit tests for launcher commands, vendored launcher handoff contract, path discovery, YAML loading, status parsing and mod parsing.
-- `servers.yaml` - curated server registry.
+- `example.servers.yaml` - tracked curated server template.
+- `servers.yaml` - local ignored curated server registry.
 - `external/dayz-linux-cli-launcher/dayz-launcher.sh` - vendored MIT legacy launch engine.
 - `LICENSE` - WolfLauncher MIT license.
 - `THIRD_PARTY_NOTICES.md` - third-party license notices.
@@ -176,7 +177,7 @@ Use v0.8 as the next active development target:
 - Continue refining Linux Mint/Ubuntu install instructions toward packaged installs.
 - Defer packaging work until late pre-1.0 polish; launcher parity and Steam/Proton reliability should come first.
 - Continue improving curated server organisation beyond basic edit/remove flows.
-- Keep `servers.yaml` for curated, personal and import/export server lists.
+- Keep local `servers.yaml` for curated, personal and import/export server lists, seeded from tracked `example.servers.yaml` when missing.
 - Continue carving native Python equivalents from the vendored launcher's behavior while expanding the new native launcher engine behind WolfLauncher interfaces.
 - Keep mod installation as a future investigated design, not part of the current read-only mod-management contract.
 - Keep the NVIDIA PRIME Steam launch-option issue visible as the only known bug until it is reproduced and diagnosed.

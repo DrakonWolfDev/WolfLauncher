@@ -114,6 +114,46 @@ class NormalizeServerEndpointTests(unittest.TestCase):
         )
 
 
+class EnsureServersFileTests(unittest.TestCase):
+    def test_ensure_servers_file_copies_example_when_missing(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "servers.yaml"
+            example = Path(tmpdir) / "example.servers.yaml"
+            example.write_text(
+                """
+servers:
+  - name: Example
+    host: 203.0.113.10
+    game_port: 2302
+    query_port: 2303
+""",
+                encoding="utf-8",
+            )
+
+            config.ensure_servers_file(path, example)
+
+            self.assertEqual(path.read_text(encoding="utf-8"), example.read_text(encoding="utf-8"))
+
+    def test_ensure_servers_file_preserves_existing_file(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "servers.yaml"
+            example = Path(tmpdir) / "example.servers.yaml"
+            path.write_text("servers: []\n", encoding="utf-8")
+            example.write_text("servers:\n- name: Example\n", encoding="utf-8")
+
+            config.ensure_servers_file(path, example)
+
+            self.assertEqual(path.read_text(encoding="utf-8"), "servers: []\n")
+
+    def test_ensure_servers_file_writes_empty_list_when_example_missing(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "servers.yaml"
+
+            config.ensure_servers_file(path, Path(tmpdir) / "missing.yaml")
+
+            self.assertEqual(path.read_text(encoding="utf-8"), "servers: []\n")
+
+
 class AddCuratedServerTests(unittest.TestCase):
     def test_add_curated_server_appends_yaml_entry(self):
         with tempfile.TemporaryDirectory() as tmpdir:

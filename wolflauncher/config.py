@@ -1,4 +1,5 @@
 from pathlib import Path
+import shutil
 import yaml
 
 from .models import Server
@@ -6,6 +7,7 @@ from .models import Server
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 VENDORED_LAUNCHER_PATH = PROJECT_ROOT / "external/dayz-linux-cli-launcher/dayz-launcher.sh"
+EXAMPLE_SERVERS_PATH = PROJECT_ROOT / "example.servers.yaml"
 
 DEFAULT_LAUNCHER_PATHS = [
     Path.home() / ".local/bin/dayz-launcher.sh",
@@ -32,6 +34,15 @@ def normalize_server_endpoint(host: str, game_port: int, query_port: int) -> tup
 
     adjusted_query_port = parsed_port + 1 if query_port == game_port + 1 else query_port
     return split_host, parsed_port, adjusted_query_port
+
+
+def ensure_servers_file(path: Path, example_path: Path = EXAMPLE_SERVERS_PATH) -> None:
+    if path.exists():
+        return
+    if example_path.exists():
+        shutil.copyfile(example_path, path)
+        return
+    path.write_text("servers: []\n", encoding="utf-8")
 
 
 def find_default_launcher_path() -> str:

@@ -62,7 +62,8 @@ The external launcher remains the launch engine for now. A copy of the MIT-licen
 Current storage:
 
 ```text
-servers.yaml                      curated server list
+example.servers.yaml              tracked curated server template
+servers.yaml                      local ignored curated server list
 ~/.config/wolflauncher/settings.json
 ~/.config/wolflauncher/favourites.json
 ~/.local/share/wolflauncher/server_cache.sqlite3
@@ -71,7 +72,7 @@ servers.yaml                      curated server list
 Recommended long-term split:
 
 ```text
-servers.yaml      curated, personal and import/export servers
+servers.yaml      local curated, personal and import/export servers
 SQLite            discovered/scraped server browser cache
 settings.json     user preferences
 favourites.json   favourite server keys

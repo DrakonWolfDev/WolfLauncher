@@ -187,7 +187,9 @@ command is missing.
 
 ## Server Configuration
 
-Servers are stored in `servers.yaml`.
+Servers are stored in local-only `servers.yaml`. The repository includes
+`example.servers.yaml` as the starting template; if `servers.yaml` is missing,
+WolfLauncher creates it from the example on startup.
 
 Example:
 

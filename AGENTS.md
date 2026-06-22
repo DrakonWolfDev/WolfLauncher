@@ -48,7 +48,8 @@ wolflauncher/server_enrichment.py
                                 live discovered-server status enrichment
 wolflauncher/settings.py        JSON settings and favourites persistence
 wolflauncher/status.py          gamedig status checks and DNS resolution
-servers.yaml                    curated server list
+example.servers.yaml            tracked curated server template
+servers.yaml                    local ignored curated server list
 external/dayz-linux-cli-launcher/
                                 vendored MIT legacy launcher reference
 ```
@@ -79,7 +80,7 @@ The vendored script then:
 
 - Prefer smooth, low-noise user experience: keep background checks quiet and preserve useful previous results while new work is running. Do not hide meaningful uncertainty, failures or launch boundaries; surface them honestly in status labels, health checks, dialogs or diagnostics when they matter.
 - Keep v0.7 behaviour stable while working on v0.8 native-launch parity investigation.
-- Keep `servers.yaml` as the curated source even after adding SQLite for discovered servers.
+- Keep local `servers.yaml` as the curated source even after adding SQLite for discovered servers; track `example.servers.yaml` as the repo template instead of committing personal server-list edits.
 - Mod management is read-only and advisory; do not auto-subscribe or auto-download Workshop content without an explicit future design.
 - User settings and favourites live under `~/.config/wolflauncher`.
 - Prefer small, testable changes around launch command generation and platform detection.

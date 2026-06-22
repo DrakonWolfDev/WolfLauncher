@@ -34,6 +34,7 @@ from PySide6.QtGui import QColor, QDesktopServices, QAction, QTextCursor
 from .config import (
     DEFAULT_LAUNCHER_PATHS,
     add_curated_server,
+    ensure_servers_file,
     find_default_launcher_path,
     load_servers,
     normalize_server_endpoint,
@@ -541,6 +542,7 @@ class MainWindow(QMainWindow):
         self.resize(1350, 720)
 
         self.config_path = Path(__file__).resolve().parent.parent / "servers.yaml"
+        ensure_servers_file(self.config_path)
         self.servers = load_servers(self.config_path)
         self.settings = load_settings()
         self.favourites = load_favourites()
