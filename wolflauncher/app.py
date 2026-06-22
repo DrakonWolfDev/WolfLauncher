@@ -51,6 +51,11 @@ from .diagnostics import (
     run_diagnostics,
     steam_launch_options_report,
 )
+from .curated_status_cache import (
+    cached_status_for_server,
+    load_status_cache,
+    update_status_cache,
+)
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from .models import Server
 from .native_launcher import (
@@ -544,6 +549,7 @@ class MainWindow(QMainWindow):
         self.config_path = Path(__file__).resolve().parent.parent / "servers.yaml"
         ensure_servers_file(self.config_path)
         self.servers = load_servers(self.config_path)
+        self.curated_status_cache = load_status_cache()
         self.settings = load_settings()
         self.favourites = load_favourites()
         self.worker = None
@@ -661,28 +667,13 @@ class MainWindow(QMainWindow):
         self.table.customContextMenuRequested.connect(self.show_server_context_menu)
 
         for row, server in enumerate(self.servers):
-            values = [
-                "★" if server.favourite else "☆",
-                server.group,
-                server.name,
-                "",
-                server.host,
-                "Checking...",
-                str(server.game_port),
-                str(server.query_port),
-                "Checking...",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-            ]
+            cached = cached_status_for_server(self.curated_status_cache, server)
+            values = self.curated_server_row_values(
+                server,
+                cached,
+            )
             for column, value in enumerate(values):
-                item = QTableWidgetItem(value)
-                item.setData(Qt.UserRole, row)
-                self.table.setItem(row, column, item)
+                self._set_curated_server_table_item(row, column, value, cached=bool(cached))
 
         self.table.resizeColumnsToContents()
         last_row = self.saved_selected_row()
@@ -1649,6 +1640,64 @@ class MainWindow(QMainWindow):
             item.setForeground(QColor(colour))
         self.table.setItem(row, column, item)
 
+    def _set_curated_server_table_item(
+        self,
+        row: int,
+        column: int,
+        value: str,
+        cached: bool = False,
+    ):
+        item = QTableWidgetItem(value)
+        item.setData(Qt.UserRole, row)
+        if cached and column in {3, 5, 8, 9, 10, 11, 12, 13, 14, 15}:
+            item.setToolTip("Last known status; refresh is checking for current data.")
+        self.table.setItem(row, column, item)
+
+    def curated_server_row_values(
+        self,
+        server: Server,
+        status: ServerStatus | None = None,
+    ) -> list[str]:
+        values = [
+            "★" if server.favourite else "☆",
+            server.group,
+            server.name,
+            "",
+            server.host,
+            "Checking...",
+            str(server.game_port),
+            str(server.query_port),
+            "Checking...",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+        ]
+        if status:
+            values[5] = status.resolved_ip
+            if status.online:
+                flags = []
+                if status.password:
+                    flags.append("Password")
+                if status.modded:
+                    flags.append("Mods")
+                values[3] = status.server_name or "Unknown"
+                values[8] = "ONLINE"
+                values[9] = status.map_name
+                values[10] = status.players
+                values[11] = status.time
+                values[12] = f"{status.ping}ms" if status.ping else ""
+                values[13] = status.version
+                values[14] = ", ".join(flags) if flags else "Vanilla/unknown"
+                values[15] = status.connect
+            else:
+                values[8] = "OFFLINE"
+                values[9] = status.error
+        return values
+
     def add_curated_server(self):
         dialog = EditCuratedServerDialog(
             self,
@@ -1832,28 +1881,10 @@ class MainWindow(QMainWindow):
         if row < 0 or row >= len(self.servers):
             return
         server = self.servers[row]
-        values = {
-            0: "★" if server.favourite else "☆",
-            1: server.group,
-            2: server.name,
-            3: "",
-            4: server.host,
-            5: "Not checked",
-            6: str(server.game_port),
-            7: str(server.query_port),
-            8: "Not checked",
-            9: "",
-            10: "",
-            11: "",
-            12: "",
-            13: "",
-            14: "",
-            15: "",
-        }
-        for column, value in values.items():
-            item = QTableWidgetItem(value)
-            item.setData(Qt.UserRole, row)
-            self.table.setItem(row, column, item)
+        cached = cached_status_for_server(self.curated_status_cache, server)
+        values = self.curated_server_row_values(server, cached)
+        for column, value in enumerate(values):
+            self._set_curated_server_table_item(row, column, value, cached=bool(cached))
         self.table.resizeColumnsToContents()
 
     def _reindex_server_rows(self):
@@ -1866,6 +1897,7 @@ class MainWindow(QMainWindow):
     def update_status_row(self, row: int, status: ServerStatus):
         if row < 0 or row >= len(self.servers) or row >= self.table.rowCount():
             return
+        update_status_cache(self.curated_status_cache, self.servers[row], status)
         self._set_item(row, 5, status.resolved_ip)
         if status.online:
             flags = []

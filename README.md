@@ -72,6 +72,7 @@ Useful evidence for debugging:
 ### Server Monitoring
 
 - Live server status checks.
+- Last-known curated server status cache for calmer startup display.
 - Player counts and server information.
 - Resolved IP and connect address display.
 - Powered by `gamedig`.
@@ -220,6 +221,12 @@ The Server Browser tab reads from the SQLite cache at:
 
 ```text
 ~/.local/share/wolflauncher/server_cache.sqlite3
+```
+
+Curated server rows keep their last-known live status in:
+
+```text
+~/.local/share/wolflauncher/curated_status.json
 ```
 
 Use **Import server list** in Settings to load discovered server rows from YAML or JSON. A sample file is included at:

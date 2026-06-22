@@ -66,6 +66,7 @@ example.servers.yaml              tracked curated server template
 servers.yaml                      local ignored curated server list
 ~/.config/wolflauncher/settings.json
 ~/.config/wolflauncher/favourites.json
+~/.local/share/wolflauncher/curated_status.json
 ~/.local/share/wolflauncher/server_cache.sqlite3
 ```
 
@@ -100,6 +101,11 @@ The GUI can refresh all curated rows or a selected curated row. Single-row
 refreshes should reuse the same status path and table update behavior as full
 refreshes so manual add/edit flows can validate one server without disturbing
 the rest of the list.
+
+Curated rows cache their last-known live status locally so startup can show
+useful previous results while fresh checks run. Cached status is advisory only:
+fresh status checks replace it, and offline/error results should overwrite
+previous online values rather than preserving stale optimism.
 
 ## Mod Management
 
