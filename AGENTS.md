@@ -2,7 +2,7 @@
 
 ## Project Orientation
 
-WolfLauncher is a Linux-first DayZ launcher GUI built with Python and PySide6. The current working baseline is v0.6 complete, with v0.7 Linux health-check polish in progress.
+WolfLauncher is a Linux-first DayZ launcher GUI built with Python and PySide6. The current working baseline is v0.7 health-check and Linux polish complete, with v0.8 native-launch parity investigation in progress.
 
 The app validates the local Steam/DayZ/Workshop setup, checks server status, compares required server mods with locally installed Workshop mods, then hands launch control to an external `dayz-launcher.sh` script.
 
@@ -77,7 +77,8 @@ The vendored script then:
 
 ## Development Notes
 
-- Keep v0.6 behaviour stable while working on v0.7 health checks and Linux polish.
+- Prefer smooth, low-noise user experience: keep background checks quiet and preserve useful previous results while new work is running. Do not hide meaningful uncertainty, failures or launch boundaries; surface them honestly in status labels, health checks, dialogs or diagnostics when they matter.
+- Keep v0.7 behaviour stable while working on v0.8 native-launch parity investigation.
 - Keep `servers.yaml` as the curated source even after adding SQLite for discovered servers.
 - Mod management is read-only and advisory; do not auto-subscribe or auto-download Workshop content without an explicit future design.
 - User settings and favourites live under `~/.config/wolflauncher`.

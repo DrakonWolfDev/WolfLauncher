@@ -14,6 +14,19 @@ main.py
        -> guarded launch workflow
 ```
 
+## Design Philosophy
+
+WolfLauncher should make the Linux DayZ launch path feel calmer than the
+underlying Steam, Proton, Workshop and server-query machinery. Prefer smooth,
+low-noise flows that keep useful previous results visible while background work
+runs, avoid unnecessary flicker, and reserve interruptions for decisions or
+failures that genuinely need the user's attention.
+
+Quiet should not mean dishonest. When WolfLauncher is checking, guessing,
+falling back, handing off to Steam or lacking proof that DayZ actually started,
+the UI, health checks, dialogs and diagnostics should say so clearly at the
+right level of detail.
+
 ## Module Map
 
 ```text
