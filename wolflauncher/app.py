@@ -79,7 +79,11 @@ from .server_discovery import (
     discover_dayz_servers_wolfapi,
     parse_master_address,
 )
-from .server_enrichment import enrich_discovered_server, enrichment_probe_servers
+from .server_enrichment import (
+    enrich_discovered_server,
+    enrichment_probe_servers,
+    parse_connect_port,
+)
 from .settings import (
     load_favourites,
     load_settings,
@@ -1749,6 +1753,52 @@ class MainWindow(QMainWindow):
         self.update_curated_server_row(row)
         self.update_launch_button_text()
 
+    def apply_live_connect_port_to_curated_server(self, row: int):
+        if row < 0 or row >= len(self.servers):
+            return
+        live_port = self._live_connect_port_for_row(row)
+        if live_port is None:
+            QMessageBox.warning(
+                self,
+                "No live port available",
+                "Refresh this server successfully before applying a live connect port.",
+            )
+            return
+
+        original = self.servers[row]
+        if live_port == original.game_port:
+            self.statusBar().showMessage("Curated server already uses the live connect port.", 7000)
+            return
+
+        updated = Server(
+            name=original.name,
+            group=original.group,
+            host=original.host,
+            game_port=live_port,
+            query_port=original.query_port,
+            favourite=original.favourite,
+        )
+        try:
+            changed = update_curated_server(self.config_path, original, updated)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Could not update server port", str(exc))
+            return
+        if not changed:
+            QMessageBox.warning(
+                self,
+                "Could not update server port",
+                "This server was not found in servers.yaml.",
+            )
+            return
+
+        self.servers[row] = updated
+        self._set_item(row, 6, str(live_port))
+        self.statusBar().showMessage(
+            f"Updated {updated.name} game port to live connect port {live_port}.",
+            7000,
+        )
+        self.update_launch_button_text()
+
     def update_curated_server_row(self, row: int):
         if row < 0 or row >= len(self.servers):
             return
@@ -2181,19 +2231,27 @@ class MainWindow(QMainWindow):
         self.table.selectRow(row)
         menu = QMenu(self)
         add_action = QAction("Add curated server", self)
+        apply_live_port_action = QAction("Apply live connect port", self)
         copy_connect_action = QAction("Copy connect address", self)
         copy_details_action = QAction("Copy server details", self)
         edit_action = QAction("Edit curated server", self)
         toggle_fav_action = QAction("Toggle favourite", self)
         remove_action = QAction("Remove from curated list", self)
         add_action.triggered.connect(self.add_curated_server)
+        apply_live_port_action.triggered.connect(
+            lambda: self.apply_live_connect_port_to_curated_server(row)
+        )
         copy_connect_action.triggered.connect(lambda: self.copy_to_clipboard(self._server_cell(row, 15), "Connect address"))
         copy_details_action.triggered.connect(lambda: self.copy_to_clipboard(self.server_details_text(row), "Server details"))
         edit_action.triggered.connect(lambda: self.edit_curated_server_row(row))
         toggle_fav_action.triggered.connect(lambda: self.toggle_favourite(row))
         remove_action.triggered.connect(lambda: self.remove_curated_server_row(row))
+        apply_live_port_action.setEnabled(
+            self._live_connect_port_for_row(row) not in (None, self.servers[row].game_port)
+        )
         menu.addAction(add_action)
         menu.addSeparator()
+        menu.addAction(apply_live_port_action)
         menu.addAction(copy_connect_action)
         menu.addAction(copy_details_action)
         menu.addAction(edit_action)
@@ -2205,6 +2263,9 @@ class MainWindow(QMainWindow):
     def _server_cell(self, row: int, column: int) -> str:
         item = self.table.item(row, column)
         return item.text() if item else ""
+
+    def _live_connect_port_for_row(self, row: int) -> int | None:
+        return parse_connect_port(self._server_cell(row, 15))
 
     def server_details_text(self, row: int) -> str:
         return "\n".join([
