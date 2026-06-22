@@ -55,6 +55,7 @@ Useful evidence for debugging:
 - SQLite-backed cache for discovered public servers.
 - Read-only discovered server browser with search, filters and cache sorting.
 - YAML/JSON import for discovered server cache rows.
+- Add, edit and remove curated servers from the Servers tab.
 - Promote discovered servers into the curated `servers.yaml` list with editable name/group.
 - Copy discovered server connect addresses and details.
 - Configurable discovered-server refresh provider for WolfAPI, BattleMetrics, Steam Web API or Steam master candidates.
@@ -201,6 +202,11 @@ servers:
 ```
 
 The `host` field may contain either a DNS hostname or an IP address.
+
+Use **Add curated server** on the Servers tab to add a server directly to
+`servers.yaml`. The dialog defaults to common DayZ ports, but both game and
+query ports can be edited before saving. Existing curated servers can be edited
+or removed from the row context menu.
 
 ## Discovered Server Cache
 

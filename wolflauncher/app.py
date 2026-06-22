@@ -475,9 +475,9 @@ class PromoteServerDialog(QDialog):
 
 
 class EditCuratedServerDialog(QDialog):
-    def __init__(self, parent, server: Server):
+    def __init__(self, parent, server: Server, title: str = "Edit curated server"):
         super().__init__(parent)
-        self.setWindowTitle("Edit curated server")
+        self.setWindowTitle(title)
         self.resize(440, 240)
 
         layout = QVBoxLayout(self)
@@ -672,12 +672,15 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.table)
 
         buttons = QHBoxLayout()
+        add_server = QPushButton("Add curated server")
+        add_server.clicked.connect(self.add_curated_server)
         self.refresh_status_button = QPushButton("Refresh status")
         self.refresh_status_button.clicked.connect(self.refresh_statuses)
         self.launch_button = QPushButton("Launch selected server")
         self.launch_button.clicked.connect(self.launch_selected)
         save = QPushButton("Save settings")
         save.clicked.connect(self.save_user_settings)
+        buttons.addWidget(add_server)
         buttons.addWidget(self.refresh_status_button)
         buttons.addWidget(self.launch_button)
         buttons.addWidget(save)
@@ -1615,6 +1618,41 @@ class MainWindow(QMainWindow):
             item.setForeground(QColor(colour))
         self.table.setItem(row, column, item)
 
+    def add_curated_server(self):
+        dialog = EditCuratedServerDialog(
+            self,
+            Server(
+                name="",
+                group="Community",
+                host="",
+                game_port=2302,
+                query_port=2303,
+                favourite=False,
+            ),
+            title="Add curated server",
+        )
+        if dialog.exec() != QDialog.Accepted:
+            return
+
+        server = dialog.curated_server()
+        if not server.name or not server.host:
+            QMessageBox.warning(self, "Server details required", "Enter a server name and host.")
+            return
+
+        try:
+            add_curated_server(self.config_path, server)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Could not add server", str(exc))
+            return
+
+        if server.favourite:
+            self.favourites.add(server_key(server))
+            save_favourites(self.favourites)
+        self.add_curated_server_row(server)
+        self.table.selectRow(len(self.servers) - 1)
+        self.update_launch_button_text()
+        self.statusBar().showMessage(f"Added curated server: {server.name}", 7000)
+
     def add_curated_server_row(self, server: Server):
         self.servers.append(server)
         row = len(self.servers) - 1
@@ -2134,19 +2172,28 @@ class MainWindow(QMainWindow):
     def show_server_context_menu(self, pos: QPoint):
         row = self.table.rowAt(pos.y())
         if row < 0:
+            menu = QMenu(self)
+            add_action = QAction("Add curated server", self)
+            add_action.triggered.connect(self.add_curated_server)
+            menu.addAction(add_action)
+            menu.exec(self.table.viewport().mapToGlobal(pos))
             return
         self.table.selectRow(row)
         menu = QMenu(self)
+        add_action = QAction("Add curated server", self)
         copy_connect_action = QAction("Copy connect address", self)
         copy_details_action = QAction("Copy server details", self)
         edit_action = QAction("Edit curated server", self)
         toggle_fav_action = QAction("Toggle favourite", self)
         remove_action = QAction("Remove from curated list", self)
+        add_action.triggered.connect(self.add_curated_server)
         copy_connect_action.triggered.connect(lambda: self.copy_to_clipboard(self._server_cell(row, 15), "Connect address"))
         copy_details_action.triggered.connect(lambda: self.copy_to_clipboard(self.server_details_text(row), "Server details"))
         edit_action.triggered.connect(lambda: self.edit_curated_server_row(row))
         toggle_fav_action.triggered.connect(lambda: self.toggle_favourite(row))
         remove_action.triggered.connect(lambda: self.remove_curated_server_row(row))
+        menu.addAction(add_action)
+        menu.addSeparator()
         menu.addAction(copy_connect_action)
         menu.addAction(copy_details_action)
         menu.addAction(edit_action)

@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Added a direct **Add curated server** flow on the Servers tab for saving manual YAML server entries without going through discovery first.
 - Added Steam command details to selected and Auto Steam readiness text.
 - Added Steam command details to the Settings health header summary.
 - Documented command-aware Steam install summaries in README and handoff notes.
