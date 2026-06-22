@@ -11,6 +11,7 @@ from wolflauncher.native_launcher import (
     build_steam_launch_command,
     compact_mod_link_name,
     format_native_launch_parity_report,
+    format_native_launch_unavailable_context,
     prepare_mod_links,
     prepare_native_launch,
     prepare_native_launch_parity_report,
@@ -628,6 +629,47 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertIn("- Created native mod links: 0", text)
             self.assertIn("- Reused native mod links: 1", text)
             self.assertIn("Example Mod (256) -> @AAE [already existed]", text)
+
+    def test_format_native_launch_parity_report_labels_steam_root_selection(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir), mode="STEAM_ROOT env")
+            launcher = Path(tmpdir) / "dayz-launcher.sh"
+            launcher.write_text("#!/bin/sh\n", encoding="utf-8")
+
+            report = prepare_native_launch_parity_report(
+                install,
+                str(launcher),
+                make_server("203.0.113.10"),
+                "PlayerOne",
+                [],
+                selected_steam_mode="STEAM_ROOT env",
+            )
+
+            text = format_native_launch_parity_report(report)
+
+            self.assertIn("- Steam install setting: STEAM_ROOT Steam library", text)
+            self.assertIn("- Steam mode: STEAM_ROOT Steam library", text)
+
+    def test_format_native_launch_unavailable_context_includes_selected_install_and_server(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir), mode="STEAM_ROOT env")
+
+            text = format_native_launch_unavailable_context(
+                install,
+                make_server("203.0.113.10"),
+                "PlayerOne",
+                "STEAM_ROOT env",
+            )
+
+            self.assertIn("- Steam install setting: STEAM_ROOT Steam library", text)
+            self.assertIn("- Detected Steam install: STEAM_ROOT Steam library", text)
+            self.assertIn("- Steam command: steam", text)
+            self.assertIn("- Steam running: yes", text)
+            self.assertIn(f"- DayZ path: {install.dayz_dir}", text)
+            self.assertIn(f"- Workshop path: {install.workshop_dir}", text)
+            self.assertIn("- Connect target: 203.0.113.10:2302", text)
+            self.assertIn("- Query port: 27016", text)
+            self.assertIn("- Player name: PlayerOne", text)
 
     def test_format_native_launch_parity_report_explains_missing_compatdata(self):
         with tempfile.TemporaryDirectory() as tmpdir:

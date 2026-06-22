@@ -63,6 +63,7 @@ from .models import Server
 from .native_launcher import (
     NativeLaunchError,
     format_native_launch_parity_report,
+    format_native_launch_unavailable_context,
     prepare_native_launch,
     prepare_native_launch_parity_report,
 )
@@ -2757,6 +2758,7 @@ class MainWindow(QMainWindow):
         if required_mods is None:
             return (
                 "Native launch parity report unavailable.\n\n"
+                f"{format_native_launch_unavailable_context(install, server, player_name, self.native_steam_mode_key())}\n\n"
                 "Run Check selected server mods successfully before launching to include required Workshop IDs "
                 "and prepared mod-link details in launch failure reports."
             )

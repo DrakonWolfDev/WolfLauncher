@@ -196,7 +196,9 @@ command is ready, the preview dialog can copy only
 that command for direct terminal parity tests. If a stale `@mod` symlink points
 at a different Workshop directory, native failure details include the expected
 and actual symlink targets so the conflict can be compared or pasted into a
-support report.
+support report. If a full parity report is unavailable, native failure details
+still include the selected Steam mode, detected install, Steam command,
+DayZ/Workshop paths and server target.
 
 ## Server Configuration
 

@@ -16,6 +16,7 @@ from .platform_detection import (
     install_label,
     proton_compatdata_detail,
     steam_command_detail,
+    steam_mode_label,
 )
 from .status import resolve_host
 
@@ -372,6 +373,28 @@ def format_native_launch_parity_report(
     return "\n".join(lines)
 
 
+def format_native_launch_unavailable_context(
+    install: SteamInstall,
+    server: Server,
+    player_name: str,
+    selected_steam_mode: str,
+) -> str:
+    """Return copyable context when a full native parity report cannot be built."""
+    return "\n".join([
+        "Selected native launch context:",
+        f"- Steam install setting: {steam_mode_label(selected_steam_mode)}",
+        f"- Detected Steam install: {install_label(install)}",
+        f"- Steam command: {steam_command_detail(install)}",
+        f"- Steam running: {'yes' if install.running else 'no'}",
+        f"- DayZ path: {_path_text(install.dayz_dir)}",
+        f"- Workshop path: {_path_text(install.workshop_dir)}",
+        f"- Server: {server.name}",
+        f"- Connect target: {server.host}:{server.game_port}",
+        f"- Query port: {server.query_port}",
+        f"- Player name: {player_name}",
+    ])
+
+
 def prepare_mod_links(dayz_dir: Path, workshop_dir: Path, required_mods: list[RequiredMod]) -> NativeModSetup:
     """Prepare the legacy-compatible DayZ @mod symlinks for installed mods."""
     setup = NativeModSetup()
@@ -476,6 +499,7 @@ def _selected_steam_mode_label(selected_steam_mode: str) -> str:
         "auto": "Auto",
         "native": "Native Steam",
         "flatpak": "Flatpak Steam",
+        "STEAM_ROOT env": "STEAM_ROOT Steam library",
         "steam_root": "STEAM_ROOT Steam library",
     }
     return labels.get(selected_steam_mode, "not recorded")
