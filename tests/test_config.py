@@ -82,6 +82,38 @@ servers:
             self.assertEqual(config.load_servers(path), [])
 
 
+class NormalizeServerEndpointTests(unittest.TestCase):
+    def test_normalize_server_endpoint_splits_host_and_port(self):
+        self.assertEqual(
+            config.normalize_server_endpoint(" dayz.example.test:2402 ", 2302, 2303),
+            ("dayz.example.test", 2402, 2403),
+        )
+
+    def test_normalize_server_endpoint_keeps_custom_query_port(self):
+        self.assertEqual(
+            config.normalize_server_endpoint("dayz.example.test:2402", 2302, 27016),
+            ("dayz.example.test", 2402, 27016),
+        )
+
+    def test_normalize_server_endpoint_leaves_plain_host_unchanged(self):
+        self.assertEqual(
+            config.normalize_server_endpoint(" dayz.example.test ", 2302, 2303),
+            ("dayz.example.test", 2302, 2303),
+        )
+
+    def test_normalize_server_endpoint_ignores_invalid_port_suffix(self):
+        self.assertEqual(
+            config.normalize_server_endpoint("dayz.example.test:not-a-port", 2302, 2303),
+            ("dayz.example.test:not-a-port", 2302, 2303),
+        )
+
+    def test_normalize_server_endpoint_ignores_multi_colon_hosts(self):
+        self.assertEqual(
+            config.normalize_server_endpoint("2001:db8::1", 2302, 2303),
+            ("2001:db8::1", 2302, 2303),
+        )
+
+
 class AddCuratedServerTests(unittest.TestCase):
     def test_add_curated_server_appends_yaml_entry(self):
         with tempfile.TemporaryDirectory() as tmpdir:

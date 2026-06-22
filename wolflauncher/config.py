@@ -15,6 +15,25 @@ DEFAULT_LAUNCHER_PATHS = [
 ]
 
 
+def normalize_server_endpoint(host: str, game_port: int, query_port: int) -> tuple[str, int, int]:
+    host = host.strip()
+    if host.count(":") != 1:
+        return host, game_port, query_port
+
+    split_host, port_text = (part.strip() for part in host.rsplit(":", 1))
+    if not split_host:
+        return host, game_port, query_port
+    try:
+        parsed_port = int(port_text)
+    except ValueError:
+        return host, game_port, query_port
+    if parsed_port <= 0 or parsed_port > 65535:
+        return host, game_port, query_port
+
+    adjusted_query_port = parsed_port + 1 if query_port == game_port + 1 else query_port
+    return split_host, parsed_port, adjusted_query_port
+
+
 def find_default_launcher_path() -> str:
     for path in DEFAULT_LAUNCHER_PATHS:
         if path.exists():

@@ -36,6 +36,7 @@ from .config import (
     add_curated_server,
     find_default_launcher_path,
     load_servers,
+    normalize_server_endpoint,
     remove_curated_server,
     update_curated_server,
 )
@@ -518,12 +519,17 @@ class EditCuratedServerDialog(QDialog):
         layout.addWidget(buttons)
 
     def curated_server(self) -> Server:
+        host, game_port, query_port = normalize_server_endpoint(
+            self.host.text(),
+            self.game_port.value(),
+            self.query_port.value(),
+        )
         return Server(
             name=self.name.text().strip(),
             group=self.group.text().strip() or "Community",
-            host=self.host.text().strip(),
-            game_port=self.game_port.value(),
-            query_port=self.query_port.value(),
+            host=host,
+            game_port=game_port,
+            query_port=query_port,
             favourite=self.favourite.isChecked(),
         )
 

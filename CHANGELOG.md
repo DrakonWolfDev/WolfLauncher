@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Added curated add/edit handling for pasted `host:port` values, splitting the host and game port before saving YAML.
 - Added selected-row curated status refresh, including an automatic one-row refresh after manually adding a curated server.
 - Added a curated-server context action for saving a live status connect-port correction back to `servers.yaml`.
 - Added a direct **Add curated server** flow on the Servers tab for saving manual YAML server entries without going through discovery first.
