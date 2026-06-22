@@ -448,6 +448,24 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertIn("- Reused native mod links: 0", text)
             self.assertIn("- Missing Workshop directories: 0", text)
             self.assertIn("- Native ready: yes", text)
+            self.assertIn("Readiness comparison:", text)
+            self.assertIn(
+                "- External launcher: ready; command can be handed to the configured external launcher",
+                text,
+            )
+            self.assertIn("- Native launcher: ready; 1 local Workshop link(s) prepared", text)
+            self.assertIn("- Connect target: 203.0.113.10:2302", text)
+            self.assertIn("- Query port: 27016", text)
+            self.assertIn("- Required mods from current check: 1", text)
+            self.assertIn(
+                "- External mod source: external launcher refetches server requirements at launch",
+                text,
+            )
+            self.assertIn(
+                "- Native mod source: current WolfLauncher mod check and prepared local Workshop links",
+                text,
+            )
+            self.assertIn("External launcher handoff:\n- Ready: yes", text)
             self.assertIn("Native command is ready for 203.0.113.10:2302 with 1 prepared mod link(s).", text)
             self.assertIn("Required Workshop mods:\n- Example Mod (256)", text)
             self.assertIn("Example Mod (256) -> @AAE", text)
@@ -535,6 +553,7 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertEqual(report.missing_mod_labels, ["Missing Mod (111)"])
             self.assertIn("- Missing Workshop directories: 1", text)
             self.assertIn("- Native ready: no", text)
+            self.assertIn("- Native launcher: blocked; 1 required Workshop directory is missing", text)
             self.assertIn("Native command is not ready because 1 Workshop directory is missing.", text)
             self.assertIn("Missing Workshop mod directories:\n- Missing Mod (111)", text)
             self.assertIn("Native Steam command: not ready until all required mods are installed.", text)
@@ -557,6 +576,8 @@ class NativeLauncherTests(unittest.TestCase):
 
             text = format_native_launch_parity_report(report)
             self.assertIn("External launcher comparison is unavailable: Launcher script not found", text)
+            self.assertIn("- External launcher: unavailable; Launcher script not found", text)
+            self.assertIn("External launcher handoff:\n- Ready: no", text)
             self.assertIn("- Command: not available", text)
 
     def test_prepare_native_launch_reports_missing_mods(self):

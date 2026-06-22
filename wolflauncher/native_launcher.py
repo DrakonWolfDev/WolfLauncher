@@ -294,17 +294,28 @@ def format_native_launch_parity_report(
         "Result:",
         _parity_result_text(report),
         "",
+        "Readiness comparison:",
+        f"- External launcher: {_external_readiness_text(report)}",
+        f"- Native launcher: {_native_readiness_text(report)}",
+        f"- Connect target: {report.resolved_connect}",
+        f"- Query port: {preview.server.query_port}",
+        f"- Required mods from current check: {len(report.required_mod_ids)}",
+        "- External mod source: external launcher refetches server requirements at launch",
+        "- Native mod source: current WolfLauncher mod check and prepared local Workshop links",
+        "",
         "External launcher handoff:",
     ]
 
     if report.external_command:
         lines.extend([
+            "- Ready: yes",
             f"- Command: {report.external_command_text}",
             f"- Server argument: {report.resolved_connect}",
             f"- Query port: {preview.server.query_port}",
         ])
     else:
         lines.extend([
+            "- Ready: no",
             "- Command: not available",
             f"- Reason: {report.external_error or 'external launcher command could not be built'}",
         ])
@@ -477,6 +488,23 @@ def _parity_result_text(report: NativeLaunchParityReport) -> str:
         f"{len(preview.mod_setup.missing_mod_ids)} Workshop director"
         f"{'y is' if len(preview.mod_setup.missing_mod_ids) == 1 else 'ies are'} missing."
         f"{external_note}"
+    )
+
+
+def _external_readiness_text(report: NativeLaunchParityReport) -> str:
+    if report.external_command:
+        return "ready; command can be handed to the configured external launcher"
+    return f"unavailable; {report.external_error or 'external launcher command could not be built'}"
+
+
+def _native_readiness_text(report: NativeLaunchParityReport) -> str:
+    preview = report.preview
+    if preview.ready:
+        return f"ready; {len(preview.mod_setup.prepared_mods)} local Workshop link(s) prepared"
+    return (
+        "blocked; "
+        f"{len(preview.mod_setup.missing_mod_ids)} required Workshop director"
+        f"{'y is' if len(preview.mod_setup.missing_mod_ids) == 1 else 'ies are'} missing"
     )
 
 

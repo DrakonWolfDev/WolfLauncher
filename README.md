@@ -184,7 +184,10 @@ use **Steam install mode** to choose Auto, Native Steam, Flatpak Steam or a
 preflight use that selected install so Flatpak testing does not accidentally
 read Workshop state from native Steam. `STEAM_ROOT` still needs the native
 `steam` command on `PATH` for launch handoff; Settings health reports when that
-command is missing.
+command is missing. The native preview report includes a readiness comparison
+between the external launcher handoff and the native candidate, including the
+shared connect target, query port, current required-mod count and whether native
+testing is blocked by missing local Workshop directories.
 
 ## Server Configuration
 

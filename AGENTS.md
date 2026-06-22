@@ -84,6 +84,7 @@ The vendored script then:
 - Mod management is read-only and advisory; do not auto-subscribe or auto-download Workshop content without an explicit future design.
 - User settings and favourites live under `~/.config/wolflauncher`.
 - Prefer small, testable changes around launch command generation and platform detection.
+- Keep native parity reports easy to compare with the external launcher: show readiness, shared connect/query targets, current required-mod counts and missing local Workshop directories.
 - Keep the external launcher as the default path until native launch parity is proven with broader real-world testing.
 - Keep the vendored launcher untouched unless deliberately updating the legacy reference; build replacement Python behavior behind WolfLauncher interfaces first.
 - Preserve third-party license notices when moving or replacing vendored code.

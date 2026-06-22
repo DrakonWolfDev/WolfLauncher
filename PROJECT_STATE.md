@@ -50,6 +50,7 @@ Working:
 - Settings health rows can be copied as a support snapshot with generated-at metadata.
 - Full diagnostics reports can be copied from Settings for support and bug reports.
 - Copied diagnostics reports include generated-at and selected launch-engine metadata.
+- Native launch parity reports include an external-vs-native readiness comparison for the shared connect target, query port, current required-mod count and missing local Workshop directories.
 - Settings health, diagnostics and native parity reports show the selected install's DayZ Proton compatdata folder when visible; this is informational and does not gate launch.
 - Missing Proton compatdata is reported as a possible first-run Steam/Proton state, with guidance to launch DayZ directly from Steam once so Proton can create the prefix and show prompts.
 - Steam health reporting distinguishes native, Flatpak and `STEAM_ROOT` installs and explains partial detection states.
