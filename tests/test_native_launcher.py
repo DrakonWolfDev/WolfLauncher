@@ -70,6 +70,14 @@ class NativeLauncherTests(unittest.TestCase):
 
         self.assertIs(error.with_details(""), error)
 
+    def test_native_launch_error_preserves_existing_details_when_wrapping(self):
+        error = NativeLaunchError("Mod setup failed", details="Expected target: good")
+
+        detailed = error.with_details("Native launch parity report unavailable.")
+
+        self.assertIn("Expected target: good", detailed.details)
+        self.assertIn("Native launch parity report unavailable.", detailed.details)
+
     def test_compact_mod_link_name_matches_legacy_little_endian_base64(self):
         self.assertEqual(compact_mod_link_name("1"), "@AQ")
         self.assertEqual(compact_mod_link_name("248"), "@_A")
@@ -312,6 +320,44 @@ class NativeLauncherTests(unittest.TestCase):
 
             self.assertEqual(raised.exception.stage, "mod setup")
             self.assertIn("Remove the stale @mod symlink", raised.exception.user_message())
+            self.assertIn("Stale @mod symlink conflict:", raised.exception.details)
+            self.assertIn(f"- Link: {link_path}", raised.exception.details)
+            self.assertIn("- Expected target: ../../workshop/content/221100/256", raised.exception.details)
+            self.assertIn("- Actual target: ../../workshop/content/221100/999", raised.exception.details)
+            self.assertIn(f"- Expected resolved path: {mod_dir}", raised.exception.details)
+            self.assertIn(f"- Actual resolved path: {stale_dir}", raised.exception.details)
+
+    def test_prepare_native_launch_wraps_stale_symlink_details_with_failure_report(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+            mod_dir = install.workshop_dir / "256"
+            stale_dir = install.workshop_dir / "999"
+            mod_dir.mkdir()
+            stale_dir.mkdir()
+            (mod_dir / "meta.cpp").write_text('name = "Example Mod";\n', encoding="utf-8")
+            link_path = install.dayz_dir / "@AAE"
+            link_path.symlink_to("../../workshop/content/221100/999")
+
+            with self.assertRaisesRegex(NativeLaunchError, "points somewhere else") as raised:
+                try:
+                    prepare_native_launch(
+                        install,
+                        make_server("203.0.113.10"),
+                        "PlayerOne",
+                        [RequiredMod("256", "Example Mod")],
+                    )
+                except NativeLaunchError as exc:
+                    raise exc.with_details(
+                        "Native launch parity report unavailable.\n\n"
+                        f"Report generation failed during {exc.stage}: {exc.user_message()}"
+                    )
+
+            self.assertIn("Stale @mod symlink conflict:", raised.exception.details)
+            self.assertIn("- Expected target: ../../workshop/content/221100/256", raised.exception.details)
+            self.assertIn("- Actual target: ../../workshop/content/221100/999", raised.exception.details)
+            self.assertIn(f"- Expected resolved path: {mod_dir}", raised.exception.details)
+            self.assertIn(f"- Actual resolved path: {stale_dir}", raised.exception.details)
+            self.assertIn("Native launch parity report unavailable.", raised.exception.details)
 
     def test_prepare_native_launch_preview_reports_missing_mods_without_command(self):
         with tempfile.TemporaryDirectory() as tmpdir:

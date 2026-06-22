@@ -188,7 +188,11 @@ read Workshop state from native Steam. `STEAM_ROOT` still needs the native
 command is missing. The native preview report includes a readiness comparison
 between the external launcher handoff and the native candidate, including the
 shared connect target, query port, current required-mod count and whether native
-testing is blocked by missing local Workshop directories.
+testing is blocked by missing local Workshop directories. When the native
+command is ready, the preview dialog can copy only that command for direct
+terminal parity tests. If a stale `@mod` symlink points at a different Workshop
+directory, native failure details include the expected and actual symlink
+targets so the conflict can be compared or pasted into a support report.
 
 ## Server Configuration
 

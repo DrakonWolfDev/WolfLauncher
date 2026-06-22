@@ -172,7 +172,10 @@ target, query port, external command, native command, required Workshop IDs,
 prepared mod links and missing Workshop directories. The report calls out that
 the external launcher refetches server requirements at launch while the native
 candidate uses the current WolfLauncher mod check and prepared local Workshop
-links.
+links. When the native command is ready, the preview dialog can copy only that
+command for terminal parity testing while keeping the full report copy action.
+Stale `@mod` symlink conflicts are reported with expected and actual targets so
+native failure reports remain easy to compare with filesystem state.
 
 When the native engine is selected, Settings can target Auto, Native Steam,
 Flatpak Steam or `STEAM_ROOT` for native-launch testing. Mod checks, preview and

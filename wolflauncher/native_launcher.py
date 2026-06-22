@@ -40,13 +40,16 @@ class NativeLaunchError(RuntimeError):
         return f"{self}\n\n{self.guidance}"
 
     def with_details(self, details: str) -> "NativeLaunchError":
-        if not details:
+        if not details and not self.details:
             return self
+        combined_details = self.details
+        if details:
+            combined_details = f"{combined_details}\n\n{details}" if combined_details else details
         return NativeLaunchError(
             str(self),
             stage=self.stage,
             guidance=self.guidance,
-            details=details,
+            details=combined_details,
         )
 
 
@@ -562,9 +565,13 @@ def _read_mod_name(meta_path: Path) -> str:
 
 def _ensure_relative_symlink(target: Path, link_path: Path) -> bool:
     if link_path.is_symlink():
-        existing_target = Path(os.readlink(link_path))
-        expected_target = Path(os.path.relpath(target, start=link_path.parent))
-        if existing_target == expected_target or link_path.resolve(strict=False) == target.resolve(strict=False):
+        actual_target_text = os.readlink(link_path)
+        actual_target = Path(actual_target_text)
+        expected_target_text = os.path.relpath(target, start=link_path.parent)
+        expected_target = Path(expected_target_text)
+        actual_resolved = link_path.resolve(strict=False)
+        expected_resolved = target.resolve(strict=False)
+        if actual_target == expected_target or actual_resolved == expected_resolved:
             return False
         raise NativeLaunchError(
             f"Mod link path already exists but points somewhere else: {link_path}",
@@ -572,6 +579,14 @@ def _ensure_relative_symlink(target: Path, link_path: Path) -> bool:
             guidance=(
                 "Remove the stale @mod symlink from the DayZ install directory, then prepare the native launch again."
             ),
+            details="\n".join([
+                "Stale @mod symlink conflict:",
+                f"- Link: {link_path}",
+                f"- Expected target: {expected_target_text}",
+                f"- Actual target: {actual_target_text}",
+                f"- Expected resolved path: {expected_resolved}",
+                f"- Actual resolved path: {actual_resolved}",
+            ]),
         )
     if link_path.exists():
         raise NativeLaunchError(

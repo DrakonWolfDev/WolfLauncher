@@ -1,4 +1,5 @@
 import os
+import shlex
 import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
@@ -393,6 +394,7 @@ class NativeLaunchPreviewDialog(PostHandoffProcessCheckMixin, QDialog):
         self.setWindowTitle(title)
         self.resize(860, 540)
         self.command = command
+        self.command_text = shlex.join(command) if command else ""
         self.process = QProcess(self)
         self.process.setProcessChannelMode(QProcess.MergedChannels)
 
@@ -405,6 +407,9 @@ class NativeLaunchPreviewDialog(PostHandoffProcessCheckMixin, QDialog):
         button_row = QHBoxLayout()
         copy = QPushButton("Copy")
         copy.clicked.connect(self.copy_preview)
+        copy_command = QPushButton("Copy native command")
+        copy_command.setEnabled(bool(command))
+        copy_command.clicked.connect(self.copy_native_command)
         self.launch_button = QPushButton("Launch native experimental")
         self.launch_button.setEnabled(bool(command))
         self.launch_button.clicked.connect(self.launch_native_experimental)
@@ -412,6 +417,7 @@ class NativeLaunchPreviewDialog(PostHandoffProcessCheckMixin, QDialog):
         close.clicked.connect(self.close)
         button_row.addStretch(1)
         button_row.addWidget(copy)
+        button_row.addWidget(copy_command)
         button_row.addWidget(self.launch_button)
         button_row.addWidget(close)
         layout.addLayout(button_row)
@@ -422,6 +428,10 @@ class NativeLaunchPreviewDialog(PostHandoffProcessCheckMixin, QDialog):
 
     def copy_preview(self):
         QApplication.clipboard().setText(self.output.toPlainText())
+
+    def copy_native_command(self):
+        if self.command_text:
+            QApplication.clipboard().setText(self.command_text)
 
     def launch_native_experimental(self):
         reply = QMessageBox.warning(
@@ -2736,10 +2746,13 @@ class MainWindow(QMainWindow):
                 required_mods,
             )
         except NativeLaunchError as detail_error:
-            return (
+            text = (
                 "Native launch parity report unavailable.\n\n"
                 f"Report generation failed during {detail_error.stage}: {detail_error.user_message()}"
             )
+            if detail_error.details:
+                text = f"{text}\n\n{detail_error.details}"
+            return text
         return format_native_launch_parity_report(report)
 
     def confirm_launch_preflight(self, server: Server) -> bool:

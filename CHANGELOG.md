@@ -1,6 +1,8 @@
 # Changelog
 
 ## Unreleased
+- Added a native preview **Copy native command** action that is enabled only when the experimental native command is ready.
+- Clarified stale native `@mod` symlink failures with copyable expected-vs-actual target details in native failure reports.
 - Added a Mods tab **Copy missing links** action for missing Workshop pages.
 - Added a Mods tab **Copy mod report** action for timestamped required/missing Workshop ID snapshots.
 - Added a Settings **Copy last launch** action backed by `~/.local/share/wolflauncher/last_launch_report.txt`.
