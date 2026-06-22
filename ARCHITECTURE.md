@@ -95,6 +95,11 @@ Server row
 
 Partial responses during server restarts should be treated as offline/restarting rather than online with unknown fields.
 
+The GUI can refresh all curated rows or a selected curated row. Single-row
+refreshes should reuse the same status path and table update behavior as full
+refreshes so manual add/edit flows can validate one server without disturbing
+the rest of the list.
+
 ## Mod Management
 
 Flow:

@@ -15,6 +15,7 @@ Working:
 - PySide6 desktop GUI.
 - YAML curated server list.
 - Direct in-app addition of curated YAML server rows.
+- Selected curated server rows can be status-refreshed individually.
 - Curated server rows can persist a live status connect-port correction back to YAML.
 - Read-only SQLite-backed discovered server browser tab.
 - YAML/JSON import for discovered server cache rows.

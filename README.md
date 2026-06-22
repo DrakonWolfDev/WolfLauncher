@@ -205,8 +205,9 @@ The `host` field may contain either a DNS hostname or an IP address.
 
 Use **Add curated server** on the Servers tab to add a server directly to
 `servers.yaml`. The dialog defaults to common DayZ ports, but both game and
-query ports can be edited before saving. Existing curated servers can be edited
-or removed from the row context menu. If a live status refresh reports a
+query ports can be edited before saving. Newly added rows are checked on their
+own after saving. Existing curated servers can be edited, removed or refreshed
+individually from the row context menu. If a live status refresh reports a
 different connect port, use **Apply live connect port** from the same context
 menu to save that game-port correction back to `servers.yaml`.
 

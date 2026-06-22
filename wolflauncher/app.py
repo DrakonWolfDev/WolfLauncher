@@ -108,9 +108,16 @@ class StatusWorker(QThread):
     status_ready = Signal(int, object)
     finished_all = Signal()
 
-    def __init__(self, servers: list[Server]):
+    def __init__(self, servers: list[Server], rows: list[int] | None = None):
         super().__init__()
-        self.servers = list(servers)
+        if rows is None:
+            self.servers = list(enumerate(servers))
+        else:
+            self.servers = [
+                (row, servers[row])
+                for row in rows
+                if 0 <= row < len(servers)
+            ]
 
     def run(self):
         if not self.servers:
@@ -121,7 +128,7 @@ class StatusWorker(QThread):
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {
                 executor.submit(_checked_server_status, server): index
-                for index, server in enumerate(self.servers)
+                for index, server in self.servers
             }
             for future in as_completed(futures):
                 self.status_ready.emit(futures[future], future.result())
@@ -1417,11 +1424,23 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "Settings saved", "WolfLauncher settings were saved.")
 
     def refresh_statuses(self):
+        self.refresh_status_rows(list(range(len(self.servers))), "Last updated: refreshing...")
+
+    def refresh_selected_status(self):
+        row = self.table.currentRow()
+        if row < 0 or row >= len(self.servers):
+            QMessageBox.warning(self, "No server selected", "Select a curated server first.")
+            return
+        self.refresh_status_rows([row], f"Last updated: refreshing {self.servers[row].name}...")
+
+    def refresh_status_rows(self, rows: list[int], label: str):
         if self.worker and self.worker.isRunning():
             return
+        if not rows:
+            return
         self._set_status_refresh_enabled(False)
-        self.last_refresh_label.setText("Last updated: refreshing...")
-        self.worker = StatusWorker(self.servers)
+        self.last_refresh_label.setText(label)
+        self.worker = StatusWorker(self.servers, rows)
         self.worker.status_ready.connect(self.update_status_row)
         self.worker.finished_all.connect(self.handle_refresh_finished)
         self.worker.start()
@@ -1653,9 +1672,11 @@ class MainWindow(QMainWindow):
             self.favourites.add(server_key(server))
             save_favourites(self.favourites)
         self.add_curated_server_row(server)
-        self.table.selectRow(len(self.servers) - 1)
+        row = len(self.servers) - 1
+        self.table.selectRow(row)
         self.update_launch_button_text()
         self.statusBar().showMessage(f"Added curated server: {server.name}", 7000)
+        self.refresh_status_rows([row], f"Last updated: refreshing {server.name}...")
 
     def add_curated_server_row(self, server: Server):
         self.servers.append(server)
@@ -2231,6 +2252,7 @@ class MainWindow(QMainWindow):
         self.table.selectRow(row)
         menu = QMenu(self)
         add_action = QAction("Add curated server", self)
+        refresh_selected_action = QAction("Refresh selected status", self)
         apply_live_port_action = QAction("Apply live connect port", self)
         copy_connect_action = QAction("Copy connect address", self)
         copy_details_action = QAction("Copy server details", self)
@@ -2238,6 +2260,7 @@ class MainWindow(QMainWindow):
         toggle_fav_action = QAction("Toggle favourite", self)
         remove_action = QAction("Remove from curated list", self)
         add_action.triggered.connect(self.add_curated_server)
+        refresh_selected_action.triggered.connect(self.refresh_selected_status)
         apply_live_port_action.triggered.connect(
             lambda: self.apply_live_connect_port_to_curated_server(row)
         )
@@ -2251,6 +2274,7 @@ class MainWindow(QMainWindow):
         )
         menu.addAction(add_action)
         menu.addSeparator()
+        menu.addAction(refresh_selected_action)
         menu.addAction(apply_live_port_action)
         menu.addAction(copy_connect_action)
         menu.addAction(copy_details_action)
