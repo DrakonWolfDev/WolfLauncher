@@ -672,13 +672,13 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.table)
 
         buttons = QHBoxLayout()
-        refresh = QPushButton("Refresh status")
-        refresh.clicked.connect(self.refresh_statuses)
+        self.refresh_status_button = QPushButton("Refresh status")
+        self.refresh_status_button.clicked.connect(self.refresh_statuses)
         self.launch_button = QPushButton("Launch selected server")
         self.launch_button.clicked.connect(self.launch_selected)
         save = QPushButton("Save settings")
         save.clicked.connect(self.save_user_settings)
-        buttons.addWidget(refresh)
+        buttons.addWidget(self.refresh_status_button)
         buttons.addWidget(self.launch_button)
         buttons.addWidget(save)
         layout.addLayout(buttons)
@@ -1412,10 +1412,16 @@ class MainWindow(QMainWindow):
     def refresh_statuses(self):
         if self.worker and self.worker.isRunning():
             return
+        self._set_status_refresh_enabled(False)
+        self.last_refresh_label.setText("Last updated: refreshing...")
         self.worker = StatusWorker(self.servers)
         self.worker.status_ready.connect(self.update_status_row)
         self.worker.finished_all.connect(self.handle_refresh_finished)
         self.worker.start()
+
+    def _set_status_refresh_enabled(self, enabled: bool):
+        if hasattr(self, "refresh_status_button"):
+            self.refresh_status_button.setEnabled(enabled)
 
     def refresh_server_browser(self, *_args):
         if not hasattr(self, "browser_table"):
@@ -1790,6 +1796,7 @@ class MainWindow(QMainWindow):
         save_favourites(self.favourites)
 
     def handle_refresh_finished(self):
+        self._set_status_refresh_enabled(True)
         self.table.resizeColumnsToContents()
         self.last_refresh_label.setText(f"Last updated: {datetime.now().strftime('%H:%M:%S')}")
         self.update_launch_button_text()
