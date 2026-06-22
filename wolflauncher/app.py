@@ -78,7 +78,12 @@ from .platform_detection import (
     steam_selection_candidates_detail,
     steam_selection_report,
 )
-from .mods import ModCheckResult, check_server_mods, format_mod_check_report
+from .mods import (
+    ModCheckResult,
+    check_server_mods,
+    format_missing_workshop_links,
+    format_mod_check_report,
+)
 from . import server_cache
 from .server_discovery import (
     discover_dayz_servers,
@@ -820,6 +825,8 @@ class MainWindow(QMainWindow):
         native_preview.clicked.connect(self.preview_native_launch)
         copy_report = QPushButton("Copy mod report")
         copy_report.clicked.connect(self.copy_mod_check_report)
+        copy_missing = QPushButton("Copy missing links")
+        copy_missing.clicked.connect(self.copy_missing_workshop_links)
         open_selected = QPushButton("Open selected Workshop page")
         open_selected.clicked.connect(self.open_selected_workshop_page)
         open_missing = QPushButton("Open missing Workshop pages")
@@ -827,6 +834,7 @@ class MainWindow(QMainWindow):
         buttons.addWidget(check)
         buttons.addWidget(native_preview)
         buttons.addWidget(copy_report)
+        buttons.addWidget(copy_missing)
         self.mod_filter = QComboBox()
         self.mod_filter.addItems(["All mods", "Missing only", "Installed only"])
         self.mod_filter.currentTextChanged.connect(self.apply_mod_filter)
@@ -2169,6 +2177,24 @@ class MainWindow(QMainWindow):
             )
             return
         self.copy_to_clipboard(format_mod_check_report(self.last_mod_result), "Mod check report")
+
+    def copy_missing_workshop_links(self):
+        if not self.last_mod_result:
+            QMessageBox.information(
+                self,
+                "No mod check yet",
+                "Check selected server mods before copying missing Workshop links.",
+            )
+            return
+        links = format_missing_workshop_links(self.last_mod_result)
+        if not links:
+            QMessageBox.information(
+                self,
+                "No missing mods",
+                "No missing Workshop links are available from the current mod check.",
+            )
+            return
+        self.copy_to_clipboard(links, "Missing Workshop links")
 
     def copy_last_launch_report(self):
         report = load_last_launch_report()

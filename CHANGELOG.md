@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Added a Mods tab **Copy missing links** action for missing Workshop pages.
 - Added a Mods tab **Copy mod report** action for timestamped required/missing Workshop ID snapshots.
 - Added a Settings **Copy last launch** action backed by `~/.local/share/wolflauncher/last_launch_report.txt`.
 - Added a clearer external-vs-native readiness comparison to copied native launch parity reports.

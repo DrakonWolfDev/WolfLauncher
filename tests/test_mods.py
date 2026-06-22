@@ -12,6 +12,7 @@ from wolflauncher.mods import (
     RequiredMod,
     check_server_mods,
     fetch_required_mods,
+    format_missing_workshop_links,
     format_mod_check_report,
     scan_installed_mods,
 )
@@ -222,6 +223,51 @@ class FormatModCheckReportTests(unittest.TestCase):
         self.assertIn("Result: ERROR", report)
         self.assertIn("Error: api failed", report)
         self.assertNotIn("Required mod count:", report)
+
+
+class FormatMissingWorkshopLinksTests(unittest.TestCase):
+    def test_format_missing_workshop_links_includes_only_missing_mods(self):
+        result = ModCheckResult(
+            True,
+            make_server(),
+            [
+                RequiredMod(
+                    "111",
+                    "Community Framework",
+                    installed=True,
+                    workshop_url="https://steamcommunity.com/sharedfiles/filedetails/?id=111",
+                ),
+                RequiredMod(
+                    "222",
+                    "Missing Mod",
+                    installed=False,
+                    workshop_url="https://steamcommunity.com/sharedfiles/filedetails/?id=222",
+                ),
+                RequiredMod("333", installed=False),
+            ],
+        )
+
+        links = format_missing_workshop_links(result)
+
+        self.assertEqual(
+            links,
+            "\n".join(
+                [
+                    "Missing Mod (222): https://steamcommunity.com/sharedfiles/filedetails/?id=222",
+                    "333: https://steamcommunity.com/sharedfiles/filedetails/?id=333",
+                ]
+            ),
+        )
+
+    def test_format_missing_workshop_links_returns_empty_when_none_missing(self):
+        result = ModCheckResult(True, make_server(), [RequiredMod("111", installed=True)])
+
+        self.assertEqual(format_missing_workshop_links(result), "")
+
+    def test_format_missing_workshop_links_returns_empty_for_failed_check(self):
+        result = ModCheckResult(False, make_server(), [RequiredMod("111")], error="api failed")
+
+        self.assertEqual(format_missing_workshop_links(result), "")
 
 
 if __name__ == "__main__":

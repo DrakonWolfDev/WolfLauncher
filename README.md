@@ -174,7 +174,7 @@ Recommended workflow:
 
 1. Select a server.
 2. Review required mods.
-3. Use **Copy mod report** when you need a timestamped required/missing Workshop ID snapshot for parity testing or support.
+3. Use **Copy mod report** for a timestamped required/missing Workshop ID snapshot, or **Copy missing links** for just the missing Workshop pages.
 4. Subscribe to any missing Workshop content.
 5. Return to the server list.
 6. Launch.

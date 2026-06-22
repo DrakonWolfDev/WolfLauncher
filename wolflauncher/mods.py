@@ -190,6 +190,18 @@ def format_mod_check_report(
     return "\n".join(lines).strip()
 
 
+def format_missing_workshop_links(result: ModCheckResult) -> str:
+    """Return copyable missing Workshop links for a completed mod check."""
+    if not result.ok:
+        return ""
+    lines = []
+    for mod in result.missing_mods:
+        label = _mod_report_label(mod)
+        url = mod.workshop_url or WORKSHOP_URL.format(mod_id=mod.workshop_id)
+        lines.append(f"{label}: {url}")
+    return "\n".join(lines)
+
+
 def _mod_report_label(mod: RequiredMod) -> str:
     name = (mod.name or mod.installed_name).strip()
     return f"{name} ({mod.workshop_id})" if name else mod.workshop_id
