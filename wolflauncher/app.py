@@ -76,6 +76,7 @@ from .platform_detection import (
     selected_install_summary,
     steam_install_summary,
     steam_mode_label,
+    install_label,
     steam_selection_candidates_detail,
     steam_selection_report,
 )
@@ -152,13 +153,14 @@ class StatusWorker(QThread):
 class ModWorker(QThread):
     mods_ready = Signal(object)
 
-    def __init__(self, server: Server, workshop_dir):
+    def __init__(self, server: Server, workshop_dir, steam_context: str = ""):
         super().__init__()
         self.server = server
         self.workshop_dir = workshop_dir
+        self.steam_context = steam_context
 
     def run(self):
-        self.mods_ready.emit(check_server_mods(self.server, self.workshop_dir))
+        self.mods_ready.emit(check_server_mods(self.server, self.workshop_dir, self.steam_context))
 
 
 class SteamDiscoveryWorker(QThread):
@@ -2033,11 +2035,12 @@ class MainWindow(QMainWindow):
             return
 
         install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        steam_context = self.mod_check_steam_context(install)
         workshop_dir = install.workshop_dir if install else None
         if not workshop_dir:
             self.last_mod_result = None
             self.mod_summary.setText(
-                "Workshop folder not detected for the current launch mode. "
+                f"Workshop folder not detected for {steam_context or 'the current launch mode'}. "
                 "Open Settings health to check the selected Steam install."
             )
             self.mods_table.setRowCount(0)
@@ -2049,11 +2052,11 @@ class MainWindow(QMainWindow):
                 )
             return
 
-        self.mod_summary.setText(f"Checking required mods for {server.name}...")
+        self.mod_summary.setText(f"Checking required mods for {server.name}. {steam_context}.")
         self.mods_table.setRowCount(0)
         self.active_mod_server_key = selected_key
         self.pending_mod_check_row = None
-        self.mod_worker = ModWorker(server, workshop_dir)
+        self.mod_worker = ModWorker(server, workshop_dir, steam_context)
         self.mod_worker.mods_ready.connect(self.update_mods_table)
         self.mod_worker.start()
 
@@ -2073,8 +2076,12 @@ class MainWindow(QMainWindow):
 
     def display_mods_result(self, result: ModCheckResult):
         self.mods_table.setSortingEnabled(False)
+        context = self.mod_result_context(result)
         if not result.ok:
-            self.mod_summary.setText(f"Could not check mods for {result.server.name}: {result.error}")
+            self.mod_summary.setText(
+                f"Could not check mods for {result.server.name}: {result.error}"
+                f"{context}"
+            )
             self.mods_table.setRowCount(0)
             self.mods_table.setSortingEnabled(True)
             return
@@ -2084,13 +2091,13 @@ class MainWindow(QMainWindow):
         if not required:
             self.mod_summary.setText(
                 f"{result.server.name}: no required mods reported by the server API. "
-                f"Installed Workshop mods found locally: {result.installed_count}."
+                f"Installed Workshop mods found locally: {result.installed_count}.{context}"
             )
         else:
             self.mod_summary.setText(
                 f"{result.server.name}: Required {len(required)} | "
                 f"Installed {len(required) - len(missing)} | Missing {len(missing)} | "
-                f"Local Workshop mods found: {result.installed_count}"
+                f"Local Workshop mods found: {result.installed_count}{context}"
             )
 
         self.mods_table.setRowCount(len(required))
@@ -2115,6 +2122,21 @@ class MainWindow(QMainWindow):
         self.mods_table.setSortingEnabled(True)
         self.mods_table.sortItems(0, Qt.DescendingOrder)
         self.apply_mod_filter()
+
+    def mod_check_steam_context(self, install: SteamInstall | None) -> str:
+        if not install:
+            return "Steam install not detected"
+        if self.launch_engine_key() == "native":
+            return f"Selected Steam install: {install_label(install)}"
+        return f"Auto Steam install: {install_label(install)}"
+
+    def mod_result_context(self, result: ModCheckResult) -> str:
+        parts = []
+        if result.steam_context:
+            parts.append(result.steam_context)
+        if result.workshop_dir:
+            parts.append(f"Workshop: {result.workshop_dir}")
+        return f" ({'; '.join(parts)})" if parts else ""
 
     def _check_pending_server_mods(self):
         if self.pending_mod_check_row is None:

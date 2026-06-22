@@ -30,6 +30,8 @@ class ModCheckResult:
     required_mods: list[RequiredMod]
     installed_count: int = 0
     error: str = ""
+    steam_context: str = ""
+    workshop_dir: str = ""
 
     @property
     def missing_mods(self) -> list[RequiredMod]:
@@ -120,19 +122,39 @@ def fetch_required_mods(server: Server) -> list[RequiredMod]:
     return required
 
 
-def check_server_mods(server: Server, workshop_dir: Path | None) -> ModCheckResult:
+def check_server_mods(
+    server: Server,
+    workshop_dir: Path | None,
+    steam_context: str = "",
+) -> ModCheckResult:
     installed = scan_installed_mods(workshop_dir)
+    workshop_dir_text = str(workshop_dir) if workshop_dir else ""
     try:
         required = fetch_required_mods(server)
     except Exception as exc:
-        return ModCheckResult(False, server, [], installed_count=len(installed), error=str(exc))
+        return ModCheckResult(
+            False,
+            server,
+            [],
+            installed_count=len(installed),
+            error=str(exc),
+            steam_context=steam_context,
+            workshop_dir=workshop_dir_text,
+        )
 
     for mod in required:
         mod.installed = mod.workshop_id in installed
         mod.installed_name = installed.get(mod.workshop_id, "")
         if not mod.name:
             mod.name = mod.installed_name
-    return ModCheckResult(True, server, required, installed_count=len(installed))
+    return ModCheckResult(
+        True,
+        server,
+        required,
+        installed_count=len(installed),
+        steam_context=steam_context,
+        workshop_dir=workshop_dir_text,
+    )
 
 
 def format_mod_check_report(
@@ -155,6 +177,10 @@ def format_mod_check_report(
         f"Result: {'OK' if result.ok else 'ERROR'}",
         f"Local Workshop mods found: {result.installed_count}",
     ]
+    if result.steam_context:
+        lines.append(f"Steam install context: {result.steam_context}")
+    if result.workshop_dir:
+        lines.append(f"Workshop path checked: {result.workshop_dir}")
 
     if not result.ok:
         lines.extend(["", f"Error: {result.error or 'mod check failed'}"])

@@ -181,6 +181,9 @@ When the native engine is selected, Settings can target Auto, Native Steam,
 Flatpak Steam or `STEAM_ROOT` for native-launch testing. Mod checks, preview and
 launch preflight should use that selected install so native and Flatpak parity
 testing cannot accidentally read Workshop state from a different Steam library.
+The Mods summary and copied mod report include the Steam install context and
+Workshop path checked so selected-mode mismatches are visible in support
+snapshots.
 Native command generation should fail before handoff when the selected Steam
 mode does not have a detected launch command, so users get Steam-mode-specific
 recovery guidance instead of a generic process-start failure.

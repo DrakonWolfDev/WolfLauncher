@@ -153,6 +153,21 @@ class CheckServerModsTests(unittest.TestCase):
         self.assertEqual(result.required_mods[0].installed_name, "CF Local")
         self.assertEqual(result.required_mods[1].name, "")
 
+    @patch("wolflauncher.mods.fetch_required_mods", return_value=[])
+    def test_check_server_mods_records_selected_steam_context(self, fetch_required):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workshop_dir = Path(tmpdir)
+
+            result = check_server_mods(
+                make_server(),
+                workshop_dir,
+                steam_context="Selected Steam install: Flatpak Steam",
+            )
+
+        self.assertTrue(result.ok)
+        self.assertEqual(result.steam_context, "Selected Steam install: Flatpak Steam")
+        self.assertEqual(result.workshop_dir, str(workshop_dir))
+
     @patch("wolflauncher.mods.fetch_required_mods", side_effect=RuntimeError("api failed"))
     def test_check_server_mods_returns_error_result(self, fetch_required):
         result = check_server_mods(make_server(), None)
@@ -161,6 +176,22 @@ class CheckServerModsTests(unittest.TestCase):
         self.assertEqual(result.required_mods, [])
         self.assertEqual(result.installed_count, 0)
         self.assertEqual(result.error, "api failed")
+
+    @patch("wolflauncher.mods.fetch_required_mods", side_effect=RuntimeError("api failed"))
+    def test_check_server_mods_keeps_context_on_error_result(self, fetch_required):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            workshop_dir = Path(tmpdir)
+
+            result = check_server_mods(
+                make_server(),
+                workshop_dir,
+                steam_context="Selected Steam install: STEAM_ROOT Steam library",
+            )
+
+        self.assertFalse(result.ok)
+        self.assertEqual(result.error, "api failed")
+        self.assertEqual(result.steam_context, "Selected Steam install: STEAM_ROOT Steam library")
+        self.assertEqual(result.workshop_dir, str(workshop_dir))
 
 
 class FormatModCheckReportTests(unittest.TestCase):
@@ -184,6 +215,8 @@ class FormatModCheckReportTests(unittest.TestCase):
                 ),
             ],
             installed_count=7,
+            steam_context="Selected Steam install: Flatpak Steam",
+            workshop_dir="/home/user/.var/app/com.valvesoftware.Steam/data/Steam/steamapps/workshop/content/221100",
         )
 
         report = format_mod_check_report(
@@ -198,6 +231,11 @@ class FormatModCheckReportTests(unittest.TestCase):
         self.assertIn("Query port: 27016", report)
         self.assertIn("Result: OK", report)
         self.assertIn("Local Workshop mods found: 7", report)
+        self.assertIn("Steam install context: Selected Steam install: Flatpak Steam", report)
+        self.assertIn(
+            "Workshop path checked: /home/user/.var/app/com.valvesoftware.Steam/data/Steam/steamapps/workshop/content/221100",
+            report,
+        )
         self.assertIn("Required mod count: 2", report)
         self.assertIn("Installed required mods: 1", report)
         self.assertIn("Missing required mods: 1", report)
