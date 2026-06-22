@@ -1,6 +1,7 @@
 # Changelog
 
 ## Unreleased
+- Preserved detailed native preview errors, including stale `@mod` symlink details, in the preview failure dialog.
 - Added selected Steam/install/server context to native launch failure details when a full parity report cannot be built from a cached mod check.
 - Added the selected Steam install setting to copied native parity reports so Auto, Native Steam, Flatpak Steam and `STEAM_ROOT` test runs are easier to compare.
 - Expanded native missing-mod parity tests for no required mods, all missing mods, mixed installed/missing mods and missing selected-mode Workshop folders.

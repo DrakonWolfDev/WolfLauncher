@@ -2494,7 +2494,7 @@ class MainWindow(QMainWindow):
                 selected_steam_mode=self.native_steam_mode_key(),
             )
         except NativeLaunchError as exc:
-            QMessageBox.critical(self, "Native preview failed", exc.user_message())
+            self.show_native_preview_error(exc)
             return
 
         dialog = NativeLaunchPreviewDialog(
@@ -2743,6 +2743,15 @@ class MainWindow(QMainWindow):
         box = QMessageBox(self)
         box.setIcon(QMessageBox.Critical)
         box.setWindowTitle(f"Launch failed during {error.stage}")
+        box.setText(error.user_message())
+        if error.details:
+            box.setDetailedText(error.details)
+        box.exec()
+
+    def show_native_preview_error(self, error: NativeLaunchError):
+        box = QMessageBox(self)
+        box.setIcon(QMessageBox.Critical)
+        box.setWindowTitle(f"Native preview failed during {error.stage}")
         box.setText(error.user_message())
         if error.details:
             box.setDetailedText(error.details)
