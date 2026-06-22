@@ -123,6 +123,9 @@ Selected server
 ```
 
 The mod manager is advisory. It detects and opens Workshop pages, but does not subscribe, download or mutate Workshop content.
+The Mods tab can copy a timestamped mod-check report with server target, required
+mod counts, installed/missing state, Workshop URLs and missing Workshop IDs for
+native parity testing and support.
 
 ## Launching
 

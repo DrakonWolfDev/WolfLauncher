@@ -79,6 +79,7 @@ Working:
 - Successful external-launcher exit code is presented as a handoff to Steam.
 - Launch dialogs clarify that a successful handoff does not prove Proton initialized or DayZ reached the menu.
 - Launch dialogs watch for known DayZ processes for up to 45 seconds after handoff, because Steam/Proton can take tens of seconds before DayZ appears.
+- Mods tab can copy a timestamped mod-check report with required mod counts, installed/missing state, Workshop URLs and missing Workshop IDs for parity testing and support.
 - Experimental native launch parity report from the Mods tab, with generated-at metadata and a copyable validation checklist comparing the external launcher handoff with the native command, selected Steam install, resolved connect target, required mod IDs, prepared mod links and missing Workshop directories.
 - Native launch failures include copyable parity-report details when a cached mod check is available, so failed launches and preview reports can be compared.
 - Native parity reports show created versus reused mod symlink counts, and existing `@mod` symlinks are reused only when they point to the expected Workshop directory.

@@ -78,7 +78,7 @@ from .platform_detection import (
     steam_selection_candidates_detail,
     steam_selection_report,
 )
-from .mods import ModCheckResult, check_server_mods
+from .mods import ModCheckResult, check_server_mods, format_mod_check_report
 from . import server_cache
 from .server_discovery import (
     discover_dayz_servers,
@@ -818,12 +818,15 @@ class MainWindow(QMainWindow):
         check.clicked.connect(lambda _checked=False: self.check_selected_server_mods(force=True))
         native_preview = QPushButton("Native launch preview")
         native_preview.clicked.connect(self.preview_native_launch)
+        copy_report = QPushButton("Copy mod report")
+        copy_report.clicked.connect(self.copy_mod_check_report)
         open_selected = QPushButton("Open selected Workshop page")
         open_selected.clicked.connect(self.open_selected_workshop_page)
         open_missing = QPushButton("Open missing Workshop pages")
         open_missing.clicked.connect(self.open_missing_workshop_pages)
         buttons.addWidget(check)
         buttons.addWidget(native_preview)
+        buttons.addWidget(copy_report)
         self.mod_filter = QComboBox()
         self.mod_filter.addItems(["All mods", "Missing only", "Installed only"])
         self.mod_filter.currentTextChanged.connect(self.apply_mod_filter)
@@ -2156,6 +2159,16 @@ class MainWindow(QMainWindow):
             ),
             "Diagnostics report",
         )
+
+    def copy_mod_check_report(self):
+        if not self.last_mod_result:
+            QMessageBox.information(
+                self,
+                "No mod check yet",
+                "Check selected server mods before copying a mod report.",
+            )
+            return
+        self.copy_to_clipboard(format_mod_check_report(self.last_mod_result), "Mod check report")
 
     def copy_last_launch_report(self):
         report = load_last_launch_report()

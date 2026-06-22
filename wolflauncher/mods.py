@@ -3,6 +3,7 @@ import re
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -132,3 +133,63 @@ def check_server_mods(server: Server, workshop_dir: Path | None) -> ModCheckResu
         if not mod.name:
             mod.name = mod.installed_name
     return ModCheckResult(True, server, required, installed_count=len(installed))
+
+
+def format_mod_check_report(
+    result: ModCheckResult,
+    generated_at: datetime | None = None,
+) -> str:
+    """Return a copyable required-mod report for parity testing and support."""
+    timestamp = generated_at or datetime.now(timezone.utc)
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
+
+    lines = [
+        "WolfLauncher mod check report",
+        f"Generated at: {timestamp.astimezone(timezone.utc).replace(microsecond=0).isoformat()}",
+        "",
+        f"Server: {result.server.name}",
+        f"Group: {result.server.group}",
+        f"Connect target: {result.server.connect_target}",
+        f"Query port: {result.server.query_port}",
+        f"Result: {'OK' if result.ok else 'ERROR'}",
+        f"Local Workshop mods found: {result.installed_count}",
+    ]
+
+    if not result.ok:
+        lines.extend(["", f"Error: {result.error or 'mod check failed'}"])
+        return "\n".join(lines).strip()
+
+    required = result.required_mods
+    missing = result.missing_mods
+    installed = [mod for mod in required if mod.installed]
+    lines.extend(
+        [
+            f"Required mod count: {len(required)}",
+            f"Installed required mods: {len(installed)}",
+            f"Missing required mods: {len(missing)}",
+            "",
+        ]
+    )
+
+    if required:
+        lines.append("Required Workshop mods:")
+        for mod in required:
+            state = "installed" if mod.installed else "missing"
+            lines.append(f"- {_mod_report_label(mod)} [{state}]")
+            if mod.installed_name and mod.installed_name != mod.name:
+                lines.append(f"  local name: {mod.installed_name}")
+            if mod.workshop_url:
+                lines.append(f"  url: {mod.workshop_url}")
+    else:
+        lines.append("Required Workshop mods: none reported by the server API")
+
+    if missing:
+        lines.extend(["", "Missing Workshop IDs:"])
+        lines.extend(f"- {mod.workshop_id}" for mod in missing)
+    return "\n".join(lines).strip()
+
+
+def _mod_report_label(mod: RequiredMod) -> str:
+    name = (mod.name or mod.installed_name).strip()
+    return f"{name} ({mod.workshop_id})" if name else mod.workshop_id

@@ -174,9 +174,10 @@ Recommended workflow:
 
 1. Select a server.
 2. Review required mods.
-3. Subscribe to any missing Workshop content.
-4. Return to the server list.
-5. Launch.
+3. Use **Copy mod report** when you need a timestamped required/missing Workshop ID snapshot for parity testing or support.
+4. Subscribe to any missing Workshop content.
+5. Return to the server list.
+6. Launch.
 
 The experimental native engine can be selected in **Settings**. When testing it,
 use **Steam install mode** to choose Auto, Native Steam, Flatpak Steam or a

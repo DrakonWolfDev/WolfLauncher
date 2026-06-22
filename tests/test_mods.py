@@ -2,14 +2,17 @@ import json
 import tempfile
 import unittest
 import urllib.error
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
 from wolflauncher.models import Server
 from wolflauncher.mods import (
+    ModCheckResult,
     RequiredMod,
     check_server_mods,
     fetch_required_mods,
+    format_mod_check_report,
     scan_installed_mods,
 )
 
@@ -157,6 +160,68 @@ class CheckServerModsTests(unittest.TestCase):
         self.assertEqual(result.required_mods, [])
         self.assertEqual(result.installed_count, 0)
         self.assertEqual(result.error, "api failed")
+
+
+class FormatModCheckReportTests(unittest.TestCase):
+    def test_format_mod_check_report_includes_counts_and_missing_ids(self):
+        result = ModCheckResult(
+            True,
+            make_server(),
+            [
+                RequiredMod(
+                    "111",
+                    "Community Framework",
+                    installed=True,
+                    installed_name="CF Local",
+                    workshop_url="https://steamcommunity.com/sharedfiles/filedetails/?id=111",
+                ),
+                RequiredMod(
+                    "222",
+                    "Missing Mod",
+                    installed=False,
+                    workshop_url="https://steamcommunity.com/sharedfiles/filedetails/?id=222",
+                ),
+            ],
+            installed_count=7,
+        )
+
+        report = format_mod_check_report(
+            result,
+            generated_at=datetime(2026, 6, 22, 12, 34, 56, tzinfo=timezone.utc),
+        )
+
+        self.assertIn("WolfLauncher mod check report", report)
+        self.assertIn("Generated at: 2026-06-22T12:34:56+00:00", report)
+        self.assertIn("Server: Example", report)
+        self.assertIn("Connect target: dayz.example.test:2302", report)
+        self.assertIn("Query port: 27016", report)
+        self.assertIn("Result: OK", report)
+        self.assertIn("Local Workshop mods found: 7", report)
+        self.assertIn("Required mod count: 2", report)
+        self.assertIn("Installed required mods: 1", report)
+        self.assertIn("Missing required mods: 1", report)
+        self.assertIn("- Community Framework (111) [installed]", report)
+        self.assertIn("local name: CF Local", report)
+        self.assertIn("- Missing Mod (222) [missing]", report)
+        self.assertIn("Missing Workshop IDs:\n- 222", report)
+
+    def test_format_mod_check_report_handles_unmodded_server(self):
+        result = ModCheckResult(True, make_server(), [], installed_count=3)
+
+        report = format_mod_check_report(result)
+
+        self.assertIn("Required mod count: 0", report)
+        self.assertIn("Required Workshop mods: none reported by the server API", report)
+        self.assertNotIn("Missing Workshop IDs:", report)
+
+    def test_format_mod_check_report_includes_error(self):
+        result = ModCheckResult(False, make_server(), [], installed_count=0, error="api failed")
+
+        report = format_mod_check_report(result)
+
+        self.assertIn("Result: ERROR", report)
+        self.assertIn("Error: api failed", report)
+        self.assertNotIn("Required mod count:", report)
 
 
 if __name__ == "__main__":
