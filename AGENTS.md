@@ -82,6 +82,9 @@ The vendored script then:
 - Prefer smooth, low-noise user experience: keep background checks quiet and preserve useful previous results while new work is running. Do not hide meaningful uncertainty, failures or launch boundaries; surface them honestly in status labels, health checks, dialogs or diagnostics when they matter.
 - Keep v0.7 behaviour stable while working on v0.8 native-launch parity investigation.
 - Keep local `servers.yaml` as the curated source even after adding SQLite for discovered servers; track `example.servers.yaml` as the repo template instead of committing personal server-list edits.
+- WolfAPI is the companion service for hosted discovered-server data. Current WolfAPI truth: Redis remains the hot public `/api/servers` cache, Postgres is durable canonical/history storage, Steam/BattleMetrics/live validation update Redis, and Postgres-to-Redis publish is manual recovery only unless explicitly changed in WolfAPI.
+- When building launcher features around WolfAPI, prefer additive client behavior: consume `/api/servers` for discovered rows, use `/api/health` only for diagnostics/status, keep remote data read-only, and preserve local curated YAML promotion as the user-owned path.
+- Cross-project ideas should flow both ways: launcher UX needs can inform future WolfAPI fields or endpoints, while WolfAPI freshness/source/validation state can inform launcher filters, badges and diagnostics after the API contract is stable.
 - Mod management is read-only and advisory; do not auto-subscribe or auto-download Workshop content without an explicit future design.
 - User settings and favourites live under `~/.config/wolflauncher`.
 - Prefer small, testable changes around launch command generation and platform detection.

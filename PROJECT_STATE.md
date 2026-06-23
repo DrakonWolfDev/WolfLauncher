@@ -96,8 +96,11 @@ Working:
 Planned WolfAPI follow-up:
 
 - `ROADMAP.md` tracks a v0.8.x WolfAPI discovery-quality and submission side-track.
+- Current WolfAPI posture: Redis is the hot public cache for `/api/servers`; Postgres stores canonical rows, source observations, sync runs and validation attempts; scheduled Steam, BattleMetrics and live-validation jobs update Redis; manual `source=backfill` and `source=publish` exist for recovery; all manual sync calls require `SYNC_ADMIN_TOKEN`; Postgres-to-Redis publishing is not automatic.
+- WolfAPI `/api/health` now exposes Redis/cache state plus database row counts, latest sync runs, source-observation counts by source, recent validation success/failure summaries and recent activity windows. Launcher diagnostics may read this for support/status, but should not make user workflows depend on private operational fields unless the contract is intentionally promoted.
 - The intent is to combine Steam's capped list with slow BattleMetrics ingestion, freshness/stale tracking, roughly 30-day stale retention, stronger retention for user-submitted rows, and a future in-app "Add your server to WolfLauncher" submission flow.
 - Current WolfLauncher behavior remains read-only for remote WolfAPI data; users can already promote discovered rows or add their own servers to the local curated YAML list.
+- Cross-project planning rule: launcher features should ask WolfAPI for stable fields/endpoints when they need source freshness, validation state or submission workflows; WolfAPI changes should consider how the Server Browser, diagnostics and promotion flow can use the data without harming offline/local operation.
 
 ## Known bug
 

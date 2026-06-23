@@ -63,6 +63,8 @@ Goal: turn WolfAPI from a Steam-capped cache into a resilient community server d
 - Design the submission contract before implementation: host, game port, query port, optional display name, duplicate handling, validation status, rate limiting and abuse prevention.
 - Have WolfAPI validate or enrich submitted servers before promoting them into the public cache.
 - Later expose freshness/source state in the Server Browser so players can tell live, stale, API-cached and user-added rows apart.
+- Use WolfAPI `/api/health` as an operator/support signal for diagnostics, not as the primary server-list contract.
+- Keep feature design bidirectional: launcher UX should drive explicit WolfAPI contract requests, and WolfAPI source freshness, validation and quality signals should eventually become launcher filters/badges only after they are stable.
 
 ## v0.9 - Native launcher engine hardening
 
