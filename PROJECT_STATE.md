@@ -34,6 +34,7 @@ Handoff recorded: 2026-07-11 after commit `f42e732` on `main`.
 - User desktop review approved the current Server Browser and Mods direction. Do not undo their hierarchy or move advanced controls back above the results without new review.
 - User desktop review approved the simplified Settings hierarchy: installation summary and launch choices remain visible above health results, Check health and Save settings remain persistent, and discovery/import/copy support controls remain available through a bottom disclosure.
 - User desktop review approved the Servers consistency pass: refresh status and common player controls precede the curated table, while Add/Refresh/Launch remain persistent at the bottom. The external launcher path moved to Settings and appears beside a half-width engine selector only when the external fallback is selected; native mode restores the selector to full width.
+- A final real-desktop review passed across all four tabs after the Settings and Servers consistency changes.
 - `wolflauncher/table_items.py` now owns the Server Browser's data-aware Qt sorting item, with direct numeric, text and empty-value tests.
 - `wolflauncher/server_browser_presenter.py` now owns style-filter, player-count, cache-summary, discovered-row metadata and copied discovered-server details.
 - `wolflauncher/server_browser_controller.py` now owns testable cache queries, match counts, summary snapshots and filter-option loading for the Server Browser.
