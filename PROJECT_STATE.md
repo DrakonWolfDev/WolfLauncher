@@ -143,6 +143,7 @@ Current handling:
 - `wolflauncher/native_launcher.py` - native Python launch-engine foundation for tested Steam command and mod-link preparation.
 - `wolflauncher/server_cache.py` - SQLite cache for discovered public servers.
 - `wolflauncher/settings.py` - user settings and favourites.
+- `wolflauncher/settings_health.py` - testable Settings health summary and row construction.
 - `wolflauncher/config.py` - YAML server loading and default launcher path candidates.
 - `tests/` - standard-library unit tests for launcher commands, vendored launcher handoff contract, path discovery, YAML loading, status parsing and mod parsing.
 - `example.servers.yaml` - tracked curated server template.

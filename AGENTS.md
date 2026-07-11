@@ -49,6 +49,7 @@ wolflauncher/server_discovery.py
 wolflauncher/server_enrichment.py
                                 live discovered-server status enrichment
 wolflauncher/settings.py        JSON settings and favourites persistence
+wolflauncher/settings_health.py Settings health snapshot construction
 wolflauncher/status.py          gamedig status checks and DNS resolution
 example.servers.yaml            tracked curated server template
 servers.yaml                    local ignored curated server list

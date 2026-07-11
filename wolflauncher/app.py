@@ -1,5 +1,4 @@
 import os
-import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
@@ -32,7 +31,6 @@ from PySide6.QtWidgets import (
 from PySide6.QtGui import QColor, QDesktopServices, QAction
 
 from .config import (
-    DEFAULT_LAUNCHER_PATHS,
     add_curated_server,
     ensure_servers_file,
     find_default_launcher_path,
@@ -43,11 +41,7 @@ from .config import (
 )
 from .diagnostics import (
     format_settings_health_report,
-    launch_troubleshooting_report,
-    prime_environment_report,
-    prime_helper_report,
     run_diagnostics,
-    steam_launch_options_report,
 )
 from .curated_status_cache import (
     cached_status_for_server,
@@ -70,14 +64,9 @@ from .platform_detection import (
     best_install,
     dayz_process_check,
     detect_steam,
-    proton_compatdata_detail,
     select_steam_install,
-    selected_install_summary,
-    steam_install_summary,
     steam_mode_label,
     install_label,
-    steam_selection_candidates_detail,
-    steam_selection_report,
 )
 from .mods import (
     ModCheckResult,
@@ -105,6 +94,7 @@ from .settings import (
     save_settings,
     server_key,
 )
+from .settings_health import build_settings_health_snapshot
 from .status import ServerStatus, check_server
 
 
@@ -2306,11 +2296,6 @@ class MainWindow(QMainWindow):
         if not hasattr(self, "health_table"):
             return
         install_rows = detect_steam()
-        selected_install = select_steam_install(self.native_steam_mode_key(), install_rows)
-        self.system_summary.setText(selected_install_summary(selected_install))
-
-        path = Path(self.launcher_path.text()).expanduser()
-        launch_engine = self.launch_engine_key()
         provider = self.discovery_provider_key()
         provider_detail = self.discovery_provider.currentText()
         if provider == "steam_web_api":
@@ -2337,121 +2322,22 @@ class MainWindow(QMainWindow):
         else:
             provider_status = "OK"
 
-        steam = selected_install
-        auto_steam_report = steam_selection_report("auto", install_rows)
-        steam_report = steam_selection_report(self.native_steam_mode_key(), install_rows)
-        steam_status, steam_detail = steam_report.status, steam_report.detail
-        tools = ["python3", "gamedig", "node", "npm", "dig", "curl", "jq", "gawk"]
-        missing_tools = [command for command in tools if not shutil.which(command)]
-        launcher_candidates = [str(candidate) for candidate in DEFAULT_LAUNCHER_PATHS if candidate.exists()]
-        prime_report = prime_environment_report()
-        prime_helpers = prime_helper_report()
-        launch_options = steam_launch_options_report()
-        process_check = dayz_process_check()
-        launch_report = launch_troubleshooting_report(
+        snapshot = build_settings_health_snapshot(
+            self.launcher_path.text(),
+            self.launch_engine_key(),
             self.native_steam_mode_key(),
+            provider_status,
+            provider_detail,
             install_rows,
-            process_check,
         )
-
-        rows = [
-            (
-                "Launch engine",
-                "OK",
-                "Native launcher" if launch_engine == "native" else "External launcher (fallback)",
-            ),
-            (
-                "Launcher script",
-                "OK" if launch_engine == "native" or (path.exists() and path.is_file()) else "MISSING",
-                "Not required for native mode" if launch_engine == "native" else str(path),
-            ),
-            (
-                "Server API",
-                provider_status,
-                provider_detail,
-            ),
-            (
-                "Required tools",
-                "OK" if not missing_tools else "WARN",
-                "All found" if not missing_tools else "Missing: " + ", ".join(missing_tools),
-            ),
-            (
-                "PRIME environment",
-                prime_report.status,
-                prime_report.summary,
-            ),
-            (
-                "PRIME helpers",
-                prime_helpers.status,
-                prime_helpers.summary,
-            ),
-            (
-                "Steam launch options",
-                launch_options.status,
-                launch_options.summary,
-            ),
-            (
-                "Selected Steam",
-                steam_status,
-                steam_detail,
-            ),
-            (
-                "Auto Steam",
-                auto_steam_report.status,
-                auto_steam_report.detail,
-            ),
-            (
-                "Launch troubleshooting",
-                launch_report.status,
-                "; ".join(launch_report.next_steps),
-            ),
-            (
-                "Steam candidates",
-                "OK" if steam_report.candidates else "WARN",
-                steam_selection_candidates_detail(steam_report),
-            ),
-            (
-                "DayZ process",
-                "OK",
-                process_check.detail,
-            ),
-            (
-                "DayZ",
-                "OK" if steam and steam.dayz_dir else "MISSING",
-                str(steam.dayz_dir) if steam and steam.dayz_dir else "Not detected",
-            ),
-            (
-                "Workshop",
-                "OK" if steam and steam.workshop_dir else "MISSING",
-                str(steam.workshop_dir) if steam and steam.workshop_dir else "Not detected",
-            ),
-            (
-                "Proton compatdata",
-                "OK",
-                proton_compatdata_detail(steam),
-            ),
-            (
-                "Configured Steam installs",
-                "OK" if any(item.root or item.executable for item in install_rows) else "WARN",
-                ", ".join(self._install_summary(item) for item in install_rows if item.root or item.executable)
-                or "No native or Flatpak Steam roots found",
-            ),
-            (
-                "Launcher candidates",
-                "OK" if launcher_candidates else "WARN",
-                ", ".join(launcher_candidates) or "No default candidate exists",
-            ),
-        ]
-
+        self.system_summary.setText(snapshot.summary)
+        rows = snapshot.rows
         self.health_table.setRowCount(len(rows))
         for row, (name, status, details) in enumerate(rows):
             self._set_health_item(row, 0, name)
             self._set_health_item(row, 1, status, self._health_colour(status))
             self._set_health_item(row, 2, details)
         self.health_table.resizeColumnsToContents()
-
-    def _install_summary(self, install) -> str:
-        return steam_install_summary(install)
 
     def _health_colour(self, status: str) -> str:
         if status == "OK":

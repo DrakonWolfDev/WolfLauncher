@@ -44,6 +44,7 @@ wolflauncher/
   server_enrichment.py   Maps live status results onto discovered cache rows
   server_cache.py        SQLite cache for discovered public servers
   settings.py            JSON settings and favourites under ~/.config/wolflauncher
+  settings_health.py     Settings health snapshot construction
   status.py              gamedig server status and DNS resolution
 ```
 
