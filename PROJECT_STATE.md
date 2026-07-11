@@ -26,6 +26,7 @@ Handoff recorded: 2026-07-11 after commit `9ed18bf` on `main`.
 - Failed or stale cached mod results no longer count as a completed launch preflight check; only a successful result for the selected server suppresses the explicit unchecked-mod confirmation.
 - Native command preparation also reuses only a successful matching cached mod result; after an unchecked-launch confirmation, failed or stale results fall back to the native engine's fresh required-mod lookup.
 - Native fresh required-mod lookup failures are reported as structured `mod lookup` errors with recovery and external-fallback guidance instead of escaping the GUI as raw API exceptions.
+- Failed cached mod checks no longer suppress the automatic quiet retry when a curated server is selected again; only successful matching results are reused.
 - Launch dialogs use shell-aware command formatting for display and copied reports, preserving argument boundaries for paths and player names containing spaces or shell characters while execution continues to use a safe argument vector.
 - Cached resolved-IP launch selection now accepts only valid IPv4 values, so launching during initial status refresh preserves the configured hostname instead of trying to resolve the `Checking...` table placeholder.
 - `wolflauncher/workers.py` now owns status, mod-check, discovery and enrichment background threads, with focused tests for row selection and error containment.

@@ -1530,13 +1530,10 @@ class MainWindow(QMainWindow):
         if not hasattr(self, "mod_summary") or not hasattr(self, "mods_table"):
             return
         selected_key = server_key(server)
-        if (
-            not force
-            and self.last_mod_result
-            and server_key(self.last_mod_result.server) == selected_key
-        ):
+        cached_mod_result = usable_mod_result(server, self.last_mod_result)
+        if not force and cached_mod_result:
             if self.mods_table.rowCount() == 0:
-                self.display_mods_result(self.last_mod_result)
+                self.display_mods_result(cached_mod_result)
             return
 
         if self.mod_worker and self.mod_worker.isRunning():
