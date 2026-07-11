@@ -12,27 +12,29 @@ The v0.8 launch, status, settings health checks, diagnostics, mod-checking, disc
 
 ## Latest handoff
 
-Handoff recorded: 2026-07-11 after commit `0c695b9` on `main`.
+Handoff recorded: 2026-07-11 after commit `3868fe1` on `main`.
 
 - Release `v0.8.0` is tagged at `b7883a2` and pushed to GitHub.
 - Native launch is the default for fresh settings; an existing saved external-launcher choice is preserved.
-- GitHub Actions runs the unit suite on Python 3.10, 3.11 and 3.12. The `0c695b9` run is green across all three versions.
+- GitHub Actions runs the unit suite on Python 3.10, 3.11 and 3.12. The `3868fe1` run is green across all three versions.
 - The local suite contains 235 passing tests.
-- Real desktop smoke testing passed after the v0.9 refactors: Settings health refresh/population, Copy health, Copy diagnostics, native preview copy actions, dialog close behavior, Server Browser online filtering/search after the controller extraction and a known-working native server handoff all worked.
+- Real desktop smoke testing passed after the v0.9 refactors: Settings health refresh/population, Copy health, Copy diagnostics, native preview copy actions, dialog close behavior, a known-working native server handoff, Server Browser filters/limits/sorting, curated promotion/editing, discovered-row display metadata and discovered-server **Copy details** all worked.
 - `wolflauncher/launch_dialogs.py` now owns external/native launch dialogs and post-handoff DayZ process watching.
 - `wolflauncher/settings_health.py` now owns testable Settings health snapshot construction.
 - `wolflauncher/workers.py` now owns status, mod-check, discovery and enrichment background threads, with focused tests for row selection and error containment.
 - `wolflauncher/curated_dialogs.py` now owns curated-server promotion and editing forms, with direct normalization tests.
 - `wolflauncher/table_items.py` now owns the Server Browser's data-aware Qt sorting item, with direct numeric, text and empty-value tests.
-- `wolflauncher/server_browser_presenter.py` now owns pure style-filter, player-count and cache-summary presentation rules.
+- `wolflauncher/server_browser_presenter.py` now owns style-filter, player-count, cache-summary and discovered-row display/sort metadata.
 - `wolflauncher/server_browser_controller.py` now owns testable cache queries, match counts, summary snapshots and filter-option loading for the Server Browser.
-- `wolflauncher/app.py` is reduced from 2,889 lines at the v0.8 restart point to roughly 2,280 lines.
-- The worker, curated-dialog, sortable-table-item and Server Browser presenter slices were pushed as `3ac6483`, `95e57e6`, `77213b3` and `0c695b9`; each pushed slice passed its hosted test matrix.
+- `wolflauncher/app.py` is reduced from 2,889 lines at the v0.8 restart point to roughly 2,240 lines.
+- The worker, curated-dialog, sortable-table-item, Server Browser presenter/controller and row-presentation slices were pushed as `3ac6483`, `95e57e6`, `77213b3`, `0c695b9`, `5b3dfb9` and `4853dfe`; each pushed slice passed its hosted test matrix.
+- Commit `772e450` restored the automatic-refresh `timezone` dependency after real-desktop testing exposed the missing import; timezone-aware and legacy naive timestamps now have regression coverage.
+- Commit `3868fe1` documented that WolfAPI does not currently supply ping, added explanatory blank-ping tooltips and made the launcher accept future additive `ping_ms`, `ping` or `latency` fields.
 - A launch-dialog extraction briefly removed the main window's `QTimer` import and caused startup to fail. Commit `63d014c` restored it, added a regression test and passed both a clean temporary-profile GUI startup check and hosted CI.
 - GitHub CLI authentication is restored for `/home/andi/.local/bin/gh`; normal Git continues to use the SSH `origin` remote.
 - The working tree was clean and synchronized with `origin/main` before this handoff update.
 
-Recommended next slice: continue reducing Server Browser widget-population responsibilities after its query boundary and online filtering/search passed real-desktop testing. Preserve `QTimer` in `app.py`, run the 234-test suite and keep the clean-profile startup smoke check for import/startup changes.
+Recommended next slice: either finish the Server Browser boundary by extracting cohesive Qt row population from `app.py`, or return focus to native-launch/Steam-Proton hardening if a real-world failure is available. Preserve `QTimer` and `timezone` in `app.py`, run the 235-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
 
 Working:
 
@@ -213,7 +215,7 @@ Current handling:
 Use v0.9 native-launch hardening as the next active development target:
 
 - Keep native launch as the default and retain the external launcher as a fallback.
-- Preserve the completed launch-dialog and Settings-health module boundaries while continuing small `app.py` extractions.
+- Preserve the completed launch-dialog, Settings-health, worker, curated-dialog and Server Browser query/presentation boundaries while continuing small `app.py` extractions.
 - Run an offscreen clean-profile startup smoke check after changes to Qt imports or `MainWindow` initialization.
 - Continue native and Flatpak Steam regression testing when real-world failures are reported.
 - Continue refining hybrid-GPU/NVIDIA PRIME guidance after reproducible data is available.
