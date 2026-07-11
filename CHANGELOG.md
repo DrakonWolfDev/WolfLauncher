@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed the main-window startup failure caused by dropping its `QTimer` import during launch-dialog extraction.
 - Extracted external and native launch dialogs and post-handoff process watching from the main GUI module into `wolflauncher.launch_dialogs` without changing the launch workflow.
 - Added the Qt EGL runtime library to CI so GUI module import checks run on GitHub's headless Ubuntu workers.
 - Extracted Settings health snapshot construction from the main GUI module and added direct readiness-row tests.

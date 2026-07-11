@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import datetime, timedelta, timezone
 import sys
 
-from PySide6.QtCore import QThread, Signal, QUrl, Qt, QPoint
+from PySide6.QtCore import QPoint, QThread, QTimer, QUrl, Qt, Signal
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
