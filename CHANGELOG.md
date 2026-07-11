@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Extracted external and native launch dialogs and post-handoff process watching from the main GUI module into `wolflauncher.launch_dialogs` without changing the launch workflow.
+- Added the Qt EGL runtime library to CI so GUI module import checks run on GitHub's headless Ubuntu workers.
 
 ## v0.8.0 - 2026-07-11
 
