@@ -1058,10 +1058,20 @@ class MainWindow(QMainWindow):
     def handle_native_steam_mode_changed(self, *_args):
         self.last_mod_result = None
         if hasattr(self, "mod_summary"):
-            self.mod_summary.setText("Steam install changed. Recheck selected server mods.")
+            self.mod_summary.setText("Steam install changed. Rechecking selected server mods...")
         if hasattr(self, "mods_table"):
             self.mods_table.setRowCount(0)
         self.handle_settings_changed()
+        if not hasattr(self, "table"):
+            return
+        row = self.table.currentRow()
+        if row < 0 or row >= len(self.servers):
+            return
+        if self.mod_worker and self.mod_worker.isRunning():
+            self.pending_mod_check_row = row
+            self._check_pending_server_mods()
+            return
+        self.check_server_mods_for_row(row, silent=True, force=True)
 
     def save_player_name(self):
         if not self.player_name.text().strip():

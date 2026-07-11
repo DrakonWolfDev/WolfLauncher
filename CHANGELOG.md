@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Made Steam install mode changes deterministically start or queue a quiet forced mod recheck, instead of leaving the Mods tab waiting when the previous lookup had already finished.
 - Bound cached mod results to both the selected server and Workshop directory, preventing an in-flight check from an old Steam install mode being accepted after the mode changes and queuing a fresh check for the current context.
 - Prevented Mods copy/open actions from using another server's stale result while a new selection is being checked; failed current-server reports remain copyable for support, while Workshop actions require a successful current result.
 - Stopped failed cached mod checks from suppressing automatic retry when a curated server is selected again; only successful matching results are reused by the quiet selection refresh.
