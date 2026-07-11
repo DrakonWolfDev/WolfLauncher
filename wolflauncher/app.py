@@ -56,6 +56,7 @@ from .launch_preflight import (
     build_launch_preflight_state,
     next_launch_preflight_action,
 )
+from .launch_selection import server_with_resolved_ipv4
 from .models import Server
 from .native_launcher import (
     NativeLaunchError,
@@ -2037,18 +2038,9 @@ class MainWindow(QMainWindow):
         # Launch with the resolved IP address when available. This mirrors the
         # original terminal menu and avoids DayZSA API failures with some DNS
         # hostnames.
-        launch_server = server
         resolved_item = self.table.item(row, 5)
         resolved_ip = resolved_item.text().strip() if resolved_item else ""
-        if resolved_ip:
-            launch_server = Server(
-                name=server.name,
-                group=server.group,
-                host=resolved_ip,
-                game_port=server.game_port,
-                query_port=server.query_port,
-                favourite=server.favourite,
-            )
+        launch_server = server_with_resolved_ipv4(server, resolved_ip)
 
         player_name = self.player_name.text().strip() or DEFAULT_PLAYER_NAME
         if self.launch_engine_key() == "native":

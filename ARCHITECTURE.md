@@ -54,6 +54,7 @@ wolflauncher/
   launcher.py            External dayz-launcher.sh command builder
   launch_dialogs.py      External/native handoff dialogs and process watching
   launch_preflight.py    Pure ordered launch-preflight policy
+  launch_selection.py    Validated cached resolved-IP target selection
   models.py              Shared dataclasses
   mod_presenter.py       Pure Mods-tab summary and row presentation
   mods.py                DayZSA API mod lookup and local Workshop comparison

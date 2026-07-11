@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed launches attempted during initial status refresh treating the `Checking...` resolved-IP placeholder as the server host; only valid resolved IPv4 values now replace the configured hostname.
 - Fixed failed or stale cached mod checks being treated as authoritative during launch preflight; they now retain the existing explicit unchecked-mod confirmation boundary.
 - Extracted ordered launch-preflight policy from the Qt window into `wolflauncher.launch_preflight`, with direct coverage for environment blockers, stopped-Steam continuation, unchecked mods and native/external missing-mod behavior.
 - Extracted the automatic discovery-refresh timestamp policy from the Qt window into a pure module, with direct coverage for recent, expired, naive, invalid and UTC-normalized timestamps.
