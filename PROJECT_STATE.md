@@ -17,7 +17,7 @@ Handoff recorded: 2026-07-11 after commit `0c695b9` on `main`.
 - Release `v0.8.0` is tagged at `b7883a2` and pushed to GitHub.
 - Native launch is the default for fresh settings; an existing saved external-launcher choice is preserved.
 - GitHub Actions runs the unit suite on Python 3.10, 3.11 and 3.12. The `0c695b9` run is green across all three versions.
-- The local suite contains 234 passing tests.
+- The local suite contains 235 passing tests.
 - Real desktop smoke testing passed after the v0.9 refactors: Settings health refresh/population, Copy health, Copy diagnostics, native preview copy actions, dialog close behavior, Server Browser online filtering/search after the controller extraction and a known-working native server handoff all worked.
 - `wolflauncher/launch_dialogs.py` now owns external/native launch dialogs and post-handoff DayZ process watching.
 - `wolflauncher/settings_health.py` now owns testable Settings health snapshot construction.
@@ -50,6 +50,7 @@ Working:
 - Steam master server candidate discovery import script.
 - Single in-app discovered-server database refresh using the provider selected in Settings.
 - WolfAPI discovered-server cache provider using `https://api.drakonwolf.ddns.net/api/servers`.
+- WolfAPI rows currently require local **Enrich visible** queries for ping because the hosted API contract does not supply it; WolfLauncher accepts a future additive `ping_ms`, `ping` or `latency` field and explains blank provider ping cells in a tooltip.
 - Steam Web API server-list discovery with user-supplied API key.
 - BattleMetrics server discovery.
 - Optional quiet rate-limited startup refresh for the selected discovery provider, throttled to once per day.

@@ -55,6 +55,8 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
         tooltips[11] = "This row has not been live-checked yet."
     if not server.last_seen:
         tooltips[12] = "This row has not been seen online yet."
+    if server.ping_ms is None:
+        tooltips[8] = "Ping was not supplied by the discovery provider. Use Enrich visible to query it."
 
     return BrowserRow(
         values=[

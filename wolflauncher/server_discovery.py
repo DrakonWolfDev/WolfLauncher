@@ -448,6 +448,7 @@ def discovered_server_from_wolfapi_row(row: dict, timestamp: str = "") -> Discov
         map_name=str(row.get("map") or row.get("map_name") or ""),
         players_current=_optional_int(_first_present(row, "players", "players_current")),
         players_max=_optional_int(_first_present(row, "max_players", "maxplayers", "players_max")),
+        ping_ms=_optional_int(_first_present(row, "ping_ms", "ping", "latency")),
         version=str(row.get("version") or ""),
         password=bool(row.get("password", False)),
         modded="mod" in gametype.lower() or bool(row.get("modded", False)),

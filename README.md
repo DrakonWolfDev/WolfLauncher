@@ -288,7 +288,7 @@ Use `--master HOST[:PORT]` to test specific Steam master endpoints if local DNS 
 
 The app honors `WOLFLAUNCHER_STEAM_MASTER_ENDPOINTS` as a comma-separated endpoint list, plus the older `WOLFLAUNCHER_STEAM_MASTER_HOST` / `WOLFLAUNCHER_STEAM_MASTER_PORT` overrides. Steam discovery rows are treated as candidates until later status enrichment confirms display names, maps, player counts and port details.
 
-Use **Enrich visible** in the Server Browser tab to query the currently visible cached rows and fill in live status fields such as server name, map, players, ping, version and online state. Enrichment tries the cached query port first, then a small set of likely DayZ query-port fallbacks when discovered rows have uncertain port data. The Server Browser map and version filters are populated from cached/enriched values when those fields are available.
+Use **Enrich visible** in the Server Browser tab to query the currently visible cached rows and fill in live status fields such as server name, map, players, ping, version and online state. WolfAPI's current `/api/servers` contract does not supply ping, so WolfAPI rows show a blank ping until they are enriched locally; WolfLauncher will also consume an additive `ping_ms` field if the API provides one in the future. Enrichment tries the cached query port first, then a small set of likely DayZ query-port fallbacks when discovered rows have uncertain port data. The Server Browser map and version filters are populated from cached/enriched values when those fields are available.
 
 ## Project Documentation
 

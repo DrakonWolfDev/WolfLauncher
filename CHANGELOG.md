@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Clarified blank provider ping values in Server Browser tooltips and documentation, and made WolfAPI parsing accept a future additive `ping_ms`, `ping` or `latency` field.
 - Moved discovered-server row display/sort metadata into the Server Browser presenter and fixed copied discovered-server details still calling the removed `_players_text` GUI helper.
 - Fixed automatic discovery refresh crashing while evaluating its 24-hour throttle after the worker extraction dropped the main GUI's `timezone` import.
 - Added a testable Server Browser controller boundary that owns cache queries, result counts, summary snapshots and filter-option loading.

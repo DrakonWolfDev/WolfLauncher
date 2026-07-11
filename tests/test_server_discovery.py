@@ -519,6 +519,18 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         self.assertEqual(server.game_port, 2302)
         self.assertEqual(server.query_port, 27016)
 
+    def test_wolfapi_row_accepts_future_ping_field(self):
+        server = discovered_server_from_wolfapi_row(
+            {
+                "addr": "203.0.113.10:27016",
+                "game_port": 2302,
+                "name": "WolfAPI DayZ",
+                "ping_ms": "47",
+            }
+        )
+
+        self.assertEqual(server.ping_ms, 47)
+
     def test_parse_wolfapi_response_deduplicates_and_limits_rows(self):
         servers = parse_wolfapi_servers(
             {
