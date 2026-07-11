@@ -12,12 +12,12 @@ The v0.8 launch, status, settings health checks, diagnostics, mod-checking, disc
 
 ## Latest handoff
 
-Handoff recorded: 2026-07-11 after commit `f42e732` on `main`.
+Handoff recorded: 2026-07-11 after commit `9ed18bf` on `main`.
 
 - Release `v0.8.0` is tagged at `b7883a2` and pushed to GitHub.
 - Native launch is the default for fresh settings; an existing saved external-launcher choice is preserved.
-- GitHub Actions runs the unit suite on Python 3.10, 3.11 and 3.12. Previously pushed v0.9 boundary slices passed the hosted matrix; verify the latest run before relying on hosted status.
-- The local suite contains 255 passing tests.
+- GitHub Actions runs the unit suite on Python 3.10, 3.11 and 3.12. The matrix passed for `9ed18bf` in run `29167578839`.
+- The local suite contains 257 passing tests.
 - Real desktop smoke testing passed after the v0.9 refactors: Settings health refresh/population, Copy health, Copy diagnostics, native preview copy actions, dialog close behavior, a known-working native server handoff, Server Browser filters/limits/sorting, curated promotion/editing, discovered-row display metadata and discovered-server **Copy details** all worked.
 - `wolflauncher/launch_dialogs.py` now owns external/native launch dialogs and post-handoff DayZ process watching.
 - `wolflauncher/settings_health.py` now owns testable Settings health snapshot construction.
@@ -28,7 +28,7 @@ Handoff recorded: 2026-07-11 after commit `f42e732` on `main`.
 - `wolflauncher/mod_presenter.py` now owns Mods-tab summary text and installed/missing row presentation.
 - `wolflauncher/native_launcher.py` now owns native failure-detail assembly for full parity, unavailable context and secondary report failures.
 - Steam selection regression coverage now locks down complete-install priority, explicit `STEAM_ROOT` selection and empty detection.
-- The v0.9 GUI simplification pass has started in Server Browser: common filters, promotion and reset remain visible; secondary filters and database/enrichment tools are available through a direction-marked collapsed disclosure panel. Initial desktop review approved the layout after removing the redundant Map label and making the disclosure easier to scan.
+- The initial v0.9 GUI simplification pass is complete. Server Browser keeps common filters, promotion and reset visible while secondary filters and database/enrichment tools remain available through a direction-marked collapsed disclosure panel.
 - The same progressive-disclosure pattern now keeps common Mods actions visible while retaining native preview, copy and selected-page controls in an advanced panel.
 - Desktop feedback aligned both browser-style tabs: Server Browser information now precedes search/common filters, and advanced disclosures sit at the bottom of both Server Browser and Mods.
 - The Server Browser bottom row aligns its advanced disclosure on the left with Promote/Reset on the right; the approved Mods layout remains unchanged.
@@ -40,15 +40,16 @@ Handoff recorded: 2026-07-11 after commit `f42e732` on `main`.
 - `wolflauncher/server_browser_presenter.py` now owns style-filter, player-count, cache-summary, discovered-row metadata and copied discovered-server details.
 - `wolflauncher/server_browser_controller.py` now owns testable cache queries, match counts, summary snapshots and filter-option loading for the Server Browser.
 - `wolflauncher/server_browser_table.py` now owns Qt row population, including sortable items, cache-key roles, tooltips and status colours.
-- `wolflauncher/app.py` is reduced from 2,889 lines at the v0.8 restart point to roughly 2,095 lines.
+- `wolflauncher/app.py` is reduced from 2,889 lines at the v0.8 restart point to 2,191 lines after the approved GUI consistency work and latest extraction.
 - The worker, curated-dialog, sortable-table-item, Server Browser presenter/controller and row-presentation slices were pushed as `3ac6483`, `95e57e6`, `77213b3`, `0c695b9`, `5b3dfb9` and `4853dfe`; each pushed slice passed its hosted test matrix.
 - Commit `772e450` restored the automatic-refresh `timezone` dependency after real-desktop testing exposed the missing import; timezone-aware and legacy naive timestamps now have regression coverage.
 - Commit `3868fe1` documented that WolfAPI does not currently supply ping, added explanatory blank-ping tooltips and made the launcher accept future additive `ping_ms`, `ping` or `latency` fields.
 - A launch-dialog extraction briefly removed the main window's `QTimer` import and caused startup to fail. Commit `63d014c` restored it, added a regression test and passed both a clean temporary-profile GUI startup check and hosted CI.
 - GitHub CLI authentication is restored for `/home/andi/.local/bin/gh`; normal Git continues to use the SSH `origin` remote.
+- Commits `e541b5c`, `2fde7f9` and `a443310` completed, approved and documented the Settings/Servers/four-tab GUI pass. Commit `9ed18bf` extracted the discovery refresh policy; all four commits are pushed to `origin/main`.
 - The working tree was clean and synchronized with `origin/main` before this handoff documentation update.
 
-Recommended next step: resume v0.9 native hardening through small behavior-preserving `app.py` boundaries and real-world Steam/Proton regression fixes as evidence arrives. Preserve the approved four-tab hierarchy, `QTimer` and `timezone` in `app.py`, run the 255-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
+Recommended next step: resume v0.9 native hardening through small behavior-preserving `app.py` boundaries and real-world Steam/Proton regression fixes as evidence arrives. A reasonable next boundary to inspect is launch preflight decision/presentation logic, but do not refactor it merely for line count; preserve launch behaviour and add direct tests first. Preserve the approved four-tab hierarchy and `QTimer` in `app.py`; UTC refresh handling now belongs in `wolflauncher/discovery_refresh.py`. Run the 257-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
 
 ## v0.9 GUI consistency handoff
 
@@ -63,7 +64,7 @@ The approved direction is structural simplification first; theme, typography, fo
 - Avoid redundant labels when a combo box already communicates its purpose clearly, as with `Any map`.
 - Keep summaries above filters/results, matching the approved Server Browser, Mods and Settings information-first rhythm.
 - Validate visible layout changes with the 1350x720 offscreen render, the full unit suite and a real desktop review. Check both collapsed and expanded states and ensure bottom controls remain visible.
-- Current approved commits: `c5c1110` initial Server Browser disclosure, `2c0161a` disclosure refinement, `d74a4b6` Mods disclosure, `c65d707` shared hierarchy, `f42e732` Server Browser bottom-row alignment and `e541b5c` Settings simplification.
+- Current approved commits: `c5c1110` initial Server Browser disclosure, `2c0161a` disclosure refinement, `d74a4b6` Mods disclosure, `c65d707` shared hierarchy, `f42e732` Server Browser bottom-row alignment, `e541b5c` Settings simplification, `2fde7f9` Servers/adaptive fallback settings and `a443310` final desktop-review record.
 
 Working:
 
