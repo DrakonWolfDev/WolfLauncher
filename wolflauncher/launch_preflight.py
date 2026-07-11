@@ -28,6 +28,20 @@ class LaunchPreflightState:
     native_engine: bool
 
 
+def usable_mod_result(
+    server: Server,
+    mod_result: ModCheckResult | None,
+) -> ModCheckResult | None:
+    """Return a successful cached result only when it belongs to the server."""
+    if (
+        mod_result
+        and mod_result.ok
+        and server_key(mod_result.server) == server_key(server)
+    ):
+        return mod_result
+    return None
+
+
 def build_launch_preflight_state(
     install: SteamInstall | None,
     server: Server,
@@ -36,12 +50,9 @@ def build_launch_preflight_state(
     native_engine: bool,
 ) -> LaunchPreflightState:
     """Build policy state from detected install and cached mod-check context."""
-    mods_checked = bool(
-        mod_result
-        and mod_result.ok
-        and server_key(mod_result.server) == server_key(server)
-    )
-    missing_mod_count = len(mod_result.missing_mods) if mods_checked and mod_result else 0
+    current_mod_result = usable_mod_result(server, mod_result)
+    mods_checked = current_mod_result is not None
+    missing_mod_count = len(current_mod_result.missing_mods) if current_mod_result else 0
     return LaunchPreflightState(
         has_install=install is not None,
         has_dayz=bool(install and install.dayz_dir),

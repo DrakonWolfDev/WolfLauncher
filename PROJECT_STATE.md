@@ -17,13 +17,14 @@ Handoff recorded: 2026-07-11 after commit `9ed18bf` on `main`.
 - Release `v0.8.0` is tagged at `b7883a2` and pushed to GitHub.
 - Native launch is the default for fresh settings; an existing saved external-launcher choice is preserved.
 - GitHub Actions runs the unit suite on Python 3.10, 3.11 and 3.12. The matrix passed for `9ed18bf` in run `29167578839`.
-- The local suite contains 271 passing tests.
+- The local suite contains 272 passing tests.
 - Real desktop smoke testing passed after the v0.9 refactors: Settings health refresh/population, Copy health, Copy diagnostics, native preview copy actions, dialog close behavior, a known-working native server handoff, Server Browser filters/limits/sorting, curated promotion/editing, discovered-row display metadata and discovered-server **Copy details** all worked.
 - `wolflauncher/launch_dialogs.py` now owns external/native launch dialogs and post-handoff DayZ process watching.
 - `wolflauncher/settings_health.py` now owns testable Settings health snapshot construction.
 - `wolflauncher/discovery_refresh.py` now owns automatic provider-refresh timestamp parsing, UTC normalization and the 24-hour throttle policy.
 - `wolflauncher/launch_preflight.py` now owns the ordered launch-preflight policy, separating environment, Steam and mod decisions from their Qt dialogs.
 - Failed or stale cached mod results no longer count as a completed launch preflight check; only a successful result for the selected server suppresses the explicit unchecked-mod confirmation.
+- Native command preparation also reuses only a successful matching cached mod result; after an unchecked-launch confirmation, failed or stale results fall back to the native engine's fresh required-mod lookup.
 - Cached resolved-IP launch selection now accepts only valid IPv4 values, so launching during initial status refresh preserves the configured hostname instead of trying to resolve the `Checking...` table placeholder.
 - `wolflauncher/workers.py` now owns status, mod-check, discovery and enrichment background threads, with focused tests for row selection and error containment.
 - `wolflauncher/curated_dialogs.py` now owns curated-server promotion and editing forms, with direct normalization tests.
@@ -52,7 +53,7 @@ Handoff recorded: 2026-07-11 after commit `9ed18bf` on `main`.
 - Commits `e541b5c`, `2fde7f9` and `a443310` completed, approved and documented the Settings/Servers/four-tab GUI pass. Commit `9ed18bf` extracted the discovery refresh policy; all four commits are pushed to `origin/main`.
 - The working tree was clean and synchronized with `origin/main` before this handoff documentation update.
 
-Recommended next step: continue v0.9 native hardening through small behavior-preserving `app.py` boundaries and real-world Steam/Proton regression fixes as evidence arrives. Launch-preflight decisions and state construction belong in `wolflauncher/launch_preflight.py`, and validated cached-IP target selection belongs in `wolflauncher/launch_selection.py`; Qt dialog presentation remains in `app.py`. Do not refactor merely for line count. Preserve the approved four-tab hierarchy and `QTimer` in `app.py`; UTC refresh handling belongs in `wolflauncher/discovery_refresh.py`. Run the 271-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
+Recommended next step: continue v0.9 native hardening through small behavior-preserving `app.py` boundaries and real-world Steam/Proton regression fixes as evidence arrives. Launch-preflight decisions, state construction and usable cached-mod selection belong in `wolflauncher/launch_preflight.py`, and validated cached-IP target selection belongs in `wolflauncher/launch_selection.py`; Qt dialog presentation remains in `app.py`. Do not refactor merely for line count. Preserve the approved four-tab hierarchy and `QTimer` in `app.py`; UTC refresh handling belongs in `wolflauncher/discovery_refresh.py`. Run the 272-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
 
 ## v0.9 GUI consistency handoff
 

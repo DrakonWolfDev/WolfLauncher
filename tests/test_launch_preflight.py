@@ -6,6 +6,7 @@ from wolflauncher.launch_preflight import (
     LaunchPreflightState,
     build_launch_preflight_state,
     next_launch_preflight_action,
+    usable_mod_result,
 )
 from wolflauncher.models import Server
 from wolflauncher.mods import ModCheckResult, RequiredMod
@@ -129,6 +130,18 @@ class LaunchPreflightTests(unittest.TestCase):
 
         self.assertFalse(state.mods_checked)
         self.assertEqual(state.missing_mod_count, 0)
+
+    def test_only_successful_matching_mod_result_is_usable_for_launch(self):
+        server = Server("Selected", "Tests", "dayz.test", 2302, 27016)
+        other = Server("Other", "Tests", "other.test", 2302, 27016)
+        current = ModCheckResult(ok=True, server=server, required_mods=[])
+        failed = ModCheckResult(ok=False, server=server, required_mods=[], error="failed")
+        stale = ModCheckResult(ok=True, server=other, required_mods=[])
+
+        self.assertIs(usable_mod_result(server, current), current)
+        self.assertIsNone(usable_mod_result(server, failed))
+        self.assertIsNone(usable_mod_result(server, stale))
+        self.assertIsNone(usable_mod_result(server, None))
 
 
 if __name__ == "__main__":

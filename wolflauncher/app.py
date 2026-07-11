@@ -55,6 +55,7 @@ from .launch_preflight import (
     LaunchPreflightAction,
     build_launch_preflight_state,
     next_launch_preflight_action,
+    usable_mod_result,
 )
 from .launch_selection import server_with_resolved_ipv4
 from .models import Server
@@ -2051,9 +2052,8 @@ class MainWindow(QMainWindow):
                     stage="Steam detection",
                     guidance="Open Settings health and confirm the selected native or Flatpak Steam install can be detected.",
                 )
-            required_mods = None
-            if self.last_mod_result and server_key(self.last_mod_result.server) == server_key(server):
-                required_mods = self.last_mod_result.required_mods
+            current_mod_result = usable_mod_result(server, self.last_mod_result)
+            required_mods = current_mod_result.required_mods if current_mod_result else None
             try:
                 prepared = prepare_native_launch(install, launch_server, player_name, required_mods)
             except NativeLaunchError as exc:
