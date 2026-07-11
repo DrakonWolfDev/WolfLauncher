@@ -17,19 +17,20 @@ Handoff recorded: 2026-07-11 at commit `63d014c` on `main`.
 - Release `v0.8.0` is tagged at `b7883a2` and pushed to GitHub.
 - Native launch is the default for fresh settings; an existing saved external-launcher choice is preserved.
 - GitHub Actions runs the unit suite on Python 3.10, 3.11 and 3.12. The latest run is green.
-- The local suite contains 222 passing tests.
+- The local suite contains 226 passing tests.
 - Real desktop smoke testing passed after the v0.9 refactors: Settings health refresh/population, Copy health, Copy diagnostics, native preview copy actions, dialog close behavior and a known-working native server handoff all worked.
 - `wolflauncher/launch_dialogs.py` now owns external/native launch dialogs and post-handoff DayZ process watching.
 - `wolflauncher/settings_health.py` now owns testable Settings health snapshot construction.
 - `wolflauncher/workers.py` now owns status, mod-check, discovery and enrichment background threads, with focused tests for row selection and error containment.
 - `wolflauncher/curated_dialogs.py` now owns curated-server promotion and editing forms, with direct normalization tests.
 - `wolflauncher/table_items.py` now owns the Server Browser's data-aware Qt sorting item, with direct numeric, text and empty-value tests.
-- `wolflauncher/app.py` is reduced from 2,889 lines at the v0.8 restart point to roughly 2,320 lines.
+- `wolflauncher/server_browser_presenter.py` now owns pure style-filter, player-count and cache-summary presentation rules.
+- `wolflauncher/app.py` is reduced from 2,889 lines at the v0.8 restart point to roughly 2,280 lines.
 - A launch-dialog extraction briefly removed the main window's `QTimer` import and caused startup to fail. Commit `63d014c` restored it, added a regression test and passed both a clean temporary-profile GUI startup check and hosted CI.
 - GitHub CLI authentication is restored for `/home/andi/.local/bin/gh`; normal Git continues to use the SSH `origin` remote.
 - The working tree was clean and synchronized with `origin/main` when this handoff was written.
 
-Recommended next slice: continue v0.9 with a cohesive, behavior-preserving Server Browser or curated-server workflow extraction from `app.py`. Preserve `QTimer` in `app.py`, run the 222-test suite, perform an offscreen clean-profile startup smoke check for changes touching imports/startup, then push and confirm the three-version Actions matrix.
+Recommended next slice: continue v0.9 by defining a cohesive Server Browser or curated-server controller boundary rather than moving isolated methods. Preserve `QTimer` in `app.py`, run the 226-test suite, perform an offscreen clean-profile startup smoke check for changes touching imports/startup, then push and confirm the three-version Actions matrix.
 
 Working:
 
@@ -168,6 +169,7 @@ Current handling:
 - `wolflauncher/workers.py` - background status, mod-check, discovery and enrichment threads.
 - `wolflauncher/curated_dialogs.py` - curated-server promotion and editing dialogs.
 - `wolflauncher/table_items.py` - data-aware Qt item sorting for cached server rows.
+- `wolflauncher/server_browser_presenter.py` - pure Server Browser formatting and style-filter rules.
 - `wolflauncher/config.py` - YAML server loading and default launcher path candidates.
 - `tests/` - standard-library unit tests for launcher commands, vendored launcher handoff contract, path discovery, YAML loading, status parsing and mod parsing.
 - `example.servers.yaml` - tracked curated server template.

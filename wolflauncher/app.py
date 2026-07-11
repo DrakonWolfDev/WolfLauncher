@@ -77,6 +77,7 @@ from .server_discovery import parse_master_address
 from .server_enrichment import (
     parse_connect_port,
 )
+from .server_browser_presenter import browser_style_terms, browser_summary_text, players_text
 from .settings import (
     load_favourites,
     load_settings,
@@ -1029,7 +1030,7 @@ class MainWindow(QMainWindow):
         map_name = self._combo_filter_value(self.browser_map, "Any map")
         version = self._combo_filter_value(self.browser_version, "Any version")
         source = self._combo_filter_value(self.browser_source, "Any source")
-        style_terms = self._browser_style_terms()
+        style_terms = browser_style_terms(self.browser_style.currentText())
         limit = int(self.browser_limit.currentText())
 
         servers = server_cache.search_servers(
@@ -1074,7 +1075,7 @@ class MainWindow(QMainWindow):
                 str(server.query_port),
                 "ONLINE" if server.online else "OFFLINE",
                 server.map_name,
-                self._players_text(server.players_current, server.players_max),
+                players_text(server.players_current, server.players_max),
                 f"{server.ping_ms}ms" if server.ping_ms is not None else "",
                 server.version,
                 ", ".join(flags) if flags else "Vanilla/unknown",
@@ -1115,7 +1116,8 @@ class MainWindow(QMainWindow):
 
         self.browser_table.resizeColumnsToContents()
         self.browser_table.setSortingEnabled(True)
-        self.browser_summary.setText(self._browser_summary_text(servers, match_count, limit))
+        summary = server_cache.cache_summary(self.server_cache)
+        self.browser_summary.setText(browser_summary_text(summary, len(servers), match_count, limit))
 
     def _refresh_browser_filter_options(self):
         self._set_combo_filter_options(
@@ -1151,34 +1153,6 @@ class MainWindow(QMainWindow):
         value = combo.currentText().strip()
         return "" if value == any_label else value
 
-    def _browser_style_terms(self) -> list[str]:
-        style = self.browser_style.currentText()
-        if style == "PvE":
-            return ["pve", "p.v.e", "no pvp", "no kos", "no-kos", "no kill on sight"]
-        if style == "PvP":
-            return ["pvp", "p.v.p"]
-        return []
-
-    def _browser_summary_text(self, servers, match_count: int, limit: int) -> str:
-        summary = server_cache.cache_summary(self.server_cache)
-        shown = len(servers)
-        total = summary["total"]
-        if total == 0:
-            return "Cached discovered servers: empty"
-
-        parts = [
-            f"Showing {shown} of {match_count} matching",
-            f"{total} cached",
-            f"{summary['online']} online",
-            f"{summary['checked']} checked",
-            f"{summary['seen']} seen online",
-        ]
-        if shown == limit and match_count > shown:
-            parts[0] = f"Showing first {shown} of {match_count} matching"
-        elif shown == 0:
-            parts[0] = f"No matches from {total} cached"
-        return "Cached discovered servers: " + " | ".join(parts)
-
     def reset_browser_filters(self):
         self.browser_search.clear()
         self.browser_online_only.setChecked(False)
@@ -1191,15 +1165,6 @@ class MainWindow(QMainWindow):
         self.browser_descending.setChecked(False)
         self.browser_limit.setCurrentText("200")
         self.refresh_server_browser()
-
-    def _players_text(self, current: int | None, maximum: int | None) -> str:
-        if current is None and maximum is None:
-            return ""
-        if maximum is None:
-            return str(current)
-        if current is None:
-            return f"?/{maximum}"
-        return f"{current}/{maximum}"
 
     def _set_item(self, row: int, column: int, text: str, colour: str | None = None):
         item = QTableWidgetItem(text)
