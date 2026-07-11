@@ -1,0 +1,93 @@
+import tempfile
+import unittest
+from pathlib import Path
+
+from wolflauncher import server_cache
+from wolflauncher.models import DiscoveredServer
+from wolflauncher.server_browser_controller import (
+    BrowserQuery,
+    browser_filter_options,
+    load_browser_snapshot,
+)
+
+
+class ServerBrowserControllerTests(unittest.TestCase):
+    def setUp(self):
+        self.tmpdir = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmpdir.cleanup)
+        self.connection = server_cache.connect(Path(self.tmpdir.name) / "cache.sqlite3")
+        self.addCleanup(self.connection.close)
+        server_cache.upsert_servers(
+            self.connection,
+            [
+                DiscoveredServer(
+                    name="Quiet PvE Chernarus",
+                    host="203.0.113.10",
+                    game_port=2302,
+                    query_port=27016,
+                    map_name="chernarusplus",
+                    players_current=5,
+                    version="1.26",
+                    source="wolfapi",
+                    online=True,
+                ),
+                DiscoveredServer(
+                    name="Busy PvP Namalsk",
+                    host="203.0.113.20",
+                    game_port=2302,
+                    query_port=27016,
+                    map_name="namalsk",
+                    players_current=45,
+                    version="1.25",
+                    source="battlemetrics",
+                    modded=True,
+                    online=True,
+                ),
+                DiscoveredServer(
+                    name="Offline Namalsk",
+                    host="203.0.113.30",
+                    game_port=2302,
+                    query_port=27016,
+                    map_name="namalsk",
+                    players_current=0,
+                    version="1.25",
+                    source="battlemetrics",
+                    modded=True,
+                ),
+            ],
+        )
+
+    def test_snapshot_applies_filters_sorting_count_and_summary(self):
+        snapshot = load_browser_snapshot(
+            self.connection,
+            BrowserQuery(
+                online_only=True,
+                style_terms=("pvp",),
+                modded=True,
+                sort_by="players",
+                descending=True,
+                limit=200,
+            ),
+        )
+
+        self.assertEqual([server.name for server in snapshot.servers], ["Busy PvP Namalsk"])
+        self.assertEqual(snapshot.match_count, 1)
+        self.assertEqual(snapshot.cache_summary["total"], 3)
+        self.assertEqual(snapshot.cache_summary["online"], 2)
+
+    def test_snapshot_count_is_not_limited_to_visible_rows(self):
+        snapshot = load_browser_snapshot(self.connection, BrowserQuery(limit=1))
+
+        self.assertEqual(len(snapshot.servers), 1)
+        self.assertEqual(snapshot.match_count, 3)
+
+    def test_filter_options_are_distinct_and_sorted(self):
+        options = browser_filter_options(self.connection)
+
+        self.assertEqual(options["map"], ["chernarusplus", "namalsk"])
+        self.assertEqual(options["version"], ["1.25", "1.26"])
+        self.assertEqual(options["source"], ["battlemetrics", "wolfapi"])
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -70,7 +70,7 @@ Goal: turn WolfAPI from a Steam-capped cache into a resilient community server d
 
 ## v0.9 - Native launcher engine hardening
 
-Status: in progress. Launch dialogs, curated-server dialogs, Settings health snapshots, background workers and Server Browser presentation helpers have been extracted from the main GUI module, with local desktop smoke testing and the hosted Python 3.10-3.12 test matrix passing for the previously pushed slices.
+Status: in progress. Launch dialogs, curated-server dialogs, Settings health snapshots, background workers and testable Server Browser query/presentation boundaries have been extracted from the main GUI module, with local desktop smoke testing and the hosted Python 3.10-3.12 test matrix passing for the previously pushed slices.
 
 - Keep the validated native engine as the default and address real-world regressions as they are reported.
 - Keep the external launcher path as a visible fallback during the transition.

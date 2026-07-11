@@ -78,6 +78,7 @@ from .server_enrichment import (
     parse_connect_port,
 )
 from .server_browser_presenter import browser_style_terms, browser_summary_text, players_text
+from .server_browser_controller import BrowserQuery, browser_filter_options, load_browser_snapshot
 from .settings import (
     load_favourites,
     load_settings,
@@ -1033,29 +1034,22 @@ class MainWindow(QMainWindow):
         style_terms = browser_style_terms(self.browser_style.currentText())
         limit = int(self.browser_limit.currentText())
 
-        servers = server_cache.search_servers(
+        snapshot = load_browser_snapshot(
             self.server_cache,
-            text=self.browser_search.text(),
-            online_only=self.browser_online_only.isChecked(),
-            map_name=map_name,
-            version=version,
-            source=source,
-            style_terms=style_terms,
-            modded=modded,
-            sort_by=sort_key,
-            descending=self.browser_descending.isChecked(),
-            limit=limit,
+            BrowserQuery(
+                text=self.browser_search.text(),
+                online_only=self.browser_online_only.isChecked(),
+                map_name=map_name,
+                version=version,
+                source=source,
+                style_terms=tuple(style_terms),
+                modded=modded,
+                sort_by=sort_key,
+                descending=self.browser_descending.isChecked(),
+                limit=limit,
+            ),
         )
-        match_count = server_cache.count_search_servers(
-            self.server_cache,
-            text=self.browser_search.text(),
-            online_only=self.browser_online_only.isChecked(),
-            map_name=map_name,
-            version=version,
-            source=source,
-            style_terms=style_terms,
-            modded=modded,
-        )
+        servers = snapshot.servers
         self.browser_servers = servers
 
         self.browser_table.setSortingEnabled(False)
@@ -1116,24 +1110,26 @@ class MainWindow(QMainWindow):
 
         self.browser_table.resizeColumnsToContents()
         self.browser_table.setSortingEnabled(True)
-        summary = server_cache.cache_summary(self.server_cache)
-        self.browser_summary.setText(browser_summary_text(summary, len(servers), match_count, limit))
+        self.browser_summary.setText(
+            browser_summary_text(snapshot.cache_summary, len(servers), snapshot.match_count, limit)
+        )
 
     def _refresh_browser_filter_options(self):
+        options = browser_filter_options(self.server_cache)
         self._set_combo_filter_options(
             self.browser_map,
             "Any map",
-            server_cache.distinct_values(self.server_cache, "map"),
+            options["map"],
         )
         self._set_combo_filter_options(
             self.browser_version,
             "Any version",
-            server_cache.distinct_values(self.server_cache, "version"),
+            options["version"],
         )
         self._set_combo_filter_options(
             self.browser_source,
             "Any source",
-            server_cache.distinct_values(self.server_cache, "source"),
+            options["source"],
         )
 
     def _set_combo_filter_options(self, combo: QComboBox, any_label: str, values: list[str]):

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added a testable Server Browser controller boundary that owns cache queries, result counts, summary snapshots and filter-option loading.
 - Extracted pure Server Browser presentation rules for style terms, player counts and cache-summary text into `wolflauncher.server_browser_presenter`, with direct edge-case tests.
 - Extracted the Server Browser's data-aware Qt table item into `wolflauncher.table_items`, with direct numeric, text and empty-value sorting tests.
 - Extracted curated-server promotion/edit dialogs from the main GUI module into `wolflauncher.curated_dialogs`, with direct field-normalization tests.
