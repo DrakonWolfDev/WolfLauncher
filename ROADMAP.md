@@ -80,6 +80,7 @@ Status: in progress. Launch dialogs, curated-server dialogs, Settings health sna
 - After the current behavior boundaries are stable, run a GUI simplification pass: keep common server browsing and launching calm and obvious by default while retaining advanced discovery, diagnostics, parity and fallback controls in clearly labelled secondary areas.
 - Improve structured launch errors and user-facing diagnostics.
 - Add regression tests for launch command generation, host resolution and Steam mode detection.
+  Current coverage includes resolved external/native targets, DNS failures, non-default ports, player-name argument safety, native/Flatpak/`STEAM_ROOT` selection and deterministic complete-install priority.
 
 ## v0.9.9 - Packaging preparation
 

@@ -7,6 +7,7 @@ from unittest.mock import patch
 from wolflauncher.platform_detection import (
     SteamInstall,
     best_install,
+    best_install_from,
     dayz_process_check,
     detect_steam,
     install_label,
@@ -321,6 +322,25 @@ class PlatformDetectionTests(unittest.TestCase):
         with patch("wolflauncher.platform_detection.detect_steam", return_value=[native, flatpak]):
             self.assertIs(best_install(), flatpak)
 
+    def test_best_install_keeps_detection_priority_when_multiple_installs_are_complete(self):
+        native = make_install(
+            mode="native",
+            dayz_dir=Path("/native/DayZ"),
+            workshop_dir=Path("/native/workshop/content/221100"),
+        )
+        flatpak = make_install(
+            mode="flatpak",
+            executable="com.valvesoftware.Steam",
+            dayz_dir=Path("/flatpak/DayZ"),
+            workshop_dir=Path("/flatpak/workshop/content/221100"),
+        )
+
+        self.assertIs(best_install_from([native, flatpak]), native)
+        self.assertIs(best_install_from([flatpak, native]), flatpak)
+
+    def test_best_install_returns_none_without_detected_candidates(self):
+        self.assertIsNone(best_install_from([]))
+
     def test_select_steam_install_auto_uses_best_detected_install(self):
         native = make_install(mode="native", executable="/usr/bin/steam")
         flatpak = make_install(
@@ -341,6 +361,19 @@ class PlatformDetectionTests(unittest.TestCase):
         self.assertIs(select_steam_install("native", [native, flatpak]), native)
         self.assertIs(select_steam_install("flatpak", [native, flatpak]), flatpak)
         self.assertIsNone(select_steam_install("STEAM_ROOT env", [native, flatpak]))
+
+    def test_select_steam_install_uses_explicit_steam_root_mode(self):
+        native = make_install(mode="native", executable="/usr/bin/steam")
+        steam_root = make_install(
+            mode="STEAM_ROOT env",
+            executable="/usr/bin/steam",
+            root=Path("/custom/Steam"),
+        )
+
+        self.assertIs(
+            select_steam_install("STEAM_ROOT env", [native, steam_root]),
+            steam_root,
+        )
 
     def test_steam_selection_readiness_describes_auto_and_missing_modes(self):
         ready_native = make_install(
