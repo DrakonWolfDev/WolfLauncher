@@ -22,6 +22,11 @@ POST_HANDOFF_PROCESS_CHECK_INTERVAL_MS = 5000
 POST_HANDOFF_PROCESS_CHECK_ATTEMPTS = 9
 
 
+def format_launch_command(command: list[str]) -> str:
+    """Format a QProcess argument vector as a copyable shell command."""
+    return shlex.join(command)
+
+
 class PostHandoffProcessCheckMixin:
     def start_post_handoff_process_checks(self):
         self.post_handoff_check_attempt = 0
@@ -58,7 +63,7 @@ class LaunchDialog(PostHandoffProcessCheckMixin, QDialog):
         self.setWindowTitle(title)
         self.resize(820, 460)
         self.handoff_label = handoff_label
-        self.command_text = " ".join(command)
+        self.command_text = format_launch_command(command)
         self.process = QProcess(self)
         self.process.setProcessChannelMode(QProcess.MergedChannels)
 
@@ -132,7 +137,7 @@ class NativeLaunchPreviewDialog(PostHandoffProcessCheckMixin, QDialog):
         self.setWindowTitle(title)
         self.resize(860, 540)
         self.command = command
-        self.command_text = shlex.join(command) if command else ""
+        self.command_text = format_launch_command(command) if command else ""
         self.process = QProcess(self)
         self.process.setProcessChannelMode(QProcess.MergedChannels)
 
