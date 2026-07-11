@@ -96,6 +96,29 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
     )
 
 
+def discovered_server_details(server: DiscoveredServer) -> str:
+    flags = []
+    if server.password:
+        flags.append("Password")
+    if server.modded:
+        flags.append("Mods")
+    lines = [server.name]
+    if live_name_text(server):
+        lines.append(f"Live name: {server.server_name}")
+    lines.extend([
+        server.connect_target,
+        f"Query port: {server.query_port}",
+        f"Map: {server.map_name}",
+        f"Players: {players_text(server.players_current, server.players_max)}",
+        f"Version: {server.version}",
+        f"Flags: {', '.join(flags) if flags else 'Vanilla/unknown'}",
+        f"Last checked: {server.last_checked or 'Never'}",
+        f"Last seen: {server.last_seen or 'Never'}",
+        f"Source: {server.source}",
+    ])
+    return "\n".join(lines).strip()
+
+
 def browser_summary_text(summary: dict[str, int], shown: int, match_count: int, limit: int) -> str:
     total = summary["total"]
     if total == 0:

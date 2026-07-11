@@ -4,10 +4,10 @@ from wolflauncher.server_browser_presenter import (
     browser_row,
     browser_style_terms,
     browser_summary_text,
+    discovered_server_details,
     players_text,
 )
 from wolflauncher.models import DiscoveredServer
-from wolflauncher.app import MainWindow
 
 
 class ServerBrowserPresenterTests(unittest.TestCase):
@@ -91,10 +91,29 @@ class ServerBrowserPresenterTests(unittest.TestCase):
             players_max=60,
         )
 
-        details = MainWindow.discovered_server_details_text(None, server)
+        details = discovered_server_details(server)
 
         self.assertIn("Live name: Live Name", details)
         self.assertIn("Players: 12/60", details)
+
+    def test_discovered_details_include_flags_dates_and_source_fallbacks(self):
+        server = DiscoveredServer(
+            name="Cached Name",
+            host="203.0.113.10",
+            game_port=2302,
+            query_port=27016,
+            password=True,
+            modded=True,
+            source="wolfapi",
+        )
+
+        details = discovered_server_details(server)
+
+        self.assertNotIn("Live name:", details)
+        self.assertIn("Flags: Password, Mods", details)
+        self.assertIn("Last checked: Never", details)
+        self.assertIn("Last seen: Never", details)
+        self.assertTrue(details.endswith("Source: wolfapi"))
 
 
 if __name__ == "__main__":

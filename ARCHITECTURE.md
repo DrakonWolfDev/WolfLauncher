@@ -48,7 +48,7 @@ wolflauncher/
   server_browser_controller.py
                          Discovered-server cache queries and filter options
   server_browser_presenter.py
-                         Pure discovered-row display and sort metadata
+                         Pure discovered-row and copied-details presentation
   server_browser_table.py
                          Qt discovered-row population
   settings.py            JSON settings and favourites under ~/.config/wolflauncher

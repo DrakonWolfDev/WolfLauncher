@@ -81,8 +81,7 @@ from .server_enrichment import (
 from .server_browser_presenter import (
     browser_style_terms,
     browser_summary_text,
-    live_name_text,
-    players_text,
+    discovered_server_details,
 )
 from .server_browser_controller import BrowserQuery, browser_filter_options, load_browser_snapshot
 from .server_browser_table import populate_browser_table
@@ -1727,7 +1726,7 @@ class MainWindow(QMainWindow):
             lambda: self.copy_to_clipboard(server.host, "Server host")
         )
         copy_details_action.triggered.connect(
-            lambda: self.copy_to_clipboard(self.discovered_server_details_text(server), "Server details")
+            lambda: self.copy_to_clipboard(discovered_server_details(server), "Server details")
         )
         menu.addAction(promote_action)
         menu.addSeparator()
@@ -1735,30 +1734,6 @@ class MainWindow(QMainWindow):
         menu.addAction(copy_host_action)
         menu.addAction(copy_details_action)
         menu.exec(self.browser_table.viewport().mapToGlobal(pos))
-
-    def discovered_server_details_text(self, server) -> str:
-        flags = []
-        if server.password:
-            flags.append("Password")
-        if server.modded:
-            flags.append("Mods")
-        lines = [
-            server.name,
-        ]
-        if live_name_text(server):
-            lines.append(f"Live name: {server.server_name}")
-        lines.extend([
-            server.connect_target,
-            f"Query port: {server.query_port}",
-            f"Map: {server.map_name}",
-            f"Players: {players_text(server.players_current, server.players_max)}",
-            f"Version: {server.version}",
-            f"Flags: {', '.join(flags) if flags else 'Vanilla/unknown'}",
-            f"Last checked: {server.last_checked or 'Never'}",
-            f"Last seen: {server.last_seen or 'Never'}",
-            f"Source: {server.source}",
-        ])
-        return "\n".join(lines).strip()
 
     def _mods_cell(self, row: int, column: int) -> str:
         item = self.mods_table.item(row, column)
