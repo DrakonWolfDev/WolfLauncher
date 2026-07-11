@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Moved native launch failure-detail assembly into `wolflauncher.native_launcher`, with regression coverage for no-mod-check context, full parity output and secondary report-generation failures.
 - Extracted Mods-tab summary and row presentation into `wolflauncher.mod_presenter`, with direct coverage for errors, no-mod servers, installed/missing counts and row metadata.
 - Added an explicit v0.9 GUI simplification checkpoint that keeps common workflows calm while preserving advanced discovery, diagnostics, parity and fallback controls.
 - Moved copied discovered-server detail formatting into the existing Server Browser presenter and added coverage for live names, flags, unseen dates and source text.

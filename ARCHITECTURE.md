@@ -42,7 +42,7 @@ wolflauncher/
   mod_presenter.py       Pure Mods-tab summary and row presentation
   mods.py                DayZSA API mod lookup and local Workshop comparison
   platform_detection.py  Native/Flatpak Steam, Steam library, DayZ and Workshop detection
-  native_launcher.py     Native launch-engine foundation for mod links and Steam commands
+  native_launcher.py     Native launch engine, parity and failure-report details
   server_discovery.py    WolfAPI, BattleMetrics, Steam Web API and legacy master server candidate discovery
   server_enrichment.py   Maps live status results onto discovered cache rows
   server_cache.py        SQLite cache for discovered public servers

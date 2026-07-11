@@ -395,6 +395,42 @@ def format_native_launch_unavailable_context(
     ])
 
 
+def native_launch_failure_details(
+    install: SteamInstall,
+    launcher_path: str,
+    server: Server,
+    player_name: str,
+    required_mods: list[RequiredMod] | None,
+    selected_steam_mode: str,
+) -> str:
+    """Build the best copyable diagnostic context available after native preflight fails."""
+    if required_mods is None:
+        return (
+            "Native launch parity report unavailable.\n\n"
+            f"{format_native_launch_unavailable_context(install, server, player_name, selected_steam_mode)}\n\n"
+            "Run Check selected server mods successfully before launching to include required Workshop IDs "
+            "and prepared mod-link details in launch failure reports."
+        )
+    try:
+        report = prepare_native_launch_parity_report(
+            install,
+            launcher_path,
+            server,
+            player_name,
+            required_mods,
+            selected_steam_mode=selected_steam_mode,
+        )
+    except NativeLaunchError as detail_error:
+        text = (
+            "Native launch parity report unavailable.\n\n"
+            f"Report generation failed during {detail_error.stage}: {detail_error.user_message()}"
+        )
+        if detail_error.details:
+            text = f"{text}\n\n{detail_error.details}"
+        return text
+    return format_native_launch_parity_report(report)
+
+
 def prepare_mod_links(dayz_dir: Path, workshop_dir: Path, required_mods: list[RequiredMod]) -> NativeModSetup:
     """Prepare the legacy-compatible DayZ @mod symlinks for installed mods."""
     setup = NativeModSetup()

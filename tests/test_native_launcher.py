@@ -12,6 +12,7 @@ from wolflauncher.native_launcher import (
     compact_mod_link_name,
     format_native_launch_parity_report,
     format_native_launch_unavailable_context,
+    native_launch_failure_details,
     prepare_mod_links,
     prepare_native_launch,
     prepare_native_launch_parity_report,
@@ -51,6 +52,69 @@ def make_install(root: Path, mode: str = "native") -> SteamInstall:
 
 
 class NativeLauncherTests(unittest.TestCase):
+    def test_failure_details_use_install_context_without_current_mod_check(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+
+            details = native_launch_failure_details(
+                install,
+                "/launcher/dayz-launcher.sh",
+                make_server("203.0.113.10"),
+                "Survivor",
+                None,
+                "native",
+            )
+
+        self.assertIn("Native launch parity report unavailable", details)
+        self.assertIn("Steam install setting: Native Steam", details)
+        self.assertIn("Connect target: 203.0.113.10:2302", details)
+        self.assertIn("Run Check selected server mods", details)
+
+    def test_failure_details_return_full_parity_report_when_mod_check_is_available(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            install = make_install(root)
+            launcher = root / "dayz-launcher.sh"
+            launcher.write_text("#!/bin/sh\n")
+
+            details = native_launch_failure_details(
+                install,
+                str(launcher),
+                make_server("203.0.113.10"),
+                "Survivor",
+                [],
+                "native",
+            )
+
+        self.assertIn("Native launch parity report", details)
+        self.assertIn("Native ready: yes", details)
+        self.assertIn("Required Workshop mods: none", details)
+
+    def test_failure_details_preserve_secondary_report_error_context(self):
+        report_error = NativeLaunchError(
+            "Stale mod link",
+            stage="mod setup",
+            guidance="Remove the stale link.",
+            details="Expected target: /good\nActual target: /old",
+        )
+        with patch(
+            "wolflauncher.native_launcher.prepare_native_launch_parity_report",
+            side_effect=report_error,
+        ):
+            details = native_launch_failure_details(
+                SteamInstall("native", "steam", True, None, None, None, None),
+                "/launcher/dayz-launcher.sh",
+                make_server("203.0.113.10"),
+                "Survivor",
+                [RequiredMod("111")],
+                "native",
+            )
+
+        self.assertIn("Report generation failed during mod setup", details)
+        self.assertIn("Remove the stale link.", details)
+        self.assertIn("Expected target: /good", details)
+        self.assertIn("Actual target: /old", details)
+
     def test_native_launch_error_can_carry_copyable_details(self):
         error = NativeLaunchError(
             "Missing mod directories for: 111",

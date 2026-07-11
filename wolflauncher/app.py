@@ -54,7 +54,7 @@ from .models import Server
 from .native_launcher import (
     NativeLaunchError,
     format_native_launch_parity_report,
-    format_native_launch_unavailable_context,
+    native_launch_failure_details,
     prepare_native_launch,
     prepare_native_launch_parity_report,
 )
@@ -1963,11 +1963,13 @@ class MainWindow(QMainWindow):
                 prepared = prepare_native_launch(install, launch_server, player_name, required_mods)
             except NativeLaunchError as exc:
                 raise exc.with_details(
-                    self.native_launch_failure_details(
+                    native_launch_failure_details(
                         install,
+                        self.launcher_path.text(),
                         launch_server,
                         player_name,
                         required_mods,
+                        self.native_steam_mode_key(),
                     )
                 ) from exc
             return prepared.command
@@ -1991,39 +1993,6 @@ class MainWindow(QMainWindow):
         if error.details:
             box.setDetailedText(error.details)
         box.exec()
-
-    def native_launch_failure_details(
-        self,
-        install: SteamInstall,
-        server: Server,
-        player_name: str,
-        required_mods,
-    ) -> str:
-        if required_mods is None:
-            return (
-                "Native launch parity report unavailable.\n\n"
-                f"{format_native_launch_unavailable_context(install, server, player_name, self.native_steam_mode_key())}\n\n"
-                "Run Check selected server mods successfully before launching to include required Workshop IDs "
-                "and prepared mod-link details in launch failure reports."
-            )
-        try:
-            report = prepare_native_launch_parity_report(
-                install,
-                self.launcher_path.text(),
-                server,
-                player_name,
-                required_mods,
-                selected_steam_mode=self.native_steam_mode_key(),
-            )
-        except NativeLaunchError as detail_error:
-            text = (
-                "Native launch parity report unavailable.\n\n"
-                f"Report generation failed during {detail_error.stage}: {detail_error.user_message()}"
-            )
-            if detail_error.details:
-                text = f"{text}\n\n{detail_error.details}"
-            return text
-        return format_native_launch_parity_report(report)
 
     def confirm_launch_preflight(self, server: Server) -> bool:
         install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
