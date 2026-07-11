@@ -30,6 +30,7 @@ Handoff recorded: 2026-07-11 after commit `3868fe1` on `main`.
 - The v0.9 GUI simplification pass has started in Server Browser: common filters, promotion and reset remain visible; secondary filters and database/enrichment tools are available through a direction-marked collapsed disclosure panel. Initial desktop review approved the layout after removing the redundant Map label and making the disclosure easier to scan.
 - The same progressive-disclosure pattern now keeps common Mods actions visible while retaining native preview, copy and selected-page controls in an advanced panel.
 - Desktop feedback aligned both browser-style tabs: Server Browser information now precedes search/common filters, and advanced disclosures sit at the bottom of both Server Browser and Mods.
+- The Server Browser bottom row aligns its advanced disclosure on the left with Promote/Reset on the right; the approved Mods layout remains unchanged.
 - `wolflauncher/table_items.py` now owns the Server Browser's data-aware Qt sorting item, with direct numeric, text and empty-value tests.
 - `wolflauncher/server_browser_presenter.py` now owns style-filter, player-count, cache-summary, discovered-row metadata and copied discovered-server details.
 - `wolflauncher/server_browser_controller.py` now owns testable cache queries, match counts, summary snapshots and filter-option loading for the Server Browser.

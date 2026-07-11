@@ -319,9 +319,6 @@ class MainWindow(QMainWindow):
 
         self.browser_advanced_toggle = QPushButton()
         self.browser_advanced_toggle.setCheckable(True)
-        advanced_toggle_row = QHBoxLayout()
-        advanced_toggle_row.addWidget(self.browser_advanced_toggle)
-        advanced_toggle_row.addStretch(1)
 
         self.browser_advanced_panel = QWidget()
         advanced_layout = QVBoxLayout(self.browser_advanced_panel)
@@ -382,11 +379,11 @@ class MainWindow(QMainWindow):
         advanced_tools.addStretch(1)
         advanced_layout.addLayout(advanced_tools)
 
+        buttons.addWidget(self.browser_advanced_toggle)
         buttons.addStretch(1)
         buttons.addWidget(promote)
         buttons.addWidget(clear_filters)
         layout.addLayout(buttons)
-        layout.addLayout(advanced_toggle_row)
         layout.addWidget(self.browser_advanced_panel)
 
         self.browser_advanced_toggle.toggled.connect(
