@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Started the v0.9 GUI simplification pass by keeping common Server Browser filters and promotion visible while placing version/source/sort/limit and refresh/enrichment tools behind a compact disclosure control.
 - Added Steam-selection regressions for deterministic complete-install priority, explicit `STEAM_ROOT` selection and empty detection.
 - Moved native launch failure-detail assembly into `wolflauncher.native_launcher`, with regression coverage for no-mod-check context, full parity output and secondary report-generation failures.
 - Extracted Mods-tab summary and row presentation into `wolflauncher.mod_presenter`, with direct coverage for errors, no-mod servers, installed/missing counts and row metadata.

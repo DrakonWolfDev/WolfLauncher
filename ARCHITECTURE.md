@@ -56,6 +56,7 @@ wolflauncher/
   settings_health.py     Settings health snapshot construction
   status.py              gamedig server status and DNS resolution
   table_items.py         Data-aware Qt table sorting item
+  ui_sections.py         Shared progressive-disclosure state helper
   workers.py             Background status, mod, discovery and enrichment threads
 ```
 

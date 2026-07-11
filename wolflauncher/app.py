@@ -95,6 +95,7 @@ from .settings import (
 )
 from .settings_health import build_settings_health_snapshot
 from .status import ServerStatus, check_server
+from .ui_sections import set_disclosure_state
 from .workers import (
     BattleMetricsDiscoveryWorker,
     ModWorker,
@@ -297,31 +298,46 @@ class MainWindow(QMainWindow):
         self.browser_version = QComboBox()
         self.browser_version.addItem("Any version")
         self.browser_version.currentTextChanged.connect(self.refresh_server_browser)
-        filters.addWidget(QLabel("Version"))
-        filters.addWidget(self.browser_version)
 
         self.browser_source = QComboBox()
         self.browser_source.addItem("Any source")
         self.browser_source.currentTextChanged.connect(self.refresh_server_browser)
-        filters.addWidget(QLabel("Source"))
-        filters.addWidget(self.browser_source)
 
         self.browser_sort = QComboBox()
         self.browser_sort.addItems(["Name", "Players", "Ping", "Map", "Version", "Last checked", "Last seen"])
         self.browser_sort.currentTextChanged.connect(self.refresh_server_browser)
-        filters.addWidget(QLabel("Sort"))
-        filters.addWidget(self.browser_sort)
 
         self.browser_descending = QCheckBox("Desc")
         self.browser_descending.stateChanged.connect(self.refresh_server_browser)
-        filters.addWidget(self.browser_descending)
 
         self.browser_limit = QComboBox()
         self.browser_limit.addItems(["200", "500", "1000"])
         self.browser_limit.currentTextChanged.connect(self.refresh_server_browser)
-        filters.addWidget(QLabel("Limit"))
-        filters.addWidget(self.browser_limit)
         layout.addLayout(filters)
+
+        self.browser_advanced_toggle = QPushButton()
+        self.browser_advanced_toggle.setCheckable(True)
+        advanced_toggle_row = QHBoxLayout()
+        advanced_toggle_row.addWidget(self.browser_advanced_toggle)
+        advanced_toggle_row.addStretch(1)
+        layout.addLayout(advanced_toggle_row)
+
+        self.browser_advanced_panel = QWidget()
+        advanced_layout = QVBoxLayout(self.browser_advanced_panel)
+        advanced_layout.setContentsMargins(0, 0, 0, 0)
+        advanced_filters = QHBoxLayout()
+        advanced_filters.addWidget(QLabel("Version"))
+        advanced_filters.addWidget(self.browser_version)
+        advanced_filters.addWidget(QLabel("Source"))
+        advanced_filters.addWidget(self.browser_source)
+        advanced_filters.addWidget(QLabel("Sort"))
+        advanced_filters.addWidget(self.browser_sort)
+        advanced_filters.addWidget(self.browser_descending)
+        advanced_filters.addWidget(QLabel("Limit"))
+        advanced_filters.addWidget(self.browser_limit)
+        advanced_filters.addStretch(1)
+        advanced_layout.addLayout(advanced_filters)
+        layout.addWidget(self.browser_advanced_panel)
 
         self.browser_summary = QLabel("Cached discovered servers: loading")
         layout.addWidget(self.browser_summary)
@@ -362,13 +378,32 @@ class MainWindow(QMainWindow):
         clear_filters.clicked.connect(self.reset_browser_filters)
         refresh = QPushButton("Refresh cache view")
         refresh.clicked.connect(self.refresh_server_browser)
+        advanced_tools = QHBoxLayout()
+        advanced_tools.addWidget(self.refresh_database_button)
+        advanced_tools.addWidget(self.enrich_visible_button)
+        advanced_tools.addWidget(refresh)
+        advanced_tools.addStretch(1)
+        advanced_layout.addLayout(advanced_tools)
+
         buttons.addStretch(1)
-        buttons.addWidget(self.refresh_database_button)
-        buttons.addWidget(self.enrich_visible_button)
         buttons.addWidget(promote)
         buttons.addWidget(clear_filters)
-        buttons.addWidget(refresh)
         layout.addLayout(buttons)
+
+        self.browser_advanced_toggle.toggled.connect(
+            lambda expanded: set_disclosure_state(
+                self.browser_advanced_toggle,
+                self.browser_advanced_panel,
+                "advanced filters and tools",
+                expanded,
+            )
+        )
+        set_disclosure_state(
+            self.browser_advanced_toggle,
+            self.browser_advanced_panel,
+            "advanced filters and tools",
+            False,
+        )
         return widget
 
     def _build_mods_tab(self) -> QWidget:

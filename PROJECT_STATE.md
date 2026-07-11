@@ -17,7 +17,7 @@ Handoff recorded: 2026-07-11 after commit `3868fe1` on `main`.
 - Release `v0.8.0` is tagged at `b7883a2` and pushed to GitHub.
 - Native launch is the default for fresh settings; an existing saved external-launcher choice is preserved.
 - GitHub Actions runs the unit suite on Python 3.10, 3.11 and 3.12. The `3868fe1` run is green across all three versions.
-- The local suite contains 253 passing tests.
+- The local suite contains 255 passing tests.
 - Real desktop smoke testing passed after the v0.9 refactors: Settings health refresh/population, Copy health, Copy diagnostics, native preview copy actions, dialog close behavior, a known-working native server handoff, Server Browser filters/limits/sorting, curated promotion/editing, discovered-row display metadata and discovered-server **Copy details** all worked.
 - `wolflauncher/launch_dialogs.py` now owns external/native launch dialogs and post-handoff DayZ process watching.
 - `wolflauncher/settings_health.py` now owns testable Settings health snapshot construction.
@@ -27,6 +27,7 @@ Handoff recorded: 2026-07-11 after commit `3868fe1` on `main`.
 - `wolflauncher/mod_presenter.py` now owns Mods-tab summary text and installed/missing row presentation.
 - `wolflauncher/native_launcher.py` now owns native failure-detail assembly for full parity, unavailable context and secondary report failures.
 - Steam selection regression coverage now locks down complete-install priority, explicit `STEAM_ROOT` selection and empty detection.
+- The v0.9 GUI simplification pass has started in Server Browser: common filters, promotion and reset remain visible; secondary filters and database/enrichment tools are available through a collapsed disclosure panel.
 - `wolflauncher/table_items.py` now owns the Server Browser's data-aware Qt sorting item, with direct numeric, text and empty-value tests.
 - `wolflauncher/server_browser_presenter.py` now owns style-filter, player-count, cache-summary, discovered-row metadata and copied discovered-server details.
 - `wolflauncher/server_browser_controller.py` now owns testable cache queries, match counts, summary snapshots and filter-option loading for the Server Browser.
@@ -39,7 +40,7 @@ Handoff recorded: 2026-07-11 after commit `3868fe1` on `main`.
 - GitHub CLI authentication is restored for `/home/andi/.local/bin/gh`; normal Git continues to use the SSH `origin` remote.
 - The working tree was clean and synchronized with `origin/main` before this handoff update.
 
-Recommended next step: begin the recorded v0.9 GUI simplification pass with user desktop review, keeping advanced discovery, diagnostics, parity and fallback features available in clearly labelled secondary areas. Preserve `QTimer` and `timezone` in `app.py`, run the 253-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
+Recommended next step: desktop-review the first Server Browser simplification slice, then apply the settled progressive-disclosure pattern to Mods and Settings without hiding frequent actions too deeply. Preserve `QTimer` and `timezone` in `app.py`, run the 255-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
 
 Working:
 
