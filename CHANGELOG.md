@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Extracted curated-server row display construction into `wolflauncher.curated_server_presenter`, with direct tests for unchecked, online, offline and partial live-status states.
 - Extracted discovered-server Qt row population into `wolflauncher.server_browser_table`, with focused tests for item roles, sort metadata, tooltips, status colours and row replacement.
 - Clarified blank provider ping values in Server Browser tooltips and documentation, and made WolfAPI parsing accept a future additive `ping_ms`, `ping` or `latency` field.
 - Moved discovered-server row display/sort metadata into the Server Browser presenter and fixed copied discovered-server details still calling the removed `_players_text` GUI helper.

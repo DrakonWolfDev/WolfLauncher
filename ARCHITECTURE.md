@@ -33,6 +33,8 @@ right level of detail.
 wolflauncher/
   app.py                 Main Qt GUI, tabs and launch workflow coordination
   config.py              YAML server loading and default launcher candidates
+  curated_server_presenter.py
+                         Pure curated-row display construction
   diagnostics.py         Human-readable diagnostics report
   launcher.py            External dayz-launcher.sh command builder
   launch_dialogs.py      External/native handoff dialogs and process watching

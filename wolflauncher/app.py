@@ -37,6 +37,7 @@ from .config import (
     update_curated_server,
 )
 from .curated_dialogs import EditCuratedServerDialog, PromoteServerDialog
+from .curated_server_presenter import curated_server_row
 from .diagnostics import (
     format_settings_health_report,
     run_diagnostics,
@@ -233,7 +234,7 @@ class MainWindow(QMainWindow):
 
         for row, server in enumerate(self.servers):
             cached = cached_status_for_server(self.curated_status_cache, server)
-            values = self.curated_server_row_values(
+            values = curated_server_row(
                 server,
                 cached,
             )
@@ -1129,51 +1130,6 @@ class MainWindow(QMainWindow):
             item.setToolTip("Last known status; refresh is checking for current data.")
         self.table.setItem(row, column, item)
 
-    def curated_server_row_values(
-        self,
-        server: Server,
-        status: ServerStatus | None = None,
-    ) -> list[str]:
-        values = [
-            "★" if server.favourite else "☆",
-            server.group,
-            server.name,
-            "",
-            server.host,
-            "Checking...",
-            str(server.game_port),
-            str(server.query_port),
-            "Checking...",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-        ]
-        if status:
-            values[5] = status.resolved_ip
-            if status.online:
-                flags = []
-                if status.password:
-                    flags.append("Password")
-                if status.modded:
-                    flags.append("Mods")
-                values[3] = status.server_name or "Unknown"
-                values[8] = "ONLINE"
-                values[9] = status.map_name
-                values[10] = status.players
-                values[11] = status.time
-                values[12] = f"{status.ping}ms" if status.ping else ""
-                values[13] = status.version
-                values[14] = ", ".join(flags) if flags else "Vanilla/unknown"
-                values[15] = status.connect
-            else:
-                values[8] = "OFFLINE"
-                values[9] = status.error
-        return values
-
     def add_curated_server(self):
         dialog = EditCuratedServerDialog(
             self,
@@ -1358,7 +1314,7 @@ class MainWindow(QMainWindow):
             return
         server = self.servers[row]
         cached = cached_status_for_server(self.curated_status_cache, server)
-        values = self.curated_server_row_values(server, cached)
+        values = curated_server_row(server, cached)
         for column, value in enumerate(values):
             self._set_curated_server_table_item(row, column, value, cached=bool(cached))
         self.table.resizeColumnsToContents()
