@@ -70,7 +70,7 @@ Goal: turn WolfAPI from a Steam-capped cache into a resilient community server d
 
 ## v0.9 - Native launcher engine hardening
 
-Status: in progress. Native hardening boundaries are established and the GUI simplification pass is underway. Server Browser and Mods now have user-approved information-first layouts with advanced tools at the bottom; Settings is next, followed by a Servers consistency review.
+Status: in progress. Native hardening boundaries are established and the GUI simplification pass is underway. Server Browser, Mods and Settings now have user-approved information-first layouts with advanced tools at the bottom; a Servers consistency review is next.
 
 - Keep the validated native engine as the default and address real-world regressions as they are reported.
 - Keep the external launcher path as a visible fallback during the transition.

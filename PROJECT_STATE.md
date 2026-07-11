@@ -32,6 +32,7 @@ Handoff recorded: 2026-07-11 after commit `f42e732` on `main`.
 - Desktop feedback aligned both browser-style tabs: Server Browser information now precedes search/common filters, and advanced disclosures sit at the bottom of both Server Browser and Mods.
 - The Server Browser bottom row aligns its advanced disclosure on the left with Promote/Reset on the right; the approved Mods layout remains unchanged.
 - User desktop review approved the current Server Browser and Mods direction. Do not undo their hierarchy or move advanced controls back above the results without new review.
+- User desktop review approved the simplified Settings hierarchy: installation summary and launch choices remain visible above health results, Check health and Save settings remain persistent, and discovery/import/copy support controls remain available through a bottom disclosure.
 - `wolflauncher/table_items.py` now owns the Server Browser's data-aware Qt sorting item, with direct numeric, text and empty-value tests.
 - `wolflauncher/server_browser_presenter.py` now owns style-filter, player-count, cache-summary, discovered-row metadata and copied discovered-server details.
 - `wolflauncher/server_browser_controller.py` now owns testable cache queries, match counts, summary snapshots and filter-option loading for the Server Browser.
@@ -44,7 +45,7 @@ Handoff recorded: 2026-07-11 after commit `f42e732` on `main`.
 - GitHub CLI authentication is restored for `/home/andi/.local/bin/gh`; normal Git continues to use the SSH `origin` remote.
 - The working tree was clean and synchronized with `origin/main` before this handoff documentation update.
 
-Recommended next step: simplify Settings using the approved hierarchy while keeping health and frequent support actions easy to reach. Then review Servers for the same visual rhythm without hiding the primary launch path. Preserve `QTimer` and `timezone` in `app.py`, run the 255-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
+Recommended next step: review Servers for the same visual rhythm without hiding the primary launch path. Preserve `QTimer` and `timezone` in `app.py`, run the 255-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
 
 ## v0.9 GUI consistency handoff
 
@@ -57,7 +58,7 @@ The approved direction is structural simplification first; theme, typography, fo
 - Use `wolflauncher.ui_sections.set_disclosure_state` so collapsed/expanded wording and markers remain consistent.
 - Preserve every advanced feature unless removal is explicitly agreed. Progressive disclosure is an organisation tool, not permission to delete diagnostics, parity, fallback or provider controls.
 - Avoid redundant labels when a combo box already communicates its purpose clearly, as with `Any map`.
-- Keep summaries above filters/results, matching the approved Server Browser and Mods information-first rhythm.
+- Keep summaries above filters/results, matching the approved Server Browser, Mods and Settings information-first rhythm.
 - Validate visible layout changes with the 1350x720 offscreen render, the full unit suite and a real desktop review. Check both collapsed and expanded states and ensure bottom controls remain visible.
 - Current approved commits: `c5c1110` initial Server Browser disclosure, `2c0161a` disclosure refinement, `d74a4b6` Mods disclosure, `c65d707` shared hierarchy and `f42e732` Server Browser bottom-row alignment.
 

@@ -486,9 +486,30 @@ class MainWindow(QMainWindow):
         widget = QWidget()
         layout = QVBoxLayout(widget)
 
+        self.system_summary = QLabel("Checking Steam and DayZ installation...")
+        layout.addWidget(self.system_summary)
+
         launcher_settings = QFormLayout()
         launcher_settings.addRow("Launch engine", self.launch_engine)
         launcher_settings.addRow("Steam install mode", self.native_steam_mode)
+        layout.addLayout(launcher_settings)
+
+        self.health_table = QTableWidget(0, 3)
+        self.health_table.setHorizontalHeaderLabels(["Check", "Status", "Details"])
+        self.health_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.health_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.health_table.setContextMenuPolicy(Qt.CustomContextMenu)
+        self.health_table.customContextMenuRequested.connect(self.show_health_context_menu)
+        layout.addWidget(self.health_table)
+
+        self.settings_advanced_toggle = QPushButton()
+        self.settings_advanced_toggle.setCheckable(True)
+
+        self.settings_advanced_panel = QWidget()
+        advanced_layout = QVBoxLayout(self.settings_advanced_panel)
+        advanced_layout.setContentsMargins(0, 0, 0, 0)
+
+        discovery_settings = QFormLayout()
 
         self.discovery_provider = QComboBox()
         self.discovery_provider.addItems([
@@ -502,18 +523,18 @@ class MainWindow(QMainWindow):
             self._provider_label(str(self.settings.get("discovery_provider") or "battlemetrics"))
         )
         self.discovery_provider.currentTextChanged.connect(self.handle_settings_changed)
-        launcher_settings.addRow("Server API provider", self.discovery_provider)
+        discovery_settings.addRow("Server API provider", self.discovery_provider)
 
         self.discovery_limit = QSpinBox()
         self.discovery_limit.setRange(1, 10000)
         self.discovery_limit.setValue(int(self.settings.get("discovery_limit", 500)))
         self.discovery_limit.valueChanged.connect(self.handle_settings_changed)
-        launcher_settings.addRow("Refresh limit", self.discovery_limit)
+        discovery_settings.addRow("Refresh limit", self.discovery_limit)
 
         self.discovery_auto_refresh = QCheckBox("Refresh selected provider quietly after startup")
         self.discovery_auto_refresh.setChecked(bool(self.settings.get("discovery_auto_refresh", False)))
         self.discovery_auto_refresh.stateChanged.connect(self.handle_settings_changed)
-        launcher_settings.addRow("Automatic refresh", self.discovery_auto_refresh)
+        discovery_settings.addRow("Automatic refresh", self.discovery_auto_refresh)
 
         self.steam_web_api_key = QLineEdit(
             str(self.settings.get("steam_web_api_key") or "")
@@ -524,17 +545,15 @@ class MainWindow(QMainWindow):
         self.steam_web_api_key.setEchoMode(QLineEdit.Password)
         self.steam_web_api_key.setPlaceholderText("Steam Web API key")
         self.steam_web_api_key.editingFinished.connect(self.handle_settings_changed)
-        launcher_settings.addRow("Steam API key", self.steam_web_api_key)
+        discovery_settings.addRow("Steam API key", self.steam_web_api_key)
 
         self.steam_master_endpoints = QLineEdit(str(self.settings.get("steam_master_endpoints") or ""))
         self.steam_master_endpoints.setPlaceholderText("Comma separated host[:port]")
         self.steam_master_endpoints.editingFinished.connect(self.handle_settings_changed)
-        launcher_settings.addRow("Steam masters", self.steam_master_endpoints)
-        layout.addLayout(launcher_settings)
+        discovery_settings.addRow("Steam masters", self.steam_master_endpoints)
+        advanced_layout.addLayout(discovery_settings)
 
-        row = QHBoxLayout()
-        health = QPushButton("Check health")
-        health.clicked.connect(self.update_settings_health)
+        support_tools = QHBoxLayout()
         copy_health = QPushButton("Copy health")
         copy_health.clicked.connect(self.copy_settings_health)
         copy_diagnostics = QPushButton("Copy diagnostics")
@@ -543,27 +562,39 @@ class MainWindow(QMainWindow):
         copy_last_launch.clicked.connect(self.copy_last_launch_report)
         import_file = QPushButton("Import server list")
         import_file.clicked.connect(self.import_server_cache_file)
+        support_tools.addWidget(copy_health)
+        support_tools.addWidget(copy_diagnostics)
+        support_tools.addWidget(copy_last_launch)
+        support_tools.addWidget(import_file)
+        support_tools.addStretch(1)
+        advanced_layout.addLayout(support_tools)
+
+        row = QHBoxLayout()
+        health = QPushButton("Check health")
+        health.clicked.connect(self.update_settings_health)
         save = QPushButton("Save settings")
         save.clicked.connect(self.save_user_settings)
+        row.addWidget(self.settings_advanced_toggle)
         row.addStretch(1)
         row.addWidget(health)
-        row.addWidget(copy_health)
-        row.addWidget(copy_diagnostics)
-        row.addWidget(copy_last_launch)
-        row.addWidget(import_file)
         row.addWidget(save)
         layout.addLayout(row)
+        layout.addWidget(self.settings_advanced_panel)
 
-        self.system_summary = QLabel("Checking Steam and DayZ installation...")
-        layout.addWidget(self.system_summary)
-
-        self.health_table = QTableWidget(0, 3)
-        self.health_table.setHorizontalHeaderLabels(["Check", "Status", "Details"])
-        self.health_table.setSelectionBehavior(QTableWidget.SelectRows)
-        self.health_table.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.health_table.setContextMenuPolicy(Qt.CustomContextMenu)
-        self.health_table.customContextMenuRequested.connect(self.show_health_context_menu)
-        layout.addWidget(self.health_table)
+        self.settings_advanced_toggle.toggled.connect(
+            lambda expanded: set_disclosure_state(
+                self.settings_advanced_toggle,
+                self.settings_advanced_panel,
+                "discovery and support tools",
+                expanded,
+            )
+        )
+        set_disclosure_state(
+            self.settings_advanced_toggle,
+            self.settings_advanced_panel,
+            "discovery and support tools",
+            False,
+        )
         return widget
 
     def browse_launcher(self):
