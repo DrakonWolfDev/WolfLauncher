@@ -10,4 +10,5 @@ def set_disclosure_state(
     """Keep a disclosure button and its secondary-control panel in sync."""
     panel.setVisible(expanded)
     button.setChecked(expanded)
-    button.setText(f"{'Hide' if expanded else 'Show'} {label}")
+    marker = "▾" if expanded else "▸"
+    button.setText(f"{marker} {'Hide' if expanded else 'Show'} {label}")

@@ -292,7 +292,6 @@ class MainWindow(QMainWindow):
         self.browser_map = QComboBox()
         self.browser_map.addItem("Any map")
         self.browser_map.currentTextChanged.connect(self.refresh_server_browser)
-        filters.addWidget(QLabel("Map"))
         filters.addWidget(self.browser_map)
 
         self.browser_version = QComboBox()

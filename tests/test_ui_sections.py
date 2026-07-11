@@ -22,7 +22,7 @@ class DisclosureSectionTests(unittest.TestCase):
 
         self.assertTrue(panel.isHidden())
         self.assertFalse(button.isChecked())
-        self.assertEqual(button.text(), "Show advanced tools")
+        self.assertEqual(button.text(), "▸ Show advanced tools")
 
     def test_expanded_state_shows_panel_and_offers_hide_action(self):
         button = QPushButton()
@@ -33,7 +33,7 @@ class DisclosureSectionTests(unittest.TestCase):
 
         self.assertFalse(panel.isHidden())
         self.assertTrue(button.isChecked())
-        self.assertEqual(button.text(), "Hide advanced tools")
+        self.assertEqual(button.text(), "▾ Hide advanced tools")
 
 
 if __name__ == "__main__":
