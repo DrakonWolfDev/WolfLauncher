@@ -12,11 +12,11 @@ The v0.8 launch, status, settings health checks, diagnostics, mod-checking, disc
 
 ## Latest handoff
 
-Handoff recorded: 2026-07-11 at commit `63d014c` on `main`.
+Handoff recorded: 2026-07-11 after commit `0c695b9` on `main`.
 
 - Release `v0.8.0` is tagged at `b7883a2` and pushed to GitHub.
 - Native launch is the default for fresh settings; an existing saved external-launcher choice is preserved.
-- GitHub Actions runs the unit suite on Python 3.10, 3.11 and 3.12. The latest run is green.
+- GitHub Actions runs the unit suite on Python 3.10, 3.11 and 3.12. The `0c695b9` run is green across all three versions.
 - The local suite contains 226 passing tests.
 - Real desktop smoke testing passed after the v0.9 refactors: Settings health refresh/population, Copy health, Copy diagnostics, native preview copy actions, dialog close behavior and a known-working native server handoff all worked.
 - `wolflauncher/launch_dialogs.py` now owns external/native launch dialogs and post-handoff DayZ process watching.
@@ -26,9 +26,10 @@ Handoff recorded: 2026-07-11 at commit `63d014c` on `main`.
 - `wolflauncher/table_items.py` now owns the Server Browser's data-aware Qt sorting item, with direct numeric, text and empty-value tests.
 - `wolflauncher/server_browser_presenter.py` now owns pure style-filter, player-count and cache-summary presentation rules.
 - `wolflauncher/app.py` is reduced from 2,889 lines at the v0.8 restart point to roughly 2,280 lines.
+- The worker, curated-dialog, sortable-table-item and Server Browser presenter slices were pushed as `3ac6483`, `95e57e6`, `77213b3` and `0c695b9`; each pushed slice passed its hosted test matrix.
 - A launch-dialog extraction briefly removed the main window's `QTimer` import and caused startup to fail. Commit `63d014c` restored it, added a regression test and passed both a clean temporary-profile GUI startup check and hosted CI.
 - GitHub CLI authentication is restored for `/home/andi/.local/bin/gh`; normal Git continues to use the SSH `origin` remote.
-- The working tree was clean and synchronized with `origin/main` when this handoff was written.
+- The working tree was clean and synchronized with `origin/main` before this handoff update.
 
 Recommended next slice: continue v0.9 by defining a cohesive Server Browser or curated-server controller boundary rather than moving isolated methods. Preserve `QTimer` in `app.py`, run the 226-test suite, perform an offscreen clean-profile startup smoke check for changes touching imports/startup, then push and confirm the three-version Actions matrix.
 
