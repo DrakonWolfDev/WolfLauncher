@@ -161,7 +161,7 @@ class MainWindow(QMainWindow):
             if str(self.settings.get("launch_engine") or "native") == "native"
             else "External launcher"
         )
-        self.launch_engine.currentTextChanged.connect(self.handle_settings_changed)
+        self.launch_engine.currentTextChanged.connect(self.handle_launch_engine_changed)
         self.native_steam_mode = QComboBox()
         self.native_steam_mode.addItems(["Auto", "Native Steam", "Flatpak Steam", "STEAM_ROOT Steam library"])
         self.native_steam_mode.setCurrentText(
@@ -1055,10 +1055,22 @@ class MainWindow(QMainWindow):
         self.save_user_settings(silent=True)
         self.update_settings_health()
 
+    def handle_launch_engine_changed(self, *_args):
+        MainWindow._recheck_after_mod_context_change(
+            self,
+            "Launch engine changed. Rechecking selected server mods..."
+        )
+
     def handle_native_steam_mode_changed(self, *_args):
+        MainWindow._recheck_after_mod_context_change(
+            self,
+            "Steam install changed. Rechecking selected server mods..."
+        )
+
+    def _recheck_after_mod_context_change(self, message: str):
         self.last_mod_result = None
         if hasattr(self, "mod_summary"):
-            self.mod_summary.setText("Steam install changed. Rechecking selected server mods...")
+            self.mod_summary.setText(message)
         if hasattr(self, "mods_table"):
             self.mods_table.setRowCount(0)
         self.handle_settings_changed()

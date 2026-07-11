@@ -45,6 +45,19 @@ class ModContextChangeTests(unittest.TestCase):
         window._check_pending_server_mods.assert_called_once_with()
         window.check_server_mods_for_row.assert_not_called()
 
+    def test_launch_engine_change_uses_same_context_recheck(self):
+        window = window_state()
+
+        MainWindow.handle_launch_engine_changed(window)
+
+        self.assertIsNone(window.last_mod_result)
+        window.mod_summary.setText.assert_called_once_with(
+            "Launch engine changed. Rechecking selected server mods..."
+        )
+        window.check_server_mods_for_row.assert_called_once_with(
+            0, silent=True, force=True
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
