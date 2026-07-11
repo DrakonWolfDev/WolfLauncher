@@ -77,6 +77,7 @@ Status: in progress. Launch dialogs, curated-server dialogs, Settings health sna
 - Run the automated unit suite in GitHub Actions across supported Python versions.
 - Use the tracked release checklist for native/Flatpak Steam smoke testing.
 - Continue small behavior-preserving extractions from `app.py`, with startup smoke checks after Qt import or initialization changes.
+- After the current behavior boundaries are stable, run a GUI simplification pass: keep common server browsing and launching calm and obvious by default while retaining advanced discovery, diagnostics, parity and fallback controls in clearly labelled secondary areas.
 - Improve structured launch errors and user-facing diagnostics.
 - Add regression tests for launch command generation, host resolution and Steam mode detection.
 

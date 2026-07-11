@@ -39,6 +39,7 @@ wolflauncher/
   launcher.py            External dayz-launcher.sh command builder
   launch_dialogs.py      External/native handoff dialogs and process watching
   models.py              Shared dataclasses
+  mod_presenter.py       Pure Mods-tab summary and row presentation
   mods.py                DayZSA API mod lookup and local Workshop comparison
   platform_detection.py  Native/Flatpak Steam, Steam library, DayZ and Workshop detection
   native_launcher.py     Native launch-engine foundation for mod links and Steam commands

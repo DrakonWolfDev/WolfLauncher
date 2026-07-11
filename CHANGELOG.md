@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Extracted Mods-tab summary and row presentation into `wolflauncher.mod_presenter`, with direct coverage for errors, no-mod servers, installed/missing counts and row metadata.
+- Added an explicit v0.9 GUI simplification checkpoint that keeps common workflows calm while preserving advanced discovery, diagnostics, parity and fallback controls.
 - Moved copied discovered-server detail formatting into the existing Server Browser presenter and added coverage for live names, flags, unseen dates and source text.
 - Extracted curated-server row display construction into `wolflauncher.curated_server_presenter`, with direct tests for unchecked, online, offline and partial live-status states.
 - Extracted discovered-server Qt row population into `wolflauncher.server_browser_table`, with focused tests for item roles, sort metadata, tooltips, status colours and row replacement.

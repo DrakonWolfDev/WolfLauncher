@@ -73,6 +73,7 @@ from .mods import (
     format_missing_workshop_links,
     format_mod_check_report,
 )
+from .mod_presenter import mod_row, mod_summary_text
 from . import server_cache
 from .server_discovery import parse_master_address
 from .server_enrichment import (
@@ -1480,47 +1481,21 @@ class MainWindow(QMainWindow):
 
     def display_mods_result(self, result: ModCheckResult):
         self.mods_table.setSortingEnabled(False)
-        context = self.mod_result_context(result)
+        self.mod_summary.setText(mod_summary_text(result))
         if not result.ok:
-            self.mod_summary.setText(
-                f"Could not check mods for {result.server.name}: {result.error}"
-                f"{context}"
-            )
             self.mods_table.setRowCount(0)
             self.mods_table.setSortingEnabled(True)
             return
 
         required = result.required_mods
-        missing = result.missing_mods
-        if not required:
-            self.mod_summary.setText(
-                f"{result.server.name}: no required mods reported by the server API. "
-                f"Installed Workshop mods found locally: {result.installed_count}.{context}"
-            )
-        else:
-            self.mod_summary.setText(
-                f"{result.server.name}: Required {len(required)} | "
-                f"Installed {len(required) - len(missing)} | Missing {len(missing)} | "
-                f"Local Workshop mods found: {result.installed_count}{context}"
-            )
-
         self.mods_table.setRowCount(len(required))
         for row, mod in enumerate(required):
-            status_text = "✓ Installed" if mod.installed else "✗ Missing"
-            note = "Installed" if mod.installed else "Missing - subscribe in Steam Workshop"
-            values = [
-                status_text,
-                mod.workshop_id,
-                mod.name or "Unknown",
-                mod.installed_name or "",
-                mod.workshop_url,
-                note,
-            ]
-            for column, value in enumerate(values):
+            row_data = mod_row(mod)
+            for column, value in enumerate(row_data.values):
                 item = QTableWidgetItem(value)
-                item.setData(Qt.UserRole, mod.workshop_id)
+                item.setData(Qt.UserRole, row_data.workshop_id)
                 if column == 0:
-                    item.setForeground(QColor("#6ee16e" if mod.installed else "#ff6b6b"))
+                    item.setForeground(QColor(row_data.status_colour))
                 self.mods_table.setItem(row, column, item)
         self.mods_table.resizeColumnsToContents()
         self.mods_table.setSortingEnabled(True)
@@ -1533,14 +1508,6 @@ class MainWindow(QMainWindow):
         if self.launch_engine_key() == "native":
             return f"Selected Steam install: {install_label(install)}"
         return f"Auto Steam install: {install_label(install)}"
-
-    def mod_result_context(self, result: ModCheckResult) -> str:
-        parts = []
-        if result.steam_context:
-            parts.append(result.steam_context)
-        if result.workshop_dir:
-            parts.append(f"Workshop: {result.workshop_dir}")
-        return f" ({'; '.join(parts)})" if parts else ""
 
     def _check_pending_server_mods(self):
         if self.pending_mod_check_row is None:
