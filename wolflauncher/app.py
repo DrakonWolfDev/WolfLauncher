@@ -86,6 +86,7 @@ from .settings import (
 )
 from .settings_health import build_settings_health_snapshot
 from .status import ServerStatus, check_server
+from .table_items import SortableTableWidgetItem
 from .workers import (
     BattleMetricsDiscoveryWorker,
     ModWorker,
@@ -95,25 +96,6 @@ from .workers import (
     SteamWebApiDiscoveryWorker,
     WolfApiDiscoveryWorker,
 )
-
-
-class SortableTableWidgetItem(QTableWidgetItem):
-    def __init__(self, text: str, sort_value=None):
-        super().__init__(text)
-        self.sort_value = sort_value if sort_value is not None else text.casefold()
-
-    def __lt__(self, other):
-        if isinstance(other, SortableTableWidgetItem):
-            return self._normalized_sort_value() < other._normalized_sort_value()
-        return super().__lt__(other)
-
-    def _normalized_sort_value(self):
-        value = self.sort_value
-        if value is None or value == "":
-            return (1, "")
-        if isinstance(value, str):
-            return (0, value.casefold())
-        return (0, value)
 
 
 class MainWindow(QMainWindow):

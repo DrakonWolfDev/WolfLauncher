@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Extracted the Server Browser's data-aware Qt table item into `wolflauncher.table_items`, with direct numeric, text and empty-value sorting tests.
 - Extracted curated-server promotion/edit dialogs from the main GUI module into `wolflauncher.curated_dialogs`, with direct field-normalization tests.
 - Extracted status, mod-check, discovery and enrichment thread workers from the main GUI module into `wolflauncher.workers`, with focused error-handling and row-selection tests.
 - Fixed the main-window startup failure caused by dropping its `QTimer` import during launch-dialog extraction.
