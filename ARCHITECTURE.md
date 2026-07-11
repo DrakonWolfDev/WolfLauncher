@@ -31,10 +31,11 @@ right level of detail.
 
 ```text
 wolflauncher/
-  app.py                 Main Qt GUI, workers, tables, dialogs and launch flow
+  app.py                 Main Qt GUI, workers, tables and launch workflow
   config.py              YAML server loading and default launcher candidates
   diagnostics.py         Human-readable diagnostics report
   launcher.py            External dayz-launcher.sh command builder
+  launch_dialogs.py      External/native handoff dialogs and process watching
   models.py              Shared dataclasses
   mods.py                DayZSA API mod lookup and local Workshop comparison
   platform_detection.py  Native/Flatpak Steam, Steam library, DayZ and Workshop detection

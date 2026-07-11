@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Extracted external and native launch dialogs and post-handoff process watching from the main GUI module into `wolflauncher.launch_dialogs` without changing the launch workflow.
+
 ## v0.8.0 - 2026-07-11
 
 - Added GitHub Actions unit-test coverage for Python 3.10, 3.11 and 3.12.

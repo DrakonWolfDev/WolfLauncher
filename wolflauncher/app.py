@@ -1,12 +1,11 @@
 import os
-import shlex
 import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 import sys
 
-from PySide6.QtCore import QTimer, QThread, Signal, QUrl, Qt, QPoint, QProcess
+from PySide6.QtCore import QThread, Signal, QUrl, Qt, QPoint
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -30,7 +29,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from PySide6.QtGui import QColor, QDesktopServices, QAction, QTextCursor
+from PySide6.QtGui import QColor, QDesktopServices, QAction
 
 from .config import (
     DEFAULT_LAUNCHER_PATHS,
@@ -43,10 +42,8 @@ from .config import (
     update_curated_server,
 )
 from .diagnostics import (
-    format_launch_output_report,
     format_settings_health_report,
     launch_troubleshooting_report,
-    post_handoff_launch_option_guidance,
     prime_environment_report,
     prime_helper_report,
     run_diagnostics,
@@ -59,6 +56,7 @@ from .curated_status_cache import (
 )
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from .launch_history import load_last_launch_report, save_last_launch_report
+from .launch_dialogs import LaunchDialog, NativeLaunchPreviewDialog
 from .models import Server
 from .native_launcher import (
     NativeLaunchError,
@@ -282,207 +280,6 @@ class SortableTableWidgetItem(QTableWidgetItem):
         if isinstance(value, str):
             return (0, value.casefold())
         return (0, value)
-
-
-POST_HANDOFF_PROCESS_CHECK_INTERVAL_MS = 5000
-POST_HANDOFF_PROCESS_CHECK_ATTEMPTS = 9
-
-
-class PostHandoffProcessCheckMixin:
-    def start_post_handoff_process_checks(self):
-        self.post_handoff_check_attempt = 0
-        self.output.append("Watching for known DayZ processes for up to 45 seconds...")
-        QTimer.singleShot(POST_HANDOFF_PROCESS_CHECK_INTERVAL_MS, self.append_dayz_process_check)
-
-    def append_dayz_process_check(self):
-        self.post_handoff_check_attempt += 1
-        check = dayz_process_check()
-        elapsed_seconds = (
-            self.post_handoff_check_attempt * POST_HANDOFF_PROCESS_CHECK_INTERVAL_MS // 1000
-        )
-        if check.running:
-            self.output.append(
-                f"\nPost-handoff process check: {check.detail} after about {elapsed_seconds} seconds."
-            )
-            return
-
-        if self.post_handoff_check_attempt < POST_HANDOFF_PROCESS_CHECK_ATTEMPTS:
-            QTimer.singleShot(POST_HANDOFF_PROCESS_CHECK_INTERVAL_MS, self.append_dayz_process_check)
-            return
-
-        self.output.append(
-            f"\nPost-handoff process check: no known DayZ process detected after about {elapsed_seconds} seconds. "
-            "Steam may still be preparing Proton, but if there is no Steam activity, check downloads, Proton/BattlEye prompts, "
-            "and the selected Steam install in Settings health. "
-            f"{post_handoff_launch_option_guidance()}"
-        )
-
-
-class LaunchDialog(PostHandoffProcessCheckMixin, QDialog):
-    def __init__(self, parent, command: list[str], title: str, handoff_label: str = "launch command"):
-        super().__init__(parent)
-        self.setWindowTitle(title)
-        self.resize(820, 460)
-        self.handoff_label = handoff_label
-        self.command_text = " ".join(command)
-        self.process = QProcess(self)
-        self.process.setProcessChannelMode(QProcess.MergedChannels)
-
-        layout = QVBoxLayout(self)
-        layout.addWidget(QLabel("Launch command:"))
-        command_box = QLineEdit(self.command_text)
-        command_box.setReadOnly(True)
-        layout.addWidget(command_box)
-
-        self.output = QTextEdit()
-        self.output.setReadOnly(True)
-        layout.addWidget(self.output)
-
-        button_row = QHBoxLayout()
-        self.close_button = QPushButton("Close")
-        self.close_button.clicked.connect(self.close)
-        self.close_button.setEnabled(False)
-        copy_button = QPushButton("Copy")
-        copy_button.clicked.connect(self.copy_output)
-        button_row.addStretch(1)
-        button_row.addWidget(copy_button)
-        button_row.addWidget(self.close_button)
-        layout.addLayout(button_row)
-
-        self.process.readyReadStandardOutput.connect(self.read_output)
-        self.process.finished.connect(self.handle_finished)
-        self.process.errorOccurred.connect(self.handle_process_error)
-        self.output.append("Starting launcher...\n")
-        self.process.start(command[0], command[1:])
-
-    def copy_output(self):
-        QApplication.clipboard().setText(self.copyable_output_text())
-        self.output.append("\nLaunch command and output copied to clipboard.")
-
-    def copyable_output_text(self) -> str:
-        return format_launch_output_report(self.command_text, self.output.toPlainText())
-
-    def read_output(self):
-        data = bytes(self.process.readAllStandardOutput()).decode("utf-8", errors="replace")
-        if data:
-            self.output.moveCursor(QTextCursor.End)
-            self.output.insertPlainText(data)
-            self.output.moveCursor(QTextCursor.End)
-
-    def handle_finished(self, exit_code: int, exit_status):
-        self.read_output()
-        if exit_code == 0:
-            self.output.append(
-                f"\n{self.handoff_label.title()} exited successfully, which means WolfLauncher handed control "
-                "to Steam. Steam may still need time to start, update, initialize Proton or show a BattlEye prompt."
-            )
-            self.start_post_handoff_process_checks()
-        else:
-            self.output.append(
-                f"\nLauncher exited with code {exit_code}. "
-                "Check the messages above for the script or Steam error."
-            )
-        self.close_button.setEnabled(True)
-
-    def handle_process_error(self, error):
-        if error == QProcess.ProcessError.FailedToStart:
-            self.output.append(
-                "\nLaunch command could not start. Check that the configured launcher or Steam command exists."
-            )
-            self.close_button.setEnabled(True)
-
-class NativeLaunchPreviewDialog(PostHandoffProcessCheckMixin, QDialog):
-    def __init__(self, parent, title: str, preview_text: str, command: list[str]):
-        super().__init__(parent)
-        self.setWindowTitle(title)
-        self.resize(860, 540)
-        self.command = command
-        self.command_text = shlex.join(command) if command else ""
-        self.process = QProcess(self)
-        self.process.setProcessChannelMode(QProcess.MergedChannels)
-
-        layout = QVBoxLayout(self)
-        self.output = QTextEdit()
-        self.output.setReadOnly(True)
-        self.output.setPlainText(preview_text)
-        layout.addWidget(self.output)
-
-        button_row = QHBoxLayout()
-        copy = QPushButton("Copy")
-        copy.clicked.connect(self.copy_preview)
-        copy_command = QPushButton("Copy native command")
-        copy_command.setEnabled(bool(command))
-        copy_command.clicked.connect(self.copy_native_command)
-        self.launch_button = QPushButton("Launch native")
-        self.launch_button.setEnabled(bool(command))
-        self.launch_button.clicked.connect(self.launch_native_experimental)
-        close = QPushButton("Close")
-        close.clicked.connect(self.close)
-        button_row.addStretch(1)
-        button_row.addWidget(copy)
-        button_row.addWidget(copy_command)
-        button_row.addWidget(self.launch_button)
-        button_row.addWidget(close)
-        layout.addLayout(button_row)
-
-        self.process.readyReadStandardOutput.connect(self.read_output)
-        self.process.finished.connect(self.handle_finished)
-        self.process.errorOccurred.connect(self.handle_process_error)
-
-    def copy_preview(self):
-        QApplication.clipboard().setText(self.output.toPlainText())
-
-    def copy_native_command(self):
-        if self.command_text:
-            QApplication.clipboard().setText(self.command_text)
-
-    def launch_native_experimental(self):
-        reply = QMessageBox.warning(
-            self,
-            "Launch native command",
-            "This bypasses the external dayz-launcher.sh script and hands the previewed command directly to Steam.\n\n"
-            "Continue?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
-        )
-        if reply != QMessageBox.Yes:
-            return
-        if not self.command:
-            return
-
-        self.launch_button.setEnabled(False)
-        self.output.moveCursor(QTextCursor.End)
-        self.output.append("\n\nStarting native launch...\n")
-        self.process.start(self.command[0], self.command[1:])
-
-    def read_output(self):
-        data = bytes(self.process.readAllStandardOutput()).decode("utf-8", errors="replace")
-        if data:
-            self.output.moveCursor(QTextCursor.End)
-            self.output.insertPlainText(data)
-            self.output.moveCursor(QTextCursor.End)
-
-    def handle_finished(self, exit_code: int, exit_status):
-        self.read_output()
-        if exit_code == 0:
-            self.output.append(
-                "\nExperimental native command handed off to Steam successfully. "
-                "Steam may still need time to start, update, initialize Proton or show a BattlEye prompt."
-            )
-            self.start_post_handoff_process_checks()
-        else:
-            self.output.append(
-                f"\nExperimental native command exited with code {exit_code}. "
-                "Check the messages above for the Steam error."
-            )
-        self.launch_button.setEnabled(bool(self.command))
-
-    def handle_process_error(self, error):
-        if error == QProcess.ProcessError.FailedToStart:
-            self.output.append(
-                "\nExperimental native command could not start. Check Steam detection in Settings health."
-            )
-            self.launch_button.setEnabled(bool(self.command))
 
 
 class PromoteServerDialog(QDialog):

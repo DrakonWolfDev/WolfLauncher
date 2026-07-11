@@ -37,6 +37,7 @@ wolflauncher/config.py          server YAML loading and launcher path candidates
 wolflauncher/diagnostics.py     diagnostics report text
 wolflauncher/launch_history.py  last launch report persistence
 wolflauncher/launcher.py        external launcher command generation
+wolflauncher/launch_dialogs.py  external/native handoff dialogs and process watching
 wolflauncher/models.py          shared dataclasses
 wolflauncher/mods.py            required mod lookup and Workshop scan
 wolflauncher/platform_detection.py
