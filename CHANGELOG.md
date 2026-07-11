@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed failed or stale cached mod checks being treated as authoritative during launch preflight; they now retain the existing explicit unchecked-mod confirmation boundary.
 - Extracted ordered launch-preflight policy from the Qt window into `wolflauncher.launch_preflight`, with direct coverage for environment blockers, stopped-Steam continuation, unchecked mods and native/external missing-mod behavior.
 - Extracted the automatic discovery-refresh timestamp policy from the Qt window into a pure module, with direct coverage for recent, expired, naive, invalid and UTC-normalized timestamps.
 - Started the v0.9 GUI simplification pass by keeping common Server Browser filters and promotion visible while placing version/source/sort/limit and refresh/enrichment tools behind a compact, direction-marked disclosure control.

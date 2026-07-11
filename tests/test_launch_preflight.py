@@ -1,10 +1,15 @@
 import unittest
+from pathlib import Path
 
 from wolflauncher.launch_preflight import (
     LaunchPreflightAction,
     LaunchPreflightState,
+    build_launch_preflight_state,
     next_launch_preflight_action,
 )
+from wolflauncher.models import Server
+from wolflauncher.mods import ModCheckResult, RequiredMod
+from wolflauncher.platform_detection import SteamInstall
 
 
 class LaunchPreflightTests(unittest.TestCase):
@@ -75,6 +80,55 @@ class LaunchPreflightTests(unittest.TestCase):
             ),
             LaunchPreflightAction.CONFIRM_EXTERNAL_MISSING_MODS,
         )
+
+    def test_state_uses_successful_mod_check_for_selected_server(self):
+        server = Server("Selected", "Tests", "dayz.test", 2302, 27016)
+        result = ModCheckResult(
+            ok=True,
+            server=server,
+            required_mods=[RequiredMod("123", installed=False)],
+        )
+        install = SteamInstall(
+            mode="native",
+            executable="steam",
+            running=True,
+            root=Path("/steam"),
+            steamapps=Path("/steam/steamapps"),
+            dayz_dir=Path("/steam/DayZ"),
+            workshop_dir=Path("/steam/workshop/content/221100"),
+        )
+
+        state = build_launch_preflight_state(
+            install, server, result, native_engine=True
+        )
+
+        self.assertTrue(state.mods_checked)
+        self.assertEqual(state.missing_mod_count, 1)
+        self.assertTrue(state.has_dayz)
+        self.assertTrue(state.has_workshop)
+
+    def test_failed_mod_check_is_not_treated_as_checked(self):
+        server = Server("Selected", "Tests", "dayz.test", 2302, 27016)
+        failed = ModCheckResult(ok=False, server=server, required_mods=[], error="API unavailable")
+
+        state = build_launch_preflight_state(None, server, failed, native_engine=True)
+
+        self.assertFalse(state.mods_checked)
+        self.assertEqual(state.missing_mod_count, 0)
+
+    def test_stale_mod_check_for_another_server_is_not_reused(self):
+        server = Server("Selected", "Tests", "dayz.test", 2302, 27016)
+        other = Server("Other", "Tests", "other.test", 2302, 27016)
+        stale = ModCheckResult(
+            ok=True,
+            server=other,
+            required_mods=[RequiredMod("123", installed=False)],
+        )
+
+        state = build_launch_preflight_state(None, server, stale, native_engine=False)
+
+        self.assertFalse(state.mods_checked)
+        self.assertEqual(state.missing_mod_count, 0)
 
 
 if __name__ == "__main__":

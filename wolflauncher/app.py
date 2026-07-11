@@ -53,7 +53,7 @@ from .launch_history import load_last_launch_report, save_last_launch_report
 from .launch_dialogs import LaunchDialog, NativeLaunchPreviewDialog
 from .launch_preflight import (
     LaunchPreflightAction,
-    LaunchPreflightState,
+    build_launch_preflight_state,
     next_launch_preflight_action,
 )
 from .models import Server
@@ -2099,19 +2099,13 @@ class MainWindow(QMainWindow):
 
     def confirm_launch_preflight(self, server: Server) -> bool:
         install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
-        matching_mod_result = bool(
-            self.last_mod_result and server_key(self.last_mod_result.server) == server_key(server)
-        )
-        missing = self.last_mod_result.missing_mods if matching_mod_result else []
-        state = LaunchPreflightState(
-            has_install=install is not None,
-            has_dayz=bool(install and install.dayz_dir),
-            has_workshop=bool(install and install.workshop_dir),
-            steam_running=bool(install and install.running),
-            mods_checked=matching_mod_result,
-            missing_mod_count=len(missing),
+        state = build_launch_preflight_state(
+            install,
+            server,
+            self.last_mod_result,
             native_engine=self.launch_engine_key() == "native",
         )
+        missing = self.last_mod_result.missing_mods if state.mods_checked else []
         steam_stopped_confirmed = False
 
         action = next_launch_preflight_action(state)

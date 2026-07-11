@@ -1,6 +1,11 @@
 from dataclasses import dataclass
 from enum import Enum
 
+from .models import Server
+from .mods import ModCheckResult
+from .platform_detection import SteamInstall
+from .settings import server_key
+
 
 class LaunchPreflightAction(str, Enum):
     READY = "ready"
@@ -21,6 +26,31 @@ class LaunchPreflightState:
     mods_checked: bool
     missing_mod_count: int
     native_engine: bool
+
+
+def build_launch_preflight_state(
+    install: SteamInstall | None,
+    server: Server,
+    mod_result: ModCheckResult | None,
+    *,
+    native_engine: bool,
+) -> LaunchPreflightState:
+    """Build policy state from detected install and cached mod-check context."""
+    mods_checked = bool(
+        mod_result
+        and mod_result.ok
+        and server_key(mod_result.server) == server_key(server)
+    )
+    missing_mod_count = len(mod_result.missing_mods) if mods_checked and mod_result else 0
+    return LaunchPreflightState(
+        has_install=install is not None,
+        has_dayz=bool(install and install.dayz_dir),
+        has_workshop=bool(install and install.workshop_dir),
+        steam_running=bool(install and install.running),
+        mods_checked=mods_checked,
+        missing_mod_count=missing_mod_count,
+        native_engine=native_engine,
+    )
 
 
 def next_launch_preflight_action(
