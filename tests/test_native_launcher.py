@@ -972,6 +972,37 @@ class NativeLauncherTests(unittest.TestCase):
         self.assertEqual(raised.exception.stage, "server DNS")
         self.assertIn("network connection and DNS", raised.exception.user_message())
 
+    def test_prepare_native_launch_wraps_fresh_mod_lookup_failures(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+
+            with patch("wolflauncher.native_launcher.resolve_host", return_value="203.0.113.10"):
+                with patch(
+                    "wolflauncher.native_launcher.fetch_required_mods",
+                    side_effect=RuntimeError("mod API connection failed"),
+                ):
+                    with self.assertRaisesRegex(
+                        NativeLaunchError, "Could not fetch required mods"
+                    ) as raised:
+                        prepare_native_launch(install, make_server(), "PlayerOne")
+
+        self.assertEqual(raised.exception.stage, "mod lookup")
+        self.assertIn("run the mod check again", raised.exception.user_message())
+        self.assertIn("external launcher", raised.exception.user_message())
+
+    def test_prepare_native_launch_does_not_refetch_explicit_empty_mod_list(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+
+            with patch("wolflauncher.native_launcher.resolve_host", return_value="203.0.113.10"):
+                with patch("wolflauncher.native_launcher.fetch_required_mods") as fetch:
+                    prepared = prepare_native_launch(
+                        install, make_server(), "PlayerOne", []
+                    )
+
+        fetch.assert_not_called()
+        self.assertNotIn("-mod=", prepared.command)
+
 
 if __name__ == "__main__":
     unittest.main()

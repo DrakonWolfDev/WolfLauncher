@@ -186,7 +186,20 @@ def prepare_native_launch(
     dayz_dir = _require_dir(install.dayz_dir, "DayZ install")
     workshop_dir = _require_dir(install.workshop_dir, "DayZ Workshop")
     launch_server = _resolved_server(server)
-    mods = required_mods if required_mods is not None else fetch_required_mods(launch_server)
+    if required_mods is None:
+        try:
+            mods = fetch_required_mods(launch_server)
+        except Exception as exc:
+            raise NativeLaunchError(
+                f"Could not fetch required mods: {exc}",
+                stage="mod lookup",
+                guidance=(
+                    "Check the network connection and server availability, then run the mod check again. "
+                    "The external launcher remains available as a fallback."
+                ),
+            ) from exc
+    else:
+        mods = required_mods
 
     mod_setup = prepare_mod_links(dayz_dir, workshop_dir, mods)
 

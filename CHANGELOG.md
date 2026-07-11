@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Converted native fresh required-mod lookup failures into structured `mod lookup` launch errors with recovery guidance, instead of allowing raw API exceptions to escape the GUI launch workflow.
 - Fixed native launch reusing an empty required-mod list from a failed cached check; failed or stale results now fall back to the native engine's fresh mod lookup after unchecked-launch confirmation.
 - Fixed launches attempted during initial status refresh treating the `Checking...` resolved-IP placeholder as the server host; only valid resolved IPv4 values now replace the configured hostname.
 - Fixed failed or stale cached mod checks being treated as authoritative during launch preflight; they now retain the existing explicit unchecked-mod confirmation boundary.
