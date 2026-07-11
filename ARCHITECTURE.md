@@ -31,7 +31,7 @@ right level of detail.
 
 ```text
 wolflauncher/
-  app.py                 Main Qt GUI, workers, tables and launch workflow
+  app.py                 Main Qt GUI, tabs and launch workflow coordination
   config.py              YAML server loading and default launcher candidates
   diagnostics.py         Human-readable diagnostics report
   launcher.py            External dayz-launcher.sh command builder
@@ -43,9 +43,17 @@ wolflauncher/
   server_discovery.py    WolfAPI, BattleMetrics, Steam Web API and legacy master server candidate discovery
   server_enrichment.py   Maps live status results onto discovered cache rows
   server_cache.py        SQLite cache for discovered public servers
+  server_browser_controller.py
+                         Discovered-server cache queries and filter options
+  server_browser_presenter.py
+                         Pure discovered-row display and sort metadata
+  server_browser_table.py
+                         Qt discovered-row population
   settings.py            JSON settings and favourites under ~/.config/wolflauncher
   settings_health.py     Settings health snapshot construction
   status.py              gamedig server status and DNS resolution
+  table_items.py         Data-aware Qt table sorting item
+  workers.py             Background status, mod, discovery and enrichment threads
 ```
 
 ## External Tools

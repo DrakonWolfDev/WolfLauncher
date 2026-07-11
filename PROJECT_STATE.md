@@ -17,7 +17,7 @@ Handoff recorded: 2026-07-11 after commit `3868fe1` on `main`.
 - Release `v0.8.0` is tagged at `b7883a2` and pushed to GitHub.
 - Native launch is the default for fresh settings; an existing saved external-launcher choice is preserved.
 - GitHub Actions runs the unit suite on Python 3.10, 3.11 and 3.12. The `3868fe1` run is green across all three versions.
-- The local suite contains 235 passing tests.
+- The local suite contains 237 passing tests.
 - Real desktop smoke testing passed after the v0.9 refactors: Settings health refresh/population, Copy health, Copy diagnostics, native preview copy actions, dialog close behavior, a known-working native server handoff, Server Browser filters/limits/sorting, curated promotion/editing, discovered-row display metadata and discovered-server **Copy details** all worked.
 - `wolflauncher/launch_dialogs.py` now owns external/native launch dialogs and post-handoff DayZ process watching.
 - `wolflauncher/settings_health.py` now owns testable Settings health snapshot construction.
@@ -26,7 +26,8 @@ Handoff recorded: 2026-07-11 after commit `3868fe1` on `main`.
 - `wolflauncher/table_items.py` now owns the Server Browser's data-aware Qt sorting item, with direct numeric, text and empty-value tests.
 - `wolflauncher/server_browser_presenter.py` now owns style-filter, player-count, cache-summary and discovered-row display/sort metadata.
 - `wolflauncher/server_browser_controller.py` now owns testable cache queries, match counts, summary snapshots and filter-option loading for the Server Browser.
-- `wolflauncher/app.py` is reduced from 2,889 lines at the v0.8 restart point to roughly 2,240 lines.
+- `wolflauncher/server_browser_table.py` now owns Qt row population, including sortable items, cache-key roles, tooltips and status colours.
+- `wolflauncher/app.py` is reduced from 2,889 lines at the v0.8 restart point to roughly 2,225 lines.
 - The worker, curated-dialog, sortable-table-item, Server Browser presenter/controller and row-presentation slices were pushed as `3ac6483`, `95e57e6`, `77213b3`, `0c695b9`, `5b3dfb9` and `4853dfe`; each pushed slice passed its hosted test matrix.
 - Commit `772e450` restored the automatic-refresh `timezone` dependency after real-desktop testing exposed the missing import; timezone-aware and legacy naive timestamps now have regression coverage.
 - Commit `3868fe1` documented that WolfAPI does not currently supply ping, added explanatory blank-ping tooltips and made the launcher accept future additive `ping_ms`, `ping` or `latency` fields.
@@ -34,7 +35,7 @@ Handoff recorded: 2026-07-11 after commit `3868fe1` on `main`.
 - GitHub CLI authentication is restored for `/home/andi/.local/bin/gh`; normal Git continues to use the SSH `origin` remote.
 - The working tree was clean and synchronized with `origin/main` before this handoff update.
 
-Recommended next slice: either finish the Server Browser boundary by extracting cohesive Qt row population from `app.py`, or return focus to native-launch/Steam-Proton hardening if a real-world failure is available. Preserve `QTimer` and `timezone` in `app.py`, run the 235-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
+Recommended next slice: return focus to native-launch/Steam-Proton hardening when a real-world failure is available, or continue another small behavior-preserving `app.py` boundary extraction. Preserve `QTimer` and `timezone` in `app.py`, run the 237-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
 
 Working:
 
@@ -176,6 +177,7 @@ Current handling:
 - `wolflauncher/table_items.py` - data-aware Qt item sorting for cached server rows.
 - `wolflauncher/server_browser_presenter.py` - pure Server Browser formatting and style-filter rules.
 - `wolflauncher/server_browser_controller.py` - testable cache query and filter-option boundary.
+- `wolflauncher/server_browser_table.py` - Qt discovered-row population and item metadata.
 - `wolflauncher/config.py` - YAML server loading and default launcher path candidates.
 - `tests/` - standard-library unit tests for launcher commands, vendored launcher handoff contract, path discovery, YAML loading, status parsing and mod parsing.
 - `example.servers.yaml` - tracked curated server template.

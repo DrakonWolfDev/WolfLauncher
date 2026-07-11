@@ -78,13 +78,13 @@ from .server_enrichment import (
     parse_connect_port,
 )
 from .server_browser_presenter import (
-    browser_row,
     browser_style_terms,
     browser_summary_text,
     live_name_text,
     players_text,
 )
 from .server_browser_controller import BrowserQuery, browser_filter_options, load_browser_snapshot
+from .server_browser_table import populate_browser_table
 from .settings import (
     load_favourites,
     load_settings,
@@ -94,7 +94,6 @@ from .settings import (
 )
 from .settings_health import build_settings_health_snapshot
 from .status import ServerStatus, check_server
-from .table_items import SortableTableWidgetItem
 from .workers import (
     BattleMetricsDiscoveryWorker,
     ModWorker,
@@ -1058,21 +1057,7 @@ class MainWindow(QMainWindow):
         servers = snapshot.servers
         self.browser_servers = servers
 
-        self.browser_table.setSortingEnabled(False)
-        self.browser_table.setRowCount(len(servers))
-        for row, server in enumerate(servers):
-            row_data = browser_row(server)
-            for column, value in enumerate(row_data.values):
-                item = SortableTableWidgetItem(value, row_data.sort_values[column])
-                item.setData(Qt.UserRole, server.cache_key)
-                if column in row_data.tooltips:
-                    item.setToolTip(row_data.tooltips[column])
-                if column == 5:
-                    item.setForeground(QColor(row_data.status_colour))
-                self.browser_table.setItem(row, column, item)
-
-        self.browser_table.resizeColumnsToContents()
-        self.browser_table.setSortingEnabled(True)
+        populate_browser_table(self.browser_table, servers)
         self.browser_summary.setText(
             browser_summary_text(snapshot.cache_summary, len(servers), snapshot.match_count, limit)
         )
