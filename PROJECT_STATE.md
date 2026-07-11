@@ -28,6 +28,7 @@ Handoff recorded: 2026-07-11 after commit `3868fe1` on `main`.
 - `wolflauncher/native_launcher.py` now owns native failure-detail assembly for full parity, unavailable context and secondary report failures.
 - Steam selection regression coverage now locks down complete-install priority, explicit `STEAM_ROOT` selection and empty detection.
 - The v0.9 GUI simplification pass has started in Server Browser: common filters, promotion and reset remain visible; secondary filters and database/enrichment tools are available through a direction-marked collapsed disclosure panel. Initial desktop review approved the layout after removing the redundant Map label and making the disclosure easier to scan.
+- The same progressive-disclosure pattern now keeps common Mods actions visible while retaining native preview, copy and selected-page controls in an advanced panel.
 - `wolflauncher/table_items.py` now owns the Server Browser's data-aware Qt sorting item, with direct numeric, text and empty-value tests.
 - `wolflauncher/server_browser_presenter.py` now owns style-filter, player-count, cache-summary, discovered-row metadata and copied discovered-server details.
 - `wolflauncher/server_browser_controller.py` now owns testable cache queries, match counts, summary snapshots and filter-option loading for the Server Browser.
@@ -40,7 +41,7 @@ Handoff recorded: 2026-07-11 after commit `3868fe1` on `main`.
 - GitHub CLI authentication is restored for `/home/andi/.local/bin/gh`; normal Git continues to use the SSH `origin` remote.
 - The working tree was clean and synchronized with `origin/main` before this handoff update.
 
-Recommended next step: desktop-review the first Server Browser simplification slice, then apply the settled progressive-disclosure pattern to Mods and Settings without hiding frequent actions too deeply. Preserve `QTimer` and `timezone` in `app.py`, run the 255-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
+Recommended next step: desktop-review the Mods simplification, then apply the settled progressive-disclosure pattern to Settings without hiding frequent support actions too deeply. Preserve `QTimer` and `timezone` in `app.py`, run the 255-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
 
 Working:
 

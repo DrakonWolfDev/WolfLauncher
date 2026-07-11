@@ -426,17 +426,46 @@ class MainWindow(QMainWindow):
         open_missing = QPushButton("Open missing Workshop pages")
         open_missing.clicked.connect(self.open_missing_workshop_pages)
         buttons.addWidget(check)
-        buttons.addWidget(native_preview)
-        buttons.addWidget(copy_report)
-        buttons.addWidget(copy_missing)
         self.mod_filter = QComboBox()
         self.mod_filter.addItems(["All mods", "Missing only", "Installed only"])
         self.mod_filter.currentTextChanged.connect(self.apply_mod_filter)
-        buttons.addWidget(open_selected)
         buttons.addWidget(open_missing)
+        buttons.addStretch(1)
         buttons.addWidget(QLabel("Filter"))
         buttons.addWidget(self.mod_filter)
         layout.addLayout(buttons)
+
+        self.mods_advanced_toggle = QPushButton()
+        self.mods_advanced_toggle.setCheckable(True)
+        advanced_toggle_row = QHBoxLayout()
+        advanced_toggle_row.addWidget(self.mods_advanced_toggle)
+        advanced_toggle_row.addStretch(1)
+        layout.addLayout(advanced_toggle_row)
+
+        self.mods_advanced_panel = QWidget()
+        advanced_layout = QHBoxLayout(self.mods_advanced_panel)
+        advanced_layout.setContentsMargins(0, 0, 0, 0)
+        advanced_layout.addWidget(native_preview)
+        advanced_layout.addWidget(copy_report)
+        advanced_layout.addWidget(copy_missing)
+        advanced_layout.addWidget(open_selected)
+        advanced_layout.addStretch(1)
+        layout.addWidget(self.mods_advanced_panel)
+
+        self.mods_advanced_toggle.toggled.connect(
+            lambda expanded: set_disclosure_state(
+                self.mods_advanced_toggle,
+                self.mods_advanced_panel,
+                "advanced mod tools",
+                expanded,
+            )
+        )
+        set_disclosure_state(
+            self.mods_advanced_toggle,
+            self.mods_advanced_panel,
+            "advanced mod tools",
+            False,
+        )
 
         self.mods_table = QTableWidget(0, 6)
         self.mods_table.setHorizontalHeaderLabels([
