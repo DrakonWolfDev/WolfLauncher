@@ -1,26 +1,30 @@
 import unittest
 from datetime import datetime, timedelta, timezone
-from types import SimpleNamespace
 
-from wolflauncher.app import MainWindow
+from wolflauncher.discovery_refresh import auto_refresh_due, auto_refresh_timestamp
 
 
 class AutoRefreshThrottleTests(unittest.TestCase):
     def test_recent_provider_refresh_is_throttled(self):
-        recent = datetime.now(timezone.utc) - timedelta(hours=1)
-        window = SimpleNamespace(
-            settings={"last_wolfapi_auto_refresh_at": recent.isoformat()}
-        )
+        now = datetime(2026, 7, 11, 20, 0, tzinfo=timezone.utc)
+        recent = now - timedelta(hours=1)
 
-        self.assertFalse(MainWindow.should_auto_refresh_provider(window, "wolfapi"))
+        self.assertFalse(auto_refresh_due(recent.isoformat(), now=now))
 
     def test_naive_old_provider_refresh_is_treated_as_utc(self):
-        old = datetime.now(timezone.utc).replace(tzinfo=None) - timedelta(hours=25)
-        window = SimpleNamespace(
-            settings={"last_wolfapi_auto_refresh_at": old.isoformat()}
-        )
+        now = datetime(2026, 7, 11, 20, 0, tzinfo=timezone.utc)
+        old = now.replace(tzinfo=None) - timedelta(hours=25)
 
-        self.assertTrue(MainWindow.should_auto_refresh_provider(window, "wolfapi"))
+        self.assertTrue(auto_refresh_due(old.isoformat(), now=now))
+
+    def test_missing_or_invalid_timestamp_is_due(self):
+        self.assertTrue(auto_refresh_due(""))
+        self.assertTrue(auto_refresh_due("not-a-timestamp"))
+
+    def test_timestamp_is_normalized_to_utc_without_microseconds(self):
+        now = datetime(2026, 7, 11, 21, 15, 30, 123456, tzinfo=timezone(timedelta(hours=1)))
+
+        self.assertEqual(auto_refresh_timestamp(now), "2026-07-11T20:15:30+00:00")
 
 
 if __name__ == "__main__":

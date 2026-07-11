@@ -21,6 +21,7 @@ Handoff recorded: 2026-07-11 after commit `f42e732` on `main`.
 - Real desktop smoke testing passed after the v0.9 refactors: Settings health refresh/population, Copy health, Copy diagnostics, native preview copy actions, dialog close behavior, a known-working native server handoff, Server Browser filters/limits/sorting, curated promotion/editing, discovered-row display metadata and discovered-server **Copy details** all worked.
 - `wolflauncher/launch_dialogs.py` now owns external/native launch dialogs and post-handoff DayZ process watching.
 - `wolflauncher/settings_health.py` now owns testable Settings health snapshot construction.
+- `wolflauncher/discovery_refresh.py` now owns automatic provider-refresh timestamp parsing, UTC normalization and the 24-hour throttle policy.
 - `wolflauncher/workers.py` now owns status, mod-check, discovery and enrichment background threads, with focused tests for row selection and error containment.
 - `wolflauncher/curated_dialogs.py` now owns curated-server promotion and editing forms, with direct normalization tests.
 - `wolflauncher/curated_server_presenter.py` now owns unchecked/online/offline curated-row display construction.
@@ -200,6 +201,7 @@ Current handling:
 - `wolflauncher/server_cache.py` - SQLite cache for discovered public servers.
 - `wolflauncher/settings.py` - user settings and favourites.
 - `wolflauncher/settings_health.py` - testable Settings health summary and row construction.
+- `wolflauncher/discovery_refresh.py` - pure automatic provider-refresh timestamp policy.
 - `wolflauncher/workers.py` - background status, mod-check, discovery and enrichment threads.
 - `wolflauncher/curated_dialogs.py` - curated-server promotion and editing dialogs.
 - `wolflauncher/curated_server_presenter.py` - pure curated-row display construction.

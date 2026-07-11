@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Extracted the automatic discovery-refresh timestamp policy from the Qt window into a pure module, with direct coverage for recent, expired, naive, invalid and UTC-normalized timestamps.
 - Started the v0.9 GUI simplification pass by keeping common Server Browser filters and promotion visible while placing version/source/sort/limit and refresh/enrichment tools behind a compact, direction-marked disclosure control.
 - Simplified the Mods tab by keeping recheck, missing-page and filter actions visible while retaining native preview, copy and selected-page actions in an advanced tools panel.
 - Aligned the Server Browser and Mods hierarchy by placing their information summary first and moving advanced disclosures to the bottom of each tab.

@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from datetime import datetime, timedelta, timezone
+from datetime import datetime
 import sys
 
 from PySide6.QtCore import QPoint, QTimer, QUrl, Qt
@@ -42,6 +42,7 @@ from .diagnostics import (
     format_settings_health_report,
     run_diagnostics,
 )
+from .discovery_refresh import auto_refresh_due, auto_refresh_timestamp
 from .curated_status_cache import (
     cached_status_for_server,
     load_status_cache,
@@ -807,21 +808,10 @@ class MainWindow(QMainWindow):
             self.discovery_worker.start()
 
     def should_auto_refresh_provider(self, provider: str) -> bool:
-        value = str(self.settings.get(f"last_{provider}_auto_refresh_at") or "")
-        if not value:
-            return True
-        try:
-            last_refresh = datetime.fromisoformat(value)
-        except ValueError:
-            return True
-        if last_refresh.tzinfo is None:
-            last_refresh = last_refresh.replace(tzinfo=timezone.utc)
-        return datetime.now(timezone.utc) - last_refresh >= timedelta(hours=24)
+        return auto_refresh_due(self.settings.get(f"last_{provider}_auto_refresh_at"))
 
     def mark_auto_refresh(self, provider: str):
-        self.settings[f"last_{provider}_auto_refresh_at"] = (
-            datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-        )
+        self.settings[f"last_{provider}_auto_refresh_at"] = auto_refresh_timestamp()
         self.save_user_settings(silent=True)
 
     def handle_auto_steam_discovery_ready(self, servers, error: str):
