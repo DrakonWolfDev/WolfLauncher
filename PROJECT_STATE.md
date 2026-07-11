@@ -1,6 +1,6 @@
 # WolfLauncher Project State
 
-Current snapshot: v0.8 native-launch parity validated; native launch is the default with the external launcher retained as a fallback.
+Current snapshot: v0.8 native-launch parity validated; v0.9 native hardening and GUI simplification are in progress. Native launch is the default with the external launcher retained as a fallback.
 
 WolfLauncher is a Linux-first DayZ launcher GUI built with Python and PySide6. Its validated native Python engine is the default, with the existing MIT-licensed `dayz-linux-cli-launcher` style shell launcher retained as a fallback.
 
@@ -12,11 +12,11 @@ The v0.8 launch, status, settings health checks, diagnostics, mod-checking, disc
 
 ## Latest handoff
 
-Handoff recorded: 2026-07-11 after commit `3868fe1` on `main`.
+Handoff recorded: 2026-07-11 after commit `f42e732` on `main`.
 
 - Release `v0.8.0` is tagged at `b7883a2` and pushed to GitHub.
 - Native launch is the default for fresh settings; an existing saved external-launcher choice is preserved.
-- GitHub Actions runs the unit suite on Python 3.10, 3.11 and 3.12. The `3868fe1` run is green across all three versions.
+- GitHub Actions runs the unit suite on Python 3.10, 3.11 and 3.12. Previously pushed v0.9 boundary slices passed the hosted matrix; verify the latest run before relying on hosted status.
 - The local suite contains 255 passing tests.
 - Real desktop smoke testing passed after the v0.9 refactors: Settings health refresh/population, Copy health, Copy diagnostics, native preview copy actions, dialog close behavior, a known-working native server handoff, Server Browser filters/limits/sorting, curated promotion/editing, discovered-row display metadata and discovered-server **Copy details** all worked.
 - `wolflauncher/launch_dialogs.py` now owns external/native launch dialogs and post-handoff DayZ process watching.
@@ -31,6 +31,7 @@ Handoff recorded: 2026-07-11 after commit `3868fe1` on `main`.
 - The same progressive-disclosure pattern now keeps common Mods actions visible while retaining native preview, copy and selected-page controls in an advanced panel.
 - Desktop feedback aligned both browser-style tabs: Server Browser information now precedes search/common filters, and advanced disclosures sit at the bottom of both Server Browser and Mods.
 - The Server Browser bottom row aligns its advanced disclosure on the left with Promote/Reset on the right; the approved Mods layout remains unchanged.
+- User desktop review approved the current Server Browser and Mods direction. Do not undo their hierarchy or move advanced controls back above the results without new review.
 - `wolflauncher/table_items.py` now owns the Server Browser's data-aware Qt sorting item, with direct numeric, text and empty-value tests.
 - `wolflauncher/server_browser_presenter.py` now owns style-filter, player-count, cache-summary, discovered-row metadata and copied discovered-server details.
 - `wolflauncher/server_browser_controller.py` now owns testable cache queries, match counts, summary snapshots and filter-option loading for the Server Browser.
@@ -41,9 +42,24 @@ Handoff recorded: 2026-07-11 after commit `3868fe1` on `main`.
 - Commit `3868fe1` documented that WolfAPI does not currently supply ping, added explanatory blank-ping tooltips and made the launcher accept future additive `ping_ms`, `ping` or `latency` fields.
 - A launch-dialog extraction briefly removed the main window's `QTimer` import and caused startup to fail. Commit `63d014c` restored it, added a regression test and passed both a clean temporary-profile GUI startup check and hosted CI.
 - GitHub CLI authentication is restored for `/home/andi/.local/bin/gh`; normal Git continues to use the SSH `origin` remote.
-- The working tree was clean and synchronized with `origin/main` before this handoff update.
+- The working tree was clean and synchronized with `origin/main` before this handoff documentation update.
 
-Recommended next step: desktop-review the Mods simplification, then apply the settled progressive-disclosure pattern to Settings without hiding frequent support actions too deeply. Preserve `QTimer` and `timezone` in `app.py`, run the 255-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
+Recommended next step: simplify Settings using the approved hierarchy while keeping health and frequent support actions easy to reach. Then review Servers for the same visual rhythm without hiding the primary launch path. Preserve `QTimer` and `timezone` in `app.py`, run the 255-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
+
+## v0.9 GUI consistency handoff
+
+The approved direction is structural simplification first; theme, typography, fonts, colours and branding are a later visual-polish pass.
+
+- Use this vertical hierarchy where a tab has comparable content: information/summary, common controls, results, then a bottom action row.
+- Keep the frequent path visible. For Server Browser this means search/common filters and Promote/Reset. For Mods this means recheck, open missing pages and filter.
+- Put secondary filters, refresh/enrichment, parity, copying and specialist tools behind a compact direction-marked disclosure at the bottom.
+- On a shared bottom row, align the disclosure left and primary persistent actions right. Avoid adjacent controls on separate rows when they visually belong together.
+- Use `wolflauncher.ui_sections.set_disclosure_state` so collapsed/expanded wording and markers remain consistent.
+- Preserve every advanced feature unless removal is explicitly agreed. Progressive disclosure is an organisation tool, not permission to delete diagnostics, parity, fallback or provider controls.
+- Avoid redundant labels when a combo box already communicates its purpose clearly, as with `Any map`.
+- Keep summaries above filters/results, matching the approved Server Browser and Mods information-first rhythm.
+- Validate visible layout changes with the 1350x720 offscreen render, the full unit suite and a real desktop review. Check both collapsed and expanded states and ensure bottom controls remain visible.
+- Current approved commits: `c5c1110` initial Server Browser disclosure, `2c0161a` disclosure refinement, `d74a4b6` Mods disclosure, `c65d707` shared hierarchy and `f42e732` Server Browser bottom-row alignment.
 
 Working:
 

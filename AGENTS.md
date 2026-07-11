@@ -39,6 +39,7 @@ wolflauncher/launch_history.py  last launch report persistence
 wolflauncher/launcher.py        external launcher command generation
 wolflauncher/launch_dialogs.py  external/native handoff dialogs and process watching
 wolflauncher/models.py          shared dataclasses
+wolflauncher/mod_presenter.py   Mods-tab summary and row presentation
 wolflauncher/mods.py            required mod lookup and Workshop scan
 wolflauncher/platform_detection.py
                                 native/Flatpak Steam, DayZ and Workshop detection
@@ -48,9 +49,16 @@ wolflauncher/server_discovery.py
                                 public server discovery providers
 wolflauncher/server_enrichment.py
                                 live discovered-server status enrichment
+wolflauncher/server_browser_controller.py
+                                cache queries and filter options
+wolflauncher/server_browser_presenter.py
+                                discovered row/detail presentation
+wolflauncher/server_browser_table.py
+                                Qt discovered-row population
 wolflauncher/settings.py        JSON settings and favourites persistence
 wolflauncher/settings_health.py Settings health snapshot construction
 wolflauncher/status.py          gamedig status checks and DNS resolution
+wolflauncher/ui_sections.py     shared progressive-disclosure state
 example.servers.yaml            tracked curated server template
 servers.yaml                    local ignored curated server list
 external/dayz-linux-cli-launcher/
@@ -82,6 +90,11 @@ The vendored script then:
 ## Development Notes
 
 - Prefer smooth, low-noise user experience: keep background checks quiet and preserve useful previous results while new work is running. Do not hide meaningful uncertainty, failures or launch boundaries; surface them honestly in status labels, health checks, dialogs or diagnostics when they matter.
+- Preserve the approved v0.9 GUI rhythm: information/summary first, common controls next, results in the middle and secondary/advanced tools at the bottom.
+- Keep frequent actions visible and advanced discovery, diagnostics, parity, copying and fallback controls available through compact direction-marked disclosures. Do not treat simplification as permission to remove advanced features.
+- Use `ui_sections.set_disclosure_state` for consistent disclosure markers/text. When primary actions share the bottom area, align advanced tools left and persistent primary actions right on one row.
+- Server Browser and Mods have passed initial desktop review. Continue the pattern into Settings and then Servers, but request new review before materially changing the approved Server Browser/Mods hierarchy.
+- Treat fonts, theme, colours and branding as a later visual-polish pass after layout hierarchy is settled.
 - Keep validated v0.8 behaviour stable while working on v0.9 native-launch hardening.
 - Keep local `servers.yaml` as the curated source even after adding SQLite for discovered servers; track `example.servers.yaml` as the repo template instead of committing personal server-list edits.
 - WolfAPI is the companion service for hosted discovered-server data. Current WolfAPI truth: Redis remains the hot public `/api/servers` cache, Postgres is durable canonical/history storage, Steam/BattleMetrics/live validation update Redis, and Postgres-to-Redis publish is manual recovery only unless explicitly changed in WolfAPI.

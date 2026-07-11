@@ -70,14 +70,14 @@ Goal: turn WolfAPI from a Steam-capped cache into a resilient community server d
 
 ## v0.9 - Native launcher engine hardening
 
-Status: in progress. Launch dialogs, curated-server dialogs, Settings health snapshots, background workers and testable Server Browser query/presentation boundaries have been extracted from the main GUI module, with local desktop smoke testing and the hosted Python 3.10-3.12 test matrix passing for the previously pushed slices.
+Status: in progress. Native hardening boundaries are established and the GUI simplification pass is underway. Server Browser and Mods now have user-approved information-first layouts with advanced tools at the bottom; Settings is next, followed by a Servers consistency review.
 
 - Keep the validated native engine as the default and address real-world regressions as they are reported.
 - Keep the external launcher path as a visible fallback during the transition.
 - Run the automated unit suite in GitHub Actions across supported Python versions.
 - Use the tracked release checklist for native/Flatpak Steam smoke testing.
 - Continue small behavior-preserving extractions from `app.py`, with startup smoke checks after Qt import or initialization changes.
-- After the current behavior boundaries are stable, run a GUI simplification pass: keep common server browsing and launching calm and obvious by default while retaining advanced discovery, diagnostics, parity and fallback controls in clearly labelled secondary areas.
+- Continue the GUI simplification pass using Server Browser and Mods as the reference: keep common browsing and launching calm and obvious while retaining advanced discovery, diagnostics, parity and fallback controls in clearly labelled bottom disclosures.
 - Improve structured launch errors and user-facing diagnostics.
 - Add regression tests for launch command generation, host resolution and Steam mode detection.
   Current coverage includes resolved external/native targets, DNS failures, non-default ports, player-name argument safety, native/Flatpak/`STEAM_ROOT` selection and deterministic complete-install priority.

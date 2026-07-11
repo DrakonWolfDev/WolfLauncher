@@ -27,6 +27,21 @@ falling back, handing off to Steam or lacking proof that DayZ actually started,
 the UI, health checks, dialogs and diagnostics should say so clearly at the
 right level of detail.
 
+### GUI consistency contract
+
+The v0.9 simplification pass uses progressive disclosure without feature loss.
+Tabs should generally read from top to bottom as summary, common controls,
+results and bottom actions. Frequent actions remain visible; specialist filters,
+provider refresh, diagnostics, parity, copying and fallback tools may be placed
+behind a compact direction-marked disclosure at the bottom. When the bottom row
+also contains persistent primary actions, advanced tools align left and primary
+actions align right.
+
+Server Browser and Mods establish the approved reference layout. Reuse
+`ui_sections.set_disclosure_state`, avoid redundant labels and verify both
+collapsed and expanded states at the default 1350x720 window size. Theme,
+typography and branding follow after structural hierarchy is settled.
+
 ## Module Map
 
 ```text
