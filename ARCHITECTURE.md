@@ -55,7 +55,7 @@ Steam               game ownership, Workshop downloads and Proton launch
 dayz-launcher.sh    current launch engine
 ```
 
-The external launcher remains the launch engine for now. A copy of the MIT-licensed upstream shell launcher is vendored at `external/dayz-linux-cli-launcher/` as the legacy reference engine. WolfLauncher is responsible for preparing the user, validating the environment and generating the handoff command.
+The native Python launcher is the default launch engine. A copy of the MIT-licensed upstream shell launcher is vendored at `external/dayz-linux-cli-launcher/` as the legacy reference engine and selectable fallback. WolfLauncher is responsible for preparing the user, validating the environment and generating the handoff command.
 
 ## Data Model
 
@@ -160,14 +160,14 @@ DayZSA API query
 
 This behavior is the reference contract for any future native Python launcher engine.
 
-The native Python replacement has started behind `wolflauncher.native_launcher`.
+The native Python engine lives behind `wolflauncher.native_launcher`.
 It currently prepares the shell launcher's shortened `@base64modid` symlinks,
 checks installed Workshop mod directories and metadata, resolves the server host,
 and generates the native or Flatpak Steam `-applaunch 221100` command line. The
-GUI still uses the external shell handoff by default until native launch parity
-is proven with broader real-world testing. Real-world native Steam and Flatpak
-Steam handoffs have both reached DayZ process detection through the experimental
-path; broader multi-server and missing-mod parity still need coverage.
+The GUI uses the native engine by default. Real-world native Steam and Flatpak
+Steam handoffs have reached DayZ process detection with Steam running and stopped,
+including unmodded, fully modded and partially missing-mod server cases. The
+external shell handoff remains selectable as a fallback.
 The Mods tab native preview produces a copyable parity report with a validation
 checklist and readiness comparison for selected Steam install setting, detected
 Steam install, resolved connect target, query port, external command, native

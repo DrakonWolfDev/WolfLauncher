@@ -276,7 +276,7 @@ def format_native_launch_parity_report(
         "Native launch parity report",
         f"Generated at: {timestamp.astimezone(timezone.utc).replace(microsecond=0).isoformat()}",
         "",
-        "This compares the configured external launcher handoff with the experimental native path.",
+        "This compares the configured external launcher fallback with the native path.",
         "It did not launch Steam or DayZ.",
         "",
         "Validation checklist:",

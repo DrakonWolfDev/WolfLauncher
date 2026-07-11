@@ -413,7 +413,7 @@ class NativeLaunchPreviewDialog(PostHandoffProcessCheckMixin, QDialog):
         copy_command = QPushButton("Copy native command")
         copy_command.setEnabled(bool(command))
         copy_command.clicked.connect(self.copy_native_command)
-        self.launch_button = QPushButton("Launch native experimental")
+        self.launch_button = QPushButton("Launch native")
         self.launch_button.setEnabled(bool(command))
         self.launch_button.clicked.connect(self.launch_native_experimental)
         close = QPushButton("Close")
@@ -439,9 +439,9 @@ class NativeLaunchPreviewDialog(PostHandoffProcessCheckMixin, QDialog):
     def launch_native_experimental(self):
         reply = QMessageBox.warning(
             self,
-            "Experimental native launch",
+            "Launch native command",
             "This bypasses the external dayz-launcher.sh script and hands the previewed command directly to Steam.\n\n"
-            "Use it only for testing the new native launcher path. Continue?",
+            "Continue?",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )
@@ -452,7 +452,7 @@ class NativeLaunchPreviewDialog(PostHandoffProcessCheckMixin, QDialog):
 
         self.launch_button.setEnabled(False)
         self.output.moveCursor(QTextCursor.End)
-        self.output.append("\n\nStarting experimental native launch...\n")
+        self.output.append("\n\nStarting native launch...\n")
         self.process.start(self.command[0], self.command[1:])
 
     def read_output(self):
@@ -598,10 +598,10 @@ class MainWindow(QMainWindow):
         )
         self.player_name = QLineEdit(str(self.settings.get("player_name") or DEFAULT_PLAYER_NAME))
         self.launch_engine = QComboBox()
-        self.launch_engine.addItems(["External launcher", "Native experimental"])
+        self.launch_engine.addItems(["Native launcher", "External launcher"])
         self.launch_engine.setCurrentText(
-            "Native experimental"
-            if str(self.settings.get("launch_engine") or "external") == "native"
+            "Native launcher"
+            if str(self.settings.get("launch_engine") or "native") == "native"
             else "External launcher"
         )
         self.launch_engine.currentTextChanged.connect(self.handle_settings_changed)
@@ -1375,8 +1375,8 @@ class MainWindow(QMainWindow):
 
     def launch_engine_key(self) -> str:
         if not hasattr(self, "launch_engine"):
-            return str(self.settings.get("launch_engine") or "external")
-        return "native" if self.launch_engine.currentText() == "Native experimental" else "external"
+            return str(self.settings.get("launch_engine") or "native")
+        return "native" if self.launch_engine.currentText() == "Native launcher" else "external"
 
     def native_steam_mode_key(self) -> str:
         if not hasattr(self, "native_steam_mode"):
@@ -2560,13 +2560,13 @@ class MainWindow(QMainWindow):
         rows = [
             (
                 "Launch engine",
-                "WARN" if launch_engine == "native" else "OK",
-                "Native experimental" if launch_engine == "native" else "External launcher",
+                "OK",
+                "Native launcher" if launch_engine == "native" else "External launcher (fallback)",
             ),
             (
                 "Launcher script",
                 "OK" if launch_engine == "native" or (path.exists() and path.is_file()) else "MISSING",
-                "Not required for native experimental mode" if launch_engine == "native" else str(path),
+                "Not required for native mode" if launch_engine == "native" else str(path),
             ),
             (
                 "Server API",
@@ -2834,7 +2834,7 @@ class MainWindow(QMainWindow):
                     box.setText(f"{server.name} is missing {len(missing)} required mod(s).")
                     box.setInformativeText(
                         f"{names}\n\n"
-                        "The native experimental engine needs every required Workshop directory before it can "
+                        "The native launcher needs every required Workshop directory before it can "
                         "build the DayZ mod command."
                     )
                     open_button = box.addButton("Open Workshop", QMessageBox.ButtonRole.ActionRole)

@@ -37,16 +37,18 @@ Status: complete, with the NVIDIA PRIME Steam launch-option issue still tracked 
 - Expand native Steam and Flatpak Steam checks; secondary Steam library detection is now in place.
 - Continue improving Proton/Steam handoff failure states; launch dialogs now clarify the handoff boundary and probe for known DayZ processes after successful command exit.
 - Add Linux Mint/Ubuntu install instructions; development setup notes are in the README, packaged install notes still need future work.
-- Start carving native Python equivalents from the vendored legacy launcher behavior. Experimental native Steam handoff now has native-Steam and Flatpak-Steam success, an opt-in launch-engine setting, explicit Steam-install selection and successful testing on several servers, while broader missing-mod parity still needs testing.
+- Start carving native Python equivalents from the vendored legacy launcher behavior. This work progressed into the validated v0.8 native engine with explicit Steam-install selection.
 
 ## v0.8 - Native launcher engine investigation
 
+Status: complete. Native launch parity has been validated in real-world use and the native engine is now the default for fresh installations. The external launcher remains available as a fallback.
+
 - Document the current handoff contract with `dayz-linux-cli-launcher`.
-- Build an internal launcher-engine module behind the existing GUI workflow. Initial foundation is in place for compact mod symlink names, mod link preparation, launch previews, experimental native handoff and Steam command generation.
+- Build an internal launcher-engine module behind the existing GUI workflow. Completed for compact mod symlink names, mod link preparation, launch previews, native handoff and Steam command generation.
 - Reproduce the current external launcher command behaviour with test coverage.
-- Continue direct Steam/Proton launch handling tests for native and Flatpak Steam.
+- Direct Steam/Proton launch handling has been validated for native and Flatpak Steam, with Steam running and stopped, and with unmodded, fully modded and partially missing-mod servers.
 - Investigate Steam Workshop mod installation routes, with Steam-native subscription/download flows preferred over custom file management.
-- Keep the external launcher path as a fallback until native launch parity is proven.
+- Keep the external launcher path as a visible fallback during native hardening.
 
 ## v0.8.x - WolfAPI discovery quality and submissions
 
@@ -68,8 +70,10 @@ Goal: turn WolfAPI from a Steam-capped cache into a resilient community server d
 
 ## v0.9 - Native launcher engine hardening
 
-- Make the native engine the default candidate only after broader missing-mod and multi-server parity testing.
+- Keep the validated native engine as the default and address real-world regressions as they are reported.
 - Keep the external launcher path as a visible fallback during the transition.
+- Run the automated unit suite in GitHub Actions across supported Python versions.
+- Use the tracked release checklist for native/Flatpak Steam smoke testing.
 - Improve structured launch errors and user-facing diagnostics.
 - Add regression tests for launch command generation, host resolution and Steam mode detection.
 

@@ -2,7 +2,7 @@
 
 ## Project Orientation
 
-WolfLauncher is a Linux-first DayZ launcher GUI built with Python and PySide6. The current working baseline is v0.7 health-check and Linux polish complete, with v0.8 native-launch parity investigation in progress.
+WolfLauncher is a Linux-first DayZ launcher GUI built with Python and PySide6. The current working baseline is v0.8 native-launch parity validated, with v0.9 native hardening in progress.
 
 The app validates the local Steam/DayZ/Workshop setup, checks server status, compares required server mods with locally installed Workshop mods, then hands launch control to an external `dayz-launcher.sh` script.
 
@@ -41,7 +41,7 @@ wolflauncher/models.py          shared dataclasses
 wolflauncher/mods.py            required mod lookup and Workshop scan
 wolflauncher/platform_detection.py
                                 native/Flatpak Steam, DayZ and Workshop detection
-wolflauncher/native_launcher.py experimental Python launch-engine foundation
+wolflauncher/native_launcher.py native Python launch engine
 wolflauncher/server_cache.py    SQLite discovered-server cache
 wolflauncher/server_discovery.py
                                 public server discovery providers
@@ -80,7 +80,7 @@ The vendored script then:
 ## Development Notes
 
 - Prefer smooth, low-noise user experience: keep background checks quiet and preserve useful previous results while new work is running. Do not hide meaningful uncertainty, failures or launch boundaries; surface them honestly in status labels, health checks, dialogs or diagnostics when they matter.
-- Keep v0.7 behaviour stable while working on v0.8 native-launch parity investigation.
+- Keep validated v0.8 behaviour stable while working on v0.9 native-launch hardening.
 - Keep local `servers.yaml` as the curated source even after adding SQLite for discovered servers; track `example.servers.yaml` as the repo template instead of committing personal server-list edits.
 - WolfAPI is the companion service for hosted discovered-server data. Current WolfAPI truth: Redis remains the hot public `/api/servers` cache, Postgres is durable canonical/history storage, Steam/BattleMetrics/live validation update Redis, and Postgres-to-Redis publish is manual recovery only unless explicitly changed in WolfAPI.
 - When building launcher features around WolfAPI, prefer additive client behavior: consume `/api/servers` for discovered rows, use `/api/health` only for diagnostics/status, keep remote data read-only, and preserve local curated YAML promotion as the user-owned path.
@@ -89,7 +89,7 @@ The vendored script then:
 - User settings and favourites live under `~/.config/wolflauncher`.
 - Prefer small, testable changes around launch command generation and platform detection.
 - Keep native parity reports easy to compare with the external launcher: show readiness, shared connect/query targets, current required-mod counts and missing local Workshop directories.
-- Keep the external launcher as the default path until native launch parity is proven with broader real-world testing.
+- Keep the native launcher as the default and preserve the external launcher as a visible fallback.
 - Keep the vendored launcher untouched unless deliberately updating the legacy reference; build replacement Python behavior behind WolfLauncher interfaces first.
 - Preserve third-party license notices when moving or replacing vendored code.
 

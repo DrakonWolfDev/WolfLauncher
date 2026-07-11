@@ -167,7 +167,7 @@ class DiagnosticsTests(unittest.TestCase):
                         )
 
         self.assertIn("Generated at: 2026-06-21T15:16:59+00:00", report)
-        self.assertIn("Launch engine: Native experimental", report)
+        self.assertIn("Launch engine: Native launcher", report)
         self.assertIn("Selected Steam mode: Flatpak Steam", report)
         self.assertIn("Selected Steam install: MISSING - Flatpak Steam not detected", report)
 

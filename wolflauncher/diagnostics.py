@@ -378,6 +378,6 @@ def run_diagnostics(
 def launch_engine_label(value: str) -> str:
     labels = {
         "external": "External launcher",
-        "native": "Native experimental",
+        "native": "Native launcher",
     }
     return labels.get(value, value)

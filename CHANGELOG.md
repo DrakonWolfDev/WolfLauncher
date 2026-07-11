@@ -1,6 +1,14 @@
 # Changelog
 
 ## Unreleased
+
+## v0.8.0 - 2026-07-11
+
+- Added GitHub Actions unit-test coverage for Python 3.10, 3.11 and 3.12.
+- Added a release checklist covering automated checks, desktop smoke tests, native and Flatpak Steam launch cases and the external fallback.
+- Updated the package version from the stale `0.2.0` value to `0.8.0`.
+- Made the validated native launcher the default for fresh installations while preserving existing saved launch-engine choices and retaining the external launcher as a selectable fallback.
+- Recorded successful real-world native launch validation for native and Flatpak Steam, Steam running and stopped, and unmodded, fully modded and partially missing-mod servers.
 - Preserved detailed native preview errors, including stale `@mod` symlink details, in the preview failure dialog.
 - Added selected Steam/install/server context to native launch failure details when a full parity report cannot be built from a cached mod check.
 - Added the selected Steam install setting to copied native parity reports so Auto, Native Steam, Flatpak Steam and `STEAM_ROOT` test runs are easier to compare.

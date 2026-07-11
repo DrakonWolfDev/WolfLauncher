@@ -1,14 +1,14 @@
 # WolfLauncher Project State
 
-Current snapshot: v0.7 health checks and Linux polish complete.
+Current snapshot: v0.8 native-launch parity validated; native launch is the default with the external launcher retained as a fallback.
 
-WolfLauncher is a Linux-first DayZ launcher GUI built with Python and PySide6. It currently wraps the existing MIT-licensed `dayz-linux-cli-launcher` style shell launcher instead of replacing it.
+WolfLauncher is a Linux-first DayZ launcher GUI built with Python and PySide6. Its validated native Python engine is the default, with the existing MIT-licensed `dayz-linux-cli-launcher` style shell launcher retained as a fallback.
 
 The upstream shell launcher is now vendored under `external/dayz-linux-cli-launcher/` so the current working behavior can be inspected and replaced gradually.
 
 ## Current status
 
-The v0.7 launch, status, settings health checks, diagnostics, mod-checking, discovered-server browser and Linux handoff polish are considered functional. The application can be used as the working project base for the native-launch parity improvement cycle.
+The v0.8 launch, status, settings health checks, diagnostics, mod-checking, discovered-server browser and native Linux handoff are considered functional. The application can be used as the working project base for the native-launch hardening cycle.
 
 Working:
 
@@ -85,9 +85,9 @@ Working:
 - Native launch failures include copyable parity-report details when a cached mod check is available, so failed launches and preview reports can be compared. If a full parity report is unavailable, failure details still include the selected Steam install setting, detected install, Steam command, DayZ/Workshop paths and server target.
 - Native preview failures preserve detailed native-engine text, including stale symlink expected-vs-actual targets when available.
 - Native parity reports show created versus reused mod symlink counts, and existing `@mod` symlinks are reused only when they point to the expected Workshop directory. Stale `@mod` symlink conflicts report expected versus actual targets in copyable failure details.
-- The native experimental engine does not offer "Launch anyway" when required Workshop directories are missing, because it cannot build a valid native mod command until the missing mods are installed.
-- Experimental native Steam handoff from the preview dialog, with real-world native Steam and Flatpak Steam launch success confirmed. The external launcher remains the default launch path while parity testing continues.
-- Saved launch-engine setting in Settings. `External launcher` remains the default, while `Native experimental` routes the main Launch button through the Python native engine.
+- The native engine does not offer "Launch anyway" when required Workshop directories are missing, because it cannot build a valid native mod command until the missing mods are installed.
+- Native Steam handoff with real-world native Steam and Flatpak Steam launch success confirmed across Steam running/stopped and unmodded, fully modded and partially missing-mod server cases.
+- Saved launch-engine setting in Settings. `Native launcher` is the default for fresh installations, while `External launcher` remains available as a fallback. Existing saved choices are preserved.
 - Saved native Steam install selection in Settings, with Auto, Native Steam, Flatpak Steam and `STEAM_ROOT` options so parity testing can target a specific detected install.
 - Settings and diagnostics label this as the Steam install mode so it is not confused with the external/native launch-engine selector.
 - Structured native-launch failure stages with user-facing recovery guidance for Steam detection, library detection, DNS and mod setup failures.
@@ -150,6 +150,7 @@ Current handling:
 - `LICENSE` - WolfLauncher MIT license.
 - `THIRD_PARTY_NOTICES.md` - third-party license notices.
 - `CHANGELOG.md` - version history.
+- `docs/RELEASE_CHECKLIST.md` - automated and Steam/Proton release validation checklist.
 - `ROADMAP.md` - planned milestones.
 - `ARCHITECTURE.md` - architecture and design notes.
 
@@ -160,11 +161,11 @@ Current handling:
 - v0.6 provides a standalone SQLite server cache foundation and read-only browser tab for discovered public servers.
 - Provider refreshes sync their discovered rows after successful responses by removing stale provider-backed entries and adding only new cache keys; failed refreshes preserve existing cache rows. Curated YAML remains the place for saved servers.
 - JSON is used for user settings and favourites under `~/.config/wolflauncher`.
-- The external shell launcher remains the launch engine for now.
+- The native Python launcher is the default; the external shell launcher remains a selectable fallback and reference contract.
 - The vendored shell launcher is the reference contract for future native launcher work.
 - Native launcher replacement work has started behind a separate Python interface, with tests covering compact mod symlink names, relative symlink creation, no-mod/all-missing/mixed missing-mod preview handling, missing selected-mode Workshop folders, Steam launch command generation and external-vs-native parity report formatting.
 - The native engine has confirmed real-world native Steam and Flatpak Steam handoff success, including starting Steam when it was not already running and a Flatpak DayZ launch reaching process detection in roughly 10 seconds.
-- The main Launch button can opt into the native engine through Settings, but this should remain experimental until more servers and missing-mod cases are tested.
+- The main Launch button uses the native engine by default after successful real-world parity testing; Settings can select the external fallback.
 - When the native engine is selected, mod checks, native launch preview and launch preflight use the selected Steam install rather than always using automatic best-install detection.
 - Auto Steam selection is reported from the same detection snapshot as the candidate list so users can see why native or Flatpak Steam was chosen.
 - Native launch command generation now fails before handoff when the selected Steam mode lacks a detected command, with mode-specific guidance for native Steam, Flatpak Steam and `STEAM_ROOT`.
@@ -177,10 +178,10 @@ Current handling:
 
 ## Next step
 
-Use v0.8 as the next active development target:
+Use v0.9 native-launch hardening as the next active development target:
 
-- Broaden native and Flatpak Steam parity testing across more servers, Steam install modes and missing-mod cases.
-- Keep the external launcher as the default launch path until native parity is proven with broader real-world testing.
+- Keep native launch as the default and retain the external launcher as a fallback.
+- Continue native and Flatpak Steam regression testing when real-world failures are reported.
 - Continue refining hybrid-GPU/NVIDIA PRIME guidance after reproducible data is available.
 - Keep refining Proton/Steam handoff failure states from real-world failures.
 - Continue refining Linux Mint/Ubuntu install instructions toward packaged installs.

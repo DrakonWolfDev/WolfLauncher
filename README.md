@@ -4,15 +4,15 @@ A Linux-first DayZ launcher designed to remove the guesswork from joining modded
 
 DayZ runs surprisingly well on Linux. The problem is everything around it: Steam setup, Proton behaviour, Workshop content, server mod requirements, and paths that vary between native Steam and Flatpak Steam.
 
-WolfLauncher checks those pieces before launch, then hands control to the existing `dayz-launcher.sh` workflow.
+WolfLauncher checks those pieces before handing a native launch command to Steam. The existing `dayz-launcher.sh` workflow remains available as a fallback.
 
 The upstream MIT-licensed shell launcher is vendored in `external/dayz-linux-cli-launcher/` as the current legacy launch engine and rewrite reference.
 
 ## Status
 
-Current baseline: v0.7 health checks and Linux polish complete, with native-launch parity investigation continuing behind the external launcher default.
+Current baseline: v0.8 native-launch parity validated, with the native launcher used by default and the external launcher retained as a fallback.
 
-The server browser, settings health checks, diagnostics, mod checks and guarded launch handoff are working. The experimental native engine has reached successful native Steam and Flatpak Steam handoffs in real-world testing, but the external launcher remains the default until broader parity is proven. The only known bug is that DayZ does not run when Steam launch options contain:
+The server browser, settings health checks, diagnostics, mod checks and guarded launch handoff are working. The native engine has been validated with native and Flatpak Steam, Steam running and stopped, unmodded servers, fully installed mod sets and partially missing mod sets. Missing mods are identified and linked to their Workshop pages; automatic Workshop subscription or downloading remains intentionally out of scope. The external launcher remains available as a fallback. The only known bug is that DayZ does not run when Steam launch options contain:
 
 ```text
 __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%
@@ -179,8 +179,9 @@ Recommended workflow:
 5. Return to the server list.
 6. Launch.
 
-The experimental native engine can be selected in **Settings**. When testing it,
-use **Steam install mode** to choose Auto, Native Steam, Flatpak Steam or a
+The native engine is selected by default for fresh installations; the external
+launcher remains selectable in **Settings** as a fallback. Use **Steam install
+mode** to choose Auto, Native Steam, Flatpak Steam or a
 `STEAM_ROOT` library explicitly. Mod checks, native preview and native launch
 preflight use that selected install so Flatpak testing does not accidentally
 read Workshop state from native Steam. The Mods summary and copied mod report
@@ -189,7 +190,7 @@ Flatpak and `STEAM_ROOT` parity snapshots easier to compare. `STEAM_ROOT` still
 needs the native `steam` command on `PATH` for launch handoff; Settings health
 reports when that command is missing. The native preview report includes a
 readiness comparison between the external launcher handoff and the native
-candidate, including the selected Steam install setting, detected install,
+command, including the selected Steam install setting, detected install,
 shared connect target, query port, current required-mod count and whether native
 testing is blocked by missing local Workshop directories. When the native
 command is ready, the preview dialog can copy only
@@ -298,6 +299,7 @@ Use **Enrich visible** in the Server Browser tab to query the currently visible 
 | `ARCHITECTURE.md` | Design decisions, module map and launch contract |
 | `ROADMAP.md` | Planned features and future milestones |
 | `CHANGELOG.md` | Version history and release notes |
+| `docs/RELEASE_CHECKLIST.md` | Automated and real-world release checks |
 | `external/dayz-linux-cli-launcher/` | Vendored MIT legacy launcher reference |
 | `THIRD_PARTY_NOTICES.md` | Third-party license notices |
 
@@ -334,14 +336,14 @@ or via a native `.deb` package.
 
 ## Roadmap
 
-Next active target: v0.8 native launcher engine investigation.
+Next active target: v0.9 native launcher engine hardening.
 
 Planned future work includes:
 
 - Continued Server Browser polish.
 - Continued hybrid-GPU/NVIDIA PRIME investigation after reproducible data is available.
 - Improved Steam/Proton handoff diagnostics from real-world failures.
-- Broader native and Flatpak Steam parity testing across servers and missing-mod cases.
+- Continued native and Flatpak Steam regression testing as real-world failures are reported.
 - Native packaging and installation.
 - Eventual internal launcher engine replacement once parity is proven.
 
