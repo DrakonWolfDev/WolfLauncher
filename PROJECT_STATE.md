@@ -1,6 +1,6 @@
 # WolfLauncher Project State
 
-Current snapshot: v0.8 native-launch parity validated; v0.9 native hardening and GUI simplification are in progress. Native launch is the default with the external launcher retained as a fallback.
+Current snapshot: v0.8 native-launch parity validated; v0.9 native hardening is in progress and the initial GUI simplification pass is complete. Native launch is the default with the external launcher retained as a fallback.
 
 WolfLauncher is a Linux-first DayZ launcher GUI built with Python and PySide6. Its validated native Python engine is the default, with the existing MIT-licensed `dayz-linux-cli-launcher` style shell launcher retained as a fallback.
 
@@ -33,6 +33,7 @@ Handoff recorded: 2026-07-11 after commit `f42e732` on `main`.
 - The Server Browser bottom row aligns its advanced disclosure on the left with Promote/Reset on the right; the approved Mods layout remains unchanged.
 - User desktop review approved the current Server Browser and Mods direction. Do not undo their hierarchy or move advanced controls back above the results without new review.
 - User desktop review approved the simplified Settings hierarchy: installation summary and launch choices remain visible above health results, Check health and Save settings remain persistent, and discovery/import/copy support controls remain available through a bottom disclosure.
+- User desktop review approved the Servers consistency pass: refresh status and common player controls precede the curated table, while Add/Refresh/Launch remain persistent at the bottom. The external launcher path moved to Settings and appears beside a half-width engine selector only when the external fallback is selected; native mode restores the selector to full width.
 - `wolflauncher/table_items.py` now owns the Server Browser's data-aware Qt sorting item, with direct numeric, text and empty-value tests.
 - `wolflauncher/server_browser_presenter.py` now owns style-filter, player-count, cache-summary, discovered-row metadata and copied discovered-server details.
 - `wolflauncher/server_browser_controller.py` now owns testable cache queries, match counts, summary snapshots and filter-option loading for the Server Browser.
@@ -45,7 +46,7 @@ Handoff recorded: 2026-07-11 after commit `f42e732` on `main`.
 - GitHub CLI authentication is restored for `/home/andi/.local/bin/gh`; normal Git continues to use the SSH `origin` remote.
 - The working tree was clean and synchronized with `origin/main` before this handoff documentation update.
 
-Recommended next step: review Servers for the same visual rhythm without hiding the primary launch path. Preserve `QTimer` and `timezone` in `app.py`, run the 255-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
+Recommended next step: resume v0.9 native hardening through small behavior-preserving `app.py` boundaries and real-world Steam/Proton regression fixes as evidence arrives. Preserve the approved four-tab hierarchy, `QTimer` and `timezone` in `app.py`, run the 255-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
 
 ## v0.9 GUI consistency handoff
 
@@ -60,7 +61,7 @@ The approved direction is structural simplification first; theme, typography, fo
 - Avoid redundant labels when a combo box already communicates its purpose clearly, as with `Any map`.
 - Keep summaries above filters/results, matching the approved Server Browser, Mods and Settings information-first rhythm.
 - Validate visible layout changes with the 1350x720 offscreen render, the full unit suite and a real desktop review. Check both collapsed and expanded states and ensure bottom controls remain visible.
-- Current approved commits: `c5c1110` initial Server Browser disclosure, `2c0161a` disclosure refinement, `d74a4b6` Mods disclosure, `c65d707` shared hierarchy and `f42e732` Server Browser bottom-row alignment.
+- Current approved commits: `c5c1110` initial Server Browser disclosure, `2c0161a` disclosure refinement, `d74a4b6` Mods disclosure, `c65d707` shared hierarchy, `f42e732` Server Browser bottom-row alignment and `e541b5c` Settings simplification.
 
 Working:
 

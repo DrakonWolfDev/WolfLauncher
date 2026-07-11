@@ -7,6 +7,8 @@
 - Aligned the Server Browser and Mods hierarchy by placing their information summary first and moving advanced disclosures to the bottom of each tab.
 - Aligned the Server Browser bottom actions on one row, with advanced tools on the left and Promote/Reset on the right.
 - Simplified Settings with installation health first, persistent health/save actions and a bottom disclosure for discovery configuration, imports and copy-oriented support tools.
+- Simplified Servers with status and common controls first, the curated table in the middle and persistent Add/Refresh/Launch actions at the bottom.
+- Moved the external launcher path from Servers to an adaptive Settings row that appears beside the engine selector only when the external fallback is selected.
 - Added Steam-selection regressions for deterministic complete-install priority, explicit `STEAM_ROOT` selection and empty detection.
 - Moved native launch failure-detail assembly into `wolflauncher.native_launcher`, with regression coverage for no-mod-check context, full parity output and secondary report-generation failures.
 - Extracted Mods-tab summary and row presentation into `wolflauncher.mod_presenter`, with direct coverage for errors, no-mod servers, installed/missing counts and row metadata.

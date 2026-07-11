@@ -188,23 +188,18 @@ class MainWindow(QMainWindow):
         widget = QWidget()
         layout = QVBoxLayout(widget)
 
-        settings = QFormLayout()
-        launcher_row = QHBoxLayout()
-        launcher_row.addWidget(self.launcher_path)
-        browse = QPushButton("Browse")
-        browse.clicked.connect(self.browse_launcher)
-        launcher_row.addWidget(browse)
-        settings.addRow("Launcher script", launcher_row)
+        layout.addWidget(self.last_refresh_label)
+
+        common_settings = QFormLayout()
         player_name_row = QHBoxLayout()
         player_name_row.addWidget(self.player_name)
         self.player_name.returnPressed.connect(self.save_player_name)
         set_player_name = QPushButton("Set name")
         set_player_name.clicked.connect(self.save_player_name)
         player_name_row.addWidget(set_player_name)
-        settings.addRow("Player name", player_name_row)
-        settings.addRow("Auto refresh", self.refresh_seconds)
-        settings.addRow("Status", self.last_refresh_label)
-        layout.addLayout(settings)
+        common_settings.addRow("Player name", player_name_row)
+        common_settings.addRow("Auto refresh", self.refresh_seconds)
+        layout.addLayout(common_settings)
 
         self.table = QTableWidget(len(self.servers), 16)
         self.table.setHorizontalHeaderLabels([
@@ -255,12 +250,10 @@ class MainWindow(QMainWindow):
         self.refresh_status_button.clicked.connect(self.refresh_statuses)
         self.launch_button = QPushButton("Launch selected server")
         self.launch_button.clicked.connect(self.launch_selected)
-        save = QPushButton("Save settings")
-        save.clicked.connect(self.save_user_settings)
+        buttons.addStretch(1)
         buttons.addWidget(add_server)
         buttons.addWidget(self.refresh_status_button)
         buttons.addWidget(self.launch_button)
-        buttons.addWidget(save)
         layout.addLayout(buttons)
         return widget
 
@@ -490,9 +483,27 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.system_summary)
 
         launcher_settings = QFormLayout()
-        launcher_settings.addRow("Launch engine", self.launch_engine)
+        launcher_controls = QWidget()
+        launcher_controls_layout = QHBoxLayout(launcher_controls)
+        launcher_controls_layout.setContentsMargins(0, 0, 0, 0)
+        launcher_controls_layout.addWidget(self.launch_engine, 1)
+
+        self.external_launcher_settings = QWidget()
+        external_launcher_layout = QHBoxLayout(self.external_launcher_settings)
+        external_launcher_layout.setContentsMargins(0, 0, 0, 0)
+        external_launcher_layout.addWidget(QLabel("Script"))
+        external_launcher_layout.addWidget(self.launcher_path, 1)
+        browse = QPushButton("Browse")
+        browse.clicked.connect(self.browse_launcher)
+        external_launcher_layout.addWidget(browse)
+        launcher_controls_layout.addWidget(self.external_launcher_settings, 1)
+        launcher_settings.addRow("Launch engine", launcher_controls)
         launcher_settings.addRow("Steam install mode", self.native_steam_mode)
         layout.addLayout(launcher_settings)
+        self.launch_engine.currentTextChanged.connect(
+            self.update_external_launcher_settings_visibility
+        )
+        self.update_external_launcher_settings_visibility()
 
         self.health_table = QTableWidget(0, 3)
         self.health_table.setHorizontalHeaderLabels(["Check", "Status", "Details"])
@@ -596,6 +607,12 @@ class MainWindow(QMainWindow):
             False,
         )
         return widget
+
+    def update_external_launcher_settings_visibility(self, *_args):
+        if hasattr(self, "external_launcher_settings"):
+            self.external_launcher_settings.setVisible(
+                self.launch_engine.currentText() == "External launcher"
+            )
 
     def browse_launcher(self):
         path, _ = QFileDialog.getOpenFileName(self, "Select dayz-launcher.sh")

@@ -70,14 +70,14 @@ Goal: turn WolfAPI from a Steam-capped cache into a resilient community server d
 
 ## v0.9 - Native launcher engine hardening
 
-Status: in progress. Native hardening boundaries are established and the GUI simplification pass is underway. Server Browser, Mods and Settings now have user-approved information-first layouts with advanced tools at the bottom; a Servers consistency review is next.
+Status: in progress. Native hardening boundaries are established and the initial GUI simplification pass is complete. Server Browser, Mods, Settings and Servers now have user-approved information-first layouts with advanced or fallback controls kept available without competing with the primary path.
 
 - Keep the validated native engine as the default and address real-world regressions as they are reported.
 - Keep the external launcher path as a visible fallback during the transition.
 - Run the automated unit suite in GitHub Actions across supported Python versions.
 - Use the tracked release checklist for native/Flatpak Steam smoke testing.
 - Continue small behavior-preserving extractions from `app.py`, with startup smoke checks after Qt import or initialization changes.
-- Continue the GUI simplification pass using Server Browser and Mods as the reference: keep common browsing and launching calm and obvious while retaining advanced discovery, diagnostics, parity and fallback controls in clearly labelled bottom disclosures.
+- Preserve the approved GUI hierarchy: keep common browsing and launching calm and obvious while retaining advanced discovery, diagnostics, parity and fallback controls through clearly labelled disclosures or context-sensitive settings.
 - Improve structured launch errors and user-facing diagnostics.
 - Add regression tests for launch command generation, host resolution and Steam mode detection.
   Current coverage includes resolved external/native targets, DNS failures, non-default ports, player-name argument safety, native/Flatpak/`STEAM_ROOT` selection and deterministic complete-install priority.
