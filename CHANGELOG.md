@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Extracted status, mod-check, discovery and enrichment thread workers from the main GUI module into `wolflauncher.workers`, with focused error-handling and row-selection tests.
 - Fixed the main-window startup failure caused by dropping its `QTimer` import during launch-dialog extraction.
 - Recorded successful real-desktop smoke testing of Settings health/report copying, native preview actions and a known-working native server handoff after the v0.9 extractions.
 - Extracted external and native launch dialogs and post-handoff process watching from the main GUI module into `wolflauncher.launch_dialogs` without changing the launch workflow.
