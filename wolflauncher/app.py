@@ -54,6 +54,7 @@ from .launch_dialogs import LaunchDialog, NativeLaunchPreviewDialog
 from .launch_preflight import (
     LaunchPreflightAction,
     build_launch_preflight_state,
+    matching_mod_result,
     next_launch_preflight_action,
     usable_mod_result,
 )
@@ -1674,24 +1675,26 @@ class MainWindow(QMainWindow):
         )
 
     def copy_mod_check_report(self):
-        if not self.last_mod_result:
+        result = self._selected_mod_result()
+        if not result:
             QMessageBox.information(
                 self,
                 "No mod check yet",
-                "Check selected server mods before copying a mod report.",
+                "Check the selected server mods before copying its mod report.",
             )
             return
-        self.copy_to_clipboard(format_mod_check_report(self.last_mod_result), "Mod check report")
+        self.copy_to_clipboard(format_mod_check_report(result), "Mod check report")
 
     def copy_missing_workshop_links(self):
-        if not self.last_mod_result:
+        result = self._selected_mod_result(successful=True)
+        if not result:
             QMessageBox.information(
                 self,
                 "No mod check yet",
-                "Check selected server mods before copying missing Workshop links.",
+                "Check the selected server mods successfully before copying missing Workshop links.",
             )
             return
-        links = format_missing_workshop_links(self.last_mod_result)
+        links = format_missing_workshop_links(result)
         if not links:
             QMessageBox.information(
                 self,
@@ -1876,10 +1879,15 @@ class MainWindow(QMainWindow):
         self.open_workshop_page_for_mod_row(row)
 
     def open_missing_workshop_pages(self):
-        if not self.last_mod_result:
-            QMessageBox.warning(self, "No mod check yet", "Check selected server mods first.")
+        result = self._selected_mod_result(successful=True)
+        if not result:
+            QMessageBox.warning(
+                self,
+                "No mod check yet",
+                "Check the selected server mods successfully before opening missing Workshop pages.",
+            )
             return
-        missing = self.last_mod_result.missing_mods
+        missing = result.missing_mods
         if not missing:
             QMessageBox.information(self, "No missing mods", "All required mods appear to be installed.")
             return
@@ -1893,6 +1901,15 @@ class MainWindow(QMainWindow):
                 return
         for mod in missing:
             QDesktopServices.openUrl(QUrl(mod.workshop_url))
+
+    def _selected_mod_result(self, *, successful: bool = False) -> ModCheckResult | None:
+        row = self.table.currentRow()
+        if row < 0 or row >= len(self.servers):
+            return None
+        result = matching_mod_result(self.servers[row], self.last_mod_result)
+        if successful and result and not result.ok:
+            return None
+        return result
 
     def preview_native_launch(self):
         if not self.last_mod_result or not self.last_mod_result.ok:

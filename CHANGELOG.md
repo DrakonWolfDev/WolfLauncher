@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Prevented Mods copy/open actions from using another server's stale result while a new selection is being checked; failed current-server reports remain copyable for support, while Workshop actions require a successful current result.
 - Stopped failed cached mod checks from suppressing automatic retry when a curated server is selected again; only successful matching results are reused by the quiet selection refresh.
 - Preserved launch argument boundaries in displayed and copied commands by using shell-aware formatting, so paths or player names containing spaces and shell characters remain unambiguous in support reports.
 - Converted native fresh required-mod lookup failures into structured `mod lookup` launch errors with recovery guidance, instead of allowing raw API exceptions to escape the GUI launch workflow.

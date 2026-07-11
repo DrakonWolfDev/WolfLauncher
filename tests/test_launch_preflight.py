@@ -5,6 +5,7 @@ from wolflauncher.launch_preflight import (
     LaunchPreflightAction,
     LaunchPreflightState,
     build_launch_preflight_state,
+    matching_mod_result,
     next_launch_preflight_action,
     usable_mod_result,
 )
@@ -142,6 +143,15 @@ class LaunchPreflightTests(unittest.TestCase):
         self.assertIsNone(usable_mod_result(server, failed))
         self.assertIsNone(usable_mod_result(server, stale))
         self.assertIsNone(usable_mod_result(server, None))
+
+    def test_matching_failed_result_remains_available_for_support_report(self):
+        server = Server("Selected", "Tests", "dayz.test", 2302, 27016)
+        other = Server("Other", "Tests", "other.test", 2302, 27016)
+        failed = ModCheckResult(ok=False, server=server, required_mods=[], error="failed")
+        stale = ModCheckResult(ok=False, server=other, required_mods=[], error="stale")
+
+        self.assertIs(matching_mod_result(server, failed), failed)
+        self.assertIsNone(matching_mod_result(server, stale))
 
 
 if __name__ == "__main__":

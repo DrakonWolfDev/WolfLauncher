@@ -28,18 +28,23 @@ class LaunchPreflightState:
     native_engine: bool
 
 
+def matching_mod_result(
+    server: Server,
+    mod_result: ModCheckResult | None,
+) -> ModCheckResult | None:
+    """Return a cached result only when it belongs to the selected server."""
+    if mod_result and server_key(mod_result.server) == server_key(server):
+        return mod_result
+    return None
+
+
 def usable_mod_result(
     server: Server,
     mod_result: ModCheckResult | None,
 ) -> ModCheckResult | None:
     """Return a successful cached result only when it belongs to the server."""
-    if (
-        mod_result
-        and mod_result.ok
-        and server_key(mod_result.server) == server_key(server)
-    ):
-        return mod_result
-    return None
+    matching_result = matching_mod_result(server, mod_result)
+    return matching_result if matching_result and matching_result.ok else None
 
 
 def build_launch_preflight_state(
