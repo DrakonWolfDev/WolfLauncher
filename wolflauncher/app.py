@@ -77,7 +77,13 @@ from .server_discovery import parse_master_address
 from .server_enrichment import (
     parse_connect_port,
 )
-from .server_browser_presenter import browser_style_terms, browser_summary_text, players_text
+from .server_browser_presenter import (
+    browser_row,
+    browser_style_terms,
+    browser_summary_text,
+    live_name_text,
+    players_text,
+)
 from .server_browser_controller import BrowserQuery, browser_filter_options, load_browser_snapshot
 from .settings import (
     load_favourites,
@@ -1055,57 +1061,14 @@ class MainWindow(QMainWindow):
         self.browser_table.setSortingEnabled(False)
         self.browser_table.setRowCount(len(servers))
         for row, server in enumerate(servers):
-            flags = []
-            if server.password:
-                flags.append("Password")
-            if server.modded:
-                flags.append("Mods")
-            live_name = self._browser_live_name_text(server)
-            values = [
-                server.name,
-                live_name,
-                server.host,
-                str(server.game_port),
-                str(server.query_port),
-                "ONLINE" if server.online else "OFFLINE",
-                server.map_name,
-                players_text(server.players_current, server.players_max),
-                f"{server.ping_ms}ms" if server.ping_ms is not None else "",
-                server.version,
-                ", ".join(flags) if flags else "Vanilla/unknown",
-                server.last_checked,
-                server.last_seen,
-                server.source,
-            ]
-            sort_values = [
-                server.name,
-                live_name or server.name,
-                server.host,
-                server.game_port,
-                server.query_port,
-                0 if server.online else 1,
-                server.map_name,
-                server.players_current,
-                server.ping_ms,
-                server.version,
-                ", ".join(flags) if flags else "Vanilla/unknown",
-                server.last_checked,
-                server.last_seen,
-                server.source,
-            ]
-            for column, value in enumerate(values):
-                item = SortableTableWidgetItem(value, sort_values[column])
+            row_data = browser_row(server)
+            for column, value in enumerate(row_data.values):
+                item = SortableTableWidgetItem(value, row_data.sort_values[column])
                 item.setData(Qt.UserRole, server.cache_key)
-                if column == 0 and live_name:
-                    item.setToolTip(f"Live name: {server.server_name}")
-                elif column == 1 and not live_name:
-                    item.setToolTip("Same as display name, or not reported yet.")
-                elif column == 11 and not server.last_checked:
-                    item.setToolTip("This row has not been live-checked yet.")
-                elif column == 12 and not server.last_seen:
-                    item.setToolTip("This row has not been seen online yet.")
+                if column in row_data.tooltips:
+                    item.setToolTip(row_data.tooltips[column])
                 if column == 5:
-                    item.setForeground(QColor("#6ee16e" if server.online else "#ff6b6b"))
+                    item.setForeground(QColor(row_data.status_colour))
                 self.browser_table.setItem(row, column, item)
 
         self.browser_table.resizeColumnsToContents()
@@ -1841,13 +1804,13 @@ class MainWindow(QMainWindow):
         lines = [
             server.name,
         ]
-        if self._browser_live_name_text(server):
+        if live_name_text(server):
             lines.append(f"Live name: {server.server_name}")
         lines.extend([
             server.connect_target,
             f"Query port: {server.query_port}",
             f"Map: {server.map_name}",
-            f"Players: {self._players_text(server.players_current, server.players_max)}",
+            f"Players: {players_text(server.players_current, server.players_max)}",
             f"Version: {server.version}",
             f"Flags: {', '.join(flags) if flags else 'Vanilla/unknown'}",
             f"Last checked: {server.last_checked or 'Never'}",
@@ -1855,13 +1818,6 @@ class MainWindow(QMainWindow):
             f"Source: {server.source}",
         ])
         return "\n".join(lines).strip()
-
-    def _browser_live_name_text(self, server) -> str:
-        live_name = (server.server_name or "").strip()
-        display_name = (server.name or "").strip()
-        if not live_name or live_name.casefold() == display_name.casefold():
-            return ""
-        return live_name
 
     def _mods_cell(self, row: int, column: int) -> str:
         item = self.mods_table.item(row, column)

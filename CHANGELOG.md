@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Moved discovered-server row display/sort metadata into the Server Browser presenter and fixed copied discovered-server details still calling the removed `_players_text` GUI helper.
 - Fixed automatic discovery refresh crashing while evaluating its 24-hour throttle after the worker extraction dropped the main GUI's `timezone` import.
 - Added a testable Server Browser controller boundary that owns cache queries, result counts, summary snapshots and filter-option loading.
 - Extracted pure Server Browser presentation rules for style terms, player counts and cache-summary text into `wolflauncher.server_browser_presenter`, with direct edge-case tests.

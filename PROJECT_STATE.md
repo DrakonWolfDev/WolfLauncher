@@ -17,8 +17,8 @@ Handoff recorded: 2026-07-11 after commit `0c695b9` on `main`.
 - Release `v0.8.0` is tagged at `b7883a2` and pushed to GitHub.
 - Native launch is the default for fresh settings; an existing saved external-launcher choice is preserved.
 - GitHub Actions runs the unit suite on Python 3.10, 3.11 and 3.12. The `0c695b9` run is green across all three versions.
-- The local suite contains 231 passing tests.
-- Real desktop smoke testing passed after the v0.9 refactors: Settings health refresh/population, Copy health, Copy diagnostics, native preview copy actions, dialog close behavior and a known-working native server handoff all worked.
+- The local suite contains 234 passing tests.
+- Real desktop smoke testing passed after the v0.9 refactors: Settings health refresh/population, Copy health, Copy diagnostics, native preview copy actions, dialog close behavior, Server Browser online filtering/search after the controller extraction and a known-working native server handoff all worked.
 - `wolflauncher/launch_dialogs.py` now owns external/native launch dialogs and post-handoff DayZ process watching.
 - `wolflauncher/settings_health.py` now owns testable Settings health snapshot construction.
 - `wolflauncher/workers.py` now owns status, mod-check, discovery and enrichment background threads, with focused tests for row selection and error containment.
@@ -32,7 +32,7 @@ Handoff recorded: 2026-07-11 after commit `0c695b9` on `main`.
 - GitHub CLI authentication is restored for `/home/andi/.local/bin/gh`; normal Git continues to use the SSH `origin` remote.
 - The working tree was clean and synchronized with `origin/main` before this handoff update.
 
-Recommended next slice: validate the new Server Browser controller boundary on a real desktop, then continue moving cohesive widget-population behavior only if filters, sorting, limits and curated promotion remain stable. Preserve `QTimer` in `app.py`, run the 229-test suite and keep the clean-profile startup smoke check for import/startup changes.
+Recommended next slice: continue reducing Server Browser widget-population responsibilities after its query boundary and online filtering/search passed real-desktop testing. Preserve `QTimer` in `app.py`, run the 234-test suite and keep the clean-profile startup smoke check for import/startup changes.
 
 Working:
 
