@@ -268,6 +268,9 @@ class MainWindow(QMainWindow):
         widget = QWidget()
         layout = QVBoxLayout(widget)
 
+        self.browser_summary = QLabel("Cached discovered servers: loading")
+        layout.addWidget(self.browser_summary)
+
         filters = QHBoxLayout()
         self.browser_search = QLineEdit()
         self.browser_search.setPlaceholderText("Search discovered servers")
@@ -319,7 +322,6 @@ class MainWindow(QMainWindow):
         advanced_toggle_row = QHBoxLayout()
         advanced_toggle_row.addWidget(self.browser_advanced_toggle)
         advanced_toggle_row.addStretch(1)
-        layout.addLayout(advanced_toggle_row)
 
         self.browser_advanced_panel = QWidget()
         advanced_layout = QVBoxLayout(self.browser_advanced_panel)
@@ -336,10 +338,6 @@ class MainWindow(QMainWindow):
         advanced_filters.addWidget(self.browser_limit)
         advanced_filters.addStretch(1)
         advanced_layout.addLayout(advanced_filters)
-        layout.addWidget(self.browser_advanced_panel)
-
-        self.browser_summary = QLabel("Cached discovered servers: loading")
-        layout.addWidget(self.browser_summary)
 
         self.browser_table = QTableWidget(0, 14)
         self.browser_table.setHorizontalHeaderLabels([
@@ -388,6 +386,8 @@ class MainWindow(QMainWindow):
         buttons.addWidget(promote)
         buttons.addWidget(clear_filters)
         layout.addLayout(buttons)
+        layout.addLayout(advanced_toggle_row)
+        layout.addWidget(self.browser_advanced_panel)
 
         self.browser_advanced_toggle.toggled.connect(
             lambda expanded: set_disclosure_state(
@@ -440,7 +440,6 @@ class MainWindow(QMainWindow):
         advanced_toggle_row = QHBoxLayout()
         advanced_toggle_row.addWidget(self.mods_advanced_toggle)
         advanced_toggle_row.addStretch(1)
-        layout.addLayout(advanced_toggle_row)
 
         self.mods_advanced_panel = QWidget()
         advanced_layout = QHBoxLayout(self.mods_advanced_panel)
@@ -450,7 +449,6 @@ class MainWindow(QMainWindow):
         advanced_layout.addWidget(copy_missing)
         advanced_layout.addWidget(open_selected)
         advanced_layout.addStretch(1)
-        layout.addWidget(self.mods_advanced_panel)
 
         self.mods_advanced_toggle.toggled.connect(
             lambda expanded: set_disclosure_state(
@@ -483,6 +481,8 @@ class MainWindow(QMainWindow):
         self.mods_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.mods_table.customContextMenuRequested.connect(self.show_mod_context_menu)
         layout.addWidget(self.mods_table)
+        layout.addLayout(advanced_toggle_row)
+        layout.addWidget(self.mods_advanced_panel)
         return widget
 
     def _build_settings_tab(self) -> QWidget:
