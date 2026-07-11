@@ -70,10 +70,13 @@ Goal: turn WolfAPI from a Steam-capped cache into a resilient community server d
 
 ## v0.9 - Native launcher engine hardening
 
+Status: in progress. Launch dialogs and Settings health snapshot construction have been extracted from the main GUI module, with local desktop smoke testing and the hosted Python 3.10-3.12 test matrix passing.
+
 - Keep the validated native engine as the default and address real-world regressions as they are reported.
 - Keep the external launcher path as a visible fallback during the transition.
 - Run the automated unit suite in GitHub Actions across supported Python versions.
 - Use the tracked release checklist for native/Flatpak Steam smoke testing.
+- Continue small behavior-preserving extractions from `app.py`, with startup smoke checks after Qt import or initialization changes.
 - Improve structured launch errors and user-facing diagnostics.
 - Add regression tests for launch command generation, host resolution and Steam mode detection.
 

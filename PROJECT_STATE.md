@@ -10,6 +10,24 @@ The upstream shell launcher is now vendored under `external/dayz-linux-cli-launc
 
 The v0.8 launch, status, settings health checks, diagnostics, mod-checking, discovered-server browser and native Linux handoff are considered functional. The application can be used as the working project base for the native-launch hardening cycle.
 
+## Latest handoff
+
+Handoff recorded: 2026-07-11 at commit `63d014c` on `main`.
+
+- Release `v0.8.0` is tagged at `b7883a2` and pushed to GitHub.
+- Native launch is the default for fresh settings; an existing saved external-launcher choice is preserved.
+- GitHub Actions runs the unit suite on Python 3.10, 3.11 and 3.12. The latest run is green.
+- The local suite contains 211 passing tests.
+- Real desktop smoke testing passed after the v0.9 refactors: Settings health refresh/population, Copy health, Copy diagnostics, native preview copy actions, dialog close behavior and a known-working native server handoff all worked.
+- `wolflauncher/launch_dialogs.py` now owns external/native launch dialogs and post-handoff DayZ process watching.
+- `wolflauncher/settings_health.py` now owns testable Settings health snapshot construction.
+- `wolflauncher/app.py` is reduced from 2,889 lines at the v0.8 restart point to roughly 2,570 lines.
+- A launch-dialog extraction briefly removed the main window's `QTimer` import and caused startup to fail. Commit `63d014c` restored it, added a regression test and passed both a clean temporary-profile GUI startup check and hosted CI.
+- GitHub CLI authentication is restored for `/home/andi/.local/bin/gh`; normal Git continues to use the SSH `origin` remote.
+- The working tree was clean and synchronized with `origin/main` when this handoff was written.
+
+Recommended next slice: continue v0.9 with one small, behavior-preserving extraction from `app.py`. Worker classes or curated-server dialogs are reasonable candidates. Preserve `QTimer` in `app.py`, run the 211-test suite, perform an offscreen clean-profile startup smoke check for changes touching imports/startup, then push and confirm the three-version Actions matrix.
+
 Working:
 
 - PySide6 desktop GUI.
@@ -70,7 +88,7 @@ Working:
 - Mods table double-click and right-click actions.
 - Mods filtering for all/missing/installed.
 - Copy Workshop ID, mod name, Workshop URL, connect address and server details.
-- Guarded launch workflow through the external `dayz-launcher.sh` script.
+- Guarded native launch workflow with the external `dayz-launcher.sh` script retained as a fallback.
 - Launch commands pass the resolved server IP to the external launcher when available.
 - Missing-mod warning with Open Workshop / Launch Anyway / Cancel.
 - Steam-not-running warning.
@@ -165,7 +183,7 @@ Current handling:
 - JSON is used for user settings and favourites under `~/.config/wolflauncher`.
 - The native Python launcher is the default; the external shell launcher remains a selectable fallback and reference contract.
 - The vendored shell launcher is the reference contract for future native launcher work.
-- Native launcher replacement work has started behind a separate Python interface, with tests covering compact mod symlink names, relative symlink creation, no-mod/all-missing/mixed missing-mod preview handling, missing selected-mode Workshop folders, Steam launch command generation and external-vs-native parity report formatting.
+- Native launcher replacement work is implemented behind a separate Python interface, with tests covering compact mod symlink names, relative symlink creation, no-mod/all-missing/mixed missing-mod preview handling, missing selected-mode Workshop folders, Steam launch command generation and external-vs-native parity report formatting.
 - The native engine has confirmed real-world native Steam and Flatpak Steam handoff success, including starting Steam when it was not already running and a Flatpak DayZ launch reaching process detection in roughly 10 seconds.
 - The main Launch button uses the native engine by default after successful real-world parity testing; Settings can select the external fallback.
 - When the native engine is selected, mod checks, native launch preview and launch preflight use the selected Steam install rather than always using automatic best-install detection.
@@ -173,7 +191,7 @@ Current handling:
 - Native launch command generation now fails before handoff when the selected Steam mode lacks a detected command, with mode-specific guidance for native Steam, Flatpak Steam and `STEAM_ROOT`.
 - `STEAM_ROOT` detection reuses the native Steam command and running state when available, while Settings health warns if the selected library is complete but no launchable Steam command is detected.
 - Mod management is read-only and advisory: it detects installed/missing mods and opens Workshop pages, but does not attempt automatic downloads. Future mod installation work should investigate Steam-native subscription/download routes first and require explicit user confirmation.
-- Launch remains guarded: WolfLauncher warns about missing mods and Steam state before calling the external launcher.
+- Launch remains guarded: WolfLauncher warns about missing mods and Steam state before native handoff or calling the external fallback.
 - Hostnames are resolved before launch where possible to mirror the original terminal menu behaviour and avoid DayZSA API issues with DNS-based servers.
 - Python bytecode caches are ignored and should not be tracked as source.
 - WolfLauncher is MIT licensed; vendored third-party MIT notices are preserved separately.
@@ -183,6 +201,8 @@ Current handling:
 Use v0.9 native-launch hardening as the next active development target:
 
 - Keep native launch as the default and retain the external launcher as a fallback.
+- Preserve the completed launch-dialog and Settings-health module boundaries while continuing small `app.py` extractions.
+- Run an offscreen clean-profile startup smoke check after changes to Qt imports or `MainWindow` initialization.
 - Continue native and Flatpak Steam regression testing when real-world failures are reported.
 - Continue refining hybrid-GPU/NVIDIA PRIME guidance after reproducible data is available.
 - Keep refining Proton/Steam handoff failure states from real-world failures.
