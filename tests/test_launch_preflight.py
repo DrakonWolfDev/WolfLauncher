@@ -89,6 +89,7 @@ class LaunchPreflightTests(unittest.TestCase):
             ok=True,
             server=server,
             required_mods=[RequiredMod("123", installed=False)],
+            workshop_dir="/steam/workshop/content/221100",
         )
         install = SteamInstall(
             mode="native",
@@ -152,6 +153,32 @@ class LaunchPreflightTests(unittest.TestCase):
 
         self.assertIs(matching_mod_result(server, failed), failed)
         self.assertIsNone(matching_mod_result(server, stale))
+
+    def test_matching_result_requires_current_workshop_context_when_provided(self):
+        server = Server("Selected", "Tests", "dayz.test", 2302, 27016)
+        result = ModCheckResult(
+            ok=True,
+            server=server,
+            required_mods=[],
+            workshop_dir="/steam-a/workshop/content/221100",
+        )
+
+        self.assertIs(
+            matching_mod_result(
+                server, result, Path("/steam-a/workshop/content/221100")
+            ),
+            result,
+        )
+        self.assertIsNone(
+            matching_mod_result(
+                server, result, Path("/steam-b/workshop/content/221100")
+            )
+        )
+        self.assertIsNone(
+            usable_mod_result(
+                server, result, Path("/steam-b/workshop/content/221100")
+            )
+        )
 
 
 if __name__ == "__main__":

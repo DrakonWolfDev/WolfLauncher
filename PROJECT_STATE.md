@@ -17,7 +17,7 @@ Handoff recorded: 2026-07-11 after commit `9ed18bf` on `main`.
 - Release `v0.8.0` is tagged at `b7883a2` and pushed to GitHub.
 - Native launch is the default for fresh settings; an existing saved external-launcher choice is preserved.
 - GitHub Actions runs the unit suite on Python 3.10, 3.11 and 3.12. The matrix passed for `9ed18bf` in run `29167578839`.
-- The local suite contains 276 passing tests.
+- The local suite contains 277 passing tests.
 - Real desktop smoke testing passed after the v0.9 refactors: Settings health refresh/population, Copy health, Copy diagnostics, native preview copy actions, dialog close behavior, a known-working native server handoff, Server Browser filters/limits/sorting, curated promotion/editing, discovered-row display metadata and discovered-server **Copy details** all worked.
 - `wolflauncher/launch_dialogs.py` now owns external/native launch dialogs and post-handoff DayZ process watching.
 - `wolflauncher/settings_health.py` now owns testable Settings health snapshot construction.
@@ -28,6 +28,7 @@ Handoff recorded: 2026-07-11 after commit `9ed18bf` on `main`.
 - Native fresh required-mod lookup failures are reported as structured `mod lookup` errors with recovery and external-fallback guidance instead of escaping the GUI as raw API exceptions.
 - Failed cached mod checks no longer suppress the automatic quiet retry when a curated server is selected again; only successful matching results are reused.
 - Mods copy/open actions are gated to the selected server so a previous server's result cannot be used while a new check is running; failed selected-server reports remain copyable, while Workshop link/page actions require a successful result.
+- Cached and in-flight mod results are also bound to the Workshop directory that was checked, so changing Steam install context cannot make an old worker result authoritative; mismatched completions queue a fresh check for the current selection.
 - Launch dialogs use shell-aware command formatting for display and copied reports, preserving argument boundaries for paths and player names containing spaces or shell characters while execution continues to use a safe argument vector.
 - Cached resolved-IP launch selection now accepts only valid IPv4 values, so launching during initial status refresh preserves the configured hostname instead of trying to resolve the `Checking...` table placeholder.
 - `wolflauncher/workers.py` now owns status, mod-check, discovery and enrichment background threads, with focused tests for row selection and error containment.
@@ -57,7 +58,7 @@ Handoff recorded: 2026-07-11 after commit `9ed18bf` on `main`.
 - Commits `e541b5c`, `2fde7f9` and `a443310` completed, approved and documented the Settings/Servers/four-tab GUI pass. Commit `9ed18bf` extracted the discovery refresh policy; all four commits are pushed to `origin/main`.
 - The working tree was clean and synchronized with `origin/main` before this handoff documentation update.
 
-Recommended next step: continue v0.9 native hardening through small behavior-preserving `app.py` boundaries and real-world Steam/Proton regression fixes as evidence arrives. Launch-preflight decisions, state construction and cached-mod selection belong in `wolflauncher/launch_preflight.py`, and validated cached-IP target selection belongs in `wolflauncher/launch_selection.py`; Qt dialog presentation remains in `app.py`. Do not refactor merely for line count. Preserve the approved four-tab hierarchy and `QTimer` in `app.py`; UTC refresh handling belongs in `wolflauncher/discovery_refresh.py`. Run the 276-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
+Recommended next step: continue v0.9 native hardening through small behavior-preserving `app.py` boundaries and real-world Steam/Proton regression fixes as evidence arrives. Launch-preflight decisions, state construction and server/Workshop-bound cached-mod selection belong in `wolflauncher/launch_preflight.py`, and validated cached-IP target selection belongs in `wolflauncher/launch_selection.py`; Qt dialog presentation remains in `app.py`. Do not refactor merely for line count. Preserve the approved four-tab hierarchy and `QTimer` in `app.py`; UTC refresh handling belongs in `wolflauncher/discovery_refresh.py`. Run the 277-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
 
 ## v0.9 GUI consistency handoff
 

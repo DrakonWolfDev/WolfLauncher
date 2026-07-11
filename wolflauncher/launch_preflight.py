@@ -31,19 +31,23 @@ class LaunchPreflightState:
 def matching_mod_result(
     server: Server,
     mod_result: ModCheckResult | None,
+    workshop_dir=None,
 ) -> ModCheckResult | None:
-    """Return a cached result only when it belongs to the selected server."""
-    if mod_result and server_key(mod_result.server) == server_key(server):
-        return mod_result
-    return None
+    """Return a cached result only when its server and optional Workshop context match."""
+    if not mod_result or server_key(mod_result.server) != server_key(server):
+        return None
+    if workshop_dir is not None and mod_result.workshop_dir != str(workshop_dir):
+        return None
+    return mod_result
 
 
 def usable_mod_result(
     server: Server,
     mod_result: ModCheckResult | None,
+    workshop_dir=None,
 ) -> ModCheckResult | None:
     """Return a successful cached result only when it belongs to the server."""
-    matching_result = matching_mod_result(server, mod_result)
+    matching_result = matching_mod_result(server, mod_result, workshop_dir)
     return matching_result if matching_result and matching_result.ok else None
 
 
@@ -55,7 +59,8 @@ def build_launch_preflight_state(
     native_engine: bool,
 ) -> LaunchPreflightState:
     """Build policy state from detected install and cached mod-check context."""
-    current_mod_result = usable_mod_result(server, mod_result)
+    workshop_dir = install.workshop_dir if install else None
+    current_mod_result = usable_mod_result(server, mod_result, workshop_dir)
     mods_checked = current_mod_result is not None
     missing_mod_count = len(current_mod_result.missing_mods) if current_mod_result else 0
     return LaunchPreflightState(

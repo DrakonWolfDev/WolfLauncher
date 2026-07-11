@@ -1531,7 +1531,9 @@ class MainWindow(QMainWindow):
         if not hasattr(self, "mod_summary") or not hasattr(self, "mods_table"):
             return
         selected_key = server_key(server)
-        cached_mod_result = usable_mod_result(server, self.last_mod_result)
+        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        workshop_dir = install.workshop_dir if install else None
+        cached_mod_result = usable_mod_result(server, self.last_mod_result, workshop_dir)
         if not force and cached_mod_result:
             if self.mods_table.rowCount() == 0:
                 self.display_mods_result(cached_mod_result)
@@ -1542,9 +1544,7 @@ class MainWindow(QMainWindow):
                 self.pending_mod_check_row = row
             return
 
-        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
         steam_context = self.mod_check_steam_context(install)
-        workshop_dir = install.workshop_dir if install else None
         if not workshop_dir:
             self.last_mod_result = None
             self.mod_summary.setText(
@@ -1572,7 +1572,12 @@ class MainWindow(QMainWindow):
         self.active_mod_server_key = ""
         current_row = self.table.currentRow()
         current_server = self.servers[current_row] if 0 <= current_row < len(self.servers) else None
-        if current_server and server_key(current_server) != server_key(result.server):
+        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        workshop_dir = install.workshop_dir if install else None
+        if not current_server:
+            self._check_pending_server_mods()
+            return
+        if not matching_mod_result(current_server, result, workshop_dir):
             pending_row = self.pending_mod_check_row if self.pending_mod_check_row is not None else current_row
             self.pending_mod_check_row = pending_row
             self._check_pending_server_mods()
@@ -1906,7 +1911,9 @@ class MainWindow(QMainWindow):
         row = self.table.currentRow()
         if row < 0 or row >= len(self.servers):
             return None
-        result = matching_mod_result(self.servers[row], self.last_mod_result)
+        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        workshop_dir = install.workshop_dir if install else None
+        result = matching_mod_result(self.servers[row], self.last_mod_result, workshop_dir)
         if successful and result and not result.ok:
             return None
         return result
@@ -2066,7 +2073,9 @@ class MainWindow(QMainWindow):
                     stage="Steam detection",
                     guidance="Open Settings health and confirm the selected native or Flatpak Steam install can be detected.",
                 )
-            current_mod_result = usable_mod_result(server, self.last_mod_result)
+            current_mod_result = usable_mod_result(
+                server, self.last_mod_result, install.workshop_dir
+            )
             required_mods = current_mod_result.required_mods if current_mod_result else None
             try:
                 prepared = prepare_native_launch(install, launch_server, player_name, required_mods)
