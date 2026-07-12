@@ -12,6 +12,7 @@
 - Moved the experimental Steamworks subscription session into a spawned helper process so the process that initialized as DayZ exits completely before WolfLauncher permits the real DayZ launch.
 - Replaced **Stop monitoring** with **Hide monitor** so the original helper continues in the background, and made repeated install actions reopen that monitor instead of starting another Steamworks session.
 - Made incomplete Workshop items retry Steam download requests at a bounded interval, identify still-incomplete IDs on timeout, ignore terminal interrupts inside the helper and cancel/join that helper during application shutdown.
+- Removed the fixed 10-second post-download cooldown after real-world testing confirmed isolated-helper process exit is a sufficient launch-readiness boundary.
 - Made native/external launch-engine changes invalidate and quietly recheck the selected server's mods using the newly authoritative Steam/Workshop context, matching Steam install mode changes.
 - Made Steam install mode changes deterministically start or queue a quiet forced mod recheck, instead of leaving the Mods tab waiting when the previous lookup had already finished.
 - Bound cached mod results to both the selected server and Workshop directory, preventing an in-flight check from an old Steam install mode being accepted after the mode changes and queuing a fresh check for the current context.

@@ -90,7 +90,7 @@ Priority 1 — safe Steam handoff:
 
 - Treat the post-download launch failure as reproducible: launching immediately after Workshop completion can leave Steam claiming DayZ is running while no DayZ process starts.
 - Release the WolfLauncher Steamworks context before launch, then verify that Steam has finished Workshop installation/finalization and that DayZ is no longer held in an application-busy state.
-- Add a bounded post-download readiness/cooldown state instead of enabling immediate launch from directory presence alone.
+- Use isolated-helper process exit as the post-download readiness boundary. Real-world retesting confirmed that the earlier fixed 10-second cooldown is unnecessary once Steamworks ownership is isolated.
 - Block or clearly defer launches while WolfLauncher's subscription worker is active or Steam is still processing the required Workshop set.
 - On restart, detect relevant outstanding Workshop activity where Steam exposes it and present an honest waiting/recovery state.
 - The unsafe **Stop monitoring** behavior was replaced with **Hide monitor**: the original helper keeps monitoring in the background, and reopening the install action returns to that same session. Do not add a Steam-cancellation claim unless a safe supported mechanism is verified.

@@ -135,7 +135,6 @@ class MainWindow(QMainWindow):
         self.workshop_subscription_worker = None
         self.workshop_subscription_dialog = None
         self.workshop_subscription_names = {}
-        self.workshop_launch_settling = False
         self.discovery_worker = None
         self.web_api_worker = None
         self.battlemetrics_worker = None
@@ -2091,15 +2090,13 @@ class MainWindow(QMainWindow):
             self.workshop_subscription_dialog.close()
             self.workshop_subscription_dialog = None
         if result.ok:
-            self.workshop_launch_settling = True
             self.launch_button.setEnabled(False)
-            QTimer.singleShot(10_000, self.finish_workshop_launch_settling)
             QMessageBox.information(
                 self,
                 "Workshop items installed",
                 f"Steam installed all {len(result.installed_ids)} required Workshop item(s).\n\n"
-                "WolfLauncher has released its Steamworks connection and will allow launch "
-                "after a short 10-second Steam settling period.",
+                "The isolated Steamworks helper has finished. Launch will be available as "
+                "soon as its worker closes.",
             )
         elif result.cancelled:
             self.statusBar().showMessage(
@@ -2117,15 +2114,9 @@ class MainWindow(QMainWindow):
 
     def clear_workshop_subscription_worker(self):
         self.workshop_subscription_worker = None
-        if not self.workshop_launch_settling:
-            self.launch_button.setEnabled(True)
-
-    def finish_workshop_launch_settling(self):
-        self.workshop_launch_settling = False
-        worker = self.workshop_subscription_worker
-        self.launch_button.setEnabled(not worker or not worker.isRunning())
+        self.launch_button.setEnabled(True)
         self.statusBar().showMessage(
-            "Steam Workshop settling period finished; launch is available.", 5000
+            "Steam Workshop helper finished; launch is available.", 5000
         )
 
     def workshop_launch_block_reason(self) -> str:
@@ -2135,11 +2126,6 @@ class MainWindow(QMainWindow):
                 "Steam is still processing the required Workshop items. Wait for monitoring "
                 "to finish. Hide monitor only hides the progress window; use Install "
                 "missing mods again to reopen the same monitor."
-            )
-        if self.workshop_launch_settling:
-            return (
-                "Steam has finished reporting the Workshop items, but its short post-download "
-                "settling period is still active. Try launching again in a few seconds."
             )
         return ""
 
@@ -2270,7 +2256,7 @@ class MainWindow(QMainWindow):
         workshop_block = self.workshop_launch_block_reason()
         if workshop_block:
             QMessageBox.information(
-                self, "Steam Workshop still settling", workshop_block
+                self, "Steam Workshop in progress", workshop_block
             )
             return
         row = self.table.currentRow()
