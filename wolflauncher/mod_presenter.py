@@ -27,6 +27,12 @@ def mod_download_size(mod: RequiredMod) -> str:
     return "Unavailable"
 
 
+def mod_file_size(mod: RequiredMod) -> str:
+    """Return the full published size for table presentation when available."""
+    size = mod.workshop_file_size or mod.workshop_total
+    return format_byte_size(size) if size > 0 else "Unavailable"
+
+
 def combined_download_estimate(mods: list[RequiredMod]) -> str:
     known = [
         mod for mod in mods
@@ -87,10 +93,8 @@ def mod_row(mod: RequiredMod) -> ModRow:
         ITEM_STATE_DOWNLOAD_PENDING,
         ITEM_STATE_NEEDS_UPDATE,
     )
-    installed = mod.ready
     if not mod.installed:
         status = "✗ Missing"
-        detail = "Missing - subscribe in Steam Workshop"
         colour = "#ff6b6b"
     elif mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_DOWNLOADING:
         percent = (
@@ -98,29 +102,24 @@ def mod_row(mod: RequiredMod) -> ModRow:
             if mod.workshop_total > 0 else ""
         )
         status = "↻ Downloading"
-        detail = f"Downloading update{percent}"
+        status += percent
         colour = "#f6c453"
     elif mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_DOWNLOAD_PENDING:
         status = "… Download pending"
-        detail = "Steam has queued this item"
         colour = "#f6c453"
     elif mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_NEEDS_UPDATE:
         status = "! Update required"
-        detail = "Installed directory is outdated"
         colour = "#f6c453"
     else:
         status = "✓ Installed"
-        detail = "Installed"
         colour = "#6ee16e"
     return ModRow(
         values=[
             status,
+            mod.name or mod.installed_name or "Unknown",
             mod.workshop_id,
-            mod.name or "Unknown",
-            mod.installed_name or "",
+            mod_file_size(mod),
             mod.workshop_url,
-            mod_download_size(mod) if not mod.ready else "—",
-            detail,
         ],
         workshop_id=mod.workshop_id,
         status_colour=colour,

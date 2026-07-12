@@ -486,15 +486,13 @@ class MainWindow(QMainWindow):
             False,
         )
 
-        self.mods_table = QTableWidget(0, 7)
+        self.mods_table = QTableWidget(0, 5)
         self.mods_table.setHorizontalHeaderLabels([
-            "Installed",
+            "Status",
+            "Name",
             "Workshop ID",
-            "Required Name",
-            "Installed Name",
+            "Size",
             "Workshop URL",
-            "Download",
-            "Notes",
         ])
         self.mods_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.mods_table.setEditTriggers(QTableWidget.NoEditTriggers)
@@ -1801,7 +1799,7 @@ class MainWindow(QMainWindow):
             return
         url = self._mods_cell(row, 4)
         if not url:
-            workshop_id = self._mods_cell(row, 1)
+            workshop_id = self._mods_cell(row, 2)
             if workshop_id:
                 url = f"https://steamcommunity.com/sharedfiles/filedetails/?id={workshop_id}"
         if not url:
@@ -1924,8 +1922,8 @@ class MainWindow(QMainWindow):
         copy_url_action = QAction("Copy Workshop URL", self)
         check_update_action = QAction("Check/update this mod", self)
         open_action.triggered.connect(lambda: self.open_workshop_page_for_mod_row(row))
-        copy_id_action.triggered.connect(lambda: self.copy_to_clipboard(self._mods_cell(row, 1), "Workshop ID"))
-        copy_name_action.triggered.connect(lambda: self.copy_to_clipboard(self._mods_cell(row, 2) or self._mods_cell(row, 3), "Mod name"))
+        copy_id_action.triggered.connect(lambda: self.copy_to_clipboard(self._mods_cell(row, 2), "Workshop ID"))
+        copy_name_action.triggered.connect(lambda: self.copy_to_clipboard(self._mods_cell(row, 1), "Mod name"))
         copy_url_action.triggered.connect(lambda: self.copy_to_clipboard(self._mods_cell(row, 4), "Workshop URL"))
         check_update_action.triggered.connect(lambda: self.check_update_mod_row(row))
         check_update_action.setVisible(
@@ -2158,7 +2156,7 @@ class MainWindow(QMainWindow):
 
     def check_update_mod_row(self, row: int):
         result = self._selected_mod_result(successful=True)
-        workshop_id = self._mods_cell(row, 1)
+        workshop_id = self._mods_cell(row, 2)
         mod = next(
             (item for item in result.required_mods if item.workshop_id == workshop_id),
             None,

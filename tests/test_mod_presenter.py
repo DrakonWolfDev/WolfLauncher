@@ -3,6 +3,7 @@ import unittest
 from wolflauncher.mod_presenter import (
     combined_download_estimate,
     mod_download_size,
+    mod_file_size,
     mod_result_context,
     mod_row,
     mod_summary_text,
@@ -39,8 +40,7 @@ class ModPresenterTests(unittest.TestCase):
         )
 
         self.assertEqual(mod_row(update).values[0], "! Update required")
-        self.assertEqual(mod_row(downloading).values[0], "↻ Downloading")
-        self.assertIn("25%", mod_row(downloading).values[6])
+        self.assertEqual(mod_row(downloading).values[0], "↻ Downloading (25%)")
 
     def test_download_sizes_distinguish_known_partial_and_unavailable_totals(self):
         known = RequiredMod("111", workshop_downloaded=1024, workshop_total=3072)
@@ -56,6 +56,7 @@ class ModPresenterTests(unittest.TestCase):
         mod = RequiredMod("111", workshop_file_size=3 * 1024 * 1024)
 
         self.assertEqual(mod_download_size(mod), "3.0 MiB")
+        self.assertEqual(mod_file_size(mod), "3.0 MiB")
         self.assertEqual(
             combined_download_estimate([mod]),
             "Estimated remaining download: 3.0 MiB.",
@@ -125,15 +126,18 @@ class ModPresenterTests(unittest.TestCase):
         missing = mod_row(RequiredMod("222"))
 
         self.assertEqual(installed.values, [
-            "✓ Installed", "111", "Required Name", "Local Name",
-            "https://example.test/111", "—", "Installed",
+            "✓ Installed", "Required Name", "111", "Unavailable",
+            "https://example.test/111",
         ])
         self.assertEqual(installed.workshop_id, "111")
         self.assertEqual(installed.status_colour, "#6ee16e")
-        self.assertEqual(missing.values[0:3], ["✗ Missing", "222", "Unknown"])
-        self.assertEqual(missing.values[5], "Unavailable")
-        self.assertIn("subscribe", missing.values[6])
+        self.assertEqual(missing.values[0:4], ["✗ Missing", "Unknown", "222", "Unavailable"])
         self.assertEqual(missing.status_colour, "#ff6b6b")
+
+    def test_mod_row_uses_installed_name_as_fallback(self):
+        row = mod_row(RequiredMod("111", installed=True, installed_name="Local Name"))
+
+        self.assertEqual(row.values[1], "Local Name")
 
 
 if __name__ == "__main__":
