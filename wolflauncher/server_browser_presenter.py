@@ -65,6 +65,11 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
         tooltips[13] = "This row has not been seen online yet."
     if server.ping_ms is None:
         tooltips[8] = "Ping was not supplied by the discovery provider. Use Enrich visible to query it."
+    if server.required_mod_count is None:
+        tooltips[11] = (
+            "Required-mod count was not supplied by this provider. "
+            "Use Inspect mods to query this server directly."
+        )
 
     return BrowserRow(
         values=[

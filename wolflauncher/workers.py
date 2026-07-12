@@ -27,6 +27,7 @@ from .workshop_subscription import (
 
 
 MAX_STATUS_WORKERS = 8
+MAX_ENRICHMENT_WORKERS = 8
 
 
 def _checked_server_status(server: Server) -> ServerStatus:
@@ -206,6 +207,7 @@ class WolfApiDiscoveryWorker(QThread):
 
 class ServerEnrichmentWorker(QThread):
     enrichment_ready = Signal(object, str)
+    enrichment_progress = Signal(object, int, int)
 
     def __init__(self, servers):
         super().__init__()
@@ -214,15 +216,24 @@ class ServerEnrichmentWorker(QThread):
     def run(self):
         checked_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
         enriched = []
-        try:
-            for server in self.servers:
+        total = len(self.servers)
+
+        def enrich_one(server):
+            try:
                 status = ServerStatus(False, error="No valid query ports to probe.")
                 for probe in enrichment_probe_servers(server):
                     status = check_server(probe)
                     if status.online:
                         break
-                enriched.append(enrich_discovered_server(server, status, checked_at))
-        except Exception as exc:
-            self.enrichment_ready.emit(enriched, str(exc))
-        else:
-            self.enrichment_ready.emit(enriched, "")
+            except Exception as exc:
+                status = ServerStatus(False, error=f"live check failed: {exc}")
+            return enrich_discovered_server(server, status, checked_at)
+
+        max_workers = min(MAX_ENRICHMENT_WORKERS, total) if total else 1
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(enrich_one, server) for server in self.servers]
+            for completed, future in enumerate(as_completed(futures), 1):
+                server = future.result()
+                enriched.append(server)
+                self.enrichment_progress.emit(server, completed, total)
+        self.enrichment_ready.emit(enriched, "")

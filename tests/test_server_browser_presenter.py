@@ -80,6 +80,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertEqual(row.values[1], "")
         self.assertIn(1, row.tooltips)
         self.assertIn("Enrich visible", row.tooltips[8])
+        self.assertIn("Inspect mods", row.tooltips[11])
         self.assertEqual(row.status_colour, "#ff6b6b")
 
     def test_provider_status_and_required_mod_count_are_explicit(self):

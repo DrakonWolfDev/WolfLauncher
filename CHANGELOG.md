@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Made visible-server enrichment bounded and parallel with incremental progress/cache updates, preventing a 200-row batch from appearing frozen behind sequential query timeouts.
+- Clarified blank discovered required-mod counts as provider-unknown values with an **Inspect mods** recovery tooltip.
 - Added a final isolated Workshop state query before launch; unavailable or newly unready Steam state cancels handoff instead of trusting an older Mods result.
 - Added live Mods-row queued, downloading, percentage-bar and verifying states while retaining the batch dialog and final forced local verification.
 - Added optional required-mod counts to discovered rows from provider fields or successful direct mod inspection, preserving blank as unknown.

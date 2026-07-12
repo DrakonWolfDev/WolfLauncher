@@ -980,8 +980,19 @@ class MainWindow(QMainWindow):
         self.browser_summary.setText(f"Cached discovered servers: enriching {len(servers)} visible row(s)...")
         self.enrich_visible_button.setEnabled(False)
         self.enrichment_worker = ServerEnrichmentWorker(servers)
+        self.enrichment_worker.enrichment_progress.connect(
+            self.handle_enrichment_progress
+        )
         self.enrichment_worker.enrichment_ready.connect(self.handle_enrichment_ready)
         self.enrichment_worker.start()
+
+    def handle_enrichment_progress(self, server, completed: int, total: int):
+        server_cache.upsert_server(self.server_cache, server)
+        if completed == total or completed % 10 == 0:
+            self.refresh_server_browser()
+        self.browser_summary.setText(
+            f"Cached discovered servers: enriched {completed} of {total} visible row(s)..."
+        )
 
     def handle_enrichment_ready(self, servers, error: str):
         self.enrich_visible_button.setEnabled(True)
