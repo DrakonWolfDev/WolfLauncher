@@ -7,12 +7,16 @@ from unittest.mock import patch
 
 from wolflauncher.platform_detection import SteamInstall
 from wolflauncher.workshop_subscription import (
+    ITEM_STATE_DOWNLOADING,
     ITEM_STATE_INSTALLED,
+    ITEM_STATE_NEEDS_UPDATE,
     ITEM_STATE_SUBSCRIBED,
     SteamWorkshopClient,
     WorkshopItemProgress,
+    WorkshopStateResult,
     WorkshopSubscriptionError,
     find_steam_api_library,
+    query_workshop_item_states,
     steam_api_library_candidates,
     subscribe_workshop_items,
     subscribe_workshop_items_isolated,
@@ -39,6 +43,13 @@ class WorkshopItemProgressTests(unittest.TestCase):
         self.assertTrue(progress.installed)
         self.assertEqual(progress.percent, 50)
         self.assertIsNone(WorkshopItemProgress("123", 0).percent)
+
+    def test_needs_update_is_not_ready_even_with_installed_flag(self):
+        progress = WorkshopItemProgress(
+            "123", ITEM_STATE_INSTALLED | ITEM_STATE_NEEDS_UPDATE
+        )
+
+        self.assertFalse(progress.installed)
 
 
 class SteamApiLibraryTests(unittest.TestCase):
@@ -246,6 +257,28 @@ class SubscribeWorkshopItemsTests(unittest.TestCase):
 
         self.assertIn("invalid Workshop ID", result.error)
         self.assertEqual(result.incomplete_ids, ("not-an-id",))
+
+    def test_state_query_reads_items_without_changing_subscriptions(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            install = install_for(root, root / "workshop")
+            FakeWorkshopClient.snapshots = [{
+                "111": WorkshopItemProgress("111", ITEM_STATE_INSTALLED),
+                "222": WorkshopItemProgress("222", ITEM_STATE_DOWNLOADING, 5, 10),
+            }]
+            with patch(
+                "wolflauncher.workshop_subscription.find_steam_api_library",
+                return_value=root / "libsteam_api.so",
+            ), patch(
+                "wolflauncher.workshop_subscription.SteamWorkshopClient",
+                FakeWorkshopClient,
+            ):
+                result = query_workshop_item_states(["111", "222"], install)
+
+        self.assertIsInstance(result, WorkshopStateResult)
+        self.assertEqual([item.workshop_id for item in result.items], ["111", "222"])
+        self.assertEqual(FakeWorkshopClient.subscribed, [])
+        self.assertEqual(FakeWorkshopClient.downloads, [])
 
 
 if __name__ == "__main__":

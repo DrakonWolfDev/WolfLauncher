@@ -1685,7 +1685,16 @@ class MainWindow(QMainWindow):
         self.active_mod_server_key = selected_key
         self.pending_mod_check_row = None
         self.pending_mod_server = None
-        self.mod_worker = ModWorker(server, workshop_dir, steam_context)
+        workshop_install = (
+            install
+            if bool(self.settings.get("experimental_workshop_subscription", False))
+            and install
+            and install.running
+            else None
+        )
+        self.mod_worker = ModWorker(
+            server, workshop_dir, steam_context, workshop_install=workshop_install
+        )
         self.mod_worker.mods_ready.connect(self.update_mods_table)
         self.mod_worker.finished.connect(self.handle_mod_worker_finished)
         self.mod_worker.start()
@@ -2040,7 +2049,7 @@ class MainWindow(QMainWindow):
             return
         missing = result.missing_mods
         if not missing:
-            QMessageBox.information(self, "No missing mods", "All required mods appear to be installed.")
+            QMessageBox.information(self, "Mods ready", "All required mods appear to be ready.")
             return
         if len(missing) > 10:
             reply = QMessageBox.question(
@@ -2117,11 +2126,15 @@ class MainWindow(QMainWindow):
         names = "\n".join(f"- {mod.name or mod.workshop_id}" for mod in missing[:12])
         if len(missing) > 12:
             names += f"\n- ...and {len(missing) - 12} more"
+        update_count = len(result.update_mods)
+        absent_count = len(result.absent_mods)
         reply = QMessageBox.question(
             self,
-            "Subscribe using Steam?",
-            f"Steam will add {len(missing)} item(s) to your DayZ Workshop subscriptions "
-            f"and download them using the signed-in Steam account.\n\n{names}\n\n"
+            "Resolve using Steam?",
+            f"Steam will resolve {len(missing)} required item(s) "
+            f"({absent_count} missing, {update_count} update/pending) using the signed-in "
+            f"Steam account. Missing items will be subscribed; existing items will be "
+            f"asked to update.\n\n{names}\n\n"
             "This feature is experimental. Continue?",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,

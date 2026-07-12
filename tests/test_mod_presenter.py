@@ -3,6 +3,11 @@ import unittest
 from wolflauncher.mod_presenter import mod_result_context, mod_row, mod_summary_text
 from wolflauncher.models import Server
 from wolflauncher.mods import ModCheckResult, RequiredMod
+from wolflauncher.workshop_subscription import (
+    ITEM_STATE_DOWNLOADING,
+    ITEM_STATE_INSTALLED,
+    ITEM_STATE_NEEDS_UPDATE,
+)
 
 
 def make_result(ok=True, required_mods=None, **kwargs):
@@ -15,6 +20,22 @@ def make_result(ok=True, required_mods=None, **kwargs):
 
 
 class ModPresenterTests(unittest.TestCase):
+    def test_rows_distinguish_update_and_download_states(self):
+        update = RequiredMod(
+            "111", installed=True,
+            workshop_state=ITEM_STATE_INSTALLED | ITEM_STATE_NEEDS_UPDATE,
+        )
+        downloading = RequiredMod(
+            "222", installed=True,
+            workshop_state=ITEM_STATE_DOWNLOADING | ITEM_STATE_NEEDS_UPDATE,
+            workshop_downloaded=25,
+            workshop_total=100,
+        )
+
+        self.assertEqual(mod_row(update).values[0], "! Update required")
+        self.assertEqual(mod_row(downloading).values[0], "↻ Downloading")
+        self.assertIn("25%", mod_row(downloading).values[5])
+
     def test_context_combines_steam_install_and_workshop_path(self):
         result = make_result(
             steam_context="Selected Steam install: Native Steam",
@@ -52,7 +73,7 @@ class ModPresenterTests(unittest.TestCase):
 
         summary = mod_summary_text(result)
 
-        self.assertIn("Required 2 | Installed 1 | Missing 1", summary)
+        self.assertIn("Required 2 | Ready 1 | Missing 1 | Update/pending 0", summary)
         self.assertIn("Local Workshop mods found: 5", summary)
 
     def test_mod_rows_cover_installed_and_missing_metadata(self):

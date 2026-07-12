@@ -21,6 +21,23 @@ class RequiredMod:
     installed: bool = False
     installed_name: str = ""
     workshop_url: str = ""
+    workshop_state: int | None = None
+    workshop_downloaded: int = 0
+    workshop_total: int = 0
+
+    @property
+    def ready(self) -> bool:
+        if not self.installed:
+            return False
+        if self.workshop_state is None:
+            return True
+        from .workshop_subscription import (
+            ITEM_STATE_DOWNLOADING,
+            ITEM_STATE_DOWNLOAD_PENDING,
+            ITEM_STATE_NEEDS_UPDATE,
+        )
+        blocked = ITEM_STATE_NEEDS_UPDATE | ITEM_STATE_DOWNLOADING | ITEM_STATE_DOWNLOAD_PENDING
+        return not bool(self.workshop_state & blocked)
 
 
 @dataclass
@@ -32,10 +49,32 @@ class ModCheckResult:
     error: str = ""
     steam_context: str = ""
     workshop_dir: str = ""
+    workshop_state_error: str = ""
 
     @property
     def missing_mods(self) -> list[RequiredMod]:
+        return [mod for mod in self.required_mods if not mod.ready]
+
+    @property
+    def absent_mods(self) -> list[RequiredMod]:
         return [mod for mod in self.required_mods if not mod.installed]
+
+    @property
+    def update_mods(self) -> list[RequiredMod]:
+        return [mod for mod in self.required_mods if mod.installed and not mod.ready]
+
+
+def apply_workshop_item_states(result: ModCheckResult, states) -> ModCheckResult:
+    """Attach Steam item-state snapshots to an existing local-directory check."""
+    by_id = {item.workshop_id: item for item in states}
+    for mod in result.required_mods:
+        item = by_id.get(mod.workshop_id)
+        if item is None:
+            continue
+        mod.workshop_state = item.state
+        mod.workshop_downloaded = item.downloaded
+        mod.workshop_total = item.total
+    return result
 
 
 _NAME_RE = re.compile(r'name\s*=\s*"([^"]+)"')

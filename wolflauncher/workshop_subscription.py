@@ -65,6 +65,12 @@ class WorkshopSubscriptionResult:
 
 
 @dataclass(frozen=True)
+class WorkshopStateResult:
+    items: tuple[WorkshopItemProgress, ...] = ()
+    error: str = ""
+
+
+@dataclass(frozen=True)
 class WorkshopRecoveryState:
     """Filesystem evidence of DayZ Workshop items left in Steam's staging area."""
 
@@ -345,6 +351,69 @@ def subscribe_workshop_items(
                     if client.request_download(snapshot.workshop_id):
                         download_requested_at[snapshot.workshop_id] = now
             time.sleep(poll_seconds)
+
+
+def query_workshop_item_states(
+    workshop_ids: Iterable[str],
+    install: SteamInstall,
+) -> WorkshopStateResult:
+    """Read current Steam Workshop state without changing subscriptions."""
+    ids = tuple(dict.fromkeys(str(item).strip() for item in workshop_ids if str(item).strip()))
+    if not ids:
+        return WorkshopStateResult()
+    if any(not item.isdigit() or int(item) <= 0 for item in ids):
+        return WorkshopStateResult(error="The required-mod list contains an invalid Workshop ID.")
+    library_path = find_steam_api_library(install)
+    if not library_path:
+        return WorkshopStateResult(
+            error="The selected Steam installation has no 64-bit Steam API redistributable."
+        )
+    try:
+        with SteamWorkshopClient(library_path) as client:
+            client.run_callbacks()
+            return WorkshopStateResult(tuple(client.item_progress(item) for item in ids))
+    except Exception as exc:
+        return WorkshopStateResult(error=str(exc))
+
+
+def _state_process_main(
+    workshop_ids: tuple[str, ...], install: SteamInstall, messages
+) -> None:
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    messages.put(query_workshop_item_states(workshop_ids, install))
+
+
+def query_workshop_item_states_isolated(
+    workshop_ids: Iterable[str],
+    install: SteamInstall,
+    *,
+    timeout_seconds: float = 30,
+) -> WorkshopStateResult:
+    """Query item states in a disposable process and wait for SteamAPI shutdown."""
+    ids = tuple(dict.fromkeys(str(item).strip() for item in workshop_ids if str(item).strip()))
+    if not ids:
+        return WorkshopStateResult()
+    context = multiprocessing.get_context("spawn")
+    messages = context.Queue()
+    process = context.Process(
+        target=_state_process_main,
+        args=(ids, install, messages),
+        name="wolflauncher-steam-workshop-state",
+    )
+    process.start()
+    try:
+        try:
+            result = messages.get(timeout=timeout_seconds)
+        except queue.Empty:
+            result = WorkshopStateResult(error="Steam Workshop state check timed out.")
+    finally:
+        process.join(timeout=5)
+        if process.is_alive():
+            process.terminate()
+            process.join(timeout=5)
+        messages.close()
+        messages.join_thread()
+    return result
 
 
 def _subscription_process_main(

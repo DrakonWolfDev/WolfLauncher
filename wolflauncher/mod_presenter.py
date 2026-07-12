@@ -32,24 +32,57 @@ def mod_summary_text(result: ModCheckResult) -> str:
         )
 
     missing_count = len(result.missing_mods)
-    return (
+    summary = (
         f"{result.server.name}: Required {required_count} | "
-        f"Installed {required_count - missing_count} | Missing {missing_count} | "
+        f"Ready {required_count - missing_count} | Missing {len(result.absent_mods)} | "
+        f"Update/pending {len(result.update_mods)} | "
         f"Local Workshop mods found: {result.installed_count}{context}"
     )
+    if result.workshop_state_error:
+        summary += f" Steam item state unavailable: {result.workshop_state_error}"
+    return summary
 
 
 def mod_row(mod: RequiredMod) -> ModRow:
-    installed = mod.installed
+    from .workshop_subscription import (
+        ITEM_STATE_DOWNLOADING,
+        ITEM_STATE_DOWNLOAD_PENDING,
+        ITEM_STATE_NEEDS_UPDATE,
+    )
+    installed = mod.ready
+    if not mod.installed:
+        status = "✗ Missing"
+        detail = "Missing - subscribe in Steam Workshop"
+        colour = "#ff6b6b"
+    elif mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_DOWNLOADING:
+        percent = (
+            f" ({int(mod.workshop_downloaded * 100 / mod.workshop_total)}%)"
+            if mod.workshop_total > 0 else ""
+        )
+        status = "↻ Downloading"
+        detail = f"Downloading update{percent}"
+        colour = "#f6c453"
+    elif mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_DOWNLOAD_PENDING:
+        status = "… Download pending"
+        detail = "Steam has queued this item"
+        colour = "#f6c453"
+    elif mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_NEEDS_UPDATE:
+        status = "! Update required"
+        detail = "Installed directory is outdated"
+        colour = "#f6c453"
+    else:
+        status = "✓ Installed"
+        detail = "Installed"
+        colour = "#6ee16e"
     return ModRow(
         values=[
-            "✓ Installed" if installed else "✗ Missing",
+            status,
             mod.workshop_id,
             mod.name or "Unknown",
             mod.installed_name or "",
             mod.workshop_url,
-            "Installed" if installed else "Missing - subscribe in Steam Workshop",
+            detail,
         ],
         workshop_id=mod.workshop_id,
-        status_colour="#6ee16e" if installed else "#ff6b6b",
+        status_colour=colour,
     )

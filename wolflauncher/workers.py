@@ -5,7 +5,7 @@ import threading
 from PySide6.QtCore import QThread, Signal
 
 from .models import Server
-from .mods import check_server_mods
+from .mods import apply_workshop_item_states, check_server_mods
 from .server_discovery import (
     discover_dayz_servers,
     discover_dayz_servers_battlemetrics,
@@ -16,6 +16,7 @@ from .server_enrichment import enrich_discovered_server, enrichment_probe_server
 from .status import ServerStatus, check_server
 from .workshop_subscription import (
     WorkshopSubscriptionResult,
+    query_workshop_item_states_isolated,
     subscribe_workshop_items_isolated,
 )
 
@@ -60,14 +61,24 @@ class StatusWorker(QThread):
 class ModWorker(QThread):
     mods_ready = Signal(object)
 
-    def __init__(self, server: Server, workshop_dir, steam_context: str = ""):
+    def __init__(self, server: Server, workshop_dir, steam_context: str = "", workshop_install=None):
         super().__init__()
         self.server = server
         self.workshop_dir = workshop_dir
         self.steam_context = steam_context
+        self.workshop_install = workshop_install
 
     def run(self):
-        self.mods_ready.emit(check_server_mods(self.server, self.workshop_dir, self.steam_context))
+        result = check_server_mods(self.server, self.workshop_dir, self.steam_context)
+        if result.ok and result.required_mods and self.workshop_install:
+            states = query_workshop_item_states_isolated(
+                (mod.workshop_id for mod in result.required_mods), self.workshop_install
+            )
+            if states.error:
+                result.workshop_state_error = states.error
+            else:
+                apply_workshop_item_states(result, states.items)
+        self.mods_ready.emit(result)
 
 
 class WorkshopSubscriptionWorker(QThread):
