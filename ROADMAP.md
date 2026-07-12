@@ -105,6 +105,8 @@ Priority 2 — direct discovered-server journey:
 Priority 3 — Workshop readiness and information:
 
 - Query `ISteamUGC::GetItemState` before launch so installed-but-outdated required items are distinguished from ready items; ask Steam to update and wait when needed.
+- When experimental Steam integration is enabled, extend the normal selected-server mod check with batch Workshop item-state checks so **Installed**, **Update required**, **Download pending** and **Downloading** are represented honestly instead of treating directory presence as readiness.
+- Add a Mods-row context action to **Check/update this mod** through Steam for targeted recovery, while keeping the ordinary server-level check as the primary way to validate the complete required set.
 - Show each missing mod's available download size and a combined estimate before confirmation, with an explicit unavailable/estimated state where Steam cannot supply reliable totals.
 - Add per-mod queued/downloading/installing progress to Mods rows, gradually filling green and ending in the verified **Installed** state, while retaining the batch-level dialog.
 - Continue using mod names in progress UI with numeric Workshop IDs only as fallback/support detail.
