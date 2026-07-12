@@ -136,6 +136,8 @@ class MainWindow(QMainWindow):
         self.workshop_subscription_dialog = None
         self.workshop_subscription_monitor_hidden = False
         self.workshop_subscription_names = {}
+        self.workshop_subscription_server_key = ""
+        self.launch_after_workshop_download = False
         self.discovery_worker = None
         self.web_api_worker = None
         self.battlemetrics_worker = None
@@ -1625,6 +1627,7 @@ class MainWindow(QMainWindow):
         self.pending_mod_check_row = None
         self.mod_worker = ModWorker(server, workshop_dir, steam_context)
         self.mod_worker.mods_ready.connect(self.update_mods_table)
+        self.mod_worker.finished.connect(self.maybe_launch_after_workshop_download)
         self.mod_worker.start()
 
     def update_mods_table(self, result: ModCheckResult):
@@ -2033,6 +2036,7 @@ class MainWindow(QMainWindow):
         self.workshop_subscription_names = {
             mod.workshop_id: (mod.name or mod.workshop_id) for mod in missing
         }
+        self.workshop_subscription_server_key = server_key(result.server)
         self.workshop_subscription_dialog = QProgressDialog(
             "Sending subscriptions to Steam...", "Hide monitor", 0, 100, self
         )
@@ -2098,11 +2102,17 @@ class MainWindow(QMainWindow):
             self.launch_button.setEnabled(False)
             installed_count = len(result.installed_ids)
             noun = "mod" if installed_count == 1 else "mods"
-            QMessageBox.information(
-                self,
-                "Mod download complete",
-                f"{installed_count} required {noun} downloaded successfully.",
+            box = QMessageBox(self)
+            box.setIcon(QMessageBox.Information)
+            box.setWindowTitle("Mod download complete")
+            box.setText(f"{installed_count} required {noun} downloaded successfully.")
+            launch_button = box.addButton(
+                "Launch server", QMessageBox.ButtonRole.AcceptRole
             )
+            close_button = box.addButton("Close", QMessageBox.ButtonRole.RejectRole)
+            box.setDefaultButton(launch_button)
+            box.exec()
+            self.launch_after_workshop_download = box.clickedButton() == launch_button
         elif result.cancelled:
             self.statusBar().showMessage(
                 "Stopped waiting for Steam; subscriptions and Steam downloads may continue.", 8000
@@ -2123,6 +2133,51 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(
             "Steam Workshop helper finished; launch is available.", 5000
         )
+        self.maybe_launch_after_workshop_download()
+
+    def maybe_launch_after_workshop_download(self):
+        if not self.launch_after_workshop_download:
+            return
+        workshop_worker = self.workshop_subscription_worker
+        if workshop_worker and workshop_worker.isRunning():
+            return
+        if self.mod_worker and self.mod_worker.isRunning():
+            return
+
+        target_row = next(
+            (
+                row
+                for row, server in enumerate(self.servers)
+                if server_key(server) == self.workshop_subscription_server_key
+            ),
+            -1,
+        )
+        if target_row < 0:
+            self.launch_after_workshop_download = False
+            QMessageBox.warning(
+                self,
+                "Server unavailable",
+                "The server selected for the Workshop download is no longer available.",
+            )
+            return
+
+        server = self.servers[target_row]
+        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        workshop_dir = install.workshop_dir if install else None
+        result = usable_mod_result(server, self.last_mod_result, workshop_dir)
+        if not result or not result.ok or result.missing_mods:
+            self.launch_after_workshop_download = False
+            QMessageBox.warning(
+                self,
+                "Mods not ready",
+                "The post-download mod check did not confirm every required mod. "
+                "Review the Mods tab before launching.",
+            )
+            return
+
+        self.launch_after_workshop_download = False
+        self.table.selectRow(target_row)
+        QTimer.singleShot(0, self.launch_selected)
 
     def workshop_launch_block_reason(self) -> str:
         worker = self.workshop_subscription_worker

@@ -105,6 +105,19 @@ class WorkshopLaunchReadinessTests(unittest.TestCase):
         dialog.setLabelText.assert_not_called()
         dialog.setValue.assert_not_called()
 
+    def test_download_launch_waits_for_mod_recheck_worker(self):
+        mod_worker = Mock()
+        mod_worker.isRunning.return_value = True
+        window = SimpleNamespace(
+            launch_after_workshop_download=True,
+            workshop_subscription_worker=None,
+            mod_worker=mod_worker,
+        )
+
+        MainWindow.maybe_launch_after_workshop_download(window)
+
+        self.assertTrue(window.launch_after_workshop_download)
+
 
 if __name__ == "__main__":
     unittest.main()

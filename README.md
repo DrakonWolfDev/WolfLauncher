@@ -106,6 +106,8 @@ Steam and DayZ should already be installed through native Steam or Flatpak Steam
 
 The experimental control is disabled by default. Enable **Steam-native subscription controls** under the Settings advanced disclosure and run a successful mod check. Missing mods can then be requested from the Mods tab or directly from the missing-mod launch warning. Steam must be running under the same user and signed into an account that owns DayZ. **Hide monitor** only hides the progress window: the original helper continues monitoring in the background and launch remains blocked until it finishes. Use the install action again to reopen that same live monitor; WolfLauncher will not start a second Steamworks session. Flatpak compatibility remains under real-world test.
 
+After a successful batch, **Launch server** waits for the isolated Steamworks helper to exit and for a fresh mod check to confirm every required directory before starting the selected server. A failed or incomplete recheck returns control to the Mods tab instead of launching with stale readiness data.
+
 ### Quick Development Setup
 
 From the repository root:
