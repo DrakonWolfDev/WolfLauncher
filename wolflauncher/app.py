@@ -1987,8 +1987,13 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, "No missing mods", "All required mods appear to be installed.")
             return
         if self.workshop_subscription_worker and self.workshop_subscription_worker.isRunning():
-            QMessageBox.information(
-                self, "Subscription already running", "Steam is already processing Workshop items."
+            if self.workshop_subscription_dialog:
+                self.workshop_subscription_dialog.show()
+                self.workshop_subscription_dialog.raise_()
+                self.workshop_subscription_dialog.activateWindow()
+            self.statusBar().showMessage(
+                "Showing the existing Steam Workshop monitor; no new session was started.",
+                5000,
             )
             return
 
@@ -2028,7 +2033,7 @@ class MainWindow(QMainWindow):
             mod.workshop_id: (mod.name or mod.workshop_id) for mod in missing
         }
         self.workshop_subscription_dialog = QProgressDialog(
-            "Sending subscriptions to Steam...", "Stop monitoring", 0, 100, self
+            "Sending subscriptions to Steam...", "Hide monitor", 0, 100, self
         )
         self.workshop_subscription_dialog.setWindowTitle("Steam Workshop (experimental)")
         self.workshop_subscription_dialog.setMinimumDuration(0)
@@ -2046,10 +2051,19 @@ class MainWindow(QMainWindow):
             self.clear_workshop_subscription_worker
         )
         self.workshop_subscription_dialog.canceled.connect(
-            self.workshop_subscription_worker.cancel
+            self.stop_workshop_subscription_monitoring
         )
         self.launch_button.setEnabled(False)
         self.workshop_subscription_worker.start()
+
+    def stop_workshop_subscription_monitoring(self):
+        if self.workshop_subscription_dialog:
+            self.workshop_subscription_dialog.hide()
+        self.statusBar().showMessage(
+            "Workshop monitoring continues in the background; Steam downloads and launch "
+            "readiness are unchanged.",
+            8000,
+        )
 
     def update_workshop_subscription_progress(self, snapshots):
         dialog = self.workshop_subscription_dialog
@@ -2119,8 +2133,8 @@ class MainWindow(QMainWindow):
         if worker and worker.isRunning():
             return (
                 "Steam is still processing the required Workshop items. Wait for monitoring "
-                "to finish, or choose Stop monitoring and wait for the worker to close its "
-                "Steamworks connection."
+                "to finish. Hide monitor only hides the progress window; use Install "
+                "missing mods again to reopen the same monitor."
             )
         if self.workshop_launch_settling:
             return (

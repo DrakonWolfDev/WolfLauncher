@@ -93,7 +93,7 @@ Priority 1 — safe Steam handoff:
 - Add a bounded post-download readiness/cooldown state instead of enabling immediate launch from directory presence alone.
 - Block or clearly defer launches while WolfLauncher's subscription worker is active or Steam is still processing the required Workshop set.
 - On restart, detect relevant outstanding Workshop activity where Steam exposes it and present an honest waiting/recovery state.
-- **Stop monitoring** now honestly states that accepted Steam subscriptions/downloads continue; it only ends WolfLauncher's wait. Do not add a Steam-cancellation claim unless a safe supported mechanism is verified.
+- The unsafe **Stop monitoring** behavior was replaced with **Hide monitor**: the original helper keeps monitoring in the background, and reopening the install action returns to that same session. Do not add a Steam-cancellation claim unless a safe supported mechanism is verified.
 
 Priority 2 — direct discovered-server journey:
 

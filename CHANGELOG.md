@@ -10,6 +10,7 @@
 - Renamed the Workshop dialog action to **Stop monitoring**, blocked launch while the Steamworks worker is active, and added a short post-download settling boundary after the Steamworks context is released.
 - Added **Install missing mods** to native and external missing-mod launch warnings when the experimental Steam-native subscription control is enabled.
 - Moved the experimental Steamworks subscription session into a spawned helper process so the process that initialized as DayZ exits completely before WolfLauncher permits the real DayZ launch.
+- Replaced **Stop monitoring** with **Hide monitor** so the original helper continues in the background, and made repeated install actions reopen that monitor instead of starting another Steamworks session.
 - Made native/external launch-engine changes invalidate and quietly recheck the selected server's mods using the newly authoritative Steam/Workshop context, matching Steam install mode changes.
 - Made Steam install mode changes deterministically start or queue a quiet forced mod recheck, instead of leaving the Mods tab waiting when the previous lookup had already finished.
 - Bound cached mod results to both the selected server and Workshop directory, preventing an in-flight check from an old Steam install mode being accepted after the mode changes and queuing a fresh check for the current context.

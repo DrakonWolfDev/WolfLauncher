@@ -90,6 +90,19 @@ class WorkshopLaunchReadinessTests(unittest.TestCase):
 
         self.assertEqual(MainWindow.workshop_launch_block_reason(window), "")
 
+    def test_stop_monitoring_only_hides_dialog(self):
+        dialog = Mock()
+        status_bar = Mock()
+        window = SimpleNamespace(
+            workshop_subscription_dialog=dialog,
+            statusBar=Mock(return_value=status_bar),
+        )
+
+        MainWindow.stop_workshop_subscription_monitoring(window)
+
+        dialog.hide.assert_called_once_with()
+        status_bar.showMessage.assert_called_once()
+
 
 if __name__ == "__main__":
     unittest.main()

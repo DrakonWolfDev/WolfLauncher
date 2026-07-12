@@ -104,7 +104,7 @@ These instructions target Linux Mint 21/22 and Ubuntu 22.04/24.04 family systems
 
 Steam and DayZ should already be installed through native Steam or Flatpak Steam. WolfLauncher does not install DayZ or Proton. The experimental Workshop control delegates confirmed subscriptions and downloads to the user's running Steam client.
 
-The experimental control is disabled by default. Enable **Steam-native subscription controls** under the Settings advanced disclosure and run a successful mod check. Missing mods can then be requested from the Mods tab or directly from the missing-mod launch warning. Steam must be running under the same user and signed into an account that owns DayZ. **Stop monitoring** ends WolfLauncher's wait but does not undo subscriptions or stop downloads already accepted by Steam. Flatpak compatibility remains under real-world test.
+The experimental control is disabled by default. Enable **Steam-native subscription controls** under the Settings advanced disclosure and run a successful mod check. Missing mods can then be requested from the Mods tab or directly from the missing-mod launch warning. Steam must be running under the same user and signed into an account that owns DayZ. **Hide monitor** only hides the progress window: the original helper continues monitoring in the background and launch remains blocked until it finishes. Use the install action again to reopen that same live monitor; WolfLauncher will not start a second Steamworks session. Flatpak compatibility remains under real-world test.
 
 ### Quick Development Setup
 
