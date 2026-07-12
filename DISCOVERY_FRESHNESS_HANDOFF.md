@@ -109,6 +109,14 @@ WolfLauncher must key favourites/cache promotion against the stable ID when avai
 
 ## WolfAPI implementation breakdown
 
+### Required-mod metadata
+
+WolfAPI should run a separate bounded metadata job for required-mod information instead of forcing every launcher to query every server. List rows need nullable `required_mod_count` plus metadata status/checked/expiry fields; a versioned server-mod detail endpoint can return Workshop IDs and names. Unknown must remain null, while zero is accepted only from a successful explicit empty manifest.
+
+Prioritize live/recent modded and recently requested servers, cache successes, retain the last success as stale after a failed refresh, and apply cooldown/global budgets. Do not synchronously fetch manifests inside `/api/servers` and do not sweep the full retained directory every cycle. WolfLauncher retains direct lookup for selected-server and final join truth.
+
+The matching detailed backend design and full launcher-facing enrichment inventory are in WolfAPI `DISCOVERY_FRESHNESS_CONTRACT.md`.
+
 ### Phase A — contract correctness
 
 - Add failing tests demonstrating that old `live_last_seen` values age out of `live`.
@@ -177,6 +185,7 @@ Only after the scheduler is stable, consider a heavily rate-limited validation-r
 - Redis, Postgres and recovery publish produce contract-equivalent rows.
 - `/api/health` exposes validation coverage, queue lag and outcome counts.
 - Validation jobs remain bounded and the HTTP API stays responsive.
+- Required-mod metadata distinguishes unknown, confirmed zero, stale and failed states and never blocks list serving.
 
 ### Launcher
 

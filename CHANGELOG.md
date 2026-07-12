@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Extended the cross-project handoff with bounded WolfAPI required-mod metadata polling, honest unknown/zero/stale/failure semantics, a manifest detail endpoint and a full launcher-facing enrichment inventory.
 - Added a detailed cross-project discovery-freshness handoff defining the WolfAPI contract, validation semantics, launcher migration, rollout gates and acceptance criteria needed to replace fixed startup polling safely.
 - Recorded fixed startup server polling as a future discovery-freshness design problem, with viewport demand, validation age, bounded background budgets and stable WolfAPI signals identified as better directions.
 - Made enrichment apply results in top-to-bottom browser order, atomically replace obsolete keys after live port correction, and automatically enrich the first 30 filtered/sorted rows at most once per day.

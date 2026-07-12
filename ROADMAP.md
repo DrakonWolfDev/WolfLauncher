@@ -130,6 +130,7 @@ Future discovery-freshness design problem:
 - Replace fixed startup enrichment batches with a less clunky freshness strategy. Explore validation-age scheduling, viewport/on-demand checks, small background budgets, reuse of recent local results and stable WolfAPI freshness/validation fields so opening WolfLauncher does not repeatedly poll a predetermined set of servers.
 - Preserve honest provider-vs-local status while avoiding unnecessary queries for rows that are off-screen, recently validated or unlikely to be used. Any future scheduler should remain quiet, bounded, cancellable and resilient when providers or individual servers are slow.
 - Use `DISCOVERY_FRESHNESS_HANDOFF.md` as the cross-project implementation contract. WolfAPI already exposes preliminary live/freshness fields, but their semantics and persistence must be hardened before the launcher removes compatibility polling.
+- WolfAPI's matching contract now includes bounded required-mod metadata polling, nullable count/status fields, a full-manifest detail endpoint and the complete launcher-facing enrichment inventory; keep direct launcher lookup as selected-server/launch fallback.
 
 ## v0.9.9 - Packaging preparation
 
