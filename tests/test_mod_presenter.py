@@ -52,6 +52,15 @@ class ModPresenterTests(unittest.TestCase):
         self.assertIn("Known remaining download: 2.0 KiB", estimate)
         self.assertIn("size unavailable for 1 item", estimate)
 
+    def test_catalogue_file_size_is_used_before_download_starts(self):
+        mod = RequiredMod("111", workshop_file_size=3 * 1024 * 1024)
+
+        self.assertEqual(mod_download_size(mod), "3.0 MiB")
+        self.assertEqual(
+            combined_download_estimate([mod]),
+            "Estimated remaining download: 3.0 MiB.",
+        )
+
     def test_download_estimate_reports_complete_known_total(self):
         mods = [
             RequiredMod("111", workshop_total=1024),

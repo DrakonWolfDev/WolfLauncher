@@ -20,17 +20,26 @@ def format_byte_size(size: int) -> str:
 
 
 def mod_download_size(mod: RequiredMod) -> str:
-    if mod.workshop_total <= 0:
-        return "Unavailable"
-    return format_byte_size(max(0, mod.workshop_total - mod.workshop_downloaded))
+    if mod.workshop_total > 0:
+        return format_byte_size(max(0, mod.workshop_total - mod.workshop_downloaded))
+    if mod.workshop_file_size > 0:
+        return format_byte_size(mod.workshop_file_size)
+    return "Unavailable"
 
 
 def combined_download_estimate(mods: list[RequiredMod]) -> str:
-    known = [mod for mod in mods if mod.workshop_total > 0]
+    known = [
+        mod for mod in mods
+        if mod.workshop_total > 0 or mod.workshop_file_size > 0
+    ]
     unknown = len(mods) - len(known)
     if not known:
         return f"Download size unavailable for all {len(mods)} item(s)."
-    total = sum(max(0, mod.workshop_total - mod.workshop_downloaded) for mod in known)
+    total = sum(
+        max(0, mod.workshop_total - mod.workshop_downloaded)
+        if mod.workshop_total > 0 else mod.workshop_file_size
+        for mod in known
+    )
     if unknown:
         return (
             f"Known remaining download: {format_byte_size(total)} across {len(known)} item(s); "

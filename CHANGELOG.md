@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Added per-mod remaining download sizes and combined known estimates to experimental Workshop rows and confirmation, explicitly identifying unavailable or partial Steam totals.
+- Added per-mod download sizes from Steam published-file metadata and combined known estimates to experimental Workshop rows and confirmation, switching to live remaining-transfer bytes when available and explicitly identifying genuinely unavailable or partial totals.
 - Added a two-minute no-progress boundary for Workshop resolution so Steam states stuck incomplete with no active downloads return an explicit fallback result and release AppID 221100 instead of holding DayZ as running for the full 30-minute timeout.
 - Fixed Workshop progress keeping the first unresolved mod name while Steam downloaded later items; current-item text now follows Steam's downloading/progress/pending state and reports an honest waiting state otherwise.
 - Silenced repetitive native SteamAPI breakpad, Steam ID and library-load console messages inside disposable Workshop helper processes while preserving structured progress and errors.

@@ -11,6 +11,7 @@ from wolflauncher.mods import (
     ModCheckResult,
     RequiredMod,
     check_server_mods,
+    fetch_workshop_file_sizes,
     fetch_required_mods,
     format_missing_workshop_links,
     format_mod_check_report,
@@ -30,6 +31,36 @@ class FakeResponse:
 
     def read(self) -> bytes:
         return json.dumps(self.payload).encode("utf-8")
+
+
+class WorkshopFileSizeTests(unittest.TestCase):
+    def test_fetches_public_batch_file_sizes(self):
+        payload = {
+            "response": {
+                "publishedfiledetails": [
+                    {"publishedfileid": "111", "result": 1, "file_size": "1048576"},
+                    {"publishedfileid": "222", "result": 9},
+                ]
+            }
+        }
+        with patch(
+            "wolflauncher.mods.urllib.request.urlopen",
+            return_value=FakeResponse(payload),
+        ) as urlopen:
+            sizes = fetch_workshop_file_sizes(["111", "222", "111"])
+
+        self.assertEqual(sizes, {"111": 1048576})
+        request = urlopen.call_args.args[0]
+        self.assertEqual(request.method, "POST")
+        self.assertIn(b"itemcount=2", request.data)
+        self.assertIn(b"publishedfileids%5B0%5D=111", request.data)
+
+    def test_file_size_failure_is_advisory(self):
+        with patch(
+            "wolflauncher.mods.urllib.request.urlopen",
+            side_effect=urllib.error.URLError("offline"),
+        ):
+            self.assertEqual(fetch_workshop_file_sizes(["111"]), {})
 
 
 def make_server() -> Server:
