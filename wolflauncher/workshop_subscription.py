@@ -10,6 +10,7 @@ import ctypes
 import multiprocessing
 import os
 import queue
+import signal
 import threading
 import time
 from dataclasses import dataclass
@@ -24,6 +25,7 @@ ITEM_STATE_INSTALLED = 4
 ITEM_STATE_NEEDS_UPDATE = 8
 ITEM_STATE_DOWNLOADING = 16
 ITEM_STATE_DOWNLOAD_PENDING = 32
+DOWNLOAD_REQUEST_RETRY_SECONDS = 15.0
 
 
 class WorkshopSubscriptionError(RuntimeError):
@@ -244,7 +246,7 @@ def subscribe_workshop_items(
 
     cancel_event = cancelled or threading.Event()
     started = time.monotonic()
-    download_requested: set[str] = set()
+    download_requested_at: dict[str, float] = {}
     with SteamWorkshopClient(library_path) as client:
         for workshop_id in ids:
             client.subscribe(workshop_id)
@@ -270,18 +272,26 @@ def subscribe_workshop_items(
                     cancelled=True,
                 )
             if time.monotonic() - started >= timeout_seconds:
+                incomplete = tuple(item for item in ids if item not in installed)
                 return WorkshopSubscriptionResult(
                     installed,
-                    tuple(item for item in ids if item not in installed),
-                    error="Steam did not finish installing every Workshop item before the timeout.",
+                    incomplete,
+                    error=(
+                        "Steam did not finish installing every Workshop item before the timeout. "
+                        f"Still incomplete: {', '.join(incomplete)}."
+                    ),
                 )
 
             for snapshot in snapshots:
-                if snapshot.workshop_id in download_requested:
+                if snapshot.installed:
                     continue
                 if snapshot.state & ITEM_STATE_SUBSCRIBED:
-                    client.request_download(snapshot.workshop_id)
-                    download_requested.add(snapshot.workshop_id)
+                    last_request = download_requested_at.get(snapshot.workshop_id, 0.0)
+                    now = time.monotonic()
+                    if now - last_request < DOWNLOAD_REQUEST_RETRY_SECONDS:
+                        continue
+                    if client.request_download(snapshot.workshop_id):
+                        download_requested_at[snapshot.workshop_id] = now
             time.sleep(poll_seconds)
 
 
@@ -294,6 +304,7 @@ def _subscription_process_main(
     poll_seconds: float,
 ) -> None:
     """Own Steamworks in a disposable process so Steam sees a hard shutdown."""
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
     try:
         result = subscribe_workshop_items(
             workshop_ids,

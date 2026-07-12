@@ -62,6 +62,7 @@ class FakeWorkshopClient:
     snapshots = []
     subscribed = []
     downloads = []
+    download_results = []
 
     def __init__(self, _path):
         self.index = 0
@@ -87,6 +88,8 @@ class FakeWorkshopClient:
 
     def request_download(self, workshop_id):
         self.downloads.append(workshop_id)
+        if self.download_results:
+            return self.download_results.pop(0)
         return True
 
 
@@ -95,6 +98,7 @@ class SubscribeWorkshopItemsTests(unittest.TestCase):
         FakeWorkshopClient.snapshots = []
         FakeWorkshopClient.subscribed = []
         FakeWorkshopClient.downloads = []
+        FakeWorkshopClient.download_results = []
 
     def test_subscribes_requests_download_and_waits_for_directories(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -155,6 +159,46 @@ class SubscribeWorkshopItemsTests(unittest.TestCase):
 
         self.assertTrue(result.cancelled)
         self.assertEqual(result.incomplete_ids, ("111",))
+
+    def test_retries_rejected_download_request_while_item_is_incomplete(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workshop = root / "workshop"
+            workshop.mkdir()
+            install = install_for(root, workshop)
+            FakeWorkshopClient.snapshots = [
+                {"111": WorkshopItemProgress("111", ITEM_STATE_SUBSCRIBED)}
+            ]
+            FakeWorkshopClient.download_results = [False, True]
+            cancelled = threading.Event()
+            progress_calls = 0
+
+            def stop_after_two_requests(_snapshots):
+                nonlocal progress_calls
+                progress_calls += 1
+                if progress_calls >= 3:
+                    cancelled.set()
+
+            with patch(
+                "wolflauncher.workshop_subscription.find_steam_api_library",
+                return_value=root / "libsteam_api.so",
+            ), patch(
+                "wolflauncher.workshop_subscription.SteamWorkshopClient",
+                FakeWorkshopClient,
+            ), patch(
+                "wolflauncher.workshop_subscription.DOWNLOAD_REQUEST_RETRY_SECONDS",
+                0,
+            ):
+                result = subscribe_workshop_items(
+                    ["111"],
+                    install,
+                    progress_callback=stop_after_two_requests,
+                    cancelled=cancelled,
+                    poll_seconds=0,
+                )
+
+        self.assertTrue(result.cancelled)
+        self.assertEqual(FakeWorkshopClient.downloads, ["111", "111"])
 
     def test_rejects_invalid_workshop_id_before_loading_steam(self):
         with tempfile.TemporaryDirectory() as temp_dir:

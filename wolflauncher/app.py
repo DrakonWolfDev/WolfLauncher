@@ -2473,6 +2473,10 @@ class MainWindow(QMainWindow):
         return True
 
     def closeEvent(self, event):
+        worker = self.workshop_subscription_worker
+        if worker and worker.isRunning():
+            worker.cancel()
+            worker.wait(5000)
         self.save_user_settings(silent=True)
         self.server_cache.close()
         super().closeEvent(event)
@@ -2482,4 +2486,9 @@ def main():
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    sys.exit(app.exec())
+    try:
+        exit_code = app.exec()
+    except KeyboardInterrupt:
+        window.close()
+        exit_code = 130
+    sys.exit(exit_code)
