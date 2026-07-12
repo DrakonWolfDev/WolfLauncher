@@ -209,9 +209,10 @@ class ServerEnrichmentWorker(QThread):
     enrichment_ready = Signal(object, str)
     enrichment_progress = Signal(object, int, int)
 
-    def __init__(self, servers):
+    def __init__(self, servers, automatic: bool = False):
         super().__init__()
         self.servers = servers
+        self.automatic = automatic
 
     def run(self):
         checked_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
@@ -231,9 +232,11 @@ class ServerEnrichmentWorker(QThread):
 
         max_workers = min(MAX_ENRICHMENT_WORKERS, total) if total else 1
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(enrich_one, server) for server in self.servers]
-            for completed, future in enumerate(as_completed(futures), 1):
-                server = future.result()
+            for completed, (original, server) in enumerate(
+                zip(self.servers, executor.map(enrich_one, self.servers)), 1
+            ):
                 enriched.append(server)
-                self.enrichment_progress.emit(server, completed, total)
+                self.enrichment_progress.emit(
+                    (original.cache_key, server), completed, total
+                )
         self.enrichment_ready.emit(enriched, "")

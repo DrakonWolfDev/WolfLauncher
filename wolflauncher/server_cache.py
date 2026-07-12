@@ -123,6 +123,18 @@ def upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> N
     connection.commit()
 
 
+def replace_server_key(
+    connection: sqlite3.Connection, old_cache_key: str, server: DiscoveredServer
+) -> None:
+    """Upsert an enriched row and remove its obsolete pre-correction key."""
+    _upsert_server(connection, server)
+    if old_cache_key and old_cache_key != server.cache_key:
+        connection.execute(
+            "DELETE FROM discovered_servers WHERE cache_key = ?", (old_cache_key,)
+        )
+    connection.commit()
+
+
 def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> None:
     connection.execute(
         """

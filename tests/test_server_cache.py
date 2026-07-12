@@ -105,6 +105,21 @@ class ServerCacheTests(unittest.TestCase):
         self.assertEqual(cached.players_current, 28)
         self.assertTrue(cached.online)
 
+    def test_replace_server_key_removes_obsolete_provider_row(self):
+        connection = self.open_cache()
+        original = DiscoveredServer("Example", "203.0.113.10", 27018, 27018)
+        corrected = DiscoveredServer(
+            "Example", "203.0.113.10", 37017, 27018, status_source="local"
+        )
+        server_cache.upsert_server(connection, original)
+
+        server_cache.replace_server_key(connection, original.cache_key, corrected)
+
+        self.assertIsNone(server_cache.get_server(connection, original.cache_key))
+        self.assertEqual(
+            server_cache.get_server(connection, corrected.cache_key), corrected
+        )
+
     def test_upsert_servers_returns_inserted_count(self):
         connection = self.open_cache()
 

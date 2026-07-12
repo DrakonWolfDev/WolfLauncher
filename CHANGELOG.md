@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Made enrichment apply results in top-to-bottom browser order, atomically replace obsolete keys after live port correction, and automatically enrich the first 30 filtered/sorted rows at most once per day.
 - Made visible-server enrichment bounded and parallel with incremental progress/cache updates, preventing a 200-row batch from appearing frozen behind sequential query timeouts.
 - Clarified blank discovered required-mod counts as provider-unknown values with an **Inspect mods** recovery tooltip.
 - Added a final isolated Workshop state query before launch; unavailable or newly unready Steam state cancels handoff instead of trusting an older Mods result.

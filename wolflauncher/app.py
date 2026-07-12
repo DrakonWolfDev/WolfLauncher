@@ -214,6 +214,7 @@ class MainWindow(QMainWindow):
         self.refresh_server_browser()
         self.update_settings_health()
         QTimer.singleShot(0, self.check_initial_server_mods)
+        QTimer.singleShot(5000, self.maybe_auto_enrich_top_servers)
         QTimer.singleShot(30000, self.maybe_auto_refresh_configured_provider)
 
     def _build_servers_tab(self) -> QWidget:
@@ -977,17 +978,21 @@ class MainWindow(QMainWindow):
         if not servers:
             QMessageBox.warning(self, "No visible servers", "No discovered servers are visible to enrich.")
             return
+        self.start_discovered_enrichment(servers, automatic=False)
+
+    def start_discovered_enrichment(self, servers, automatic: bool):
         self.browser_summary.setText(f"Cached discovered servers: enriching {len(servers)} visible row(s)...")
         self.enrich_visible_button.setEnabled(False)
-        self.enrichment_worker = ServerEnrichmentWorker(servers)
+        self.enrichment_worker = ServerEnrichmentWorker(servers, automatic=automatic)
         self.enrichment_worker.enrichment_progress.connect(
             self.handle_enrichment_progress
         )
         self.enrichment_worker.enrichment_ready.connect(self.handle_enrichment_ready)
         self.enrichment_worker.start()
 
-    def handle_enrichment_progress(self, server, completed: int, total: int):
-        server_cache.upsert_server(self.server_cache, server)
+    def handle_enrichment_progress(self, payload, completed: int, total: int):
+        old_cache_key, server = payload
+        server_cache.replace_server_key(self.server_cache, old_cache_key, server)
         if completed == total or completed % 10 == 0:
             self.refresh_server_browser()
         self.browser_summary.setText(
@@ -995,9 +1000,13 @@ class MainWindow(QMainWindow):
         )
 
     def handle_enrichment_ready(self, servers, error: str):
+        automatic = bool(self.enrichment_worker and self.enrichment_worker.automatic)
         self.enrich_visible_button.setEnabled(True)
         count = server_cache.upsert_servers(self.server_cache, servers)
         self.refresh_server_browser()
+        if automatic:
+            self.settings["last_visible_enrichment_at"] = auto_refresh_timestamp()
+            save_settings(self.settings)
         if error:
             QMessageBox.warning(
                 self,
@@ -1006,9 +1015,18 @@ class MainWindow(QMainWindow):
             )
             return
         self.statusBar().showMessage(
-            f"Enrichment complete: updated {count} discovered server row(s).",
+            f"{'Automatic e' if automatic else 'E'}nrichment complete: updated {count} discovered server row(s).",
             7000,
         )
+
+    def maybe_auto_enrich_top_servers(self):
+        if self.enrichment_worker and self.enrichment_worker.isRunning():
+            return
+        if not auto_refresh_due(self.settings.get("last_visible_enrichment_at")):
+            return
+        servers = list(self.browser_servers[:30])
+        if servers:
+            self.start_discovered_enrichment(servers, automatic=True)
 
     def promote_selected_discovered_server(self):
         server = self.selected_discovered_server()

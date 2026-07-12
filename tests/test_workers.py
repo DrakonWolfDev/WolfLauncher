@@ -57,7 +57,9 @@ class WorkerTests(unittest.TestCase):
         completed = []
         worker = ServerEnrichmentWorker(servers)
         worker.enrichment_progress.connect(
-            lambda server, count, total: progress.append((server.name, count, total))
+            lambda payload, count, total: progress.append(
+                (payload[0], payload[1].name, count, total)
+            )
         )
         worker.enrichment_ready.connect(
             lambda enriched, error: completed.append((enriched, error))
@@ -65,9 +67,10 @@ class WorkerTests(unittest.TestCase):
 
         worker.run()
 
-        self.assertEqual(sorted(item[0] for item in progress), ["One", "Two"])
-        self.assertEqual(sorted(item[1] for item in progress), [1, 2])
-        self.assertTrue(all(item[2] == 2 for item in progress))
+        self.assertEqual([item[1] for item in progress], ["One", "Two"])
+        self.assertEqual([item[2] for item in progress], [1, 2])
+        self.assertTrue(all(item[3] == 2 for item in progress))
+        self.assertEqual(progress[0][0], servers[0].cache_key)
         self.assertEqual(len(completed[0][0]), 2)
         self.assertEqual(completed[0][1], "")
 

@@ -118,6 +118,7 @@ Priority 3 — Workshop readiness and information:
 Priority 4 — discovery truth and regression coverage:
 
 - Completed — provider claims are shown in amber as **PROVIDER ONLINE/OFFLINE** with provenance guidance; successful or failed local enrichment changes the row to locally validated **ONLINE/OFFLINE** with its check timestamp.
+- Completed — live enrichment preserves top-to-bottom visible priority while checking concurrently, replaces obsolete cache keys when live game-port correction changes identity, reports incremental progress and automatically enriches the first 30 filtered/sorted rows at most once per day.
 - Cover stopped Steam, Steam stopping mid-operation, partial completion, deleted/unavailable items, restart during downloads, secondary libraries, Flatpak Steam and launch-after-download in repeatable tests and the manual smoke checklist.
 
 Visual-polish review note:
