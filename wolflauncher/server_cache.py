@@ -12,7 +12,7 @@ import yaml
 from .models import DiscoveredServer
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 DATA_DIR = Path.home() / ".local" / "share" / "wolflauncher"
 SERVER_CACHE_PATH = DATA_DIR / "server_cache.sqlite3"
 
@@ -82,6 +82,8 @@ def _initialize_schema_v1(connection: sqlite3.Connection) -> None:
             online INTEGER NOT NULL DEFAULT 0,
             last_checked TEXT NOT NULL DEFAULT '',
             last_seen TEXT NOT NULL DEFAULT '',
+            required_mod_count INTEGER,
+            status_source TEXT NOT NULL DEFAULT 'provider',
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
@@ -103,7 +105,13 @@ def _initialize_schema_v1(connection: sqlite3.Connection) -> None:
 
 
 def _migrate(connection: sqlite3.Connection, current_version: int, target_version: int) -> None:
-    # Future schema changes should step version-by-version here so user caches are preserved.
+    if current_version == 1 and target_version == 2:
+        connection.execute("ALTER TABLE discovered_servers ADD COLUMN required_mod_count INTEGER")
+        connection.execute(
+            "ALTER TABLE discovered_servers ADD COLUMN status_source TEXT NOT NULL DEFAULT 'provider'"
+        )
+        connection.execute("PRAGMA user_version = 2")
+        return
     if current_version != target_version:
         raise RuntimeError(
             f"Unsupported server cache migration from version {current_version} to {target_version}."
@@ -121,12 +129,12 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
         INSERT INTO discovered_servers (
             cache_key, source, display_name, server_name, host, game_port, query_port,
             map_name, players_current, players_max, ping_ms, version, password,
-            modded, online, last_checked, last_seen
+            modded, online, last_checked, last_seen, required_mod_count, status_source
         )
         VALUES (
             :cache_key, :source, :display_name, :server_name, :host, :game_port, :query_port,
             :map_name, :players_current, :players_max, :ping_ms, :version, :password,
-            :modded, :online, :last_checked, :last_seen
+            :modded, :online, :last_checked, :last_seen, :required_mod_count, :status_source
         )
         ON CONFLICT(cache_key) DO UPDATE SET
             source = excluded.source,
@@ -145,6 +153,8 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             online = excluded.online,
             last_checked = excluded.last_checked,
             last_seen = excluded.last_seen,
+            required_mod_count = excluded.required_mod_count,
+            status_source = excluded.status_source,
             updated_at = CURRENT_TIMESTAMP
         """,
         _server_params(server),
@@ -427,6 +437,8 @@ def _server_params(server: DiscoveredServer) -> dict[str, Any]:
         "online": 1 if server.online else 0,
         "last_checked": server.last_checked,
         "last_seen": server.last_seen,
+        "required_mod_count": server.required_mod_count,
+        "status_source": server.status_source,
     }
 
 
@@ -466,6 +478,8 @@ def _server_from_import_item(item: Any, index: int) -> DiscoveredServer:
         online=_optional_bool(item.get("online", False)),
         last_checked=str(item.get("last_checked") or ""),
         last_seen=str(item.get("last_seen") or ""),
+        required_mod_count=_optional_int(item.get("required_mod_count")),
+        status_source=str(item.get("status_source") or "provider"),
     )
 
 
@@ -526,6 +540,8 @@ def _row_to_server(row: sqlite3.Row) -> DiscoveredServer:
         online=bool(row["online"]),
         last_checked=str(row["last_checked"]),
         last_seen=str(row["last_seen"]),
+        required_mod_count=row["required_mod_count"],
+        status_source=str(row["status_source"] or "provider"),
     )
 
 

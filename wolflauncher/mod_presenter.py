@@ -91,12 +91,10 @@ def mod_row(mod: RequiredMod) -> ModRow:
     from .workshop_subscription import (
         ITEM_STATE_DOWNLOADING,
         ITEM_STATE_DOWNLOAD_PENDING,
+        ITEM_STATE_INSTALLED,
         ITEM_STATE_NEEDS_UPDATE,
     )
-    if not mod.installed:
-        status = "✗ Missing"
-        colour = "#ff6b6b"
-    elif mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_DOWNLOADING:
+    if mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_DOWNLOADING:
         percent = (
             f" ({int(mod.workshop_downloaded * 100 / mod.workshop_total)}%)"
             if mod.workshop_total > 0 else ""
@@ -110,6 +108,12 @@ def mod_row(mod: RequiredMod) -> ModRow:
     elif mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_NEEDS_UPDATE:
         status = "! Update required"
         colour = "#f6c453"
+    elif mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_INSTALLED and not mod.installed:
+        status = "… Verifying install"
+        colour = "#f6c453"
+    elif not mod.installed:
+        status = "✗ Missing"
+        colour = "#ff6b6b"
     else:
         status = "✓ Installed"
         colour = "#6ee16e"

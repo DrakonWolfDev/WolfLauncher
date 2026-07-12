@@ -4,10 +4,13 @@ from unittest.mock import Mock
 
 from wolflauncher.app import MainWindow
 from wolflauncher.models import DiscoveredServer, Server
+from wolflauncher.mods import ModCheckResult, RequiredMod
 from wolflauncher.workshop_subscription import (
     ITEM_STATE_DOWNLOADING,
+    ITEM_STATE_INSTALLED,
     ITEM_STATE_SUBSCRIBED,
     WorkshopItemProgress,
+    WorkshopStateResult,
 )
 
 
@@ -119,6 +122,25 @@ class ModContextChangeTests(unittest.TestCase):
 
 
 class WorkshopLaunchReadinessTests(unittest.TestCase):
+    def test_fresh_prelaunch_state_continues_only_when_items_are_ready(self):
+        server = Server("Example", "Tests", "dayz.test", 2302, 27016)
+        result = ModCheckResult(True, server, [RequiredMod("111", installed=True)])
+        window = SimpleNamespace(
+            last_mod_result=result,
+            display_mods_result=Mock(),
+            active_server_context=Mock(return_value=server),
+            perform_launch=Mock(),
+        )
+
+        MainWindow.finish_prelaunch_workshop_check(
+            window,
+            server,
+            result,
+            WorkshopStateResult((WorkshopItemProgress("111", ITEM_STATE_INSTALLED),)),
+        )
+
+        window.perform_launch.assert_called_once_with(server)
+
     def test_progress_dialog_names_the_item_steam_is_downloading(self):
         dialog = Mock()
         window = SimpleNamespace(

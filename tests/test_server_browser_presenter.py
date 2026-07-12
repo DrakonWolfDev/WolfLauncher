@@ -52,6 +52,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
             password=True,
             modded=True,
             online=True,
+            status_source="local",
         )
 
         row = browser_row(server)
@@ -61,7 +62,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertEqual(row.values[10], "Password, Mods")
         self.assertEqual(row.sort_values[7], 12)
         self.assertEqual(row.tooltips[0], "Live name: Live Name")
-        self.assertIn(11, row.tooltips)
+        self.assertIn(12, row.tooltips)
         self.assertEqual(row.status_colour, "#6ee16e")
 
     def test_browser_row_hides_duplicate_live_name(self):
@@ -71,6 +72,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
             host="203.0.113.10",
             game_port=2302,
             query_port=27016,
+            status_source="local",
         )
 
         row = browser_row(server)
@@ -79,6 +81,25 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertIn(1, row.tooltips)
         self.assertIn("Enrich visible", row.tooltips[8])
         self.assertEqual(row.status_colour, "#ff6b6b")
+
+    def test_provider_status_and_required_mod_count_are_explicit(self):
+        server = DiscoveredServer(
+            name="Provider Row",
+            host="203.0.113.20",
+            game_port=2302,
+            query_port=27016,
+            online=True,
+            source="wolfapi",
+            required_mod_count=23,
+            last_checked="2026-07-12T12:00:00+00:00",
+        )
+
+        row = browser_row(server)
+
+        self.assertEqual(row.values[5], "PROVIDER ONLINE")
+        self.assertEqual(row.values[11], "23")
+        self.assertEqual(row.status_colour, "#f6c453")
+        self.assertIn("not yet validated", row.tooltips[5])
 
     def test_discovered_details_use_shared_player_and_live_name_formatting(self):
         server = DiscoveredServer(

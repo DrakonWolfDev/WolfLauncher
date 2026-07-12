@@ -33,6 +33,8 @@ class DiscoveredServer:
     online: bool = False
     last_checked: str = ""
     last_seen: str = ""
+    required_mod_count: int | None = None
+    status_source: str = "provider"
 
     @property
     def cache_key(self) -> str:

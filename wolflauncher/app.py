@@ -1,4 +1,5 @@
 import os
+from dataclasses import replace
 from pathlib import Path
 from datetime import datetime
 import sys
@@ -19,6 +20,7 @@ from PySide6.QtWidgets import (
     QMenu,
     QPushButton,
     QProgressDialog,
+    QProgressBar,
     QSpinBox,
     QTabWidget,
     QTableWidget,
@@ -79,6 +81,7 @@ from .platform_detection import (
 )
 from .mods import (
     ModCheckResult,
+    apply_workshop_item_states,
     check_server_mods,
     format_missing_workshop_links,
     format_mod_check_report,
@@ -115,8 +118,13 @@ from .workers import (
     SteamWebApiDiscoveryWorker,
     WolfApiDiscoveryWorker,
     WorkshopSubscriptionWorker,
+    WorkshopStateWorker,
 )
-from .workshop_subscription import current_workshop_item, workshop_recovery_state
+from .workshop_subscription import (
+    ITEM_STATE_DOWNLOADING,
+    current_workshop_item,
+    workshop_recovery_state,
+)
 
 
 class MainWindow(QMainWindow):
@@ -134,12 +142,14 @@ class MainWindow(QMainWindow):
         self.worker = None
         self.mod_worker = None
         self.workshop_subscription_worker = None
+        self.workshop_state_worker = None
         self.workshop_subscription_dialog = None
         self.workshop_subscription_monitor_hidden = False
         self.workshop_subscription_names = {}
         self.workshop_subscription_server_key = ""
         self.workshop_subscription_server = None
         self.active_discovered_server = None
+        self.active_discovered_cache_key = ""
         self.workshop_recovery_ids = ()
         self.launch_after_workshop_download = False
         self.discovery_worker = None
@@ -351,7 +361,7 @@ class MainWindow(QMainWindow):
         advanced_filters.addStretch(1)
         advanced_layout.addLayout(advanced_filters)
 
-        self.browser_table = QTableWidget(0, 14)
+        self.browser_table = QTableWidget(0, 15)
         self.browser_table.setHorizontalHeaderLabels([
             "Name",
             "Live Name",
@@ -364,6 +374,7 @@ class MainWindow(QMainWindow):
             "Ping",
             "Version",
             "Flags",
+            "Required Mods",
             "Last Checked",
             "Last Seen",
             "Source",
@@ -1051,6 +1062,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "No discovered server selected", "Select a discovered server first.")
             return None
         self.active_discovered_server = self.discovered_server_context(discovered)
+        self.active_discovered_cache_key = discovered.cache_key
         self.update_launch_button_text()
         return self.active_discovered_server
 
@@ -1625,6 +1637,7 @@ class MainWindow(QMainWindow):
 
     def handle_server_selection_changed(self):
         self.active_discovered_server = None
+        self.active_discovered_cache_key = ""
         self.update_launch_button_text()
         if not hasattr(self, "mod_summary"):
             return
@@ -1716,8 +1729,26 @@ class MainWindow(QMainWindow):
             return
 
         self.last_mod_result = result
+        self.update_discovered_required_mod_count(result)
         self.display_mods_result(result)
         self.update_workshop_recovery_state(result, install)
+
+    def update_discovered_required_mod_count(self, result: ModCheckResult):
+        cache_key = self.active_discovered_cache_key
+        if not result.ok or not cache_key:
+            return
+        discovered = server_cache.get_server(self.server_cache, cache_key)
+        if not discovered or server_key(result.server) != server_key(
+            self.discovered_server_context(discovered)
+        ):
+            return
+        count = len(result.required_mods)
+        if discovered.required_mod_count == count:
+            return
+        server_cache.upsert_server(
+            self.server_cache, replace(discovered, required_mod_count=count)
+        )
+        self.refresh_server_browser()
 
     def handle_mod_worker_finished(self):
         self.mod_worker = None
@@ -2245,6 +2276,8 @@ class MainWindow(QMainWindow):
         )
 
     def update_workshop_subscription_progress(self, snapshots):
+        if hasattr(self, "update_mod_progress_rows"):
+            self.update_mod_progress_rows(snapshots)
         dialog = self.workshop_subscription_dialog
         if not dialog or self.workshop_subscription_monitor_hidden or not snapshots:
             return
@@ -2266,6 +2299,51 @@ class MainWindow(QMainWindow):
             f"Steam has installed {installed} of {len(snapshots)} required item(s).{detail}"
         )
         dialog.setValue(progress)
+
+    def update_mod_progress_rows(self, snapshots):
+        result = self._selected_mod_result(successful=True)
+        if not result:
+            return
+        apply_workshop_item_states(result, snapshots)
+        mods = {mod.workshop_id: mod for mod in result.required_mods}
+        for row in range(self.mods_table.rowCount()):
+            id_item = self.mods_table.item(row, 2)
+            workshop_id = id_item.data(Qt.UserRole) if id_item else ""
+            mod = mods.get(str(workshop_id))
+            if not mod:
+                continue
+            row_data = mod_row(mod)
+            status_item = self.mods_table.item(row, 0)
+            size_item = self.mods_table.item(row, 3)
+            if status_item:
+                status_item.setText(row_data.values[0])
+                status_item.setForeground(QColor(row_data.status_colour))
+            if size_item:
+                size_item.setText(row_data.values[3])
+            snapshot = next(
+                (item for item in snapshots if item.workshop_id == mod.workshop_id),
+                None,
+            )
+            percent = snapshot.percent if snapshot else None
+            if (
+                snapshot
+                and snapshot.state & ITEM_STATE_DOWNLOADING
+                and percent is not None
+                and 0 <= percent < 100
+            ):
+                progress = self.mods_table.cellWidget(row, 0)
+                if not isinstance(progress, QProgressBar):
+                    progress = QProgressBar()
+                    progress.setTextVisible(True)
+                    progress.setStyleSheet(
+                        "QProgressBar { text-align: center; padding: 1px; } "
+                        "QProgressBar::chunk { background-color: #3da35a; }"
+                    )
+                    self.mods_table.setCellWidget(row, 0, progress)
+                progress.setValue(percent)
+                progress.setFormat(f"Downloading {percent}%")
+            else:
+                self.mods_table.removeCellWidget(row, 0)
 
     def finish_workshop_subscription(self, result):
         if self.workshop_subscription_dialog:
@@ -2357,6 +2435,9 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(0, self.launch_selected)
 
     def workshop_launch_block_reason(self) -> str:
+        state_worker = getattr(self, "workshop_state_worker", None)
+        if state_worker and state_worker.isRunning():
+            return "WolfLauncher is completing the final Steam Workshop readiness check."
         worker = self.workshop_subscription_worker
         if worker and worker.isRunning():
             return (
@@ -2512,6 +2593,69 @@ class MainWindow(QMainWindow):
 
         if not self.confirm_launch_preflight(server):
             return
+
+        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        result = usable_mod_result(
+            server, self.last_mod_result, install.workshop_dir if install else None
+        )
+        if (
+            bool(self.settings.get("experimental_workshop_subscription", False))
+            and install
+            and install.running
+            and result
+            and result.required_mods
+        ):
+            self.launch_button.setEnabled(False)
+            self.statusBar().showMessage("Verifying current Steam Workshop readiness before launch...")
+            self.workshop_state_worker = WorkshopStateWorker(
+                (mod.workshop_id for mod in result.required_mods), install
+            )
+            self.workshop_state_worker.state_ready.connect(
+                lambda state_result: self.finish_prelaunch_workshop_check(
+                    server, result, state_result
+                )
+            )
+            self.workshop_state_worker.finished.connect(
+                self.clear_workshop_state_worker
+            )
+            self.workshop_state_worker.start()
+            return
+
+        self.perform_launch(server)
+
+    def finish_prelaunch_workshop_check(self, server, result, state_result):
+        current = self.active_server_context()
+        if not current or server_key(current) != server_key(server):
+            QMessageBox.warning(
+                self, "Server selection changed", "Launch was cancelled because the active server changed."
+            )
+            return
+        if state_result.error:
+            QMessageBox.warning(
+                self,
+                "Workshop verification unavailable",
+                "WolfLauncher could not complete the final Steam Workshop readiness check, "
+                f"so launch was not started.\n\n{state_result.error}",
+            )
+            return
+        apply_workshop_item_states(result, state_result.items)
+        self.last_mod_result = result
+        self.display_mods_result(result)
+        if result.missing_mods:
+            QMessageBox.warning(
+                self,
+                "Workshop items not ready",
+                f"Steam reports {len(result.missing_mods)} required item(s) as update pending "
+                "or downloading. Review the Mods tab and resolve them before launching.",
+            )
+            return
+        self.perform_launch(server)
+
+    def clear_workshop_state_worker(self):
+        self.workshop_state_worker = None
+        self.launch_button.setEnabled(True)
+
+    def perform_launch(self, server: Server):
 
         try:
             command = self.build_selected_launch_command(server)

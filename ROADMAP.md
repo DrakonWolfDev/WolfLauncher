@@ -107,17 +107,17 @@ Priority 3 — Workshop readiness and information:
 - Completed — missing mods can be requested from the Mods tab or launch warning after explicit confirmation, with bounded retry for incomplete Steam download requests.
 - Completed — batch progress shows installed count, current mod name and percentage when Steam supplies it; successful completion offers the guarded **Launch server** continuation.
 - Completed — if Steam stops reporting any state, byte or directory progress for two minutes, the isolated helper exits with an explicit incomplete result so AppID 221100 is released instead of leaving DayZ shown as running until the full operation timeout.
-- In progress — normal experimental mod checks now query `ISteamUGC::GetItemState` through an isolated helper and launch preflight treats reported update/pending/downloading items as not ready; add a final fresh pre-handoff query so state cannot age between check and launch.
+- Completed — normal experimental mod checks and a final isolated pre-handoff query use `ISteamUGC::GetItemState`; launch is cancelled if the fresh result is unavailable or reports update/pending/downloading items.
 - Completed — when experimental Steam integration is enabled and Steam is running, the normal selected-server mod check performs a batch Workshop item-state check so **Installed**, **Update required**, **Download pending** and **Downloading** are represented honestly instead of treating directory presence as readiness.
 - Completed — Mods rows provide **Check/update this mod** through the same isolated Steam helper for targeted recovery, while the ordinary server-level check remains the primary way to validate the complete required set.
 - Completed — Mods rows and the Steam confirmation use Steam published-file metadata for pre-download sizes, switch to remaining transfer bytes once available, and label genuinely unavailable or partial totals explicitly.
-- Add per-mod queued/downloading/installing progress to Mods rows, gradually filling green and ending in the verified **Installed** state, while retaining the batch-level dialog.
+- Completed — Mods rows show queued/downloading/verifying states during the batch, with a green per-row progress bar when Steam supplies a percentage and the existing forced local recheck producing the final verified **Installed** state.
 - Completed — progress UI uses mod names with numeric Workshop IDs only as fallback/support detail.
-- Expose the required-mod count for a selected/discovered server where provider/API data permits it, without pretending an unknown count is zero.
+- Completed — discovered rows show required-mod counts supplied by providers or learned from a successful direct server mod check; unknown remains blank rather than being treated as zero.
 
 Priority 4 — discovery truth and regression coverage:
 
-- Investigate servers shown as online that fail a fresh live check; distinguish cached/provider claims from locally validated status and expose freshness honestly.
+- Completed — provider claims are shown in amber as **PROVIDER ONLINE/OFFLINE** with provenance guidance; successful or failed local enrichment changes the row to locally validated **ONLINE/OFFLINE** with its check timestamp.
 - Cover stopped Steam, Steam stopping mid-operation, partial completion, deleted/unavailable items, restart during downloads, secondary libraries, Flatpak Steam and launch-after-download in repeatable tests and the manual smoke checklist.
 
 Visual-polish review note:

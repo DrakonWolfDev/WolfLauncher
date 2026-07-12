@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added a final isolated Workshop state query before launch; unavailable or newly unready Steam state cancels handoff instead of trusting an older Mods result.
+- Added live Mods-row queued, downloading, percentage-bar and verifying states while retaining the batch dialog and final forced local verification.
+- Added optional required-mod counts to discovered rows from provider fields or successful direct mod inspection, preserving blank as unknown.
+- Distinguished amber provider-reported discovery status from green/red locally validated status and added status-basis details and tooltips.
+- Migrated the discovered-server cache to schema v2 for optional required-mod counts and status provenance while preserving existing caches.
 - Recorded a follow-up review of Mods-table spacing, alignment and density for the later fonts/theme/icons/branding visual-polish pass.
 - Improved Mods-table readability with padded cells and headers, slightly taller rows, centred compact status/ID/size columns and a URL column that uses the remaining width.
 - Simplified the Mods table to Status, Name, Workshop ID, Size and Workshop URL; removed duplicate name/notes columns, moved the URL last and now shows published sizes for installed as well as missing mods.

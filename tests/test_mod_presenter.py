@@ -42,6 +42,11 @@ class ModPresenterTests(unittest.TestCase):
         self.assertEqual(mod_row(update).values[0], "! Update required")
         self.assertEqual(mod_row(downloading).values[0], "↻ Downloading (25%)")
 
+    def test_steam_installed_state_waits_for_local_verification(self):
+        mod = RequiredMod("111", installed=False, workshop_state=ITEM_STATE_INSTALLED)
+
+        self.assertEqual(mod_row(mod).values[0], "… Verifying install")
+
     def test_download_sizes_distinguish_known_partial_and_unavailable_totals(self):
         known = RequiredMod("111", workshop_downloaded=1024, workshop_total=3072)
         unknown = RequiredMod("222")

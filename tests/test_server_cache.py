@@ -37,6 +37,21 @@ class ServerCacheTests(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "newer"):
             server_cache.connect(path)
 
+    def test_schema_v1_migrates_required_count_and_status_source(self):
+        connection = server_cache.sqlite3.connect(":memory:")
+        self.addCleanup(connection.close)
+        connection.execute("CREATE TABLE discovered_servers (cache_key TEXT PRIMARY KEY)")
+        connection.execute("PRAGMA user_version = 1")
+
+        server_cache.initialize(connection)
+
+        columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")
+        }
+        self.assertEqual(connection.execute("PRAGMA user_version").fetchone()[0], 2)
+        self.assertIn("required_mod_count", columns)
+        self.assertIn("status_source", columns)
+
     def test_upsert_and_get_server_round_trips_discovered_server(self):
         connection = self.open_cache()
         server = DiscoveredServer(
@@ -56,6 +71,8 @@ class ServerCacheTests(unittest.TestCase):
             online=True,
             last_checked="2026-06-20T12:00:00Z",
             last_seen="2026-06-20T12:00:00Z",
+            required_mod_count=12,
+            status_source="local",
         )
 
         server_cache.upsert_server(connection, server)

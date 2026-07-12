@@ -17,7 +17,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def test_population_preserves_display_sort_key_tooltip_and_status_colour(self):
-        table = QTableWidget(0, 14)
+        table = QTableWidget(0, 15)
         server = DiscoveredServer(
             name="Cached Name",
             server_name="Live Name",
@@ -28,6 +28,7 @@ class ServerBrowserTableTests(unittest.TestCase):
             players_max=60,
             ping_ms=42,
             online=True,
+            status_source="local",
         )
 
         populate_browser_table(table, [server])
@@ -43,12 +44,13 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertTrue(table.isSortingEnabled())
 
     def test_population_replaces_existing_rows_and_keeps_missing_ping_guidance(self):
-        table = QTableWidget(3, 14)
+        table = QTableWidget(3, 15)
         server = DiscoveredServer(
             name="Offline Server",
             host="203.0.113.11",
             game_port=2302,
             query_port=27016,
+            status_source="local",
         )
 
         populate_browser_table(table, [server])

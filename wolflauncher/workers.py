@@ -118,6 +118,20 @@ class WorkshopSubscriptionWorker(QThread):
         self.subscription_ready.emit(result)
 
 
+class WorkshopStateWorker(QThread):
+    state_ready = Signal(object)
+
+    def __init__(self, workshop_ids, install):
+        super().__init__()
+        self.workshop_ids = tuple(workshop_ids)
+        self.install = install
+
+    def run(self):
+        self.state_ready.emit(
+            query_workshop_item_states_isolated(self.workshop_ids, self.install)
+        )
+
+
 class SteamDiscoveryWorker(QThread):
     discovery_ready = Signal(object, str)
 
