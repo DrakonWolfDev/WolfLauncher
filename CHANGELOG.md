@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Recorded WolfAPI's observed 4 GB memory exhaustion as a cross-project release blocker and paused further normal-path browser architecture pending API profiling, full-payload removal and mixed 1,000-client load gates.
 - Made two-stage local-plus-remote server search and exact advertised-endpoint resolution explicit cross-project requirements, including indexed API search and honest unavailable/not-found states.
 - Extended the cross-project handoff with bounded WolfAPI required-mod metadata polling, honest unknown/zero/stale/failure semantics, a manifest detail endpoint and a full launcher-facing enrichment inventory.
 - Added a detailed cross-project discovery-freshness handoff defining the WolfAPI contract, validation semantics, launcher migration, rollout gates and acceptance criteria needed to replace fixed startup polling safely.

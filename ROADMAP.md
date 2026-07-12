@@ -132,6 +132,7 @@ Future discovery-freshness design problem:
 - Use `DISCOVERY_FRESHNESS_HANDOFF.md` as the cross-project implementation contract. WolfAPI already exposes preliminary live/freshness fields, but their semantics and persistence must be hardened before the launcher removes compatibility polling.
 - WolfAPI's matching contract now includes bounded required-mod metadata polling, nullable count/status fields, a full-manifest detail endpoint and the complete launcher-facing enrichment inventory; keep direct launcher lookup as selected-server/launch fallback.
 - Treat two-stage local-plus-remote search as a core scalability requirement: the first page is only a default view, while debounced indexed API search and exact host/port resolution must find rows anywhere in the canonical directory.
+- Pause further normal-path Server Browser architecture work until WolfAPI profiles/fixes its observed 4 GB memory exhaustion and provides the versioned paginated/search/freshness contract. Launcher-side selected-server, launch-safety, offline and unrelated work can continue independently.
 
 ## v0.9.9 - Packaging preparation
 

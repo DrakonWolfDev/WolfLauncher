@@ -15,6 +15,8 @@ Server discovery is the least settled part of WolfLauncher. The launcher current
 
 WolfAPI already has most of the backend foundation: Redis public serving, Postgres history, source observations, validation attempts, bounded A2S validation, freshness fields and health metrics. The next step is to harden that data into a stable public contract and make WolfLauncher consume it.
 
+Production subsequently exhausted WolfAPI's 4 GB container allocation and was temporarily increased to 8 GB. Memory profiling, removal of per-request full-directory work and a mixed 1,000-client load gate are now API release blockers. The detailed operation matrix and acceptance criteria live in WolfAPI `DISCOVERY_FRESHNESS_CONTRACT.md`.
+
 ## Target ownership model
 
 ### WolfAPI owns shared directory truth
@@ -222,11 +224,12 @@ Remote search must be indexed in Postgres or a dedicated search index. Scanning/
 ## Rollout and test checkpoint
 
 1. Implement and deploy WolfAPI contract correctness with legacy compatibility.
-2. Observe production freshness aging and validation coverage for at least several scheduler intervals.
-3. Capture real `/api/v1/servers` fixtures in WolfLauncher tests.
-4. Enable contract-driven presentation while retaining startup polling as fallback.
-5. Disable fixed polling only for supported/healthy contract responses.
-6. Run desktop/offline/slow-API tests.
-7. Remove fixed polling after the fallback has proven unnecessary.
+2. Complete API memory profiling and pass the agreed background-job plus 1,000-client load envelope.
+3. Observe production freshness aging and validation coverage for at least several scheduler intervals.
+4. Capture real `/api/v1/servers` fixtures in WolfLauncher tests.
+5. Enable contract-driven presentation while retaining startup polling as fallback.
+6. Disable fixed polling only for supported/healthy contract responses.
+7. Run desktop/offline/slow-API tests.
+8. Remove fixed polling after the fallback has proven unnecessary.
 
 This sequence is intentionally additive. WolfLauncher must never require a simultaneous WolfAPI deployment to remain usable.
