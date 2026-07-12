@@ -84,16 +84,16 @@ Status: in progress. Native hardening boundaries are established and the initial
 
 ### Experimental Workshop and join-flow hardening
 
-Real-world testing confirmed that Steam-native subscription works, including a 34-mod batch, but also exposed launch and workflow boundaries that must be resolved before the feature leaves experimental status.
+Real-world native-Steam testing confirmed subscription/download batches, isolated-helper cleanup and verified launch-after-download. Testing included a 34-mod subscription batch, a 61-mod lifecycle/stall investigation and successful post-fix multi-mod completion and launch. Flatpak and restart/recovery boundaries remain before the feature can leave experimental status.
 
 Priority 1 — safe Steam handoff:
 
-- Treat the post-download launch failure as reproducible: launching immediately after Workshop completion can leave Steam claiming DayZ is running while no DayZ process starts.
-- Release the WolfLauncher Steamworks context before launch, then verify that Steam has finished Workshop installation/finalization and that DayZ is no longer held in an application-busy state.
-- Use isolated-helper process exit as the post-download readiness boundary. Real-world retesting confirmed that the earlier fixed 10-second cooldown is unnecessary once Steamworks ownership is isolated.
-- Block or clearly defer launches while WolfLauncher's subscription worker is active or Steam is still processing the required Workshop set.
+- Completed — reproduced the post-download launch failure where Steam claimed DayZ was running without starting a DayZ process, then resolved it by moving Steamworks ownership out of the GUI process.
+- Completed — the Steamworks context now lives in an isolated helper process that must exit before launch is enabled; successful native-Steam launch-after-download is confirmed.
+- Completed — isolated-helper process exit is the readiness boundary. Real-world retesting confirmed that the earlier fixed 10-second cooldown was unnecessary.
+- Completed — launch is blocked while the subscription helper is active, and **Launch server** waits for helper exit plus a fresh all-installed mod check before handoff.
 - On restart, detect relevant outstanding Workshop activity where Steam exposes it and present an honest waiting/recovery state.
-- The unsafe **Stop monitoring** behavior was replaced with **Hide monitor**: the original helper keeps monitoring in the background, and reopening the install action returns to that same session. Do not add a Steam-cancellation claim unless a safe supported mechanism is verified.
+- Completed — the unsafe **Stop monitoring** behavior was replaced with **Hide monitor**: the original helper keeps monitoring in the background, hidden progress updates cannot reopen the dialog, and the install action returns to that same session.
 
 Priority 2 — direct discovered-server journey:
 
@@ -104,12 +104,14 @@ Priority 2 — direct discovered-server journey:
 
 Priority 3 — Workshop readiness and information:
 
+- Completed — missing mods can be requested from the Mods tab or launch warning after explicit confirmation, with bounded retry for incomplete Steam download requests.
+- Completed — batch progress shows installed count, current mod name and percentage when Steam supplies it; successful completion offers the guarded **Launch server** continuation.
 - Query `ISteamUGC::GetItemState` before launch so installed-but-outdated required items are distinguished from ready items; ask Steam to update and wait when needed.
 - When experimental Steam integration is enabled, extend the normal selected-server mod check with batch Workshop item-state checks so **Installed**, **Update required**, **Download pending** and **Downloading** are represented honestly instead of treating directory presence as readiness.
 - Add a Mods-row context action to **Check/update this mod** through Steam for targeted recovery, while keeping the ordinary server-level check as the primary way to validate the complete required set.
 - Show each missing mod's available download size and a combined estimate before confirmation, with an explicit unavailable/estimated state where Steam cannot supply reliable totals.
 - Add per-mod queued/downloading/installing progress to Mods rows, gradually filling green and ending in the verified **Installed** state, while retaining the batch-level dialog.
-- Continue using mod names in progress UI with numeric Workshop IDs only as fallback/support detail.
+- Completed — progress UI uses mod names with numeric Workshop IDs only as fallback/support detail.
 - Expose the required-mod count for a selected/discovered server where provider/API data permits it, without pretending an unknown count is zero.
 
 Priority 4 — discovery truth and regression coverage:
