@@ -2404,11 +2404,19 @@ class MainWindow(QMainWindow):
                         "build the DayZ mod command."
                     )
                     open_button = box.addButton("Open Workshop", QMessageBox.ButtonRole.ActionRole)
+                    install_button = None
+                    if bool(self.settings.get("experimental_workshop_subscription", False)):
+                        install_button = box.addButton(
+                            "Install missing mods", QMessageBox.ButtonRole.ActionRole
+                        )
                     cancel_button = box.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
                     box.setDefaultButton(cancel_button)
                     box.exec()
-                    if box.clickedButton() == open_button:
+                    clicked = box.clickedButton()
+                    if clicked == open_button:
                         self.open_missing_workshop_pages()
+                    elif install_button is not None and clicked == install_button:
+                        self.subscribe_missing_workshop_mods()
                     return False
 
                 box = QMessageBox(self)
@@ -2419,6 +2427,11 @@ class MainWindow(QMainWindow):
                     f"{names}\n\nOpen the missing Workshop page(s), launch anyway, or cancel?"
                 )
                 open_button = box.addButton("Open Workshop", QMessageBox.ButtonRole.ActionRole)
+                install_button = None
+                if bool(self.settings.get("experimental_workshop_subscription", False)):
+                    install_button = box.addButton(
+                        "Install missing mods", QMessageBox.ButtonRole.ActionRole
+                    )
                 launch_button = box.addButton("Launch anyway", QMessageBox.ButtonRole.DestructiveRole)
                 cancel_button = box.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
                 box.setDefaultButton(cancel_button)
@@ -2426,6 +2439,9 @@ class MainWindow(QMainWindow):
                 clicked = box.clickedButton()
                 if clicked == open_button:
                     self.open_missing_workshop_pages()
+                    return False
+                if install_button is not None and clicked == install_button:
+                    self.subscribe_missing_workshop_mods()
                     return False
                 if clicked != launch_button:
                     return False
