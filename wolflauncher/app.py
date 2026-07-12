@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QComboBox,
     QMenu,
     QPushButton,
+    QProgressDialog,
     QSpinBox,
     QTabWidget,
     QTableWidget,
@@ -113,6 +114,7 @@ from .workers import (
     SteamDiscoveryWorker,
     SteamWebApiDiscoveryWorker,
     WolfApiDiscoveryWorker,
+    WorkshopSubscriptionWorker,
 )
 
 
@@ -130,6 +132,10 @@ class MainWindow(QMainWindow):
         self.favourites = load_favourites()
         self.worker = None
         self.mod_worker = None
+        self.workshop_subscription_worker = None
+        self.workshop_subscription_dialog = None
+        self.workshop_subscription_names = {}
+        self.workshop_launch_settling = False
         self.discovery_worker = None
         self.web_api_worker = None
         self.battlemetrics_worker = None
@@ -424,11 +430,14 @@ class MainWindow(QMainWindow):
         open_selected.clicked.connect(self.open_selected_workshop_page)
         open_missing = QPushButton("Open missing Workshop pages")
         open_missing.clicked.connect(self.open_missing_workshop_pages)
+        self.subscribe_missing_button = QPushButton("Subscribe to missing mods (experimental)")
+        self.subscribe_missing_button.clicked.connect(self.subscribe_missing_workshop_mods)
         buttons.addWidget(check)
         self.mod_filter = QComboBox()
         self.mod_filter.addItems(["All mods", "Missing only", "Installed only"])
         self.mod_filter.currentTextChanged.connect(self.apply_mod_filter)
         buttons.addWidget(open_missing)
+        buttons.addWidget(self.subscribe_missing_button)
         buttons.addStretch(1)
         buttons.addWidget(QLabel("Filter"))
         buttons.addWidget(self.mod_filter)
@@ -555,6 +564,18 @@ class MainWindow(QMainWindow):
         self.discovery_auto_refresh.setChecked(bool(self.settings.get("discovery_auto_refresh", False)))
         self.discovery_auto_refresh.stateChanged.connect(self.handle_settings_changed)
         discovery_settings.addRow("Automatic refresh", self.discovery_auto_refresh)
+
+        self.experimental_workshop_subscription = QCheckBox(
+            "Enable Steam-native subscription controls (experimental)"
+        )
+        self.experimental_workshop_subscription.setChecked(
+            bool(self.settings.get("experimental_workshop_subscription", False))
+        )
+        self.experimental_workshop_subscription.stateChanged.connect(
+            self.handle_experimental_workshop_subscription_changed
+        )
+        discovery_settings.addRow("Workshop subscription", self.experimental_workshop_subscription)
+        self.update_experimental_workshop_controls()
 
         self.steam_web_api_key = QLineEdit(
             str(self.settings.get("steam_web_api_key") or "")
@@ -1055,6 +1076,19 @@ class MainWindow(QMainWindow):
         self.save_user_settings(silent=True)
         self.update_settings_health()
 
+    def handle_experimental_workshop_subscription_changed(self, *_args):
+        self.update_experimental_workshop_controls()
+        self.handle_settings_changed()
+
+    def update_experimental_workshop_controls(self):
+        enabled = (
+            self.experimental_workshop_subscription.isChecked()
+            if hasattr(self, "experimental_workshop_subscription")
+            else bool(self.settings.get("experimental_workshop_subscription", False))
+        )
+        if hasattr(self, "subscribe_missing_button"):
+            self.subscribe_missing_button.setVisible(enabled)
+
     def handle_launch_engine_changed(self, *_args):
         MainWindow._recheck_after_mod_context_change(
             self,
@@ -1111,6 +1145,9 @@ class MainWindow(QMainWindow):
             "discovery_auto_refresh": self.discovery_auto_refresh.isChecked()
             if hasattr(self, "discovery_auto_refresh")
             else bool(self.settings.get("discovery_auto_refresh", False)),
+            "experimental_workshop_subscription": self.experimental_workshop_subscription.isChecked()
+            if hasattr(self, "experimental_workshop_subscription")
+            else bool(self.settings.get("experimental_workshop_subscription", False)),
             "steam_web_api_key": self.steam_web_api_key.text().strip()
             if hasattr(self, "steam_web_api_key")
             else str(self.settings.get("steam_web_api_key") or ""),
@@ -1929,6 +1966,169 @@ class MainWindow(QMainWindow):
         for mod in missing:
             QDesktopServices.openUrl(QUrl(mod.workshop_url))
 
+    def subscribe_missing_workshop_mods(self):
+        if not bool(self.settings.get("experimental_workshop_subscription", False)):
+            QMessageBox.information(
+                self,
+                "Experimental feature disabled",
+                "Enable Steam-native subscription controls in Settings first.",
+            )
+            return
+        result = self._selected_mod_result(successful=True)
+        if not result:
+            QMessageBox.warning(
+                self,
+                "No mod check yet",
+                "Check the selected server mods successfully before subscribing.",
+            )
+            return
+        missing = result.missing_mods
+        if not missing:
+            QMessageBox.information(self, "No missing mods", "All required mods appear to be installed.")
+            return
+        if self.workshop_subscription_worker and self.workshop_subscription_worker.isRunning():
+            QMessageBox.information(
+                self, "Subscription already running", "Steam is already processing Workshop items."
+            )
+            return
+
+        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        if not install or not install.workshop_dir:
+            QMessageBox.warning(
+                self,
+                "Steam installation unavailable",
+                "WolfLauncher could not find the selected Steam/DayZ Workshop installation.",
+            )
+            return
+        if not install.running:
+            QMessageBox.warning(
+                self,
+                "Steam is not running",
+                f"{install_label(install)} is currently not running.\n\n"
+                "Open Steam, sign in to an account that owns DayZ, then try subscribing again.",
+            )
+            return
+        names = "\n".join(f"- {mod.name or mod.workshop_id}" for mod in missing[:12])
+        if len(missing) > 12:
+            names += f"\n- ...and {len(missing) - 12} more"
+        reply = QMessageBox.question(
+            self,
+            "Subscribe using Steam?",
+            f"Steam will add {len(missing)} item(s) to your DayZ Workshop subscriptions "
+            f"and download them using the signed-in Steam account.\n\n{names}\n\n"
+            "This feature is experimental. Continue?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if reply != QMessageBox.Yes:
+            return
+
+        ids = [mod.workshop_id for mod in missing]
+        self.workshop_subscription_names = {
+            mod.workshop_id: (mod.name or mod.workshop_id) for mod in missing
+        }
+        self.workshop_subscription_dialog = QProgressDialog(
+            "Sending subscriptions to Steam...", "Stop monitoring", 0, 100, self
+        )
+        self.workshop_subscription_dialog.setWindowTitle("Steam Workshop (experimental)")
+        self.workshop_subscription_dialog.setMinimumDuration(0)
+        self.workshop_subscription_dialog.setAutoClose(False)
+        self.workshop_subscription_dialog.setAutoReset(False)
+
+        self.workshop_subscription_worker = WorkshopSubscriptionWorker(ids, install)
+        self.workshop_subscription_worker.progress_ready.connect(
+            self.update_workshop_subscription_progress
+        )
+        self.workshop_subscription_worker.subscription_ready.connect(
+            self.finish_workshop_subscription
+        )
+        self.workshop_subscription_worker.finished.connect(
+            self.clear_workshop_subscription_worker
+        )
+        self.workshop_subscription_dialog.canceled.connect(
+            self.workshop_subscription_worker.cancel
+        )
+        self.launch_button.setEnabled(False)
+        self.workshop_subscription_worker.start()
+
+    def update_workshop_subscription_progress(self, snapshots):
+        dialog = self.workshop_subscription_dialog
+        if not dialog or not snapshots:
+            return
+        installed = sum(1 for item in snapshots if item.installed)
+        known = [item.percent for item in snapshots if item.percent is not None]
+        progress = int(sum(known) / len(known)) if known else int(installed * 100 / len(snapshots))
+        active = next((item for item in snapshots if not item.installed), None)
+        detail = ""
+        if active:
+            item_name = self.workshop_subscription_names.get(
+                active.workshop_id, active.workshop_id
+            )
+            detail = f" Current item: {item_name}"
+            if active.percent is not None:
+                detail += f" ({active.percent}%)"
+        dialog.setLabelText(
+            f"Steam has installed {installed} of {len(snapshots)} required item(s).{detail}"
+        )
+        dialog.setValue(progress)
+
+    def finish_workshop_subscription(self, result):
+        if self.workshop_subscription_dialog:
+            self.workshop_subscription_dialog.close()
+            self.workshop_subscription_dialog = None
+        if result.ok:
+            self.workshop_launch_settling = True
+            self.launch_button.setEnabled(False)
+            QTimer.singleShot(10_000, self.finish_workshop_launch_settling)
+            QMessageBox.information(
+                self,
+                "Workshop items installed",
+                f"Steam installed all {len(result.installed_ids)} required Workshop item(s).\n\n"
+                "WolfLauncher has released its Steamworks connection and will allow launch "
+                "after a short 10-second Steam settling period.",
+            )
+        elif result.cancelled:
+            self.statusBar().showMessage(
+                "Stopped waiting for Steam; subscriptions and Steam downloads may continue.", 8000
+            )
+        else:
+            QMessageBox.warning(
+                self,
+                "Steam Workshop incomplete",
+                (result.error or "Steam did not install every requested Workshop item.")
+                + "\n\nYou can still use the manual Workshop links.",
+            )
+        self.workshop_subscription_names = {}
+        self.check_selected_server_mods(force=True)
+
+    def clear_workshop_subscription_worker(self):
+        self.workshop_subscription_worker = None
+        if not self.workshop_launch_settling:
+            self.launch_button.setEnabled(True)
+
+    def finish_workshop_launch_settling(self):
+        self.workshop_launch_settling = False
+        worker = self.workshop_subscription_worker
+        self.launch_button.setEnabled(not worker or not worker.isRunning())
+        self.statusBar().showMessage(
+            "Steam Workshop settling period finished; launch is available.", 5000
+        )
+
+    def workshop_launch_block_reason(self) -> str:
+        worker = self.workshop_subscription_worker
+        if worker and worker.isRunning():
+            return (
+                "Steam is still processing the required Workshop items. Wait for monitoring "
+                "to finish, or choose Stop monitoring and wait for the worker to close its "
+                "Steamworks connection."
+            )
+        if self.workshop_launch_settling:
+            return (
+                "Steam has finished reporting the Workshop items, but its short post-download "
+                "settling period is still active. Try launching again in a few seconds."
+            )
+        return ""
+
     def _selected_mod_result(self, *, successful: bool = False) -> ModCheckResult | None:
         row = self.table.currentRow()
         if row < 0 or row >= len(self.servers):
@@ -2053,6 +2253,12 @@ class MainWindow(QMainWindow):
         self.health_table.setItem(row, column, item)
 
     def launch_selected(self):
+        workshop_block = self.workshop_launch_block_reason()
+        if workshop_block:
+            QMessageBox.information(
+                self, "Steam Workshop still settling", workshop_block
+            )
+            return
         row = self.table.currentRow()
         if row < 0:
             QMessageBox.warning(self, "No server selected", "Select a server first.")

@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
+import threading
 
 from PySide6.QtCore import QThread, Signal
 
@@ -13,6 +14,10 @@ from .server_discovery import (
 )
 from .server_enrichment import enrich_discovered_server, enrichment_probe_servers
 from .status import ServerStatus, check_server
+from .workshop_subscription import (
+    WorkshopSubscriptionResult,
+    subscribe_workshop_items,
+)
 
 
 MAX_STATUS_WORKERS = 8
@@ -63,6 +68,34 @@ class ModWorker(QThread):
 
     def run(self):
         self.mods_ready.emit(check_server_mods(self.server, self.workshop_dir, self.steam_context))
+
+
+class WorkshopSubscriptionWorker(QThread):
+    progress_ready = Signal(object)
+    subscription_ready = Signal(object)
+
+    def __init__(self, workshop_ids: list[str], install):
+        super().__init__()
+        self.workshop_ids = list(workshop_ids)
+        self.install = install
+        self._cancelled = threading.Event()
+
+    def cancel(self):
+        self._cancelled.set()
+
+    def run(self):
+        try:
+            result = subscribe_workshop_items(
+                self.workshop_ids,
+                self.install,
+                progress_callback=self.progress_ready.emit,
+                cancelled=self._cancelled,
+            )
+        except Exception as exc:
+            result = WorkshopSubscriptionResult(
+                (), tuple(self.workshop_ids), error=str(exc)
+            )
+        self.subscription_ready.emit(result)
 
 
 class SteamDiscoveryWorker(QThread):

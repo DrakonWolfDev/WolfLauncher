@@ -59,5 +59,37 @@ class ModContextChangeTests(unittest.TestCase):
         )
 
 
+class WorkshopLaunchReadinessTests(unittest.TestCase):
+    def test_running_subscription_worker_blocks_launch(self):
+        worker = Mock()
+        worker.isRunning.return_value = True
+        window = SimpleNamespace(
+            workshop_subscription_worker=worker,
+            workshop_launch_settling=False,
+        )
+
+        reason = MainWindow.workshop_launch_block_reason(window)
+
+        self.assertIn("still processing", reason)
+
+    def test_post_download_settling_blocks_launch(self):
+        window = SimpleNamespace(
+            workshop_subscription_worker=None,
+            workshop_launch_settling=True,
+        )
+
+        reason = MainWindow.workshop_launch_block_reason(window)
+
+        self.assertIn("settling period", reason)
+
+    def test_idle_workshop_state_allows_launch(self):
+        window = SimpleNamespace(
+            workshop_subscription_worker=None,
+            workshop_launch_settling=False,
+        )
+
+        self.assertEqual(MainWindow.workshop_launch_block_reason(window), "")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -47,7 +47,7 @@ Status: complete. Native launch parity has been validated in real-world use and 
 - Build an internal launcher-engine module behind the existing GUI workflow. Completed for compact mod symlink names, mod link preparation, launch previews, native handoff and Steam command generation.
 - Reproduce the current external launcher command behaviour with test coverage.
 - Direct Steam/Proton launch handling has been validated for native and Flatpak Steam, with Steam running and stopped, and with unmodded, fully modded and partially missing-mod servers.
-- Investigate Steam Workshop mod installation routes, with Steam-native subscription/download flows preferred over custom file management.
+- Investigate Steam Workshop mod installation routes, with Steam-native subscription/download flows preferred over custom file management. An opt-in ISteamUGC experiment now delegates confirmed subscriptions/downloads to the running Steam client; native and Flatpak real-world hardening remains.
 - Keep the external launcher path as a visible fallback during native hardening.
 
 ## v0.8.x - WolfAPI discovery quality and submissions
@@ -81,6 +81,39 @@ Status: in progress. Native hardening boundaries are established and the initial
 - Improve structured launch errors and user-facing diagnostics.
 - Add regression tests for launch command generation, host resolution and Steam mode detection.
   Current coverage includes resolved external/native targets, DNS failures, non-default ports, player-name argument safety, native/Flatpak/`STEAM_ROOT` selection and deterministic complete-install priority.
+
+### Experimental Workshop and join-flow hardening
+
+Real-world testing confirmed that Steam-native subscription works, including a 34-mod batch, but also exposed launch and workflow boundaries that must be resolved before the feature leaves experimental status.
+
+Priority 1 — safe Steam handoff:
+
+- Treat the post-download launch failure as reproducible: launching immediately after Workshop completion can leave Steam claiming DayZ is running while no DayZ process starts.
+- Release the WolfLauncher Steamworks context before launch, then verify that Steam has finished Workshop installation/finalization and that DayZ is no longer held in an application-busy state.
+- Add a bounded post-download readiness/cooldown state instead of enabling immediate launch from directory presence alone.
+- Block or clearly defer launches while WolfLauncher's subscription worker is active or Steam is still processing the required Workshop set.
+- On restart, detect relevant outstanding Workshop activity where Steam exposes it and present an honest waiting/recovery state.
+- **Stop monitoring** now honestly states that accepted Steam subscriptions/downloads continue; it only ends WolfLauncher's wait. Do not add a Steam-cancellation claim unless a safe supported mechanism is verified.
+
+Priority 2 — direct discovered-server journey:
+
+- Allow a discovered Server Browser row to become the active server context for mod checking, subscription and launch without first writing it to curated YAML.
+- Keep the user in one coherent select → inspect → resolve mods → launch flow, with the selected server identity preserved across background work.
+- Define **Promote to curated** as an optional persistence/favourite action, not a prerequisite for trying or joining a server.
+- Preserve local curated YAML as the user-owned saved-server source while remote discovered rows remain read-only.
+
+Priority 3 — Workshop readiness and information:
+
+- Query `ISteamUGC::GetItemState` before launch so installed-but-outdated required items are distinguished from ready items; ask Steam to update and wait when needed.
+- Show each missing mod's available download size and a combined estimate before confirmation, with an explicit unavailable/estimated state where Steam cannot supply reliable totals.
+- Add per-mod queued/downloading/installing progress to Mods rows, gradually filling green and ending in the verified **Installed** state, while retaining the batch-level dialog.
+- Continue using mod names in progress UI with numeric Workshop IDs only as fallback/support detail.
+- Expose the required-mod count for a selected/discovered server where provider/API data permits it, without pretending an unknown count is zero.
+
+Priority 4 — discovery truth and regression coverage:
+
+- Investigate servers shown as online that fail a fresh live check; distinguish cached/provider claims from locally validated status and expose freshness honestly.
+- Cover stopped Steam, Steam stopping mid-operation, partial completion, deleted/unavailable items, restart during downloads, secondary libraries, Flatpak Steam and launch-after-download in repeatable tests and the manual smoke checklist.
 
 ## v0.9.9 - Packaging preparation
 

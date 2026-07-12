@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Recorded the real-world experimental Workshop hardening roadmap: post-download launch readiness, honest stop-monitoring semantics, direct discovered-server checking/launching, update checks, size/progress presentation and discovery-status truth.
+- Added an opt-in experimental Steam-native Workshop subscription flow for missing DayZ mods, with explicit account-change confirmation, per-item download monitoring, cancellation of waiting, local-directory verification and manual-link fallback.
+- Added a minimal `ctypes` ISteamUGC adapter that dynamically loads Valve's existing 64-bit Steam API redistributable from the selected Steam installation; WolfLauncher does not vendor the proprietary library or create a persistent `steam_appid.txt`.
+- Added an early selected-client warning when experimental Workshop subscription is requested while Steam is stopped, before opening the confirmation or progress flow.
+- Changed experimental Workshop progress to show the required mod name instead of a numeric Workshop ID when server metadata provides one.
+- Renamed the Workshop dialog action to **Stop monitoring**, blocked launch while the Steamworks worker is active, and added a short post-download settling boundary after the Steamworks context is released.
 - Made native/external launch-engine changes invalidate and quietly recheck the selected server's mods using the newly authoritative Steam/Workshop context, matching Steam install mode changes.
 - Made Steam install mode changes deterministically start or queue a quiet forced mod recheck, instead of leaving the Mods tab waiting when the previous lookup had already finished.
 - Bound cached mod results to both the selected server and Workshop directory, preventing an in-flight check from an old Steam install mode being accepted after the mode changes and queuing a fresh check for the current context.

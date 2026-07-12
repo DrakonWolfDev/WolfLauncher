@@ -155,7 +155,7 @@ Selected server
   -> display installed/missing mods and Workshop links
 ```
 
-The mod manager is advisory. It detects and opens Workshop pages, but does not subscribe, download or mutate Workshop content.
+The normal mod-manager path remains read-only and advisory. An explicitly enabled experimental path can pass missing IDs to the signed-in Steam client through `ISteamUGC` after a per-operation confirmation. `workshop_subscription.py` dynamically loads the existing official `libsteam_api.so`, monitors Steam state and treats the Workshop directories as final readiness evidence. It does not download bytes itself, silently unsubscribe, or remove content; manual Workshop pages remain the fallback.
 The Mods tab can copy a timestamped mod-check report with server target, required
 mod counts, installed/missing state, Workshop URLs and missing Workshop IDs for
 native parity testing and support. It can also copy only the missing Workshop
