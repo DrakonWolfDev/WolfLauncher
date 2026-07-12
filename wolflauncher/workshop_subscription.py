@@ -7,7 +7,9 @@ existing Steam installation.  WolfLauncher does not vendor or modify it.
 from __future__ import annotations
 
 import ctypes
+import multiprocessing
 import os
+import queue
 import threading
 import time
 from dataclasses import dataclass
@@ -281,3 +283,99 @@ def subscribe_workshop_items(
                     client.request_download(snapshot.workshop_id)
                     download_requested.add(snapshot.workshop_id)
             time.sleep(poll_seconds)
+
+
+def _subscription_process_main(
+    workshop_ids: tuple[str, ...],
+    install: SteamInstall,
+    messages,
+    cancelled,
+    timeout_seconds: float,
+    poll_seconds: float,
+) -> None:
+    """Own Steamworks in a disposable process so Steam sees a hard shutdown."""
+    try:
+        result = subscribe_workshop_items(
+            workshop_ids,
+            install,
+            progress_callback=lambda snapshots: messages.put(("progress", snapshots)),
+            cancelled=cancelled,
+            timeout_seconds=timeout_seconds,
+            poll_seconds=poll_seconds,
+        )
+    except Exception as exc:
+        result = WorkshopSubscriptionResult(
+            (), workshop_ids, error=str(exc)
+        )
+    messages.put(("result", result))
+
+
+def subscribe_workshop_items_isolated(
+    workshop_ids: Iterable[str],
+    install: SteamInstall,
+    *,
+    progress_callback: Callable[[tuple[WorkshopItemProgress, ...]], None] | None = None,
+    cancelled: threading.Event | None = None,
+    timeout_seconds: float = 1800,
+    poll_seconds: float = 0.5,
+) -> WorkshopSubscriptionResult:
+    """Run the Steamworks session in a spawned process and wait for its exit.
+
+    Steam associates ``SteamAPI_InitSafe`` with DayZ's app ID. Keeping that API
+    loaded in WolfLauncher's long-lived GUI process can leave Steam treating
+    DayZ as busy after Workshop completion. A spawned helper provides an
+    unambiguous process-lifetime boundary before launch is enabled again.
+    """
+    ids = tuple(dict.fromkeys(str(item).strip() for item in workshop_ids if str(item).strip()))
+    if not ids:
+        return WorkshopSubscriptionResult((), ())
+
+    context = multiprocessing.get_context("spawn")
+    messages = context.Queue()
+    process_cancelled = context.Event()
+    process = context.Process(
+        target=_subscription_process_main,
+        args=(
+            ids,
+            install,
+            messages,
+            process_cancelled,
+            timeout_seconds,
+            poll_seconds,
+        ),
+        name="wolflauncher-steam-workshop",
+    )
+    process.start()
+    result: WorkshopSubscriptionResult | None = None
+    try:
+        while result is None:
+            if cancelled and cancelled.is_set():
+                process_cancelled.set()
+            try:
+                message_type, payload = messages.get(timeout=0.1)
+            except queue.Empty:
+                if not process.is_alive():
+                    break
+                continue
+            if message_type == "progress" and progress_callback:
+                progress_callback(payload)
+            elif message_type == "result":
+                result = payload
+    finally:
+        process.join(timeout=5)
+        if process.is_alive():
+            process.terminate()
+            process.join(timeout=5)
+        messages.close()
+        messages.join_thread()
+
+    if result is not None:
+        return result
+    return WorkshopSubscriptionResult(
+        (),
+        ids,
+        error=(
+            "The isolated Steam Workshop helper exited without a result "
+            f"(exit code {process.exitcode})."
+        ),
+    )

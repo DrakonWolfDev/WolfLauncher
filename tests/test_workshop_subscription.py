@@ -15,6 +15,7 @@ from wolflauncher.workshop_subscription import (
     find_steam_api_library,
     steam_api_library_candidates,
     subscribe_workshop_items,
+    subscribe_workshop_items_isolated,
 )
 
 
@@ -161,6 +162,18 @@ class SubscribeWorkshopItemsTests(unittest.TestCase):
             install = install_for(root, root / "workshop")
             with self.assertRaisesRegex(WorkshopSubscriptionError, "invalid Workshop ID"):
                 subscribe_workshop_items(["not-an-id"], install)
+
+    def test_isolated_helper_returns_child_error_after_process_exit(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            install = install_for(root, root / "workshop")
+
+            result = subscribe_workshop_items_isolated(
+                ["not-an-id"], install, poll_seconds=0
+            )
+
+        self.assertIn("invalid Workshop ID", result.error)
+        self.assertEqual(result.incomplete_ids, ("not-an-id",))
 
 
 if __name__ == "__main__":

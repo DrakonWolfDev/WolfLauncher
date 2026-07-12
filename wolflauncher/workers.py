@@ -16,7 +16,7 @@ from .server_enrichment import enrich_discovered_server, enrichment_probe_server
 from .status import ServerStatus, check_server
 from .workshop_subscription import (
     WorkshopSubscriptionResult,
-    subscribe_workshop_items,
+    subscribe_workshop_items_isolated,
 )
 
 
@@ -85,7 +85,7 @@ class WorkshopSubscriptionWorker(QThread):
 
     def run(self):
         try:
-            result = subscribe_workshop_items(
+            result = subscribe_workshop_items_isolated(
                 self.workshop_ids,
                 self.install,
                 progress_callback=self.progress_ready.emit,
