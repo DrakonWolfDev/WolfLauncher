@@ -106,6 +106,7 @@ Priority 3 — Workshop readiness and information:
 
 - Completed — missing mods can be requested from the Mods tab or launch warning after explicit confirmation, with bounded retry for incomplete Steam download requests.
 - Completed — batch progress shows installed count, current mod name and percentage when Steam supplies it; successful completion offers the guarded **Launch server** continuation.
+- Completed — if Steam stops reporting any state, byte or directory progress for two minutes, the isolated helper exits with an explicit incomplete result so AppID 221100 is released instead of leaving DayZ shown as running until the full operation timeout.
 - In progress — normal experimental mod checks now query `ISteamUGC::GetItemState` through an isolated helper and launch preflight treats reported update/pending/downloading items as not ready; add a final fresh pre-handoff query so state cannot age between check and launch.
 - Completed — when experimental Steam integration is enabled and Steam is running, the normal selected-server mod check performs a batch Workshop item-state check so **Installed**, **Update required**, **Download pending** and **Downloading** are represented honestly instead of treating directory presence as readiness.
 - Completed — Mods rows provide **Check/update this mod** through the same isolated Steam helper for targeted recovery, while the ordinary server-level check remains the primary way to validate the complete required set.

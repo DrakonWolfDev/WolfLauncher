@@ -27,6 +27,7 @@ ITEM_STATE_NEEDS_UPDATE = 8
 ITEM_STATE_DOWNLOADING = 16
 ITEM_STATE_DOWNLOAD_PENDING = 32
 DOWNLOAD_REQUEST_RETRY_SECONDS = 15.0
+WORKSHOP_STALL_TIMEOUT_SECONDS = 120.0
 
 
 def silence_helper_output() -> None:
@@ -322,6 +323,7 @@ def subscribe_workshop_items(
     progress_callback: Callable[[tuple[WorkshopItemProgress, ...]], None] | None = None,
     cancelled: threading.Event | None = None,
     timeout_seconds: float = 1800,
+    stall_timeout_seconds: float = WORKSHOP_STALL_TIMEOUT_SECONDS,
     poll_seconds: float = 0.5,
 ) -> WorkshopSubscriptionResult:
     """Subscribe through Steam and wait until local item directories are ready."""
@@ -341,6 +343,8 @@ def subscribe_workshop_items(
 
     cancel_event = cancelled or threading.Event()
     started = time.monotonic()
+    last_activity = started
+    previous_signature = None
     download_requested_at: dict[str, float] = {}
     with SteamWorkshopClient(library_path) as client:
         for workshop_id in ids:
@@ -360,13 +364,27 @@ def subscribe_workshop_items(
             )
             if len(installed) == len(ids):
                 return WorkshopSubscriptionResult(installed, ())
+            signature = tuple(
+                (
+                    item.workshop_id,
+                    item.state,
+                    item.downloaded,
+                    item.total,
+                    (install.workshop_dir / item.workshop_id).is_dir(),
+                )
+                for item in snapshots
+            )
+            now = time.monotonic()
+            if signature != previous_signature:
+                previous_signature = signature
+                last_activity = now
             if cancel_event.is_set():
                 return WorkshopSubscriptionResult(
                     installed,
                     tuple(item for item in ids if item not in installed),
                     cancelled=True,
                 )
-            if time.monotonic() - started >= timeout_seconds:
+            if now - started >= timeout_seconds:
                 incomplete = tuple(item for item in ids if item not in installed)
                 return WorkshopSubscriptionResult(
                     installed,
@@ -374,6 +392,18 @@ def subscribe_workshop_items(
                     error=(
                         "Steam did not finish installing every Workshop item before the timeout. "
                         f"Still incomplete: {', '.join(incomplete)}."
+                    ),
+                )
+            if now - last_activity >= stall_timeout_seconds:
+                incomplete = tuple(item for item in ids if item not in installed)
+                return WorkshopSubscriptionResult(
+                    installed,
+                    incomplete,
+                    error=(
+                        "Steam stopped reporting Workshop progress, so WolfLauncher released "
+                        "the Steam helper instead of continuing to hold DayZ as running. "
+                        f"Still incomplete: {', '.join(incomplete)}. Check Steam Downloads "
+                        "and use Recheck mods before retrying."
                     ),
                 )
 
@@ -460,6 +490,7 @@ def _subscription_process_main(
     messages,
     cancelled,
     timeout_seconds: float,
+    stall_timeout_seconds: float,
     poll_seconds: float,
 ) -> None:
     """Own Steamworks in a disposable process so Steam sees a hard shutdown."""
@@ -472,6 +503,7 @@ def _subscription_process_main(
             progress_callback=lambda snapshots: messages.put(("progress", snapshots)),
             cancelled=cancelled,
             timeout_seconds=timeout_seconds,
+            stall_timeout_seconds=stall_timeout_seconds,
             poll_seconds=poll_seconds,
         )
     except Exception as exc:
@@ -488,6 +520,7 @@ def subscribe_workshop_items_isolated(
     progress_callback: Callable[[tuple[WorkshopItemProgress, ...]], None] | None = None,
     cancelled: threading.Event | None = None,
     timeout_seconds: float = 1800,
+    stall_timeout_seconds: float = WORKSHOP_STALL_TIMEOUT_SECONDS,
     poll_seconds: float = 0.5,
 ) -> WorkshopSubscriptionResult:
     """Run the Steamworks session in a spawned process and wait for its exit.
@@ -512,6 +545,7 @@ def subscribe_workshop_items_isolated(
             messages,
             process_cancelled,
             timeout_seconds,
+            stall_timeout_seconds,
             poll_seconds,
         ),
         name="wolflauncher-steam-workshop",

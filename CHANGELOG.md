@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added a two-minute no-progress boundary for Workshop resolution so Steam states stuck incomplete with no active downloads return an explicit fallback result and release AppID 221100 instead of holding DayZ as running for the full 30-minute timeout.
 - Fixed Workshop progress keeping the first unresolved mod name while Steam downloaded later items; current-item text now follows Steam's downloading/progress/pending state and reports an honest waiting state otherwise.
 - Silenced repetitive native SteamAPI breakpad, Steam ID and library-load console messages inside disposable Workshop helper processes while preserving structured progress and errors.
 - Added isolated batch `ISteamUGC::GetItemState` checks to the experimental normal mod workflow, distinguishing ready, update-required, download-pending and downloading items and preventing reported unready items from passing launch preflight.

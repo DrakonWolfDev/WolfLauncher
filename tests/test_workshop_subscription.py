@@ -267,6 +267,31 @@ class SubscribeWorkshopItemsTests(unittest.TestCase):
         self.assertTrue(result.cancelled)
         self.assertEqual(FakeWorkshopClient.downloads, ["111", "111"])
 
+    def test_stalled_items_release_helper_with_incomplete_result(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workshop = root / "workshop"
+            workshop.mkdir()
+            install = install_for(root, workshop)
+            FakeWorkshopClient.snapshots = [
+                {"111": WorkshopItemProgress("111", ITEM_STATE_SUBSCRIBED)}
+            ]
+            with patch(
+                "wolflauncher.workshop_subscription.find_steam_api_library",
+                return_value=root / "libsteam_api.so",
+            ), patch(
+                "wolflauncher.workshop_subscription.SteamWorkshopClient",
+                FakeWorkshopClient,
+            ):
+                result = subscribe_workshop_items(
+                    ["111"], install, stall_timeout_seconds=0, poll_seconds=0
+                )
+
+        self.assertFalse(result.ok)
+        self.assertEqual(result.incomplete_ids, ("111",))
+        self.assertIn("released the Steam helper", result.error)
+        self.assertIn("Recheck mods", result.error)
+
     def test_rejects_invalid_workshop_id_before_loading_steam(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)
