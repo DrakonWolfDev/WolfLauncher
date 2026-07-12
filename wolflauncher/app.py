@@ -134,6 +134,7 @@ class MainWindow(QMainWindow):
         self.mod_worker = None
         self.workshop_subscription_worker = None
         self.workshop_subscription_dialog = None
+        self.workshop_subscription_monitor_hidden = False
         self.workshop_subscription_names = {}
         self.discovery_worker = None
         self.web_api_worker = None
@@ -1987,6 +1988,7 @@ class MainWindow(QMainWindow):
             return
         if self.workshop_subscription_worker and self.workshop_subscription_worker.isRunning():
             if self.workshop_subscription_dialog:
+                self.workshop_subscription_monitor_hidden = False
                 self.workshop_subscription_dialog.show()
                 self.workshop_subscription_dialog.raise_()
                 self.workshop_subscription_dialog.activateWindow()
@@ -2038,6 +2040,7 @@ class MainWindow(QMainWindow):
         self.workshop_subscription_dialog.setMinimumDuration(0)
         self.workshop_subscription_dialog.setAutoClose(False)
         self.workshop_subscription_dialog.setAutoReset(False)
+        self.workshop_subscription_monitor_hidden = False
 
         self.workshop_subscription_worker = WorkshopSubscriptionWorker(ids, install)
         self.workshop_subscription_worker.progress_ready.connect(
@@ -2056,6 +2059,7 @@ class MainWindow(QMainWindow):
         self.workshop_subscription_worker.start()
 
     def stop_workshop_subscription_monitoring(self):
+        self.workshop_subscription_monitor_hidden = True
         if self.workshop_subscription_dialog:
             self.workshop_subscription_dialog.hide()
         self.statusBar().showMessage(
@@ -2066,7 +2070,7 @@ class MainWindow(QMainWindow):
 
     def update_workshop_subscription_progress(self, snapshots):
         dialog = self.workshop_subscription_dialog
-        if not dialog or not snapshots:
+        if not dialog or self.workshop_subscription_monitor_hidden or not snapshots:
             return
         installed = sum(1 for item in snapshots if item.installed)
         known = [item.percent for item in snapshots if item.percent is not None]
@@ -2089,14 +2093,15 @@ class MainWindow(QMainWindow):
         if self.workshop_subscription_dialog:
             self.workshop_subscription_dialog.close()
             self.workshop_subscription_dialog = None
+        self.workshop_subscription_monitor_hidden = False
         if result.ok:
             self.launch_button.setEnabled(False)
+            installed_count = len(result.installed_ids)
+            noun = "mod" if installed_count == 1 else "mods"
             QMessageBox.information(
                 self,
-                "Workshop items installed",
-                f"Steam installed all {len(result.installed_ids)} required Workshop item(s).\n\n"
-                "The isolated Steamworks helper has finished. Launch will be available as "
-                "soon as its worker closes.",
+                "Mod download complete",
+                f"{installed_count} required {noun} downloaded successfully.",
             )
         elif result.cancelled:
             self.statusBar().showMessage(

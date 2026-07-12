@@ -83,13 +83,27 @@ class WorkshopLaunchReadinessTests(unittest.TestCase):
         status_bar = Mock()
         window = SimpleNamespace(
             workshop_subscription_dialog=dialog,
+            workshop_subscription_monitor_hidden=False,
             statusBar=Mock(return_value=status_bar),
         )
 
         MainWindow.stop_workshop_subscription_monitoring(window)
 
+        self.assertTrue(window.workshop_subscription_monitor_hidden)
         dialog.hide.assert_called_once_with()
         status_bar.showMessage.assert_called_once()
+
+    def test_hidden_monitor_ignores_progress_dialog_updates(self):
+        dialog = Mock()
+        window = SimpleNamespace(
+            workshop_subscription_dialog=dialog,
+            workshop_subscription_monitor_hidden=True,
+        )
+
+        MainWindow.update_workshop_subscription_progress(window, [object()])
+
+        dialog.setLabelText.assert_not_called()
+        dialog.setValue.assert_not_called()
 
 
 if __name__ == "__main__":
