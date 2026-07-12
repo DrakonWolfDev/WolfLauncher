@@ -4,6 +4,11 @@ from unittest.mock import Mock
 
 from wolflauncher.app import MainWindow
 from wolflauncher.models import DiscoveredServer, Server
+from wolflauncher.workshop_subscription import (
+    ITEM_STATE_DOWNLOADING,
+    ITEM_STATE_SUBSCRIBED,
+    WorkshopItemProgress,
+)
 
 
 def window_state(worker=None):
@@ -114,6 +119,24 @@ class ModContextChangeTests(unittest.TestCase):
 
 
 class WorkshopLaunchReadinessTests(unittest.TestCase):
+    def test_progress_dialog_names_the_item_steam_is_downloading(self):
+        dialog = Mock()
+        window = SimpleNamespace(
+            workshop_subscription_dialog=dialog,
+            workshop_subscription_monitor_hidden=False,
+            workshop_subscription_names={"111": "Stalled", "222": "Active Mod"},
+        )
+        snapshots = [
+            WorkshopItemProgress("111", ITEM_STATE_SUBSCRIBED),
+            WorkshopItemProgress("222", ITEM_STATE_DOWNLOADING, 30, 100),
+        ]
+
+        MainWindow.update_workshop_subscription_progress(window, snapshots)
+
+        label = dialog.setLabelText.call_args.args[0]
+        self.assertIn("Current item: Active Mod (30%)", label)
+        self.assertNotIn("Stalled", label)
+
     def test_running_subscription_worker_blocks_launch(self):
         worker = Mock()
         worker.isRunning.return_value = True

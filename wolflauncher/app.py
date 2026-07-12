@@ -116,7 +116,7 @@ from .workers import (
     WolfApiDiscoveryWorker,
     WorkshopSubscriptionWorker,
 )
-from .workshop_subscription import workshop_recovery_state
+from .workshop_subscription import current_workshop_item, workshop_recovery_state
 
 
 class MainWindow(QMainWindow):
@@ -2240,7 +2240,7 @@ class MainWindow(QMainWindow):
         installed = sum(1 for item in snapshots if item.installed)
         known = [item.percent for item in snapshots if item.percent is not None]
         progress = int(sum(known) / len(known)) if known else int(installed * 100 / len(snapshots))
-        active = next((item for item in snapshots if not item.installed), None)
+        active = current_workshop_item(snapshots)
         detail = ""
         if active:
             item_name = self.workshop_subscription_names.get(
@@ -2249,6 +2249,8 @@ class MainWindow(QMainWindow):
             detail = f" Current item: {item_name}"
             if active.percent is not None:
                 detail += f" ({active.percent}%)"
+        elif installed < len(snapshots):
+            detail = " Waiting for Steam to start the next item."
         dialog.setLabelText(
             f"Steam has installed {installed} of {len(snapshots)} required item(s).{detail}"
         )

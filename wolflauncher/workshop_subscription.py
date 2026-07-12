@@ -69,6 +69,26 @@ class WorkshopItemProgress:
         return min(100, int(self.downloaded * 100 / self.total))
 
 
+def current_workshop_item(
+    snapshots: Iterable[WorkshopItemProgress],
+) -> WorkshopItemProgress | None:
+    """Return the item Steam most clearly identifies as current work."""
+    incomplete = [item for item in snapshots if not item.installed]
+    downloading = [item for item in incomplete if item.state & ITEM_STATE_DOWNLOADING]
+    if downloading:
+        return max(downloading, key=lambda item: item.downloaded)
+    measurable = [
+        item for item in incomplete
+        if item.percent is not None and 0 < item.downloaded < item.total
+    ]
+    if measurable:
+        return max(measurable, key=lambda item: item.downloaded)
+    return next(
+        (item for item in incomplete if item.state & ITEM_STATE_DOWNLOAD_PENDING),
+        None,
+    )
+
+
 @dataclass(frozen=True)
 class WorkshopSubscriptionResult:
     installed_ids: tuple[str, ...]

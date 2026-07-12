@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed Workshop progress keeping the first unresolved mod name while Steam downloaded later items; current-item text now follows Steam's downloading/progress/pending state and reports an honest waiting state otherwise.
 - Silenced repetitive native SteamAPI breakpad, Steam ID and library-load console messages inside disposable Workshop helper processes while preserving structured progress and errors.
 - Added isolated batch `ISteamUGC::GetItemState` checks to the experimental normal mod workflow, distinguishing ready, update-required, download-pending and downloading items and preventing reported unready items from passing launch preflight.
 - Added an experimental Mods-row **Check/update this mod** recovery action that reuses the isolated Steam resolution and verified post-download recheck flow for one required item.

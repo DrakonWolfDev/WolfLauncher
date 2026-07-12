@@ -8,12 +8,14 @@ from unittest.mock import patch
 from wolflauncher.platform_detection import SteamInstall
 from wolflauncher.workshop_subscription import (
     ITEM_STATE_DOWNLOADING,
+    ITEM_STATE_DOWNLOAD_PENDING,
     ITEM_STATE_INSTALLED,
     ITEM_STATE_NEEDS_UPDATE,
     ITEM_STATE_SUBSCRIBED,
     SteamWorkshopClient,
     WorkshopItemProgress,
     WorkshopStateResult,
+    current_workshop_item,
     WorkshopSubscriptionError,
     find_steam_api_library,
     query_workshop_item_states,
@@ -51,6 +53,20 @@ class WorkshopItemProgressTests(unittest.TestCase):
         )
 
         self.assertFalse(progress.installed)
+
+    def test_current_item_prefers_downloading_over_first_unresolved(self):
+        snapshots = [
+            WorkshopItemProgress("stalled", ITEM_STATE_SUBSCRIBED),
+            WorkshopItemProgress("active", ITEM_STATE_DOWNLOADING, 25, 100),
+            WorkshopItemProgress("pending", ITEM_STATE_DOWNLOAD_PENDING),
+        ]
+
+        self.assertEqual(current_workshop_item(snapshots).workshop_id, "active")
+
+    def test_current_item_does_not_claim_arbitrary_unresolved_item(self):
+        snapshots = [WorkshopItemProgress("stalled", ITEM_STATE_SUBSCRIBED)]
+
+        self.assertIsNone(current_workshop_item(snapshots))
 
 
 class SteamApiLibraryTests(unittest.TestCase):
