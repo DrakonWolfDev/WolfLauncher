@@ -497,6 +497,12 @@ class MainWindow(QMainWindow):
         self.mods_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.mods_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.mods_table.setSortingEnabled(True)
+        self.mods_table.setStyleSheet(
+            "QTableWidget::item { padding: 4px 8px; } "
+            "QHeaderView::section { padding: 4px 8px; }"
+        )
+        self.mods_table.verticalHeader().setDefaultSectionSize(30)
+        self.mods_table.horizontalHeader().setStretchLastSection(True)
         self.mods_table.cellDoubleClicked.connect(self.handle_mod_double_clicked)
         self.mods_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.mods_table.customContextMenuRequested.connect(self.show_mod_context_menu)
@@ -1746,6 +1752,8 @@ class MainWindow(QMainWindow):
             for column, value in enumerate(row_data.values):
                 item = QTableWidgetItem(value)
                 item.setData(Qt.UserRole, row_data.workshop_id)
+                if column in {0, 2, 3}:
+                    item.setTextAlignment(Qt.AlignCenter)
                 if column == 0:
                     item.setForeground(QColor(row_data.status_colour))
                 self.mods_table.setItem(row, column, item)
