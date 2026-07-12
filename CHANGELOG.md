@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Recorded fixed startup server polling as a future discovery-freshness design problem, with viewport demand, validation age, bounded background budgets and stable WolfAPI signals identified as better directions.
 - Made enrichment apply results in top-to-bottom browser order, atomically replace obsolete keys after live port correction, and automatically enrich the first 30 filtered/sorted rows at most once per day.
 - Made visible-server enrichment bounded and parallel with incremental progress/cache updates, preventing a 200-row batch from appearing frozen behind sequential query timeouts.
 - Clarified blank discovered required-mod counts as provider-unknown values with an **Inspect mods** recovery tooltip.

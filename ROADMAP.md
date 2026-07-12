@@ -125,6 +125,11 @@ Visual-polish review note:
 
 - Recheck the Mods table after fonts, theme, colours, icons and branding are introduced. Review column padding, row height, compact-column centring, name/URL balance and overall information density in the final visual system.
 
+Future discovery-freshness design problem:
+
+- Replace fixed startup enrichment batches with a less clunky freshness strategy. Explore validation-age scheduling, viewport/on-demand checks, small background budgets, reuse of recent local results and stable WolfAPI freshness/validation fields so opening WolfLauncher does not repeatedly poll a predetermined set of servers.
+- Preserve honest provider-vs-local status while avoiding unnecessary queries for rows that are off-screen, recently validated or unlikely to be used. Any future scheduler should remain quiet, bounded, cancellable and resilient when providers or individual servers are slow.
+
 ## v0.9.9 - Packaging preparation
 
 - Explore AppImage.
