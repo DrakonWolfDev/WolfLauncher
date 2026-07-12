@@ -83,7 +83,7 @@ from .mods import (
     format_missing_workshop_links,
     format_mod_check_report,
 )
-from .mod_presenter import mod_row, mod_summary_text
+from .mod_presenter import combined_download_estimate, mod_download_size, mod_row, mod_summary_text
 from . import server_cache
 from .server_discovery import parse_master_address
 from .server_enrichment import (
@@ -486,13 +486,14 @@ class MainWindow(QMainWindow):
             False,
         )
 
-        self.mods_table = QTableWidget(0, 6)
+        self.mods_table = QTableWidget(0, 7)
         self.mods_table.setHorizontalHeaderLabels([
             "Installed",
             "Workshop ID",
             "Required Name",
             "Installed Name",
             "Workshop URL",
+            "Download",
             "Notes",
         ])
         self.mods_table.setSelectionBehavior(QTableWidget.SelectRows)
@@ -2130,7 +2131,10 @@ class MainWindow(QMainWindow):
                 "Open Steam, sign in to an account that owns DayZ, then try subscribing again.",
             )
             return
-        names = "\n".join(f"- {mod.name or mod.workshop_id}" for mod in missing[:12])
+        names = "\n".join(
+            f"- {mod.name or mod.workshop_id} — {mod_download_size(mod)}"
+            for mod in missing[:12]
+        )
         if len(missing) > 12:
             names += f"\n- ...and {len(missing) - 12} more"
         update_count = len(result.update_mods)
@@ -2142,6 +2146,7 @@ class MainWindow(QMainWindow):
             f"({absent_count} missing, {update_count} update/pending) using the signed-in "
             f"Steam account. Missing items will be subscribed; existing items will be "
             f"asked to update.\n\n{names}\n\n"
+            f"{combined_download_estimate(missing)}\n\n"
             "This feature is experimental. Continue?",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,

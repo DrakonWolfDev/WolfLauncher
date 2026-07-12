@@ -1,6 +1,12 @@
 import unittest
 
-from wolflauncher.mod_presenter import mod_result_context, mod_row, mod_summary_text
+from wolflauncher.mod_presenter import (
+    combined_download_estimate,
+    mod_download_size,
+    mod_result_context,
+    mod_row,
+    mod_summary_text,
+)
 from wolflauncher.models import Server
 from wolflauncher.mods import ModCheckResult, RequiredMod
 from wolflauncher.workshop_subscription import (
@@ -34,7 +40,28 @@ class ModPresenterTests(unittest.TestCase):
 
         self.assertEqual(mod_row(update).values[0], "! Update required")
         self.assertEqual(mod_row(downloading).values[0], "↻ Downloading")
-        self.assertIn("25%", mod_row(downloading).values[5])
+        self.assertIn("25%", mod_row(downloading).values[6])
+
+    def test_download_sizes_distinguish_known_partial_and_unavailable_totals(self):
+        known = RequiredMod("111", workshop_downloaded=1024, workshop_total=3072)
+        unknown = RequiredMod("222")
+
+        self.assertEqual(mod_download_size(known), "2.0 KiB")
+        self.assertEqual(mod_download_size(unknown), "Unavailable")
+        estimate = combined_download_estimate([known, unknown])
+        self.assertIn("Known remaining download: 2.0 KiB", estimate)
+        self.assertIn("size unavailable for 1 item", estimate)
+
+    def test_download_estimate_reports_complete_known_total(self):
+        mods = [
+            RequiredMod("111", workshop_total=1024),
+            RequiredMod("222", workshop_total=1024),
+        ]
+
+        self.assertEqual(
+            combined_download_estimate(mods),
+            "Estimated remaining download: 2.0 KiB.",
+        )
 
     def test_context_combines_steam_install_and_workshop_path(self):
         result = make_result(
@@ -90,12 +117,13 @@ class ModPresenterTests(unittest.TestCase):
 
         self.assertEqual(installed.values, [
             "✓ Installed", "111", "Required Name", "Local Name",
-            "https://example.test/111", "Installed",
+            "https://example.test/111", "—", "Installed",
         ])
         self.assertEqual(installed.workshop_id, "111")
         self.assertEqual(installed.status_colour, "#6ee16e")
         self.assertEqual(missing.values[0:3], ["✗ Missing", "222", "Unknown"])
-        self.assertIn("subscribe", missing.values[5])
+        self.assertEqual(missing.values[5], "Unavailable")
+        self.assertIn("subscribe", missing.values[6])
         self.assertEqual(missing.status_colour, "#ff6b6b")
 
 

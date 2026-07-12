@@ -110,7 +110,7 @@ Priority 3 — Workshop readiness and information:
 - In progress — normal experimental mod checks now query `ISteamUGC::GetItemState` through an isolated helper and launch preflight treats reported update/pending/downloading items as not ready; add a final fresh pre-handoff query so state cannot age between check and launch.
 - Completed — when experimental Steam integration is enabled and Steam is running, the normal selected-server mod check performs a batch Workshop item-state check so **Installed**, **Update required**, **Download pending** and **Downloading** are represented honestly instead of treating directory presence as readiness.
 - Completed — Mods rows provide **Check/update this mod** through the same isolated Steam helper for targeted recovery, while the ordinary server-level check remains the primary way to validate the complete required set.
-- Show each missing mod's available download size and a combined estimate before confirmation, with an explicit unavailable/estimated state where Steam cannot supply reliable totals.
+- Completed — Mods rows and the Steam confirmation show each unready mod's remaining download size when Steam supplies it plus a combined known estimate; unavailable and partial totals are labelled explicitly rather than presented as complete.
 - Add per-mod queued/downloading/installing progress to Mods rows, gradually filling green and ending in the verified **Installed** state, while retaining the batch-level dialog.
 - Completed — progress UI uses mod names with numeric Workshop IDs only as fallback/support detail.
 - Expose the required-mod count for a selected/discovered server where provider/API data permits it, without pretending an unknown count is zero.

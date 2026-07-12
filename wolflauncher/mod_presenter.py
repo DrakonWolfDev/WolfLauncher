@@ -10,6 +10,35 @@ class ModRow:
     status_colour: str
 
 
+def format_byte_size(size: int) -> str:
+    value = float(max(0, size))
+    for unit in ("B", "KiB", "MiB", "GiB", "TiB"):
+        if value < 1024 or unit == "TiB":
+            return f"{value:.1f} {unit}" if unit != "B" else f"{int(value)} B"
+        value /= 1024
+    return "Unavailable"
+
+
+def mod_download_size(mod: RequiredMod) -> str:
+    if mod.workshop_total <= 0:
+        return "Unavailable"
+    return format_byte_size(max(0, mod.workshop_total - mod.workshop_downloaded))
+
+
+def combined_download_estimate(mods: list[RequiredMod]) -> str:
+    known = [mod for mod in mods if mod.workshop_total > 0]
+    unknown = len(mods) - len(known)
+    if not known:
+        return f"Download size unavailable for all {len(mods)} item(s)."
+    total = sum(max(0, mod.workshop_total - mod.workshop_downloaded) for mod in known)
+    if unknown:
+        return (
+            f"Known remaining download: {format_byte_size(total)} across {len(known)} item(s); "
+            f"size unavailable for {unknown} item(s)."
+        )
+    return f"Estimated remaining download: {format_byte_size(total)}."
+
+
 def mod_result_context(result: ModCheckResult) -> str:
     parts = []
     if result.steam_context:
@@ -81,6 +110,7 @@ def mod_row(mod: RequiredMod) -> ModRow:
             mod.name or "Unknown",
             mod.installed_name or "",
             mod.workshop_url,
+            mod_download_size(mod) if not mod.ready else "—",
             detail,
         ],
         workshop_id=mod.workshop_id,
