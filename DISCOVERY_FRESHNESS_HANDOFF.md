@@ -148,6 +148,27 @@ Only after the scheduler is stable, consider a heavily rate-limited validation-r
 
 ## WolfLauncher implementation breakdown
 
+### Two-stage search is a core requirement
+
+The initial API page is only the default view; it must not limit what players can find.
+
+1. Search SQLite immediately on every edit for responsive offline/local results.
+2. After a 300–500 ms debounce and a sensible minimum query length, search WolfAPI's complete canonical directory.
+3. Ignore/cancel superseded requests and limit remote results to roughly 25–50.
+4. Merge returned rows into SQLite by stable `server_id`, then endpoint fallback for legacy rows.
+5. Label/handle three outcomes separately: found locally, found remotely, and not found remotely.
+6. Distinguish “not found” from “remote search unavailable”; API failure must not imply the server does not exist.
+7. Support exact host/game-port/query-port resolution for advertised servers and keep **Add server manually** as the final fallback.
+
+Required API shapes:
+
+```text
+GET /api/v1/servers/search?q=&limit=&cursor=
+GET /api/v1/servers/resolve?host=&game_port=&query_port=
+```
+
+Remote search must be indexed in Postgres or a dedicated search index. Scanning/deserializing the complete Redis JSON payload per keystroke is not acceptable. Cache repeated queries, apply public rate limits and use ETags where useful.
+
 ### Phase 1 — additive parsing
 
 - Extend `DiscoveredServer` and SQLite with the stable ID, provider timestamps, validation status/timestamps, freshness expiry, quality flags and data update timestamp.
@@ -192,6 +213,8 @@ Only after the scheduler is stable, consider a heavily rate-limited validation-r
 - With a healthy v1 response, opening Server Browser performs no automatic per-server UDP polling.
 - Rows remain useful offline from SQLite with their captured timestamps.
 - Old API responses still load and retain the current compatibility path.
+- A server outside the initial page can be found through remote name search or exact endpoint resolution and cached locally.
+- “No remote result” and “remote search unavailable” are distinct tested states.
 - Unknown freshness/mod counts remain visibly unknown.
 - Selecting or launching a server still performs the safety-critical local work already required by those flows.
 - No provider/API outage blocks curated servers or launcher startup.
