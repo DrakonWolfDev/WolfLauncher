@@ -117,6 +117,8 @@ The v0.6 SQLite foundation stores discovered public servers separately from cura
 
 WolfAPI should be treated as the companion hosted discovery service, not as the launcher source of truth. Its public contract for WolfLauncher is `/api/servers`; `/api/health` is useful for diagnostics and support snapshots. As of the current WolfAPI work, Redis remains the hot public cache, Postgres stores durable canonical/history tables, scheduled Steam/BattleMetrics/live-validation jobs update Redis, and Postgres-to-Redis publishing remains a manual recovery operation. Launcher-side features should stay resilient when WolfAPI is unavailable, preserve the local SQLite cache and curated YAML promotion flow, and request explicit stable API fields before depending on source freshness, validation, quality or future submission metadata.
 
+The planned transition from launcher polling to API-owned directory freshness is specified in `DISCOVERY_FRESHNESS_HANDOFF.md`. It preserves local selected-server/launch checks and offline cache use while moving shared validation age, provenance, canonical identity and scheduling responsibility into a stable WolfAPI contract.
+
 ## Server Status
 
 Flow:
