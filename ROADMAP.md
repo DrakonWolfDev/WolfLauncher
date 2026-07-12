@@ -120,6 +120,10 @@ Priority 4 — discovery truth and regression coverage:
 - Investigate servers shown as online that fail a fresh live check; distinguish cached/provider claims from locally validated status and expose freshness honestly.
 - Cover stopped Steam, Steam stopping mid-operation, partial completion, deleted/unavailable items, restart during downloads, secondary libraries, Flatpak Steam and launch-after-download in repeatable tests and the manual smoke checklist.
 
+Visual-polish review note:
+
+- Recheck the Mods table after fonts, theme, colours, icons and branding are introduced. Review column padding, row height, compact-column centring, name/URL balance and overall information density in the final visual system.
+
 ## v0.9.9 - Packaging preparation
 
 - Explore AppImage.
