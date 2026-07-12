@@ -16,6 +16,7 @@ from wolflauncher.workshop_subscription import (
     steam_api_library_candidates,
     subscribe_workshop_items,
     subscribe_workshop_items_isolated,
+    workshop_recovery_state,
 )
 
 
@@ -56,6 +57,33 @@ class SteamApiLibraryTests(unittest.TestCase):
             install = install_for(root, root / "workshop")
 
             self.assertEqual(find_steam_api_library(install), library)
+
+
+class WorkshopRecoveryStateTests(unittest.TestCase):
+    def test_reports_only_relevant_numeric_staged_items(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            steamapps = Path(temp_dir) / "steamapps"
+            staging = steamapps / "workshop/downloads/221100"
+            staging.mkdir(parents=True)
+            for name in ("111", "222", "not-an-item"):
+                (staging / name).mkdir()
+            install = install_for(Path(temp_dir), Path(temp_dir) / "workshop")
+            install.steamapps = steamapps
+            install.library_steamapps = [steamapps]
+
+            state = workshop_recovery_state(install, ["222", "333"])
+
+        self.assertTrue(state.active)
+        self.assertEqual(state.item_ids, ("222",))
+        self.assertEqual(state.staging_dirs, (str(staging),))
+
+    def test_missing_staging_area_is_not_reported_as_activity(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            install = install_for(Path(temp_dir), Path(temp_dir) / "workshop")
+
+            state = workshop_recovery_state(install, ["111"])
+
+        self.assertFalse(state.active)
 
 
 class FakeWorkshopClient:

@@ -60,7 +60,7 @@ from .launch_preflight import (
     usable_mod_result,
 )
 from .launch_selection import server_with_resolved_ipv4
-from .models import Server
+from .models import DiscoveredServer, Server
 from .native_launcher import (
     NativeLaunchError,
     format_native_launch_parity_report,
@@ -116,6 +116,7 @@ from .workers import (
     WolfApiDiscoveryWorker,
     WorkshopSubscriptionWorker,
 )
+from .workshop_subscription import workshop_recovery_state
 
 
 class MainWindow(QMainWindow):
@@ -137,6 +138,9 @@ class MainWindow(QMainWindow):
         self.workshop_subscription_monitor_hidden = False
         self.workshop_subscription_names = {}
         self.workshop_subscription_server_key = ""
+        self.workshop_subscription_server = None
+        self.active_discovered_server = None
+        self.workshop_recovery_ids = ()
         self.launch_after_workshop_download = False
         self.discovery_worker = None
         self.web_api_worker = None
@@ -146,6 +150,7 @@ class MainWindow(QMainWindow):
         self.last_mod_result = None
         self.active_mod_server_key = ""
         self.pending_mod_check_row = None
+        self.pending_mod_server = None
         self.browser_servers = []
         self.server_cache = server_cache.connect()
 
@@ -378,6 +383,10 @@ class MainWindow(QMainWindow):
         self.enrich_visible_button.clicked.connect(self.enrich_visible_discovered_servers)
         promote = QPushButton("Promote to curated")
         promote.clicked.connect(self.promote_selected_discovered_server)
+        use_server = QPushButton("Inspect mods")
+        use_server.clicked.connect(self.inspect_selected_discovered_server)
+        launch_discovered = QPushButton("Launch server")
+        launch_discovered.clicked.connect(self.launch_selected_discovered_server)
         clear_filters = QPushButton("Reset filters")
         clear_filters.clicked.connect(self.reset_browser_filters)
         refresh = QPushButton("Refresh cache view")
@@ -392,6 +401,8 @@ class MainWindow(QMainWindow):
         buttons.addWidget(self.browser_advanced_toggle)
         buttons.addStretch(1)
         buttons.addWidget(promote)
+        buttons.addWidget(use_server)
+        buttons.addWidget(launch_discovered)
         buttons.addWidget(clear_filters)
         layout.addLayout(buttons)
         layout.addWidget(self.browser_advanced_panel)
@@ -1017,6 +1028,42 @@ class MainWindow(QMainWindow):
             return None
         return server_cache.get_server(self.server_cache, str(cache_key))
 
+    @staticmethod
+    def discovered_server_context(server: DiscoveredServer) -> Server:
+        """Create a read-only, in-memory launch context from a discovered row."""
+        return Server(
+            name=server.server_name or server.name or server.connect_target,
+            group="Discovered (read-only)",
+            host=server.host,
+            game_port=server.game_port,
+            query_port=server.query_port,
+            favourite=False,
+        )
+
+    def activate_selected_discovered_server(self) -> Server | None:
+        discovered = self.selected_discovered_server()
+        if not discovered:
+            QMessageBox.warning(self, "No discovered server selected", "Select a discovered server first.")
+            return None
+        self.active_discovered_server = self.discovered_server_context(discovered)
+        self.update_launch_button_text()
+        return self.active_discovered_server
+
+    def inspect_selected_discovered_server(self):
+        server = self.activate_selected_discovered_server()
+        if server:
+            self.check_server_mods(server, force=True)
+
+    def launch_selected_discovered_server(self):
+        if self.activate_selected_discovered_server():
+            self.launch_selected()
+
+    def active_server_context(self) -> Server | None:
+        if self.active_discovered_server is not None:
+            return self.active_discovered_server
+        row = self.table.currentRow()
+        return self.servers[row] if 0 <= row < len(self.servers) else None
+
     def apply_refresh_timer(self):
         seconds = self.refresh_seconds.value()
         if seconds <= 0:
@@ -1105,6 +1152,7 @@ class MainWindow(QMainWindow):
 
     def _recheck_after_mod_context_change(self, message: str):
         self.last_mod_result = None
+        self.workshop_recovery_ids = ()
         if hasattr(self, "mod_summary"):
             self.mod_summary.setText(message)
         if hasattr(self, "mods_table"):
@@ -1556,9 +1604,9 @@ class MainWindow(QMainWindow):
     def update_launch_button_text(self):
         if not hasattr(self, "launch_button"):
             return
-        row = self.table.currentRow()
-        if row >= 0 and row < len(self.servers):
-            self.launch_button.setText(f"Launch {self.servers[row].name}")
+        server = self.active_server_context()
+        if server:
+            self.launch_button.setText(f"Launch {server.name}")
         else:
             self.launch_button.setText("Launch selected server")
 
@@ -1570,25 +1618,29 @@ class MainWindow(QMainWindow):
         self.check_selected_server_mods(silent=True)
 
     def handle_server_selection_changed(self):
+        self.active_discovered_server = None
         self.update_launch_button_text()
         if not hasattr(self, "mod_summary"):
             return
         self.check_selected_server_mods(silent=True)
 
     def check_selected_server_mods(self, silent: bool = False, force: bool = False):
-        row = self.table.currentRow()
-        if row < 0:
+        server = self.active_server_context()
+        if not server:
             if not silent:
                 QMessageBox.warning(self, "No server selected", "Select a server first.")
             return
 
-        self.check_server_mods_for_row(row, silent=silent, force=force)
+        self.check_server_mods(server, silent=silent, force=force)
 
     def check_server_mods_for_row(self, row: int, silent: bool = False, force: bool = False):
         if row < 0 or row >= len(self.servers):
             return
 
         server = self.servers[row]
+        self.check_server_mods(server, silent=silent, force=force)
+
+    def check_server_mods(self, server: Server, silent: bool = False, force: bool = False):
         if not hasattr(self, "mod_summary") or not hasattr(self, "mods_table"):
             return
         selected_key = server_key(server)
@@ -1598,16 +1650,18 @@ class MainWindow(QMainWindow):
         if not force and cached_mod_result:
             if self.mods_table.rowCount() == 0:
                 self.display_mods_result(cached_mod_result)
+            self.update_workshop_recovery_state(cached_mod_result, install)
             return
 
         if self.mod_worker and self.mod_worker.isRunning():
             if self.active_mod_server_key != selected_key:
-                self.pending_mod_check_row = row
+                self.pending_mod_server = server
             return
 
         steam_context = self.mod_check_steam_context(install)
         if not workshop_dir:
             self.last_mod_result = None
+            self.workshop_recovery_ids = ()
             self.mod_summary.setText(
                 f"Workshop folder not detected for {steam_context or 'the current launch mode'}. "
                 "Open Settings health to check the selected Steam install."
@@ -1622,9 +1676,11 @@ class MainWindow(QMainWindow):
             return
 
         self.mod_summary.setText(f"Checking required mods for {server.name}. {steam_context}.")
+        self.workshop_recovery_ids = ()
         self.mods_table.setRowCount(0)
         self.active_mod_server_key = selected_key
         self.pending_mod_check_row = None
+        self.pending_mod_server = None
         self.mod_worker = ModWorker(server, workshop_dir, steam_context)
         self.mod_worker.mods_ready.connect(self.update_mods_table)
         self.mod_worker.finished.connect(self.maybe_launch_after_workshop_download)
@@ -1632,22 +1688,34 @@ class MainWindow(QMainWindow):
 
     def update_mods_table(self, result: ModCheckResult):
         self.active_mod_server_key = ""
-        current_row = self.table.currentRow()
-        current_server = self.servers[current_row] if 0 <= current_row < len(self.servers) else None
+        current_server = self.active_server_context()
         install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
         workshop_dir = install.workshop_dir if install else None
         if not current_server:
             self._check_pending_server_mods()
             return
         if not matching_mod_result(current_server, result, workshop_dir):
-            pending_row = self.pending_mod_check_row if self.pending_mod_check_row is not None else current_row
-            self.pending_mod_check_row = pending_row
+            self.pending_mod_server = current_server
             self._check_pending_server_mods()
             return
 
         self.last_mod_result = result
         self.display_mods_result(result)
+        self.update_workshop_recovery_state(result, install)
         self._check_pending_server_mods()
+
+    def update_workshop_recovery_state(self, result: ModCheckResult, install: SteamInstall | None):
+        missing_ids = [mod.workshop_id for mod in result.missing_mods] if result.ok else []
+        recovery = workshop_recovery_state(install, missing_ids)
+        self.workshop_recovery_ids = recovery.item_ids
+        if recovery.active:
+            count = len(recovery.item_ids)
+            noun = "item" if count == 1 else "items"
+            self.mod_summary.setText(
+                f"{mod_summary_text(result)} Steam may still be downloading {count} required "
+                f"Workshop {noun} from an earlier session. Check Steam Downloads; WolfLauncher "
+                "will recheck when you use Recheck mods."
+            )
 
     def display_mods_result(self, result: ModCheckResult):
         self.mods_table.setSortingEnabled(False)
@@ -1680,6 +1748,14 @@ class MainWindow(QMainWindow):
         return f"Auto Steam install: {install_label(install)}"
 
     def _check_pending_server_mods(self):
+        pending_server = getattr(self, "pending_mod_server", None)
+        if pending_server is not None:
+            if self.mod_worker and self.mod_worker.isRunning():
+                QTimer.singleShot(50, self._check_pending_server_mods)
+                return
+            self.pending_mod_server = None
+            self.check_server_mods(pending_server, silent=True)
+            return
         if self.pending_mod_check_row is None:
             return
         if self.mod_worker and self.mod_worker.isRunning():
@@ -1706,7 +1782,7 @@ class MainWindow(QMainWindow):
 
     def handle_browser_double_clicked(self, row: int, column: int):
         self.browser_table.selectRow(row)
-        self.promote_selected_discovered_server()
+        self.inspect_selected_discovered_server()
 
     def open_workshop_page_for_mod_row(self, row: int):
         if row < 0:
@@ -1853,10 +1929,14 @@ class MainWindow(QMainWindow):
         if not server:
             return
         menu = QMenu(self)
+        inspect_action = QAction("Inspect mods", self)
+        launch_action = QAction("Launch server", self)
         promote_action = QAction("Promote to curated", self)
         copy_connect_action = QAction("Copy connect address", self)
         copy_host_action = QAction("Copy host", self)
         copy_details_action = QAction("Copy server details", self)
+        inspect_action.triggered.connect(self.inspect_selected_discovered_server)
+        launch_action.triggered.connect(self.launch_selected_discovered_server)
         promote_action.triggered.connect(self.promote_selected_discovered_server)
         copy_connect_action.triggered.connect(
             lambda: self.copy_to_clipboard(server.connect_target, "Connect address")
@@ -1867,6 +1947,8 @@ class MainWindow(QMainWindow):
         copy_details_action.triggered.connect(
             lambda: self.copy_to_clipboard(discovered_server_details(server), "Server details")
         )
+        menu.addAction(inspect_action)
+        menu.addAction(launch_action)
         menu.addAction(promote_action)
         menu.addSeparator()
         menu.addAction(copy_connect_action)
@@ -2000,6 +2082,19 @@ class MainWindow(QMainWindow):
                 5000,
             )
             return
+        recovery = workshop_recovery_state(
+            self.selected_steam_install() if self.launch_engine_key() == "native" else best_install(),
+            (mod.workshop_id for mod in missing),
+        )
+        if recovery.active:
+            QMessageBox.information(
+                self,
+                "Steam Workshop activity detected",
+                "Steam appears to have required DayZ Workshop items in its download staging "
+                "area from an earlier session. Check Steam Downloads and wait for it to finish, "
+                "then use Recheck mods. WolfLauncher will not start a second helper session yet.",
+            )
+            return
 
         install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
         if not install or not install.workshop_dir:
@@ -2037,6 +2132,7 @@ class MainWindow(QMainWindow):
             mod.workshop_id: (mod.name or mod.workshop_id) for mod in missing
         }
         self.workshop_subscription_server_key = server_key(result.server)
+        self.workshop_subscription_server = result.server
         self.workshop_subscription_dialog = QProgressDialog(
             "Sending subscriptions to Steam...", "Hide monitor", 0, 100, self
         )
@@ -2152,7 +2248,8 @@ class MainWindow(QMainWindow):
             ),
             -1,
         )
-        if target_row < 0:
+        server = getattr(self, "workshop_subscription_server", None)
+        if server is None:
             self.launch_after_workshop_download = False
             QMessageBox.warning(
                 self,
@@ -2161,7 +2258,6 @@ class MainWindow(QMainWindow):
             )
             return
 
-        server = self.servers[target_row]
         install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
         workshop_dir = install.workshop_dir if install else None
         result = usable_mod_result(server, self.last_mod_result, workshop_dir)
@@ -2176,7 +2272,10 @@ class MainWindow(QMainWindow):
             return
 
         self.launch_after_workshop_download = False
-        self.table.selectRow(target_row)
+        if target_row >= 0:
+            self.table.selectRow(target_row)
+        else:
+            self.active_discovered_server = server
         QTimer.singleShot(0, self.launch_selected)
 
     def workshop_launch_block_reason(self) -> str:
@@ -2187,15 +2286,23 @@ class MainWindow(QMainWindow):
                 "to finish. Hide monitor only hides the progress window; use Install "
                 "missing mods again to reopen the same monitor."
             )
+        if self.workshop_recovery_ids:
+            count = len(self.workshop_recovery_ids)
+            noun = "item is" if count == 1 else "items are"
+            return (
+                f"Steam may still be downloading {count} required Workshop {noun} staged from "
+                "an earlier session. Check Steam Downloads, wait for it to finish, then use "
+                "Recheck mods before launching."
+            )
         return ""
 
     def _selected_mod_result(self, *, successful: bool = False) -> ModCheckResult | None:
-        row = self.table.currentRow()
-        if row < 0 or row >= len(self.servers):
+        server = self.active_server_context()
+        if not server:
             return None
         install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
         workshop_dir = install.workshop_dir if install else None
-        result = matching_mod_result(self.servers[row], self.last_mod_result, workshop_dir)
+        result = matching_mod_result(server, self.last_mod_result, workshop_dir)
         if successful and result and not result.ok:
             return None
         return result
@@ -2209,11 +2316,10 @@ class MainWindow(QMainWindow):
             )
             return
 
-        row = self.table.currentRow()
-        if row < 0:
+        server = self.active_server_context()
+        if not server:
             QMessageBox.warning(self, "No server selected", "Select a curated server first.")
             return
-        server = self.servers[row]
         if server_key(server) != server_key(self.last_mod_result.server):
             QMessageBox.warning(
                 self,
@@ -2319,19 +2425,18 @@ class MainWindow(QMainWindow):
                 self, "Steam Workshop in progress", workshop_block
             )
             return
-        row = self.table.currentRow()
-        if row < 0:
+        server = self.active_server_context()
+        if not server:
             QMessageBox.warning(self, "No server selected", "Select a server first.")
             return
 
-        server = self.servers[row]
         self.save_user_settings(silent=True)
 
         if not self.confirm_launch_preflight(server):
             return
 
         try:
-            command = self.build_selected_launch_command(server, row)
+            command = self.build_selected_launch_command(server)
         except NativeLaunchError as exc:
             self.show_native_launch_error(exc)
             return
@@ -2344,11 +2449,13 @@ class MainWindow(QMainWindow):
         dialog.exec()
         save_last_launch_report(dialog.copyable_output_text())
 
-    def build_selected_launch_command(self, server: Server, row: int) -> list[str]:
+    def build_selected_launch_command(self, server: Server, row: int | None = None) -> list[str]:
         # Launch with the resolved IP address when available. This mirrors the
         # original terminal menu and avoids DayZSA API failures with some DNS
         # hostnames.
-        resolved_item = self.table.item(row, 5)
+        if row is None and self.active_discovered_server is None:
+            row = self.table.currentRow()
+        resolved_item = self.table.item(row, 5) if row is not None and row >= 0 else None
         resolved_ip = resolved_item.text().strip() if resolved_item else ""
         launch_server = server_with_resolved_ipv4(server, resolved_ip)
 

@@ -64,6 +64,58 @@ class WorkshopSubscriptionResult:
         return not self.cancelled and not self.error and not self.incomplete_ids
 
 
+@dataclass(frozen=True)
+class WorkshopRecoveryState:
+    """Filesystem evidence of DayZ Workshop items left in Steam's staging area."""
+
+    item_ids: tuple[str, ...] = ()
+    staging_dirs: tuple[str, ...] = ()
+
+    @property
+    def active(self) -> bool:
+        return bool(self.item_ids)
+
+
+def workshop_recovery_state(
+    install: SteamInstall | None,
+    relevant_ids: Iterable[str] = (),
+) -> WorkshopRecoveryState:
+    """Find relevant numeric item folders in Steam's Workshop download staging area.
+
+    This is deliberately a conservative restart/recovery signal. Steam's local
+    Workshop manifest is a catalogue, not a dependable live queue, while item
+    folders under ``workshop/downloads/221100`` are direct evidence of staged
+    DayZ Workshop work. Missing or unreadable folders are treated as no signal.
+    """
+    if not install:
+        return WorkshopRecoveryState()
+    wanted = {
+        str(item).strip() for item in relevant_ids if str(item).strip().isdigit()
+    }
+    if not wanted:
+        return WorkshopRecoveryState()
+    steamapps_candidates = list(install.library_steamapps)
+    if install.steamapps and install.steamapps not in steamapps_candidates:
+        steamapps_candidates.append(install.steamapps)
+
+    found: set[str] = set()
+    staging_dirs: list[str] = []
+    for steamapps in steamapps_candidates:
+        staging = steamapps / "workshop" / "downloads" / str(STEAM_APP_ID_DAYZ)
+        try:
+            item_ids = {
+                child.name for child in staging.iterdir()
+                if child.is_dir() and child.name.isdigit()
+            }
+        except OSError:
+            continue
+        item_ids &= wanted
+        if item_ids:
+            found.update(item_ids)
+            staging_dirs.append(str(staging))
+    return WorkshopRecoveryState(tuple(sorted(found, key=int)), tuple(staging_dirs))
+
+
 def steam_api_library_candidates(install: SteamInstall | None) -> list[Path]:
     """Return likely official 64-bit Steam API redistributables in priority order."""
     candidates: list[Path] = []

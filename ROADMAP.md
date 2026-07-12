@@ -92,15 +92,15 @@ Priority 1 — safe Steam handoff:
 - Completed — the Steamworks context now lives in an isolated helper process that must exit before launch is enabled; successful native-Steam launch-after-download is confirmed.
 - Completed — isolated-helper process exit is the readiness boundary. Real-world retesting confirmed that the earlier fixed 10-second cooldown was unnecessary.
 - Completed — launch is blocked while the subscription helper is active, and **Launch server** waits for helper exit plus a fresh all-installed mod check before handoff.
-- On restart, detect relevant outstanding Workshop activity where Steam exposes it and present an honest waiting/recovery state.
+- Completed — on restart, relevant numeric items in Steam's DayZ Workshop download staging area are presented as possible outstanding activity; duplicate helper sessions and launch are guarded until Steam finishes and a fresh mod check clears the evidence.
 - Completed — the unsafe **Stop monitoring** behavior was replaced with **Hide monitor**: the original helper keeps monitoring in the background, hidden progress updates cannot reopen the dialog, and the install action returns to that same session.
 
 Priority 2 — direct discovered-server journey:
 
-- Allow a discovered Server Browser row to become the active server context for mod checking, subscription and launch without first writing it to curated YAML.
-- Keep the user in one coherent select → inspect → resolve mods → launch flow, with the selected server identity preserved across background work.
-- Define **Promote to curated** as an optional persistence/favourite action, not a prerequisite for trying or joining a server.
-- Preserve local curated YAML as the user-owned saved-server source while remote discovered rows remain read-only.
+- Completed — a discovered Server Browser row can become the active in-memory server context for mod checking, subscription and launch without first writing it to curated YAML.
+- Completed — direct **Inspect mods** and **Launch server** actions keep the selected discovered identity through background mod and Workshop work; double-click begins the inspect flow.
+- Completed — **Promote to curated** remains an optional persistence action, not a prerequisite for trying or joining a server.
+- Completed — local curated YAML remains the user-owned saved-server source while remote discovered rows stay read-only.
 
 Priority 3 — Workshop readiness and information:
 

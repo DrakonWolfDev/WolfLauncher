@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added a direct discovered-server journey: browser rows can become an in-memory active context for mod inspection, guarded Workshop resolution and launch, while promotion to curated YAML remains optional.
 - Recorded the real-world experimental Workshop hardening roadmap: post-download launch readiness, honest stop-monitoring semantics, direct discovered-server checking/launching, update checks, size/progress presentation and discovery-status truth.
 - Added an opt-in experimental Steam-native Workshop subscription flow for missing DayZ mods, with explicit account-change confirmation, per-item download monitoring, cancellation of waiting, local-directory verification and manual-link fallback.
 - Added a minimal `ctypes` ISteamUGC adapter that dynamically loads Valve's existing 64-bit Steam API redistributable from the selected Steam installation; WolfLauncher does not vendor the proprietary library or create a persistent `steam_appid.txt`.
@@ -15,6 +16,7 @@
 - Removed the fixed 10-second post-download cooldown after real-world testing confirmed isolated-helper process exit is a sufficient launch-readiness boundary.
 - Kept hidden Workshop monitors hidden by suppressing `QProgressDialog` updates until explicitly reopened, and simplified successful completion text to the downloaded mod count.
 - Replaced the successful download dialog's generic confirmation with **Launch server**, deferred until the isolated helper exits and a forced mod recheck confirms the downloaded set.
+- Added conservative restart/recovery detection for required items left in Steam's DayZ Workshop download staging area, with honest Mods guidance and guards against duplicate helper sessions or launch until a fresh check confirms readiness.
 - Made native/external launch-engine changes invalidate and quietly recheck the selected server's mods using the newly authoritative Steam/Workshop context, matching Steam install mode changes.
 - Made Steam install mode changes deterministically start or queue a quiet forced mod recheck, instead of leaving the Mods tab waiting when the previous lookup had already finished.
 - Bound cached mod results to both the selected server and Workshop directory, preventing an in-flight check from an old Steam install mode being accepted after the mode changes and queuing a fresh check for the current context.
