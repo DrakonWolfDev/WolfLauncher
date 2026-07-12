@@ -1921,10 +1921,17 @@ class MainWindow(QMainWindow):
         copy_id_action = QAction("Copy Workshop ID", self)
         copy_name_action = QAction("Copy mod name", self)
         copy_url_action = QAction("Copy Workshop URL", self)
+        check_update_action = QAction("Check/update this mod", self)
         open_action.triggered.connect(lambda: self.open_workshop_page_for_mod_row(row))
         copy_id_action.triggered.connect(lambda: self.copy_to_clipboard(self._mods_cell(row, 1), "Workshop ID"))
         copy_name_action.triggered.connect(lambda: self.copy_to_clipboard(self._mods_cell(row, 2) or self._mods_cell(row, 3), "Mod name"))
         copy_url_action.triggered.connect(lambda: self.copy_to_clipboard(self._mods_cell(row, 4), "Workshop URL"))
+        check_update_action.triggered.connect(lambda: self.check_update_mod_row(row))
+        check_update_action.setVisible(
+            bool(self.settings.get("experimental_workshop_subscription", False))
+        )
+        menu.addAction(check_update_action)
+        menu.addSeparator()
         menu.addAction(open_action)
         menu.addAction(copy_id_action)
         menu.addAction(copy_name_action)
@@ -2142,9 +2149,52 @@ class MainWindow(QMainWindow):
         if reply != QMessageBox.Yes:
             return
 
-        ids = [mod.workshop_id for mod in missing]
+        self.start_workshop_resolution(missing, result, install)
+
+    def check_update_mod_row(self, row: int):
+        result = self._selected_mod_result(successful=True)
+        workshop_id = self._mods_cell(row, 1)
+        mod = next(
+            (item for item in result.required_mods if item.workshop_id == workshop_id),
+            None,
+        ) if result else None
+        if mod is None:
+            QMessageBox.warning(
+                self, "Mod check unavailable", "Recheck the selected server before updating this mod."
+            )
+            return
+        if mod.ready:
+            QMessageBox.information(
+                self, "Mod already ready", f"{mod.name or mod.workshop_id} is already reported ready."
+            )
+            return
+        if self.workshop_subscription_worker and self.workshop_subscription_worker.isRunning():
+            self.subscribe_missing_workshop_mods()
+            return
+        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        if not install or not install.workshop_dir or not install.running:
+            QMessageBox.warning(
+                self,
+                "Steam unavailable",
+                "Start the selected Steam client and confirm its DayZ Workshop installation, then try again.",
+            )
+            return
+        reply = QMessageBox.question(
+            self,
+            "Check/update using Steam?",
+            f"Ask Steam to resolve {mod.name or mod.workshop_id}, then wait for a verified ready state?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if reply == QMessageBox.Yes:
+            self.start_workshop_resolution([mod], result, install)
+
+    def start_workshop_resolution(self, mods, result, install):
+        """Start the existing isolated Steam resolution flow for selected mods."""
+        ids = [mod.workshop_id for mod in mods]
+
         self.workshop_subscription_names = {
-            mod.workshop_id: (mod.name or mod.workshop_id) for mod in missing
+            mod.workshop_id: (mod.name or mod.workshop_id) for mod in mods
         }
         self.workshop_subscription_server_key = server_key(result.server)
         self.workshop_subscription_server = result.server
