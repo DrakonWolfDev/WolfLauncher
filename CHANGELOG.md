@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Silenced repetitive native SteamAPI breakpad, Steam ID and library-load console messages inside disposable Workshop helper processes while preserving structured progress and errors.
 - Added isolated batch `ISteamUGC::GetItemState` checks to the experimental normal mod workflow, distinguishing ready, update-required, download-pending and downloading items and preventing reported unready items from passing launch preflight.
 - Added an experimental Mods-row **Check/update this mod** recovery action that reuses the isolated Steam resolution and verified post-download recheck flow for one required item.
 - Fixed sequential discovered-server mod inspection stalling after several selections by handing the newest queued context forward when the current worker actually finishes, with visible queued feedback and direct navigation to Mods.

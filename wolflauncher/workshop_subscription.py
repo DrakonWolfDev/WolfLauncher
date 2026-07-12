@@ -11,6 +11,7 @@ import multiprocessing
 import os
 import queue
 import signal
+import sys
 import threading
 import time
 from dataclasses import dataclass
@@ -26,6 +27,22 @@ ITEM_STATE_NEEDS_UPDATE = 8
 ITEM_STATE_DOWNLOADING = 16
 ITEM_STATE_DOWNLOAD_PENDING = 32
 DOWNLOAD_REQUEST_RETRY_SECONDS = 15.0
+
+
+def silence_helper_output() -> None:
+    """Discard native SteamAPI console noise inside a disposable helper process."""
+    try:
+        sys.stdout.flush()
+        sys.stderr.flush()
+    except (AttributeError, OSError):
+        pass
+    null_fd = os.open(os.devnull, os.O_WRONLY)
+    try:
+        os.dup2(null_fd, 1)
+        os.dup2(null_fd, 2)
+    finally:
+        if null_fd > 2:
+            os.close(null_fd)
 
 
 class WorkshopSubscriptionError(RuntimeError):
@@ -380,6 +397,7 @@ def _state_process_main(
     workshop_ids: tuple[str, ...], install: SteamInstall, messages
 ) -> None:
     signal.signal(signal.SIGINT, signal.SIG_IGN)
+    silence_helper_output()
     messages.put(query_workshop_item_states(workshop_ids, install))
 
 
@@ -426,6 +444,7 @@ def _subscription_process_main(
 ) -> None:
     """Own Steamworks in a disposable process so Steam sees a hard shutdown."""
     signal.signal(signal.SIGINT, signal.SIG_IGN)
+    silence_helper_output()
     try:
         result = subscribe_workshop_items(
             workshop_ids,

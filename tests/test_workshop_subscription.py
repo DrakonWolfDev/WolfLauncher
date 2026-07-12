@@ -17,6 +17,7 @@ from wolflauncher.workshop_subscription import (
     WorkshopSubscriptionError,
     find_steam_api_library,
     query_workshop_item_states,
+    silence_helper_output,
     steam_api_library_candidates,
     subscribe_workshop_items,
     subscribe_workshop_items_isolated,
@@ -53,6 +54,17 @@ class WorkshopItemProgressTests(unittest.TestCase):
 
 
 class SteamApiLibraryTests(unittest.TestCase):
+    def test_helper_output_redirects_native_stdout_and_stderr(self):
+        with patch("wolflauncher.workshop_subscription.os.open", return_value=9) as open_mock, patch(
+            "wolflauncher.workshop_subscription.os.dup2"
+        ) as dup_mock, patch("wolflauncher.workshop_subscription.os.close") as close_mock:
+            silence_helper_output()
+
+        open_mock.assert_called_once_with(os.devnull, os.O_WRONLY)
+        self.assertEqual(dup_mock.call_args_list[0].args, (9, 1))
+        self.assertEqual(dup_mock.call_args_list[1].args, (9, 2))
+        close_mock.assert_called_once_with(9)
+
     def test_override_is_first_candidate(self):
         with patch.dict(os.environ, {"WOLFLAUNCHER_STEAM_API_LIBRARY": "/custom/lib.so"}):
             candidates = steam_api_library_candidates(None)
