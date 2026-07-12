@@ -192,12 +192,12 @@ class MainWindow(QMainWindow):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.refresh_statuses)
 
-        tabs = QTabWidget()
-        tabs.addTab(self._build_servers_tab(), "Servers")
-        tabs.addTab(self._build_server_browser_tab(), "Server Browser")
-        tabs.addTab(self._build_mods_tab(), "Mods")
-        tabs.addTab(self._build_settings_tab(), "Settings")
-        self.setCentralWidget(tabs)
+        self.tabs = QTabWidget()
+        self.tabs.addTab(self._build_servers_tab(), "Servers")
+        self.tabs.addTab(self._build_server_browser_tab(), "Server Browser")
+        self.mods_tab_index = self.tabs.addTab(self._build_mods_tab(), "Mods")
+        self.tabs.addTab(self._build_settings_tab(), "Settings")
+        self.setCentralWidget(self.tabs)
 
         self.apply_refresh_timer()
         self.refresh_statuses()
@@ -1052,6 +1052,7 @@ class MainWindow(QMainWindow):
     def inspect_selected_discovered_server(self):
         server = self.activate_selected_discovered_server()
         if server:
+            self.tabs.setCurrentIndex(self.mods_tab_index)
             self.check_server_mods(server, force=True)
 
     def launch_selected_discovered_server(self):
@@ -1656,6 +1657,9 @@ class MainWindow(QMainWindow):
         if self.mod_worker and self.mod_worker.isRunning():
             if self.active_mod_server_key != selected_key:
                 self.pending_mod_server = server
+                self.mod_summary.setText(
+                    f"Queued mod check for {server.name}; finishing the current server check first."
+                )
             return
 
         steam_context = self.mod_check_steam_context(install)
@@ -1683,7 +1687,7 @@ class MainWindow(QMainWindow):
         self.pending_mod_server = None
         self.mod_worker = ModWorker(server, workshop_dir, steam_context)
         self.mod_worker.mods_ready.connect(self.update_mods_table)
-        self.mod_worker.finished.connect(self.maybe_launch_after_workshop_download)
+        self.mod_worker.finished.connect(self.handle_mod_worker_finished)
         self.mod_worker.start()
 
     def update_mods_table(self, result: ModCheckResult):
@@ -1692,17 +1696,19 @@ class MainWindow(QMainWindow):
         install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
         workshop_dir = install.workshop_dir if install else None
         if not current_server:
-            self._check_pending_server_mods()
             return
         if not matching_mod_result(current_server, result, workshop_dir):
             self.pending_mod_server = current_server
-            self._check_pending_server_mods()
             return
 
         self.last_mod_result = result
         self.display_mods_result(result)
         self.update_workshop_recovery_state(result, install)
+
+    def handle_mod_worker_finished(self):
+        self.mod_worker = None
         self._check_pending_server_mods()
+        self.maybe_launch_after_workshop_download()
 
     def update_workshop_recovery_state(self, result: ModCheckResult, install: SteamInstall | None):
         missing_ids = [mod.workshop_id for mod in result.missing_mods] if result.ok else []
@@ -1748,18 +1754,14 @@ class MainWindow(QMainWindow):
         return f"Auto Steam install: {install_label(install)}"
 
     def _check_pending_server_mods(self):
+        if self.mod_worker and self.mod_worker.isRunning():
+            return
         pending_server = getattr(self, "pending_mod_server", None)
         if pending_server is not None:
-            if self.mod_worker and self.mod_worker.isRunning():
-                QTimer.singleShot(50, self._check_pending_server_mods)
-                return
             self.pending_mod_server = None
             self.check_server_mods(pending_server, silent=True)
             return
         if self.pending_mod_check_row is None:
-            return
-        if self.mod_worker and self.mod_worker.isRunning():
-            QTimer.singleShot(50, self._check_pending_server_mods)
             return
         row = self.pending_mod_check_row
         self.pending_mod_check_row = None

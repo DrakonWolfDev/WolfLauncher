@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed sequential discovered-server mod inspection stalling after several selections by handing the newest queued context forward when the current worker actually finishes, with visible queued feedback and direct navigation to Mods.
 - Added a direct discovered-server journey: browser rows can become an in-memory active context for mod inspection, guarded Workshop resolution and launch, while promotion to curated YAML remains optional.
 - Recorded the real-world experimental Workshop hardening roadmap: post-download launch readiness, honest stop-monitoring semantics, direct discovered-server checking/launching, update checks, size/progress presentation and discovery-status truth.
 - Added an opt-in experimental Steam-native Workshop subscription flow for missing DayZ mods, with explicit account-change confirmation, per-item download monitoring, cancellation of waiting, local-directory verification and manual-link fallback.

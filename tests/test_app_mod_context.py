@@ -49,6 +49,33 @@ class ModContextChangeTests(unittest.TestCase):
 
         self.assertIs(MainWindow.active_server_context(window), discovered)
 
+    def test_finished_mod_worker_hands_off_to_latest_queued_server(self):
+        window = SimpleNamespace(
+            mod_worker=object(),
+            _check_pending_server_mods=Mock(),
+            maybe_launch_after_workshop_download=Mock(),
+        )
+
+        MainWindow.handle_mod_worker_finished(window)
+
+        self.assertIsNone(window.mod_worker)
+        window._check_pending_server_mods.assert_called_once_with()
+        window.maybe_launch_after_workshop_download.assert_called_once_with()
+
+    def test_pending_mod_check_waits_for_running_worker_without_polling(self):
+        worker = Mock()
+        worker.isRunning.return_value = True
+        window = SimpleNamespace(
+            mod_worker=worker,
+            pending_mod_server=Server("Latest", "Discovered", "latest.test", 2302, 27016),
+            pending_mod_check_row=None,
+            check_server_mods=Mock(),
+        )
+
+        MainWindow._check_pending_server_mods(window)
+
+        window.check_server_mods.assert_not_called()
+
     def test_steam_mode_change_starts_forced_recheck_when_idle(self):
         window = window_state()
 
