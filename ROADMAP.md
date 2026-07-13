@@ -166,10 +166,15 @@ Discovery-freshness boundary:
 - Use `DISCOVERY_FRESHNESS_HANDOFF.md` as the cross-project implementation contract.
 - WolfAPI's bounded required-mod metadata job, nullable summary fields and
   cached full-manifest endpoint are implemented and passed a ten-server local
-  canary; keep direct launcher lookup as selected-server/launch fallback while
-  production enablement remains observed and opt-in.
+  canary. Persistent local enablement and the first scheduled 10/10 cycle also
+  passed; keep direct launcher lookup as selected-server/launch fallback and
+  observe more cycles before increasing coverage.
 - Treat two-stage local-plus-remote search as a core scalability requirement: the first page is only a default view, while debounced indexed API search and exact host/port resolution must find rows anywhere in the canonical directory.
-- Pause further normal-path Server Browser architecture work until WolfAPI profiles/fixes its observed 4 GB memory exhaustion and provides the versioned paginated/search/freshness contract. Launcher-side selected-server, launch-safety, offline and unrelated work can continue independently.
+- The former Server Browser architecture pause is cleared: WolfAPI memory,
+  pagination/search/freshness and mixed-load gates passed. Continue normal
+  cross-repository work only where it adds a measured user benefit.
+- Keep the quality default unchanged for now; the 2026-07-13 canonical snapshot
+  contained no flagged rows, so `quality=unflagged` would not alter results.
 
 ## v0.9.9 - Packaging preparation
 

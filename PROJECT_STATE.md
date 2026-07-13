@@ -191,7 +191,9 @@ Planned WolfAPI follow-up:
 - WolfAPI v1 required-mod count/status/timestamps/error/hash now persist in
   SQLite and appear as ready/stale/failed browsing evidence in tooltips and
   copied details. Direct **Inspect mods** and launch-time lookup remain final
-  truth; the API job is disabled by default pending production observation.
+  truth. The API job remains disabled by default in source but is persistently
+  enabled in the local deployment; its first scheduled 10/10 cycle passed with
+  no stale or failed rows.
 - A post-fix hosted probe on 2026-07-13 confirmed bounded list, dedicated
   search, exact resolution, ETags, rollout metadata, stable identity and aliases
   are live. The strict client imported 100 rows into isolated SQLite. Two

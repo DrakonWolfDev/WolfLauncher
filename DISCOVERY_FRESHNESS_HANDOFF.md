@@ -158,9 +158,15 @@ curated, selected-server and launch-time checks remain intentionally local.
 - WolfAPI has a transactional port-correction operation, but automatic use
   still needs trustworthy corrected-port evidence; A2S reachability alone does
   not provide it.
-- Required-mod metadata is implemented behind WolfAPI's disabled-by-default,
-  ten-row bounded job. Its 2026-07-13 local canary returned 10/10 manifests,
-  including a confirmed zero; production enablement and scheduled-cycle
-  observation remain the rollout dependency.
+- Required-mod metadata is implemented behind WolfAPI's committed
+  disabled-by-default, ten-row bounded job. The local production `.env` now
+  enables it persistently: a normal Compose recreation retained the setting
+  and the first scheduled batch completed 10/10 in four seconds. Thirty
+  manifests were ready afterward with no stale or failed rows; continue
+  scheduled-cycle observation before increasing coverage.
+
+The 2026-07-13 quality snapshot contained 10,284 unflagged and zero flagged
+canonical rows. Keep the Launcher quality default unchanged until real flagged
+population data can demonstrate that a default filter materially helps.
 - Production proxy/CDN behavior and sustained-load peak RSS still need final
   deployment evidence.
