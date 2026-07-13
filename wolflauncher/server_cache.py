@@ -256,6 +256,19 @@ def upsert_servers(connection: sqlite3.Connection, servers: list[DiscoveredServe
     return len(servers)
 
 
+def merge_source_servers(
+    connection: sqlite3.Connection,
+    source: str,
+    servers: list[DiscoveredServer],
+) -> int:
+    """Merge a bounded provider page without deleting rows outside that page."""
+    source = source.strip()
+    if not source:
+        raise ValueError("Discovery source is required.")
+    normalized = [replace(server, source=source) for server in servers]
+    return upsert_servers(connection, normalized)
+
+
 def sync_source_servers(
     connection: sqlite3.Connection,
     source: str,

@@ -174,6 +174,10 @@ Planned WolfAPI follow-up:
   by stable ID; opt-in v1 list/search/resolve clients enforce rollout metadata.
   Settings exposes v1 as an explicit staged provider while existing saved
   `wolfapi` selections remain on the separately labelled legacy fallback.
+  V1 refreshes paginate in bounded 100-row background requests and use
+  merge-only cache updates. Server Browser search is local-first with a 450 ms
+  debounced remote v1 search that merges stable-ID matches, preserves unrelated
+  rows and does not let stale completions replace the current query view.
 - A post-fix hosted probe on 2026-07-13 confirmed bounded list, dedicated
   search, exact resolution, ETags, rollout metadata, stable identity and aliases
   are live. The strict client imported 100 rows into isolated SQLite. Two

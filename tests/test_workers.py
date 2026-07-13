@@ -7,6 +7,8 @@ from wolflauncher.workers import (
     StatusWorker,
     SteamDiscoveryWorker,
     WolfApiDiscoveryWorker,
+    WolfApiSearchWorker,
+    discover_wolfapi_v1_pages,
     _checked_server_status,
 )
 
@@ -49,7 +51,7 @@ class WorkerTests(unittest.TestCase):
 
         worker.run()
 
-        discover.assert_called_once_with(limit=100)
+        discover.assert_called_once_with(limit=100, offset=0)
         self.assertEqual(worker.provider_label, "WolfAPI v1")
         self.assertEqual(results, [(["v1-server"], "")])
 
@@ -65,6 +67,39 @@ class WorkerTests(unittest.TestCase):
         discover.assert_called_once_with(limit=500)
         self.assertEqual(worker.provider_label, "WolfAPI legacy")
         self.assertEqual(results, [(["legacy-server"], "")])
+
+    @patch("wolflauncher.workers.discover_dayz_servers_wolfapi_v1")
+    def test_v1_background_discovery_fetches_bounded_pages(self, discover):
+        discover.side_effect = [list(range(100)), list(range(100, 150))]
+
+        servers = discover_wolfapi_v1_pages(150)
+
+        self.assertEqual(len(servers), 150)
+        self.assertEqual(
+            discover.call_args_list,
+            [
+                unittest.mock.call(limit=100, offset=0),
+                unittest.mock.call(limit=50, offset=100),
+            ],
+        )
+
+    @patch("wolflauncher.workers.search_dayz_servers_wolfapi_v1")
+    def test_v1_search_worker_preserves_query_and_filters(self, search):
+        search.return_value = ["remote-server"]
+        results = []
+        worker = WolfApiSearchWorker(
+            "  Alpha   Server ", limit=50, map_name="chernarusplus", version="1.29"
+        )
+        worker.search_ready.connect(
+            lambda query, servers, error: results.append((query, servers, error))
+        )
+
+        worker.run()
+
+        search.assert_called_once_with(
+            "Alpha Server", limit=50, map_name="chernarusplus", version="1.29"
+        )
+        self.assertEqual(results, [("Alpha Server", ["remote-server"], "")])
 
     @patch("wolflauncher.workers.check_server")
     def test_checked_server_status_returns_successful_result(self, check_server):

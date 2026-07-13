@@ -88,7 +88,12 @@ Foundation implemented locally on 2026-07-13:
 - Settings now offers an explicit `WolfAPI v1 (staged)` provider alongside
   `WolfAPI (legacy fallback)`. The staged worker uses only the bounded strict
   v1 client, retains cached SQLite rows on failure and has its own 24-hour
-  automatic-refresh timestamp.
+  automatic-refresh timestamp;
+- staged refreshes fetch 100-row pages in the background up to the configured
+  limit and merge them without deleting cached rows outside the bounded pages;
+- Server Browser renders local SQLite matches immediately, then debounces v1
+  remote search for 450 ms, merges stable-ID results without deleting unrelated
+  rows and ignores stale completions for the visible query.
 
 1. Migrate SQLite additively. Keep the existing endpoint `cache_key` for
    non-WolfAPI providers and launch/connect behavior, but add nullable
@@ -96,11 +101,11 @@ Foundation implemented locally on 2026-07-13:
    WolfAPI rows.
 2. Upsert WolfAPI rows by stable ID. When the current endpoint changes, update
    the existing cached row and retain aliases instead of inserting a duplicate.
-3. Render SQLite results immediately. Fetch a bounded initial v1 page in the
-   background, then merge returned rows into SQLite.
-4. Search in two stages: local SQLite first, followed by a debounced remote
-   `/search`; merge remote matches into SQLite. A successful empty response is
-   distinct from service failure.
+3. Implemented: render SQLite results immediately, fetch bounded 100-row v1
+   pages in the background and merge them into SQLite.
+4. Implemented: search local SQLite first, then debounce remote `/search` and
+   merge matches. Successful empty responses remain distinct from failures,
+   which quietly retain and display cached results.
 5. Use `/resolve` for exact host/port additions and alias-aware lookups. Never
    make search or resolution synchronously trigger UDP validation.
 6. Use API freshness/validation as browsing truth. Keep local ping blank until

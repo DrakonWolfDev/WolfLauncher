@@ -62,10 +62,10 @@ proxy evidence remains a rollout gate. The additive Launcher SQLite v2
 migration, stable-ID/alias merge behavior, strict parser and opt-in clients are
 implemented locally. Settings now exposes a staged v1 provider while preserving
 existing legacy selections as an explicit fallback. See
-`DISCOVERY_FRESHNESS_HANDOFF.md`. The next launcher slice is debounced remote
-search/background pagination after staged-provider observation; only then
-retire fixed startup probing while retaining selected-server and launch-time
-checks.
+`DISCOVERY_FRESHNESS_HANDOFF.md`. Debounced local-first remote search and
+bounded background pagination are now implemented. The next launcher slice is
+exact endpoint resolution/addition; only then retire fixed startup probing
+while retaining selected-server and launch-time checks.
 
 The matching host-local origin load passed at about 680 requests/second with
 zero errors and p99 181 ms. The remaining load investigation is specifically

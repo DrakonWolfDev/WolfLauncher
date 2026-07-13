@@ -11,12 +11,14 @@ from .server_discovery import (
     discover_dayz_servers_web_api,
     discover_dayz_servers_wolfapi,
     discover_dayz_servers_wolfapi_v1,
+    search_dayz_servers_wolfapi_v1,
 )
 from .server_enrichment import enrich_discovered_server, enrichment_probe_servers
 from .status import ServerStatus, check_server
 
 
 MAX_STATUS_WORKERS = 8
+WOLFAPI_V1_PAGE_SIZE = 100
 
 
 def _checked_server_status(server: Server) -> ServerStatus:
@@ -142,13 +144,58 @@ class WolfApiDiscoveryWorker(QThread):
     def run(self):
         try:
             if self.use_v1:
-                servers = discover_dayz_servers_wolfapi_v1(limit=self.limit)
+                servers = discover_wolfapi_v1_pages(self.limit)
             else:
                 servers = discover_dayz_servers_wolfapi(limit=self.limit)
         except Exception as exc:
             self.discovery_ready.emit([], str(exc))
         else:
             self.discovery_ready.emit(servers, "")
+
+
+def discover_wolfapi_v1_pages(limit: int) -> list:
+    """Fetch bounded v1 pages in a background worker up to the user limit."""
+    target = max(1, int(limit))
+    servers = []
+    offset = 0
+    while len(servers) < target:
+        page_limit = min(WOLFAPI_V1_PAGE_SIZE, target - len(servers))
+        page = discover_dayz_servers_wolfapi_v1(limit=page_limit, offset=offset)
+        servers.extend(page)
+        if len(page) < page_limit:
+            break
+        offset += len(page)
+    return servers[:target]
+
+
+class WolfApiSearchWorker(QThread):
+    search_ready = Signal(str, object, str)
+
+    def __init__(
+        self,
+        query: str,
+        limit: int = 100,
+        map_name: str = "",
+        version: str = "",
+    ):
+        super().__init__()
+        self.query = " ".join(query.split())
+        self.limit = limit
+        self.map_name = map_name
+        self.version = version
+
+    def run(self):
+        try:
+            servers = search_dayz_servers_wolfapi_v1(
+                self.query,
+                limit=self.limit,
+                map_name=self.map_name,
+                version=self.version,
+            )
+        except Exception as exc:
+            self.search_ready.emit(self.query, [], str(exc))
+        else:
+            self.search_ready.emit(self.query, servers, "")
 
 
 class ServerEnrichmentWorker(QThread):

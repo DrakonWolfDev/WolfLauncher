@@ -169,6 +169,45 @@ class ServerCacheTests(unittest.TestCase):
         self.assertEqual(old_alias.cache_key, corrected.cache_key)
         self.assertEqual(len(server_cache.search_servers(connection)), 1)
 
+    def test_bounded_provider_page_merges_without_deleting_other_cached_rows(self):
+        connection = self.open_cache()
+        first = DiscoveredServer(
+            name="First",
+            source="wolfapi",
+            host="203.0.113.10",
+            game_port=2302,
+            query_port=27016,
+            stable_server_id="11111111-1111-1111-1111-111111111111",
+        )
+        second = DiscoveredServer(
+            name="Second",
+            source="wolfapi",
+            host="203.0.113.11",
+            game_port=2302,
+            query_port=27016,
+            stable_server_id="22222222-2222-2222-2222-222222222222",
+        )
+        updated_first = DiscoveredServer(
+            name="First Updated",
+            source="remote-page",
+            host=first.host,
+            game_port=first.game_port,
+            query_port=first.query_port,
+            stable_server_id=first.stable_server_id,
+        )
+        server_cache.sync_source_servers(connection, "wolfapi", [first, second])
+
+        merged = server_cache.merge_source_servers(
+            connection, "wolfapi", [updated_first]
+        )
+
+        self.assertEqual(merged, 1)
+        self.assertEqual(len(server_cache.search_servers(connection)), 2)
+        cached_first = server_cache.get_server(connection, first.cache_key)
+        self.assertEqual(cached_first.name, "First Updated")
+        self.assertEqual(cached_first.source, "wolfapi")
+        self.assertIsNotNone(server_cache.get_server(connection, second.cache_key))
+
     def test_upsert_replaces_existing_cache_entry(self):
         connection = self.open_cache()
         original = DiscoveredServer(
