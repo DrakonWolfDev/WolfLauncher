@@ -28,14 +28,14 @@ tree. Confirm the production migration, contract fixture and rollout gates
 below first. API failure means remote search is unavailable, not that cached
 servers disappeared.
 
-Post-migration probe on 2026-07-13: `/api/v1/servers?limit=2` returned `200`
-with contract/generation metadata, coverage, validation queue lag, stable UUID
-IDs and endpoint aliases. Migration `20260713_0006` and the bounded list
-contract are therefore live. Dedicated search returned `500` and exact
-resolution returned `503`; WolfAPI commit `552b9cf` fixes leaked FastAPI
-parameter descriptors in those route wrappers. The strict opt-in client should
-continue to fail closed until that fix is deployed and all three routes pass
-the production canary.
+Post-fix probe on 2026-07-13: bounded list, dedicated search, exact resolution
+and conditional ETag requests all pass. Migration `20260713_0006`, rollout
+metadata, stable UUIDs and endpoint aliases are live; list/search/resolve agree
+on identity. The strict Launcher client imported 100 v1 rows into an isolated
+SQLite cache. Keep the legacy default while the load gate remains open: two
+1,000-request/100-concurrency external mixes produced 1 and 13 timeouts with
+multi-second p95/p99 latency. Host/container and reverse-proxy evidence is
+required before GUI orchestration or provider-default changes.
 
 ## Implemented WolfAPI v1 contract
 

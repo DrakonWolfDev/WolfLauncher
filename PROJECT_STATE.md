@@ -171,11 +171,12 @@ Planned WolfAPI follow-up:
   aliases and freshness/validation fields; WolfAPI rows merge port corrections
   by stable ID; opt-in v1 list/search/resolve clients enforce rollout metadata.
   The deployed legacy endpoint remains the application default.
-- A post-migration hosted probe on 2026-07-13 confirmed rollout coverage/queue,
-  stable identity and endpoint aliases are live on the bounded v1 list.
-  Dedicated search returned `500` and resolution returned `503`; WolfAPI
-  commit `552b9cf` fixes the route-wrapper defaults and still needs deployment
-  and a repeated canary. The strict launcher client continues to fail closed.
+- A post-fix hosted probe on 2026-07-13 confirmed bounded list, dedicated
+  search, exact resolution, ETags, rollout metadata, stable identity and aliases
+  are live. The strict client imported 100 rows into isolated SQLite. Two
+  external 1,000-request/100-concurrency mixes still produced 1 and 13
+  timeouts with high tail latency, so the legacy provider remains the default
+  pending host/container and reverse-proxy evidence.
 - WolfAPI development commit `552b9cf` implements and repairs bounded
   `/api/v1/servers`, `/search` and `/resolve` flows, ETags, request-time
   freshness coverage, validation queue lag, normalized provider/validation
