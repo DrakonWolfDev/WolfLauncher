@@ -164,10 +164,20 @@ Working:
 
 Planned WolfAPI follow-up:
 
-- `ROADMAP.md` tracks a v0.8.x WolfAPI discovery-quality and submission side-track.
-- Current WolfAPI posture: Redis is the hot public cache for `/api/servers`; Postgres stores canonical rows, source observations, sync runs and validation attempts; scheduled Steam, BattleMetrics and live-validation jobs update Redis; manual `source=backfill` and `source=publish` exist for recovery; all manual sync calls require `SYNC_ADMIN_TOKEN`; Postgres-to-Redis publishing is not automatic.
-- WolfAPI `/api/health` now exposes Redis/cache state plus database row counts, latest sync runs, source-observation counts by source, recent validation success/failure summaries and recent activity windows. Launcher diagnostics may read this for support/status, but should not make user workflows depend on private operational fields unless the contract is intentionally promoted.
-- The intent is to combine Steam's capped list with slow BattleMetrics ingestion, freshness/stale tracking, roughly 30-day stale retention, stronger retention for user-submitted rows, and a future in-app "Add your server to WolfLauncher" submission flow.
+- `DISCOVERY_FRESHNESS_HANDOFF.md` records the cross-repository contract and
+  rollout state; `ROADMAP.md` tracks the launcher adoption work.
+- WolfAPI development commit `69480db` implements bounded
+  `/api/v1/servers`, `/search` and `/resolve` flows, ETags, request-time
+  freshness coverage, validation queue lag, normalized provider/validation
+  fields, stable UUID server IDs and endpoint aliases. The hosted deployment
+  must pass the documented rollout gates before WolfLauncher switches from the
+  legacy `/api/servers` URL.
+- The launcher SQLite cache remains endpoint-keyed today. V1 adoption must add
+  a separate stable server ID/alias mapping and migrate port corrections into
+  one cached row without weakening offline behavior or curated YAML ownership.
+- WolfAPI `/api/health` remains operator/support data. Normal browsing should
+  consume only the public v1 contract and continue from SQLite during API
+  failure.
 - Current WolfLauncher behavior remains read-only for remote WolfAPI data; users can already promote discovered rows or add their own servers to the local curated YAML list.
 - Cross-project planning rule: launcher features should ask WolfAPI for stable fields/endpoints when they need source freshness, validation state or submission workflows; WolfAPI changes should consider how the Server Browser, diagnostics and promotion flow can use the data without harming offline/local operation.
 

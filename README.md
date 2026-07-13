@@ -254,7 +254,7 @@ Imported rows stay separate from curated `servers.yaml`.
 
 Select an imported/discovered row and use **Promote to curated** to add it to `servers.yaml`. Right-click a discovered row to promote it or copy its connect address/details.
 
-Choose a server API provider in Settings, then use **Refresh database** in the Server Browser tab. WolfAPI uses the hosted cache at `https://api.drakonwolf.ddns.net/api/servers`, BattleMetrics works without a key, Steam Web API uses the saved Steam API key, and Steam Master uses Valve's legacy UDP master server path.
+Choose a server API provider in Settings, then use **Refresh database** in the Server Browser tab. WolfAPI currently uses the deployed legacy cache at `https://api.drakonwolf.ddns.net/api/servers`; bounded v1 adoption is tracked in `DISCOVERY_FRESHNESS_HANDOFF.md` and must not be enabled until its deployment gates pass. BattleMetrics works without a key, Steam Web API uses the saved Steam API key, and Steam Master uses Valve's legacy UDP master server path.
 
 Provider refreshes sync the provider-backed cache rather than accumulating old rows: servers no longer returned by a successful selected-service refresh are removed, a successful empty refresh clears that provider's discovered rows, and existing cache keys are left untouched so live enrichment is not repeated unnecessarily. Failed provider refreshes keep existing cached rows. Keep servers you care about in the curated `servers.yaml` list.
 
@@ -298,6 +298,7 @@ Use **Enrich visible** in the Server Browser tab to query the currently visible 
 | `PROJECT_STATE.md` | Current development snapshot and handoff notes |
 | `ARCHITECTURE.md` | Design decisions, module map and launch contract |
 | `ROADMAP.md` | Planned features and future milestones |
+| `DISCOVERY_FRESHNESS_HANDOFF.md` | WolfAPI v1 contract, rollout state and launcher adoption choices |
 | `CHANGELOG.md` | Version history and release notes |
 | `docs/RELEASE_CHECKLIST.md` | Automated and real-world release checks |
 | `external/dayz-linux-cli-launcher/` | Vendored MIT legacy launcher reference |
