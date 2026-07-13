@@ -125,6 +125,12 @@ Foundation implemented locally on 2026-07-13:
 7. Retain selected-server and launch-time reachability/mod checks. V1 removes
    the need for fixed startup polling, not final join validation.
 
+Startup audit completed on 2026-07-13: WolfLauncher does not automatically
+UDP-probe discovered SQLite rows. Startup status refresh covers curated YAML
+servers only, v1 automatic refresh is HTTP-only and discovered-row live probing
+remains the explicit **Enrich visible** action. No probing removal is required;
+curated, selected-server and launch-time checks remain intentionally local.
+
 ## Rollout gates
 
 - Production reports `contract_version >= 1`, `generated_at`, validation

@@ -73,6 +73,10 @@ API freshness/validation is now exposed through the existing Status tooltip
 and copied details. Expired cached labels are marked refresh-pending, while
 ping and final reachability remain local truths.
 
+Startup audit complete: there is no fixed discovered-row UDP polling to retire.
+Curated YAML status refresh and explicit selected/launch-time checks remain by
+design; discovered-row enrichment stays user-triggered.
+
 The matching host-local origin load passed at about 680 requests/second with
 zero errors and p99 181 ms. The remaining load investigation is specifically
 the OpenResty/TLS/public routing path.

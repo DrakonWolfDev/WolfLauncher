@@ -184,6 +184,9 @@ Planned WolfAPI follow-up:
   Existing Status tooltips and copied details expose API freshness, validation
   and provider observation without changing the approved table hierarchy;
   locally expired labels are marked refresh-pending rather than reclassified.
+  A startup audit confirms discovered SQLite rows are not automatically
+  UDP-probed: startup status checks are curated-YAML-only, v1 refresh is
+  HTTP-only and **Enrich visible** remains explicit.
 - A post-fix hosted probe on 2026-07-13 confirmed bounded list, dedicated
   search, exact resolution, ETags, rollout metadata, stable identity and aliases
   are live. The strict client imported 100 rows into isolated SQLite. Two

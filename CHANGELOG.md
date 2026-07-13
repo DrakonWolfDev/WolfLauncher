@@ -12,6 +12,9 @@
 - Added WolfAPI freshness, validation and provider-observation evidence to the
   existing Status tooltip and copied server details without adding a table
   column; expired cached labels are marked refresh-pending rather than guessed.
+- Confirmed the v1 startup boundary: discovered SQLite rows are not
+  automatically UDP-probed, HTTP provider refresh remains quiet and bounded,
+  and curated/selected/launch-time checks remain local by design.
 - Added the opt-in WolfAPI v1 client/cache foundation: strict rollout-contract
   validation, bounded list/search/exact-resolution clients, an additive SQLite
   v1-to-v2 migration, stable server IDs, endpoint aliases, freshness and
