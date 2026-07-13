@@ -171,19 +171,20 @@ Planned WolfAPI follow-up:
   aliases and freshness/validation fields; WolfAPI rows merge port corrections
   by stable ID; opt-in v1 list/search/resolve clients enforce rollout metadata.
   The deployed legacy endpoint remains the application default.
-- A read-only hosted probe on 2026-07-13 confirmed production still has the
-  earlier partial v1 list only: rollout coverage/queue and stable identity are
-  absent, and dedicated search/resolve return `404`. The strict canary should
-  continue to fail closed until WolfAPI is deployed.
-- WolfAPI development commit `69480db` implements bounded
+- A post-migration hosted probe on 2026-07-13 confirmed rollout coverage/queue,
+  stable identity and endpoint aliases are live on the bounded v1 list.
+  Dedicated search returned `500` and resolution returned `503`; WolfAPI
+  commit `552b9cf` fixes the route-wrapper defaults and still needs deployment
+  and a repeated canary. The strict launcher client continues to fail closed.
+- WolfAPI development commit `552b9cf` implements and repairs bounded
   `/api/v1/servers`, `/search` and `/resolve` flows, ETags, request-time
   freshness coverage, validation queue lag, normalized provider/validation
   fields, stable UUID server IDs and endpoint aliases. The hosted deployment
   must pass the documented rollout gates before WolfLauncher switches from the
   legacy `/api/servers` URL.
-- The launcher SQLite cache remains endpoint-keyed today. V1 adoption must add
-  a separate stable server ID/alias mapping and migrate port corrections into
-  one cached row without weakening offline behavior or curated YAML ownership.
+- The additive SQLite v2 cache stores stable server IDs and endpoint aliases;
+  corrected endpoints merge into one cached row without weakening offline
+  behavior or curated YAML ownership.
 - WolfAPI `/api/health` remains operator/support data. Normal browsing should
   consume only the public v1 contract and continue from SQLite during API
   failure.

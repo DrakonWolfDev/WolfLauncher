@@ -1,6 +1,6 @@
 # WolfAPI Discovery Freshness Handoff
 
-Last synchronized with WolfAPI development commit `69480db` on 2026-07-13.
+Last synchronized with WolfAPI development commit `552b9cf` on 2026-07-13.
 
 ## Purpose
 
@@ -28,12 +28,14 @@ tree. Confirm the production migration, contract fixture and rollout gates
 below first. API failure means remote search is unavailable, not that cached
 servers disappeared.
 
-Hosted probe on 2026-07-13: `/api/v1/servers?limit=1` returned `200` with
-`contract_version`, `generated_at` and validation policy, but coverage,
-validation queue, stable UUID IDs and endpoint aliases were absent. Hosted
-`/api/v1/servers/search` and `/api/v1/servers/resolve` returned `404`. The strict
-opt-in client is therefore expected to reject the current hosted response until
-the new WolfAPI commits and migration are deployed.
+Post-migration probe on 2026-07-13: `/api/v1/servers?limit=2` returned `200`
+with contract/generation metadata, coverage, validation queue lag, stable UUID
+IDs and endpoint aliases. Migration `20260713_0006` and the bounded list
+contract are therefore live. Dedicated search returned `500` and exact
+resolution returned `503`; WolfAPI commit `552b9cf` fixes leaked FastAPI
+parameter descriptors in those route wrappers. The strict opt-in client should
+continue to fail closed until that fix is deployed and all three routes pass
+the production canary.
 
 ## Implemented WolfAPI v1 contract
 
