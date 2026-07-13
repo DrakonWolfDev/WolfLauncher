@@ -77,8 +77,9 @@ Legacy `/api/servers` remains compatibility-only and endpoint-keyed.
 
 Foundation implemented locally on 2026-07-13:
 
-- SQLite schema v2 migrates existing v1 caches in place and stores stable IDs,
-  aliases, freshness and validation state;
+- SQLite schema v3 migrates either earlier schema-v2 layout in place and
+  combines Workshop metadata with stable IDs, aliases, freshness and
+  validation state;
 - WolfAPI rows are merged by stable ID so corrected ports move one row;
 - opt-in bounded list, remote search and exact-resolution clients exist;
 - v1 responses are rejected unless contract version, generation time,

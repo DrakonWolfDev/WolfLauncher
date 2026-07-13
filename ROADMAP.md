@@ -47,7 +47,7 @@ Status: complete. Native launch parity has been validated in real-world use and 
 - Build an internal launcher-engine module behind the existing GUI workflow. Completed for compact mod symlink names, mod link preparation, launch previews, native handoff and Steam command generation.
 - Reproduce the current external launcher command behaviour with test coverage.
 - Direct Steam/Proton launch handling has been validated for native and Flatpak Steam, with Steam running and stopped, and with unmodded, fully modded and partially missing-mod servers.
-- Investigate Steam Workshop mod installation routes, with Steam-native subscription/download flows preferred over custom file management.
+- Investigate Steam Workshop mod installation routes, with Steam-native subscription/download flows preferred over custom file management. An opt-in ISteamUGC experiment now delegates confirmed subscriptions/downloads to the running Steam client; native and Flatpak real-world hardening remains.
 - Keep the external launcher path as a visible fallback during native hardening.
 
 ## v0.8.x - WolfAPI discovery quality and submissions
@@ -113,6 +113,58 @@ Status: in progress. Native hardening boundaries are established and the initial
 - Improve structured launch errors and user-facing diagnostics.
 - Add regression tests for launch command generation, host resolution and Steam mode detection.
   Current coverage includes resolved external/native targets, DNS failures, non-default ports, player-name argument safety, native/Flatpak/`STEAM_ROOT` selection and deterministic complete-install priority.
+
+### Experimental Workshop and join-flow hardening
+
+Real-world native-Steam testing confirmed subscription/download batches, isolated-helper cleanup and verified launch-after-download. Testing included a 34-mod subscription batch, a 61-mod lifecycle/stall investigation and successful post-fix multi-mod completion and launch. Flatpak and restart/recovery boundaries remain before the feature can leave experimental status.
+
+Priority 1 — safe Steam handoff:
+
+- Completed — reproduced the post-download launch failure where Steam claimed DayZ was running without starting a DayZ process, then resolved it by moving Steamworks ownership out of the GUI process.
+- Completed — the Steamworks context now lives in an isolated helper process that must exit before launch is enabled; successful native-Steam launch-after-download is confirmed.
+- Completed — isolated-helper process exit is the readiness boundary. Real-world retesting confirmed that the earlier fixed 10-second cooldown was unnecessary.
+- Completed — launch is blocked while the subscription helper is active, and **Launch server** waits for helper exit plus a fresh all-installed mod check before handoff.
+- Completed — on restart, relevant numeric items in Steam's DayZ Workshop download staging area are presented as possible outstanding activity; duplicate helper sessions and launch are guarded until Steam finishes and a fresh mod check clears the evidence.
+- Completed — the unsafe **Stop monitoring** behavior was replaced with **Hide monitor**: the original helper keeps monitoring in the background, hidden progress updates cannot reopen the dialog, and the install action returns to that same session.
+
+Priority 2 — direct discovered-server journey:
+
+- Completed — a discovered Server Browser row can become the active in-memory server context for mod checking, subscription and launch without first writing it to curated YAML.
+- Completed — direct **Inspect mods** and **Launch server** actions keep the selected discovered identity through background mod and Workshop work; double-click begins the inspect flow.
+- Completed — **Promote to curated** remains an optional persistence action, not a prerequisite for trying or joining a server.
+- Completed — local curated YAML remains the user-owned saved-server source while remote discovered rows stay read-only.
+
+Priority 3 — Workshop readiness and information:
+
+- Completed — missing mods can be requested from the Mods tab or launch warning after explicit confirmation, with bounded retry for incomplete Steam download requests.
+- Completed — batch progress shows installed count, current mod name and percentage when Steam supplies it; successful completion offers the guarded **Launch server** continuation.
+- Completed — if Steam stops reporting any state, byte or directory progress for two minutes, the isolated helper exits with an explicit incomplete result so AppID 221100 is released instead of leaving DayZ shown as running until the full operation timeout.
+- Completed — normal experimental mod checks and a final isolated pre-handoff query use `ISteamUGC::GetItemState`; launch is cancelled if the fresh result is unavailable or reports update/pending/downloading items.
+- Completed — when experimental Steam integration is enabled and Steam is running, the normal selected-server mod check performs a batch Workshop item-state check so **Installed**, **Update required**, **Download pending** and **Downloading** are represented honestly instead of treating directory presence as readiness.
+- Completed — Mods rows provide **Check/update this mod** through the same isolated Steam helper for targeted recovery, while the ordinary server-level check remains the primary way to validate the complete required set.
+- Completed — Mods rows and the Steam confirmation use Steam published-file metadata for pre-download sizes, switch to remaining transfer bytes once available, and label genuinely unavailable or partial totals explicitly.
+- Completed — Mods rows show queued/downloading/verifying states during the batch, with a green per-row progress bar when Steam supplies a percentage and the existing forced local recheck producing the final verified **Installed** state.
+- Completed — progress UI uses mod names with numeric Workshop IDs only as fallback/support detail.
+- Completed — discovered rows show required-mod counts supplied by providers or learned from a successful direct server mod check; unknown remains blank rather than being treated as zero.
+
+Priority 4 — discovery truth and regression coverage:
+
+- Completed — provider claims are shown in amber as **PROVIDER ONLINE/OFFLINE** with provenance guidance; successful or failed local enrichment changes the row to locally validated **ONLINE/OFFLINE** with its check timestamp.
+- Completed — explicit visible-row enrichment preserves top-to-bottom priority while checking concurrently, replaces obsolete cache keys when live game-port correction changes identity and reports incremental progress without automatic discovered-server UDP polling.
+- Cover stopped Steam, Steam stopping mid-operation, partial completion, deleted/unavailable items, restart during downloads, secondary libraries, Flatpak Steam and launch-after-download in repeatable tests and the manual smoke checklist.
+
+Visual-polish review note:
+
+- Recheck the Mods table after fonts, theme, colours, icons and branding are introduced. Review column padding, row height, compact-column centring, name/URL balance and overall information density in the final visual system.
+
+Discovery-freshness boundary:
+
+- Fixed startup enrichment has been removed. WolfAPI v1 freshness/validation evidence supports browsing, explicit visible-row enrichment remains available, and curated/selected/launch-time checks remain local truth.
+- Preserve honest provider-vs-local status without unnecessary queries for off-screen discovered rows.
+- Use `DISCOVERY_FRESHNESS_HANDOFF.md` as the cross-project implementation contract.
+- WolfAPI's matching contract now includes bounded required-mod metadata polling, nullable count/status fields, a full-manifest detail endpoint and the complete launcher-facing enrichment inventory; keep direct launcher lookup as selected-server/launch fallback.
+- Treat two-stage local-plus-remote search as a core scalability requirement: the first page is only a default view, while debounced indexed API search and exact host/port resolution must find rows anywhere in the canonical directory.
+- Pause further normal-path Server Browser architecture work until WolfAPI profiles/fixes its observed 4 GB memory exhaustion and provides the versioned paginated/search/freshness contract. Launcher-side selected-server, launch-safety, offline and unrelated work can continue independently.
 
 ## v0.9.9 - Packaging preparation
 

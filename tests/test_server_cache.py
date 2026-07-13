@@ -34,7 +34,7 @@ class ServerCacheTests(unittest.TestCase):
         self.assertIn("endpoint_aliases", columns)
         self.assertIn("validation_status", columns)
 
-    def test_schema_v1_migrates_to_v2_without_losing_rows(self):
+    def test_schema_v1_migrates_to_v3_without_losing_rows(self):
         tmpdir = tempfile.TemporaryDirectory()
         path = Path(tmpdir.name) / "server_cache.sqlite3"
         self.addCleanup(tmpdir.cleanup)
@@ -78,7 +78,10 @@ class ServerCacheTests(unittest.TestCase):
         migrated = server_cache.connect(path)
         self.addCleanup(migrated.close)
 
-        self.assertEqual(migrated.execute("PRAGMA user_version").fetchone()[0], 2)
+        self.assertEqual(
+            migrated.execute("PRAGMA user_version").fetchone()[0],
+            server_cache.SCHEMA_VERSION,
+        )
         cached = server_cache.get_server(migrated, "203.0.113.10:2302:27016")
         self.assertEqual(cached.name, "Existing")
         self.assertEqual(cached.stable_server_id, "")
@@ -93,6 +96,76 @@ class ServerCacheTests(unittest.TestCase):
 
         with self.assertRaisesRegex(RuntimeError, "newer"):
             server_cache.connect(path)
+
+    def test_schema_v1_migrates_required_count_and_status_source(self):
+        connection = server_cache.sqlite3.connect(":memory:")
+        self.addCleanup(connection.close)
+        connection.execute("CREATE TABLE discovered_servers (cache_key TEXT PRIMARY KEY)")
+        connection.execute("PRAGMA user_version = 1")
+
+        server_cache.initialize(connection)
+
+        columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")
+        }
+        self.assertEqual(
+            connection.execute("PRAGMA user_version").fetchone()[0],
+            server_cache.SCHEMA_VERSION,
+        )
+        self.assertIn("required_mod_count", columns)
+        self.assertIn("status_source", columns)
+
+    def test_hardening_schema_v2_adds_wolfapi_columns(self):
+        connection = server_cache.sqlite3.connect(":memory:")
+        self.addCleanup(connection.close)
+        connection.execute(
+            """
+            CREATE TABLE discovered_servers (
+                cache_key TEXT PRIMARY KEY,
+                required_mod_count INTEGER,
+                status_source TEXT NOT NULL DEFAULT 'provider'
+            )
+            """
+        )
+        connection.execute("PRAGMA user_version = 2")
+
+        server_cache.initialize(connection)
+
+        columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")
+        }
+        self.assertEqual(
+            connection.execute("PRAGMA user_version").fetchone()[0],
+            server_cache.SCHEMA_VERSION,
+        )
+        self.assertIn("stable_server_id", columns)
+        self.assertIn("validation_status", columns)
+
+    def test_wolfapi_schema_v2_adds_hardening_columns(self):
+        connection = server_cache.sqlite3.connect(":memory:")
+        self.addCleanup(connection.close)
+        connection.execute(
+            """
+            CREATE TABLE discovered_servers (
+                cache_key TEXT PRIMARY KEY,
+                stable_server_id TEXT NOT NULL DEFAULT '',
+                endpoint_aliases TEXT NOT NULL DEFAULT '[]'
+            )
+            """
+        )
+        connection.execute("PRAGMA user_version = 2")
+
+        server_cache.initialize(connection)
+
+        columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")
+        }
+        self.assertEqual(
+            connection.execute("PRAGMA user_version").fetchone()[0],
+            server_cache.SCHEMA_VERSION,
+        )
+        self.assertIn("required_mod_count", columns)
+        self.assertIn("status_source", columns)
 
     def test_upsert_and_get_server_round_trips_discovered_server(self):
         connection = self.open_cache()
@@ -113,6 +186,8 @@ class ServerCacheTests(unittest.TestCase):
             online=True,
             last_checked="2026-06-20T12:00:00Z",
             last_seen="2026-06-20T12:00:00Z",
+            required_mod_count=12,
+            status_source="local",
         )
 
         server_cache.upsert_server(connection, server)
@@ -255,6 +330,21 @@ class ServerCacheTests(unittest.TestCase):
         self.assertEqual(cached.name, "New Name")
         self.assertEqual(cached.players_current, 28)
         self.assertTrue(cached.online)
+
+    def test_replace_server_key_removes_obsolete_provider_row(self):
+        connection = self.open_cache()
+        original = DiscoveredServer("Example", "203.0.113.10", 27018, 27018)
+        corrected = DiscoveredServer(
+            "Example", "203.0.113.10", 37017, 27018, status_source="local"
+        )
+        server_cache.upsert_server(connection, original)
+
+        server_cache.replace_server_key(connection, original.cache_key, corrected)
+
+        self.assertIsNone(server_cache.get_server(connection, original.cache_key))
+        self.assertEqual(
+            server_cache.get_server(connection, corrected.cache_key), corrected
+        )
 
     def test_upsert_servers_returns_inserted_count(self):
         connection = self.open_cache()

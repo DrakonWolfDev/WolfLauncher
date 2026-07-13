@@ -488,6 +488,7 @@ class WolfApiDiscoveryTests(unittest.TestCase):
                 "version": "1.29.163047",
                 "gametype": "battleye,external,mod",
                 "last_seen": "2026-06-21T19:27:29+00:00",
+                "required_mod_count": 17,
             },
             "2026-06-21T19:30:00+00:00",
         )
@@ -509,6 +510,7 @@ class WolfApiDiscoveryTests(unittest.TestCase):
                 online=True,
                 last_checked="2026-06-21T19:30:00+00:00",
                 last_seen="2026-06-21T19:27:29+00:00",
+                required_mod_count=17,
             ),
         )
 

@@ -1,9 +1,10 @@
 import unittest
 from unittest.mock import patch
 
-from wolflauncher.models import Server
+from wolflauncher.models import DiscoveredServer, Server
 from wolflauncher.status import ServerStatus
 from wolflauncher.workers import (
+    ServerEnrichmentWorker,
     StatusWorker,
     SteamDiscoveryWorker,
     WolfApiDiscoveryWorker,
@@ -134,6 +135,33 @@ class WorkerTests(unittest.TestCase):
         check_server.return_value = expected
 
         self.assertIs(_checked_server_status(sample_server()), expected)
+
+    @patch("wolflauncher.workers.check_server", return_value=ServerStatus(True))
+    def test_enrichment_worker_emits_incremental_progress(self, _check_server):
+        servers = [
+            DiscoveredServer("One", "127.0.0.1", 2302, 2303),
+            DiscoveredServer("Two", "127.0.0.2", 2302, 2303),
+        ]
+        progress = []
+        completed = []
+        worker = ServerEnrichmentWorker(servers)
+        worker.enrichment_progress.connect(
+            lambda payload, count, total: progress.append(
+                (payload[0], payload[1].name, count, total)
+            )
+        )
+        worker.enrichment_ready.connect(
+            lambda enriched, error: completed.append((enriched, error))
+        )
+
+        worker.run()
+
+        self.assertEqual([item[1] for item in progress], ["One", "Two"])
+        self.assertEqual([item[2] for item in progress], [1, 2])
+        self.assertTrue(all(item[3] == 2 for item in progress))
+        self.assertEqual(progress[0][0], servers[0].cache_key)
+        self.assertEqual(len(completed[0][0]), 2)
+        self.assertEqual(completed[0][1], "")
 
 
 if __name__ == "__main__":

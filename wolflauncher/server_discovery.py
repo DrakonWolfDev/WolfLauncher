@@ -227,6 +227,15 @@ def discovered_server_from_endpoint(endpoint: MasterServerEndpoint, timestamp: s
     )
 
 
+def _required_mod_count(row: dict) -> int | None:
+    for key in ("required_mod_count", "requiredModCount", "mod_count", "mods_count"):
+        value = _optional_int(row.get(key))
+        if value is not None and value >= 0:
+            return value
+    mods = row.get("required_mods") or row.get("requiredMods") or row.get("mods")
+    return len(mods) if isinstance(mods, list) else None
+
+
 def discover_dayz_servers_web_api(
     api_key: str = "",
     limit: int = 5000,
@@ -317,6 +326,7 @@ def discovered_server_from_web_api_row(row: dict, timestamp: str = "") -> Discov
         online=True,
         last_checked=timestamp,
         last_seen=timestamp,
+        required_mod_count=_required_mod_count(row),
     )
 
 
@@ -603,6 +613,7 @@ def discovered_server_from_wolfapi_row(row: dict, timestamp: str = "") -> Discov
         validation_error_code=str(row.get("validation_error_code") or ""),
         provider_last_checked=str(row.get("provider_last_checked") or ""),
         provider_last_seen=str(row.get("provider_last_seen") or ""),
+        required_mod_count=_required_mod_count(row),
     )
 
 
@@ -695,6 +706,11 @@ def discovered_server_from_battlemetrics_row(row: dict, timestamp: str = "") -> 
         online=status == "online",
         last_checked=timestamp,
         last_seen=timestamp if status == "online" else "",
+        required_mod_count=(
+            _required_mod_count(details)
+            if _required_mod_count(details) is not None
+            else _required_mod_count(attributes)
+        ),
     )
 
 

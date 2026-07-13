@@ -17,7 +17,7 @@ Handoff recorded: 2026-07-11 after commit `05d0ce5` on `main`.
 - Release `v0.8.0` is tagged at `b7883a2` and pushed to GitHub.
 - Native launch is the default for fresh settings; an existing saved external-launcher choice is preserved.
 - GitHub Actions runs the unit suite on Python 3.10, 3.11 and 3.12. The matrix passed for `05d0ce5` in run `29168383905`.
-- The local suite contains 280 passing tests.
+- The local suite contains 323 passing tests.
 - Real desktop smoke testing passed after the v0.9 refactors: Settings health refresh/population, Copy health, Copy diagnostics, native preview copy actions, dialog close behavior, a known-working native server handoff, Server Browser filters/limits/sorting, curated promotion/editing, discovered-row display metadata and discovered-server **Copy details** all worked.
 - `wolflauncher/launch_dialogs.py` now owns external/native launch dialogs and post-handoff DayZ process watching.
 - `wolflauncher/settings_health.py` now owns testable Settings health snapshot construction.
@@ -61,7 +61,7 @@ Handoff recorded: 2026-07-11 after commit `05d0ce5` on `main`.
 - Commits `957bb8c`, `d7094ea`, `13f2087`, `92c2174`, `c995c14`, `af98eb1`, `7ced984`, `8cd8385` and `05d0ce5` hardened launch preflight, target selection, mod lookup/reporting and stale mod-result handling; each pushed slice passed its hosted matrix through the final run `29168383905`.
 - The working tree was clean and synchronized with `origin/main` before this handoff documentation refresh.
 
-Recommended next step: continue v0.9 native hardening through small behavior-preserving `app.py` boundaries and real-world Steam/Proton regression fixes as evidence arrives. Launch-preflight decisions, state construction and server/Workshop-bound cached-mod selection belong in `wolflauncher/launch_preflight.py`, and validated cached-IP target selection belongs in `wolflauncher/launch_selection.py`; Qt dialog presentation remains in `app.py`. Do not refactor merely for line count. Preserve the approved four-tab hierarchy and `QTimer` in `app.py`; UTC refresh handling belongs in `wolflauncher/discovery_refresh.py`. Run the 280-test suite and keep the settled clean-profile startup smoke check for import/startup changes.
+Recommended next step: physically validate the experimental Workshop flow on Flatpak Steam. Real-world native-Steam testing confirmed successful subscription/download batches, safe hidden monitoring, bounded incomplete-item retries and launch after isolated-helper exit plus a fresh all-installed mod check. Restart/recovery conservatively guards relevant staged items. Discovered rows can now be inspected, resolved and launched directly through a read-only in-memory context; curated promotion remains optional. Preserve the approved four-tab hierarchy and validate this direct join flow on a real desktop. Run the current unit suite and keep the settled clean-profile startup smoke check for import/startup changes.
 
 ## v0.9 GUI consistency handoff
 
@@ -169,7 +169,7 @@ Planned WolfAPI follow-up:
 - `DISCOVERY_FRESHNESS_HANDOFF.md` records the cross-repository contract and
   rollout state; `ROADMAP.md` tracks the launcher adoption work.
 - The current launcher working tree contains the additive adoption foundation:
-  SQLite schema v2 preserves existing rows while adding stable IDs, endpoint
+  SQLite schema v3 preserves both earlier v2 layouts while combining stable IDs, endpoint
   aliases and freshness/validation fields; WolfAPI rows merge port corrections
   by stable ID; opt-in v1 list/search/resolve clients enforce rollout metadata.
   Settings exposes v1 as an explicit staged provider while existing saved
@@ -296,7 +296,7 @@ Current handling:
 - Auto Steam selection is reported from the same detection snapshot as the candidate list so users can see why native or Flatpak Steam was chosen.
 - Native launch command generation now fails before handoff when the selected Steam mode lacks a detected command, with mode-specific guidance for native Steam, Flatpak Steam and `STEAM_ROOT`.
 - `STEAM_ROOT` detection reuses the native Steam command and running state when available, while Settings health warns if the selected library is complete but no launchable Steam command is detected.
-- Mod management is read-only and advisory: it detects installed/missing mods and opens Workshop pages, but does not attempt automatic downloads. Future mod installation work should investigate Steam-native subscription/download routes first and require explicit user confirmation.
+- Mod management remains read-only and advisory by default. An opt-in experimental control now uses the official Steam API redistributable already present in the selected Steam installation to confirm and request missing-item subscriptions through `ISteamUGC`, monitor progress, and verify local directories. Its Steamworks context is isolated in a spawned helper process that must exit before launch is re-enabled. It never vendors Valve's binary, downloads Workshop bytes itself, or removes subscriptions; manual Workshop links remain the fallback. Native Steam real-world testing passed; Flatpak testing is still required.
 - Launch remains guarded: WolfLauncher warns about missing mods and Steam state before native handoff or calling the external fallback.
 - Hostnames are resolved before launch where possible to mirror the original terminal menu behaviour and avoid DayZSA API issues with DNS-based servers.
 - Python bytecode caches are ignored and should not be tracked as source.
@@ -318,5 +318,5 @@ Use v0.9 native-launch hardening as the next active development target:
 - Continue improving curated server organisation beyond basic edit/remove flows.
 - Keep local `servers.yaml` for curated, personal and import/export server lists, seeded from tracked `example.servers.yaml` when missing.
 - Continue carving native Python equivalents from the vendored launcher's behavior while expanding the new native launcher engine behind WolfLauncher interfaces.
-- Keep mod installation as a future investigated design, not part of the current read-only mod-management contract.
+- Keep mod management read-only by default while hardening the opt-in Steam-native experiment through the ordered Workshop/join-flow roadmap. Do not graduate it until the post-download launch race and monitoring semantics are resolved.
 - Keep the NVIDIA PRIME Steam launch-option issue visible as the only known bug until it is reproduced and diagnosed.

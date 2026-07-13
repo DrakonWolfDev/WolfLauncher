@@ -33,6 +33,8 @@ class DiscoveredServer:
     online: bool = False
     last_checked: str = ""
     last_seen: str = ""
+    required_mod_count: int | None = None
+    status_source: str = "provider"
     stable_server_id: str = ""
     endpoint_aliases: tuple[str, ...] = ()
     freshness: str = ""

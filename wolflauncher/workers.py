@@ -1,10 +1,16 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
+import threading
 
 from PySide6.QtCore import QThread, Signal
 
 from .models import Server
-from .mods import check_server_mods
+from .mods import (
+    apply_workshop_file_sizes,
+    apply_workshop_item_states,
+    check_server_mods,
+    fetch_workshop_file_sizes,
+)
 from .server_discovery import (
     discover_dayz_servers,
     discover_dayz_servers_battlemetrics,
@@ -17,9 +23,15 @@ from .server_discovery import (
 )
 from .server_enrichment import enrich_discovered_server, enrichment_probe_servers
 from .status import ServerStatus, check_server
+from .workshop_subscription import (
+    WorkshopSubscriptionResult,
+    query_workshop_item_states_isolated,
+    subscribe_workshop_items_isolated,
+)
 
 
 MAX_STATUS_WORKERS = 8
+MAX_ENRICHMENT_WORKERS = 8
 WOLFAPI_V1_PAGE_SIZE = 100
 
 
@@ -60,14 +72,70 @@ class StatusWorker(QThread):
 class ModWorker(QThread):
     mods_ready = Signal(object)
 
-    def __init__(self, server: Server, workshop_dir, steam_context: str = ""):
+    def __init__(self, server: Server, workshop_dir, steam_context: str = "", workshop_install=None):
         super().__init__()
         self.server = server
         self.workshop_dir = workshop_dir
         self.steam_context = steam_context
+        self.workshop_install = workshop_install
 
     def run(self):
-        self.mods_ready.emit(check_server_mods(self.server, self.workshop_dir, self.steam_context))
+        result = check_server_mods(self.server, self.workshop_dir, self.steam_context)
+        if result.ok and result.required_mods and self.workshop_install:
+            apply_workshop_file_sizes(
+                result,
+                fetch_workshop_file_sizes(mod.workshop_id for mod in result.required_mods),
+            )
+            states = query_workshop_item_states_isolated(
+                (mod.workshop_id for mod in result.required_mods), self.workshop_install
+            )
+            if states.error:
+                result.workshop_state_error = states.error
+            else:
+                apply_workshop_item_states(result, states.items)
+        self.mods_ready.emit(result)
+
+
+class WorkshopSubscriptionWorker(QThread):
+    progress_ready = Signal(object)
+    subscription_ready = Signal(object)
+
+    def __init__(self, workshop_ids: list[str], install):
+        super().__init__()
+        self.workshop_ids = list(workshop_ids)
+        self.install = install
+        self._cancelled = threading.Event()
+
+    def cancel(self):
+        self._cancelled.set()
+
+    def run(self):
+        try:
+            result = subscribe_workshop_items_isolated(
+                self.workshop_ids,
+                self.install,
+                progress_callback=self.progress_ready.emit,
+                cancelled=self._cancelled,
+            )
+        except Exception as exc:
+            result = WorkshopSubscriptionResult(
+                (), tuple(self.workshop_ids), error=str(exc)
+            )
+        self.subscription_ready.emit(result)
+
+
+class WorkshopStateWorker(QThread):
+    state_ready = Signal(object)
+
+    def __init__(self, workshop_ids, install):
+        super().__init__()
+        self.workshop_ids = tuple(workshop_ids)
+        self.install = install
+
+    def run(self):
+        self.state_ready.emit(
+            query_workshop_item_states_isolated(self.workshop_ids, self.install)
+        )
 
 
 class SteamDiscoveryWorker(QThread):
@@ -218,6 +286,7 @@ class WolfApiSearchWorker(QThread):
 
 class ServerEnrichmentWorker(QThread):
     enrichment_ready = Signal(object, str)
+    enrichment_progress = Signal(object, int, int)
 
     def __init__(self, servers):
         super().__init__()
@@ -226,15 +295,26 @@ class ServerEnrichmentWorker(QThread):
     def run(self):
         checked_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
         enriched = []
-        try:
-            for server in self.servers:
+        total = len(self.servers)
+
+        def enrich_one(server):
+            try:
                 status = ServerStatus(False, error="No valid query ports to probe.")
                 for probe in enrichment_probe_servers(server):
                     status = check_server(probe)
                     if status.online:
                         break
-                enriched.append(enrich_discovered_server(server, status, checked_at))
-        except Exception as exc:
-            self.enrichment_ready.emit(enriched, str(exc))
-        else:
-            self.enrichment_ready.emit(enriched, "")
+            except Exception as exc:
+                status = ServerStatus(False, error=f"live check failed: {exc}")
+            return enrich_discovered_server(server, status, checked_at)
+
+        max_workers = min(MAX_ENRICHMENT_WORKERS, total) if total else 1
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            for completed, (original, server) in enumerate(
+                zip(self.servers, executor.map(enrich_one, self.servers)), 1
+            ):
+                enriched.append(server)
+                self.enrichment_progress.emit(
+                    (original.cache_key, server), completed, total
+                )
+        self.enrichment_ready.emit(enriched, "")

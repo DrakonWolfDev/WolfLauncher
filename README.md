@@ -12,7 +12,7 @@ The upstream MIT-licensed shell launcher is vendored in `external/dayz-linux-cli
 
 Current baseline: v0.8 native-launch parity validated, with the native launcher used by default and the external launcher retained as a fallback.
 
-The server browser, settings health checks, diagnostics, mod checks and guarded launch handoff are working. The native engine has been validated with native and Flatpak Steam, Steam running and stopped, unmodded servers, fully installed mod sets and partially missing mod sets. Missing mods are identified and linked to their Workshop pages; automatic Workshop subscription or downloading remains intentionally out of scope. The external launcher remains available as a fallback. The only known bug is that DayZ does not run when Steam launch options contain:
+The server browser, settings health checks, diagnostics, mod checks and guarded launch handoff are working. The native engine has been validated with native and Flatpak Steam, Steam running and stopped, unmodded servers, fully installed mod sets and partially missing mod sets. Missing mods are identified and linked to their Workshop pages. An opt-in experimental control can ask the signed-in Steam client to subscribe to and download missing items; the existing manual Workshop flow remains the fallback. The external launcher remains available as a fallback. The only known bug is that DayZ does not run when Steam launch options contain:
 
 ```text
 __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%
@@ -85,6 +85,7 @@ Useful evidence for debugging:
 - Installed versus required mod comparison.
 - Missing mod detection.
 - Direct Steam Workshop links.
+- Opt-in experimental Steam-native subscription and download monitoring.
 - Launch warnings when required mods are missing.
 
 ### Launch Integration
@@ -101,7 +102,11 @@ Useful evidence for debugging:
 
 These instructions target Linux Mint 21/22 and Ubuntu 22.04/24.04 family systems.
 
-Steam and DayZ should already be installed through native Steam or Flatpak Steam. WolfLauncher does not install DayZ, Proton or Workshop content for you.
+Steam and DayZ should already be installed through native Steam or Flatpak Steam. WolfLauncher does not install DayZ or Proton. The experimental Workshop control delegates confirmed subscriptions and downloads to the user's running Steam client.
+
+The experimental control is disabled by default. Enable **Steam-native subscription controls** under the Settings advanced disclosure and run a successful mod check. Missing mods can then be requested from the Mods tab or directly from the missing-mod launch warning. Steam must be running under the same user and signed into an account that owns DayZ. **Hide monitor** only hides the progress window: the original helper continues monitoring in the background and launch remains blocked until it finishes. Use the install action again to reopen that same live monitor; WolfLauncher will not start a second Steamworks session. Flatpak compatibility remains under real-world test.
+
+After a successful batch, **Launch server** waits for the isolated Steamworks helper to exit and for a fresh mod check to confirm every required directory before starting the selected server. A failed or incomplete recheck returns control to the Mods tab instead of launching with stale readiness data.
 
 ### Quick Development Setup
 

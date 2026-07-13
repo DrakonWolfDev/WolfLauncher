@@ -2,6 +2,7 @@ import json
 import re
 import urllib.error
 import urllib.request
+import urllib.parse
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -12,6 +13,9 @@ from .status import resolve_host
 
 DAYZSA_QUERY_URL = "https://dayzsalauncher.com/api/v1/query/{address}/{port}"
 WORKSHOP_URL = "https://steamcommunity.com/sharedfiles/filedetails/?id={mod_id}"
+WORKSHOP_DETAILS_URL = (
+    "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"
+)
 
 
 @dataclass
@@ -21,6 +25,24 @@ class RequiredMod:
     installed: bool = False
     installed_name: str = ""
     workshop_url: str = ""
+    workshop_state: int | None = None
+    workshop_downloaded: int = 0
+    workshop_total: int = 0
+    workshop_file_size: int = 0
+
+    @property
+    def ready(self) -> bool:
+        if not self.installed:
+            return False
+        if self.workshop_state is None:
+            return True
+        from .workshop_subscription import (
+            ITEM_STATE_DOWNLOADING,
+            ITEM_STATE_DOWNLOAD_PENDING,
+            ITEM_STATE_NEEDS_UPDATE,
+        )
+        blocked = ITEM_STATE_NEEDS_UPDATE | ITEM_STATE_DOWNLOADING | ITEM_STATE_DOWNLOAD_PENDING
+        return not bool(self.workshop_state & blocked)
 
 
 @dataclass
@@ -32,10 +54,69 @@ class ModCheckResult:
     error: str = ""
     steam_context: str = ""
     workshop_dir: str = ""
+    workshop_state_error: str = ""
 
     @property
     def missing_mods(self) -> list[RequiredMod]:
+        return [mod for mod in self.required_mods if not mod.ready]
+
+    @property
+    def absent_mods(self) -> list[RequiredMod]:
         return [mod for mod in self.required_mods if not mod.installed]
+
+    @property
+    def update_mods(self) -> list[RequiredMod]:
+        return [mod for mod in self.required_mods if mod.installed and not mod.ready]
+
+
+def apply_workshop_item_states(result: ModCheckResult, states) -> ModCheckResult:
+    """Attach Steam item-state snapshots to an existing local-directory check."""
+    by_id = {item.workshop_id: item for item in states}
+    for mod in result.required_mods:
+        item = by_id.get(mod.workshop_id)
+        if item is None:
+            continue
+        mod.workshop_state = item.state
+        mod.workshop_downloaded = item.downloaded
+        mod.workshop_total = item.total
+    return result
+
+
+def fetch_workshop_file_sizes(workshop_ids) -> dict[str, int]:
+    """Fetch published Workshop file sizes from Steam's public batch endpoint."""
+    ids = tuple(dict.fromkeys(str(item).strip() for item in workshop_ids if str(item).strip()))
+    if not ids:
+        return {}
+    fields = [("itemcount", str(len(ids)))]
+    fields.extend((f"publishedfileids[{index}]", item) for index, item in enumerate(ids))
+    request = urllib.request.Request(
+        WORKSHOP_DETAILS_URL,
+        data=urllib.parse.urlencode(fields).encode("ascii"),
+        headers={"User-Agent": "WolfLauncher/0.8"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=10) as response:
+            payload = json.loads(response.read().decode("utf-8", errors="replace"))
+    except (OSError, ValueError, urllib.error.URLError):
+        return {}
+    details = payload.get("response", {}).get("publishedfiledetails", [])
+    sizes = {}
+    for detail in details if isinstance(details, list) else []:
+        try:
+            workshop_id = str(detail["publishedfileid"])
+            size = int(detail.get("file_size") or 0)
+        except (KeyError, TypeError, ValueError):
+            continue
+        if workshop_id in ids and size > 0:
+            sizes[workshop_id] = size
+    return sizes
+
+
+def apply_workshop_file_sizes(result: ModCheckResult, sizes: dict[str, int]) -> ModCheckResult:
+    for mod in result.required_mods:
+        mod.workshop_file_size = max(0, int(sizes.get(mod.workshop_id, 0)))
+    return result
 
 
 _NAME_RE = re.compile(r'name\s*=\s*"([^"]+)"')

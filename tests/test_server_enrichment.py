@@ -59,6 +59,7 @@ class ServerEnrichmentTests(unittest.TestCase):
         self.assertTrue(enriched.online)
         self.assertEqual(enriched.last_checked, "2026-06-20T14:00:00+00:00")
         self.assertEqual(enriched.last_seen, "2026-06-20T14:00:00+00:00")
+        self.assertEqual(enriched.status_source, "local")
 
     def test_offline_status_only_marks_checked_and_offline(self):
         enriched = enrich_discovered_server(
@@ -70,6 +71,7 @@ class ServerEnrichmentTests(unittest.TestCase):
         self.assertFalse(enriched.online)
         self.assertEqual(enriched.last_checked, "2026-06-20T14:00:00+00:00")
         self.assertEqual(enriched.last_seen, "2026-06-20T12:00:00Z")
+        self.assertEqual(enriched.status_source, "local")
 
     def test_parse_connect_port_reads_port_from_gamedig_connect_address(self):
         self.assertEqual(parse_connect_port("203.0.113.10:2302"), 2302)

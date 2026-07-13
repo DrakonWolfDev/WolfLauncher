@@ -12,7 +12,7 @@ import yaml
 from .models import DiscoveredServer
 
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 DATA_DIR = Path.home() / ".local" / "share" / "wolflauncher"
 SERVER_CACHE_PATH = DATA_DIR / "server_cache.sqlite3"
 
@@ -82,6 +82,8 @@ def _initialize_schema_v1(connection: sqlite3.Connection) -> None:
             online INTEGER NOT NULL DEFAULT 0,
             last_checked TEXT NOT NULL DEFAULT '',
             last_seen TEXT NOT NULL DEFAULT '',
+            required_mod_count INTEGER,
+            status_source TEXT NOT NULL DEFAULT 'provider',
             stable_server_id TEXT NOT NULL DEFAULT '',
             endpoint_aliases TEXT NOT NULL DEFAULT '[]',
             freshness TEXT NOT NULL DEFAULT '',
@@ -135,8 +137,10 @@ def _initialize_alias_schema(connection: sqlite3.Connection) -> None:
 
 
 def _migrate(connection: sqlite3.Connection, current_version: int, target_version: int) -> None:
-    if current_version == 1 and target_version >= 2:
-        for definition in (
+    if current_version in (1, 2) and target_version >= 3:
+        definitions = (
+            "required_mod_count INTEGER",
+            "status_source TEXT NOT NULL DEFAULT 'provider'",
             "stable_server_id TEXT NOT NULL DEFAULT ''",
             "endpoint_aliases TEXT NOT NULL DEFAULT '[]'",
             "freshness TEXT NOT NULL DEFAULT ''",
@@ -147,15 +151,24 @@ def _migrate(connection: sqlite3.Connection, current_version: int, target_versio
             "validation_error_code TEXT NOT NULL DEFAULT ''",
             "provider_last_checked TEXT NOT NULL DEFAULT ''",
             "provider_last_seen TEXT NOT NULL DEFAULT ''",
-        ):
-            connection.execute(f"ALTER TABLE discovered_servers ADD COLUMN {definition}")
+        )
+        existing_columns = {
+            row[1]
+            for row in connection.execute("PRAGMA table_info(discovered_servers)")
+        }
+        for definition in definitions:
+            column_name = definition.split(" ", 1)[0]
+            if column_name not in existing_columns:
+                connection.execute(
+                    f"ALTER TABLE discovered_servers ADD COLUMN {definition}"
+                )
         connection.execute(
-            "CREATE UNIQUE INDEX idx_discovered_servers_stable_server_id "
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_discovered_servers_stable_server_id "
             "ON discovered_servers(stable_server_id) WHERE stable_server_id != ''"
         )
         _initialize_alias_schema(connection)
-        connection.execute("PRAGMA user_version = 2")
-        current_version = 2
+        connection.execute("PRAGMA user_version = 3")
+        current_version = 3
     if current_version != target_version:
         raise RuntimeError(
             f"Unsupported server cache migration from version {current_version} to {target_version}."
@@ -164,6 +177,18 @@ def _migrate(connection: sqlite3.Connection, current_version: int, target_versio
 
 def upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> None:
     _upsert_server(connection, server)
+    connection.commit()
+
+
+def replace_server_key(
+    connection: sqlite3.Connection, old_cache_key: str, server: DiscoveredServer
+) -> None:
+    """Upsert an enriched row and remove its obsolete pre-correction key."""
+    _upsert_server(connection, server)
+    if old_cache_key and old_cache_key != server.cache_key:
+        connection.execute(
+            "DELETE FROM discovered_servers WHERE cache_key = ?", (old_cache_key,)
+        )
     connection.commit()
 
 
@@ -189,7 +214,8 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
         INSERT INTO discovered_servers (
             cache_key, source, display_name, server_name, host, game_port, query_port,
             map_name, players_current, players_max, ping_ms, version, password,
-            modded, online, last_checked, last_seen, stable_server_id,
+            modded, online, last_checked, last_seen, required_mod_count,
+            status_source, stable_server_id,
             endpoint_aliases, freshness, freshness_expires_at, validation_status,
             validation_checked_at, validation_seen_at, validation_error_code,
             provider_last_checked, provider_last_seen
@@ -197,7 +223,8 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
         VALUES (
             :cache_key, :source, :display_name, :server_name, :host, :game_port, :query_port,
             :map_name, :players_current, :players_max, :ping_ms, :version, :password,
-            :modded, :online, :last_checked, :last_seen, :stable_server_id,
+            :modded, :online, :last_checked, :last_seen, :required_mod_count,
+            :status_source, :stable_server_id,
             :endpoint_aliases, :freshness, :freshness_expires_at, :validation_status,
             :validation_checked_at, :validation_seen_at, :validation_error_code,
             :provider_last_checked, :provider_last_seen
@@ -219,6 +246,8 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             online = excluded.online,
             last_checked = excluded.last_checked,
             last_seen = excluded.last_seen,
+            required_mod_count = excluded.required_mod_count,
+            status_source = excluded.status_source,
             stable_server_id = excluded.stable_server_id,
             endpoint_aliases = excluded.endpoint_aliases,
             freshness = excluded.freshness,
@@ -574,6 +603,8 @@ def _server_params(server: DiscoveredServer) -> dict[str, Any]:
         "online": 1 if server.online else 0,
         "last_checked": server.last_checked,
         "last_seen": server.last_seen,
+        "required_mod_count": server.required_mod_count,
+        "status_source": server.status_source,
         "stable_server_id": server.stable_server_id,
         "endpoint_aliases": json.dumps(list(server.endpoint_aliases)),
         "freshness": server.freshness,
@@ -623,6 +654,8 @@ def _server_from_import_item(item: Any, index: int) -> DiscoveredServer:
         online=_optional_bool(item.get("online", False)),
         last_checked=str(item.get("last_checked") or ""),
         last_seen=str(item.get("last_seen") or ""),
+        required_mod_count=_optional_int(item.get("required_mod_count")),
+        status_source=str(item.get("status_source") or "provider"),
         stable_server_id=str(item.get("stable_server_id") or item.get("server_id") or ""),
         endpoint_aliases=tuple(
             str(alias) for alias in item.get("endpoint_aliases", [])
@@ -695,6 +728,8 @@ def _row_to_server(row: sqlite3.Row) -> DiscoveredServer:
         online=bool(row["online"]),
         last_checked=str(row["last_checked"]),
         last_seen=str(row["last_seen"]),
+        required_mod_count=row["required_mod_count"],
+        status_source=str(row["status_source"] or "provider"),
         stable_server_id=str(row["stable_server_id"]),
         endpoint_aliases=tuple(json.loads(row["endpoint_aliases"] or "[]")),
         freshness=str(row["freshness"]),

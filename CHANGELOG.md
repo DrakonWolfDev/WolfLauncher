@@ -2,6 +2,44 @@
 
 ## Unreleased
 
+- Recorded WolfAPI's observed 4 GB memory exhaustion as a cross-project release blocker and paused further normal-path browser architecture pending API profiling, full-payload removal and mixed 1,000-client load gates.
+- Made two-stage local-plus-remote server search and exact advertised-endpoint resolution explicit cross-project requirements, including indexed API search and honest unavailable/not-found states.
+- Extended the cross-project handoff with bounded WolfAPI required-mod metadata polling, honest unknown/zero/stale/failure semantics, a manifest detail endpoint and a full launcher-facing enrichment inventory.
+- Added a detailed cross-project discovery-freshness handoff defining the WolfAPI contract, validation semantics, launcher migration, rollout gates and acceptance criteria needed to replace fixed startup polling safely.
+- Recorded fixed startup server polling as a future discovery-freshness design problem, with viewport demand, validation age, bounded background budgets and stable WolfAPI signals identified as better directions.
+- Made explicit visible-row enrichment apply results in top-to-bottom browser order and atomically replace obsolete keys after live port correction, without automatic discovered-server UDP polling.
+- Made visible-server enrichment bounded and parallel with incremental progress/cache updates, preventing a 200-row batch from appearing frozen behind sequential query timeouts.
+- Clarified blank discovered required-mod counts as provider-unknown values with an **Inspect mods** recovery tooltip.
+- Added a final isolated Workshop state query before launch; unavailable or newly unready Steam state cancels handoff instead of trusting an older Mods result.
+- Added live Mods-row queued, downloading, percentage-bar and verifying states while retaining the batch dialog and final forced local verification.
+- Added optional required-mod counts to discovered rows from provider fields or successful direct mod inspection, preserving blank as unknown.
+- Distinguished amber provider-reported discovery status from green/red locally validated status and added status-basis details and tooltips.
+- Migrated the discovered-server cache to schema v3, combining optional required-mod/status provenance with WolfAPI v1 identity and freshness fields while preserving both earlier schema-v2 layouts.
+- Recorded a follow-up review of Mods-table spacing, alignment and density for the later fonts/theme/icons/branding visual-polish pass.
+- Improved Mods-table readability with padded cells and headers, slightly taller rows, centred compact status/ID/size columns and a URL column that uses the remaining width.
+- Simplified the Mods table to Status, Name, Workshop ID, Size and Workshop URL; removed duplicate name/notes columns, moved the URL last and now shows published sizes for installed as well as missing mods.
+- Added per-mod download sizes from Steam published-file metadata and combined known estimates to experimental Workshop rows and confirmation, switching to live remaining-transfer bytes when available and explicitly identifying genuinely unavailable or partial totals.
+- Added a two-minute no-progress boundary for Workshop resolution so Steam states stuck incomplete with no active downloads return an explicit fallback result and release AppID 221100 instead of holding DayZ as running for the full 30-minute timeout.
+- Fixed Workshop progress keeping the first unresolved mod name while Steam downloaded later items; current-item text now follows Steam's downloading/progress/pending state and reports an honest waiting state otherwise.
+- Silenced repetitive native SteamAPI breakpad, Steam ID and library-load console messages inside disposable Workshop helper processes while preserving structured progress and errors.
+- Added isolated batch `ISteamUGC::GetItemState` checks to the experimental normal mod workflow, distinguishing ready, update-required, download-pending and downloading items and preventing reported unready items from passing launch preflight.
+- Added an experimental Mods-row **Check/update this mod** recovery action that reuses the isolated Steam resolution and verified post-download recheck flow for one required item.
+- Fixed sequential discovered-server mod inspection stalling after several selections by handing the newest queued context forward when the current worker actually finishes, with visible queued feedback and direct navigation to Mods.
+- Added a direct discovered-server journey: browser rows can become an in-memory active context for mod inspection, guarded Workshop resolution and launch, while promotion to curated YAML remains optional.
+- Recorded the real-world experimental Workshop hardening roadmap: post-download launch readiness, honest stop-monitoring semantics, direct discovered-server checking/launching, update checks, size/progress presentation and discovery-status truth.
+- Added an opt-in experimental Steam-native Workshop subscription flow for missing DayZ mods, with explicit account-change confirmation, per-item download monitoring, cancellation of waiting, local-directory verification and manual-link fallback.
+- Added a minimal `ctypes` ISteamUGC adapter that dynamically loads Valve's existing 64-bit Steam API redistributable from the selected Steam installation; WolfLauncher does not vendor the proprietary library or create a persistent `steam_appid.txt`.
+- Added an early selected-client warning when experimental Workshop subscription is requested while Steam is stopped, before opening the confirmation or progress flow.
+- Changed experimental Workshop progress to show the required mod name instead of a numeric Workshop ID when server metadata provides one.
+- Renamed the Workshop dialog action to **Stop monitoring**, blocked launch while the Steamworks worker is active, and added a short post-download settling boundary after the Steamworks context is released.
+- Added **Install missing mods** to native and external missing-mod launch warnings when the experimental Steam-native subscription control is enabled.
+- Moved the experimental Steamworks subscription session into a spawned helper process so the process that initialized as DayZ exits completely before WolfLauncher permits the real DayZ launch.
+- Replaced **Stop monitoring** with **Hide monitor** so the original helper continues in the background, and made repeated install actions reopen that monitor instead of starting another Steamworks session.
+- Made incomplete Workshop items retry Steam download requests at a bounded interval, identify still-incomplete IDs on timeout, ignore terminal interrupts inside the helper and cancel/join that helper during application shutdown.
+- Removed the fixed 10-second post-download cooldown after real-world testing confirmed isolated-helper process exit is a sufficient launch-readiness boundary.
+- Kept hidden Workshop monitors hidden by suppressing `QProgressDialog` updates until explicitly reopened, and simplified successful completion text to the downloaded mod count.
+- Replaced the successful download dialog's generic confirmation with **Launch server**, deferred until the isolated helper exits and a forced mod recheck confirms the downloaded set.
+- Added conservative restart/recovery detection for required items left in Steam's DayZ Workshop download staging area, with honest Mods guidance and guards against duplicate helper sessions or launch until a fresh check confirms readiness.
 - Added the staged WolfAPI v1 GUI provider with bounded 100-row background
   pagination, merge-only off-page-safe caching and local-first Server Browser
   search followed by a quiet 450 ms debounced remote directory search.
@@ -17,7 +55,7 @@
   and curated/selected/launch-time checks remain local by design.
 - Added the opt-in WolfAPI v1 client/cache foundation: strict rollout-contract
   validation, bounded list/search/exact-resolution clients, an additive SQLite
-  v1-to-v2 migration, stable server IDs, endpoint aliases, freshness and
+  additive cache migration, stable server IDs, endpoint aliases, freshness and
   validation fields, and duplicate-free port-correction merging. The deployed
   legacy WolfAPI URL remains the default.
 - Made native/external launch-engine changes invalidate and quietly recheck the selected server's mods using the newly authoritative Steam/Workshop context, matching Steam install mode changes.

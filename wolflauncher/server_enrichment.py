@@ -31,6 +31,8 @@ def enrich_discovered_server(
             online=False,
             last_checked=checked_at,
             last_seen=server.last_seen,
+            status_source="local",
+            required_mod_count=server.required_mod_count,
         )
 
     players_current, players_max = parse_players(status.players)
@@ -53,6 +55,8 @@ def enrich_discovered_server(
         online=True,
         last_checked=checked_at,
         last_seen=checked_at,
+        status_source="local",
+        required_mod_count=server.required_mod_count,
     )
 
 
