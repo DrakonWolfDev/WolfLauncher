@@ -178,6 +178,9 @@ Planned WolfAPI follow-up:
   merge-only cache updates. Server Browser search is local-first with a 450 ms
   debounced remote v1 search that merges stable-ID matches, preserves unrelated
   rows and does not let stale completions replace the current query view.
+  Exact `host:port` input uses alias-aware resolution for either port role.
+  Fresh installations now select v1 by default; existing saved provider choices
+  remain unchanged and the legacy endpoint remains selectable.
 - A post-fix hosted probe on 2026-07-13 confirmed bounded list, dedicated
   search, exact resolution, ETags, rollout metadata, stable identity and aliases
   are live. The strict client imported 100 rows into isolated SQLite. Two

@@ -5,6 +5,10 @@
 - Added the staged WolfAPI v1 GUI provider with bounded 100-row background
   pagination, merge-only off-page-safe caching and local-first Server Browser
   search followed by a quiet 450 ms debounced remote directory search.
+- Made WolfAPI v1 the provider default for fresh installations after production
+  and desktop canaries passed, while preserving saved provider choices and the
+  explicit legacy fallback. Exact `host:port` searches now use alias-aware v1
+  resolution for either game or query ports.
 - Added the opt-in WolfAPI v1 client/cache foundation: strict rollout-contract
   validation, bounded list/search/exact-resolution clients, an additive SQLite
   v1-to-v2 migration, stable server IDs, endpoint aliases, freshness and

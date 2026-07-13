@@ -11,6 +11,8 @@ from .server_discovery import (
     discover_dayz_servers_web_api,
     discover_dayz_servers_wolfapi,
     discover_dayz_servers_wolfapi_v1,
+    parse_exact_server_endpoint,
+    resolve_dayz_server_wolfapi_v1,
     search_dayz_servers_wolfapi_v1,
 )
 from .server_enrichment import enrich_discovered_server, enrichment_probe_servers
@@ -186,12 +188,28 @@ class WolfApiSearchWorker(QThread):
 
     def run(self):
         try:
-            servers = search_dayz_servers_wolfapi_v1(
-                self.query,
-                limit=self.limit,
-                map_name=self.map_name,
-                version=self.version,
-            )
+            endpoint = parse_exact_server_endpoint(self.query)
+            if endpoint is None:
+                servers = search_dayz_servers_wolfapi_v1(
+                    self.query,
+                    limit=self.limit,
+                    map_name=self.map_name,
+                    version=self.version,
+                )
+            else:
+                host, port = endpoint
+                resolved = [
+                    *resolve_dayz_server_wolfapi_v1(host, game_port=port),
+                    *resolve_dayz_server_wolfapi_v1(host, query_port=port),
+                ]
+                servers = []
+                seen = set()
+                for server in resolved:
+                    identity = server.stable_server_id or server.cache_key
+                    if identity in seen:
+                        continue
+                    seen.add(identity)
+                    servers.append(server)
         except Exception as exc:
             self.search_ready.emit(self.query, [], str(exc))
         else:

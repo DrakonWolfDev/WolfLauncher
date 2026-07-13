@@ -96,6 +96,7 @@ from .server_browser_presenter import (
 from .server_browser_controller import BrowserQuery, browser_filter_options, load_browser_snapshot
 from .server_browser_table import populate_browser_table
 from .settings import (
+    DEFAULT_DISCOVERY_PROVIDER,
     load_favourites,
     load_settings,
     save_favourites,
@@ -555,7 +556,9 @@ class MainWindow(QMainWindow):
             "Disabled",
         ])
         self.discovery_provider.setCurrentText(
-            self._provider_label(str(self.settings.get("discovery_provider") or "battlemetrics"))
+            self._provider_label(
+                str(self.settings.get("discovery_provider") or DEFAULT_DISCOVERY_PROVIDER)
+            )
         )
         self.discovery_provider.currentTextChanged.connect(self.handle_discovery_provider_changed)
         discovery_settings.addRow("Server API provider", self.discovery_provider)
@@ -1091,14 +1094,16 @@ class MainWindow(QMainWindow):
             "steam_master": "Steam Master",
             "disabled": "Disabled",
         }
-        return labels.get(key, "BattleMetrics")
+        return labels.get(key, labels[DEFAULT_DISCOVERY_PROVIDER])
 
     def _native_steam_mode_label(self, key: str) -> str:
         return steam_mode_label(key)
 
     def discovery_provider_key(self) -> str:
         if not hasattr(self, "discovery_provider"):
-            return str(self.settings.get("discovery_provider") or "battlemetrics")
+            return str(
+                self.settings.get("discovery_provider") or DEFAULT_DISCOVERY_PROVIDER
+            )
         keys = {
             "WolfAPI v1 (staged)": "wolfapi_v1",
             "WolfAPI (legacy fallback)": "wolfapi",
@@ -1107,7 +1112,7 @@ class MainWindow(QMainWindow):
             "Steam Master": "steam_master",
             "Disabled": "disabled",
         }
-        return keys.get(self.discovery_provider.currentText(), "battlemetrics")
+        return keys.get(self.discovery_provider.currentText(), DEFAULT_DISCOVERY_PROVIDER)
 
     def launch_engine_key(self) -> str:
         if not hasattr(self, "launch_engine"):

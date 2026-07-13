@@ -101,6 +101,33 @@ class WorkerTests(unittest.TestCase):
         )
         self.assertEqual(results, [("Alpha Server", ["remote-server"], "")])
 
+    @patch("wolflauncher.workers.resolve_dayz_server_wolfapi_v1")
+    @patch("wolflauncher.workers.search_dayz_servers_wolfapi_v1")
+    def test_v1_search_worker_uses_alias_aware_resolution_for_endpoint(
+        self, search, resolve
+    ):
+        server = unittest.mock.Mock(
+            stable_server_id="stable-1", cache_key="203.0.113.10:2302:27016"
+        )
+        resolve.side_effect = [[server], [server]]
+        results = []
+        worker = WolfApiSearchWorker("203.0.113.10:2302")
+        worker.search_ready.connect(
+            lambda query, servers, error: results.append((query, servers, error))
+        )
+
+        worker.run()
+
+        search.assert_not_called()
+        self.assertEqual(
+            resolve.call_args_list,
+            [
+                unittest.mock.call("203.0.113.10", game_port=2302),
+                unittest.mock.call("203.0.113.10", query_port=2302),
+            ],
+        )
+        self.assertEqual(results, [("203.0.113.10:2302", [server], "")])
+
     @patch("wolflauncher.workers.check_server")
     def test_checked_server_status_returns_successful_result(self, check_server):
         expected = ServerStatus(True, ping="42 ms")

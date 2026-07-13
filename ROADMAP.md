@@ -63,9 +63,11 @@ migration, stable-ID/alias merge behavior, strict parser and opt-in clients are
 implemented locally. Settings now exposes a staged v1 provider while preserving
 existing legacy selections as an explicit fallback. See
 `DISCOVERY_FRESHNESS_HANDOFF.md`. Debounced local-first remote search and
-bounded background pagination are now implemented. The next launcher slice is
-exact endpoint resolution/addition; only then retire fixed startup probing
-while retaining selected-server and launch-time checks.
+bounded background pagination are now implemented, as is exact alias-aware
+`host:port` resolution. V1 is the fresh-install default while saved choices and
+the legacy fallback are preserved. The next slice is staged retirement of any
+redundant discovery-time probing while retaining selected-server and
+launch-time checks.
 
 The matching host-local origin load passed at about 680 requests/second with
 zero errors and p99 181 ms. The remaining load investigation is specifically

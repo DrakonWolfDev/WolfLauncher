@@ -433,6 +433,22 @@ def resolve_dayz_server_wolfapi_v1(
     )
 
 
+def parse_exact_server_endpoint(value: str) -> tuple[str, int] | None:
+    """Recognize a complete host:port search without treating names as endpoints."""
+    value = value.strip()
+    if not value or any(character.isspace() for character in value) or value.count(":") != 1:
+        return None
+    host, port_text = value.rsplit(":", 1)
+    host = host.strip()
+    try:
+        port = int(port_text)
+    except ValueError:
+        return None
+    if not host or not 1 <= port <= 65535:
+        return None
+    return host, port
+
+
 def _url_with_query(url: str, params: dict[str, str | int]) -> str:
     separator = "&" if "?" in url else "?"
     return f"{url}{separator}{urllib.parse.urlencode(params)}"

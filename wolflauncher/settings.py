@@ -5,6 +5,7 @@ from typing import Any
 APP_DIR = Path.home() / ".config" / "wolflauncher"
 SETTINGS_PATH = APP_DIR / "settings.json"
 FAVOURITES_PATH = APP_DIR / "favourites.json"
+DEFAULT_DISCOVERY_PROVIDER = "wolfapi_v1"
 
 
 def ensure_app_dir() -> None:

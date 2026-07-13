@@ -208,6 +208,28 @@ class ServerCacheTests(unittest.TestCase):
         self.assertEqual(cached_first.source, "wolfapi")
         self.assertIsNotNone(server_cache.get_server(connection, second.cache_key))
 
+    def test_search_matches_current_and_historical_endpoint_text(self):
+        connection = self.open_cache()
+        server = DiscoveredServer(
+            name="Endpoint Search",
+            source="wolfapi",
+            host="203.0.113.10",
+            game_port=2402,
+            query_port=28016,
+            stable_server_id="33333333-3333-3333-3333-333333333333",
+            endpoint_aliases=("203.0.113.10:2302:27016",),
+        )
+        server_cache.merge_source_servers(connection, "wolfapi", [server])
+
+        current = server_cache.search_servers(connection, text="203.0.113.10:2402")
+        historical = server_cache.search_servers(connection, text="203.0.113.10:2302")
+
+        self.assertEqual([item.stable_server_id for item in current], [server.stable_server_id])
+        self.assertEqual(
+            [item.stable_server_id for item in historical],
+            [server.stable_server_id],
+        )
+
     def test_upsert_replaces_existing_cache_entry(self):
         connection = self.open_cache()
         original = DiscoveredServer(

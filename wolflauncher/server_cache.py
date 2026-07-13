@@ -515,10 +515,14 @@ def _search_where(
         clauses.append(
             "(display_name COLLATE NOCASE LIKE ? ESCAPE '\\' "
             "OR server_name COLLATE NOCASE LIKE ? ESCAPE '\\' "
-            "OR host COLLATE NOCASE LIKE ? ESCAPE '\\')"
+            "OR host COLLATE NOCASE LIKE ? ESCAPE '\\' "
+            "OR cache_key COLLATE NOCASE LIKE ? ESCAPE '\\' "
+            "OR EXISTS (SELECT 1 FROM discovered_server_aliases AS search_alias "
+            "WHERE search_alias.cache_key = discovered_servers.cache_key "
+            "AND search_alias.endpoint_id COLLATE NOCASE LIKE ? ESCAPE '\\'))"
         )
         pattern = f"%{_escape_like(text)}%"
-        params.extend([pattern, pattern, pattern])
+        params.extend([pattern, pattern, pattern, pattern, pattern])
 
     terms = [term.strip() for term in (style_terms or []) if term.strip()]
     if terms:

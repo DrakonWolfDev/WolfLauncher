@@ -93,7 +93,13 @@ Foundation implemented locally on 2026-07-13:
   limit and merge them without deleting cached rows outside the bounded pages;
 - Server Browser renders local SQLite matches immediately, then debounces v1
   remote search for 450 ms, merges stable-ID results without deleting unrelated
-  rows and ignores stale completions for the visible query.
+  rows and ignores stale completions for the visible query;
+- exact `host:port` searches use `/resolve` with the port checked as both game
+  and query port, deduplicate by stable ID and make historical endpoint aliases
+  searchable locally;
+- v1 is the provider default for fresh installations after production and
+  desktop canaries passed. Existing saved choices remain unchanged and the
+  legacy provider remains an explicit fallback.
 
 1. Migrate SQLite additively. Keep the existing endpoint `cache_key` for
    non-WolfAPI providers and launch/connect behavior, but add nullable
@@ -106,8 +112,9 @@ Foundation implemented locally on 2026-07-13:
 4. Implemented: search local SQLite first, then debounce remote `/search` and
    merge matches. Successful empty responses remain distinct from failures,
    which quietly retain and display cached results.
-5. Use `/resolve` for exact host/port additions and alias-aware lookups. Never
-   make search or resolution synchronously trigger UDP validation.
+5. Implemented: exact `host:port` searches use `/resolve` for game/query-port
+   and alias-aware lookups. Search and resolution never synchronously trigger
+   UDP validation.
 6. Use API freshness/validation as browsing truth. Keep local ping blank until
    measured locally; API-host latency is not player latency.
 7. Retain selected-server and launch-time reachability/mod checks. V1 removes

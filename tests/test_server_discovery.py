@@ -28,6 +28,7 @@ from wolflauncher.server_discovery import (
     parse_steam_web_api_servers,
     parse_wolfapi_servers,
     parse_wolfapi_v1_servers,
+    parse_exact_server_endpoint,
     resolve_dayz_server_wolfapi_v1,
     search_dayz_servers_wolfapi_v1,
 )
@@ -694,6 +695,19 @@ class WolfApiDiscoveryTests(unittest.TestCase):
     def test_wolfapi_v1_resolution_requires_a_port(self):
         with self.assertRaisesRegex(ValueError, "port"):
             resolve_dayz_server_wolfapi_v1("203.0.113.10")
+
+    def test_exact_endpoint_parser_rejects_names_and_invalid_ports(self):
+        self.assertEqual(
+            parse_exact_server_endpoint(" 203.0.113.10:2302 "),
+            ("203.0.113.10", 2302),
+        )
+        self.assertEqual(
+            parse_exact_server_endpoint("dayz.example.test:27016"),
+            ("dayz.example.test", 27016),
+        )
+        self.assertIsNone(parse_exact_server_endpoint("Alpha Server"))
+        self.assertIsNone(parse_exact_server_endpoint("203.0.113.10:70000"))
+        self.assertIsNone(parse_exact_server_endpoint("203.0.113.10:not-a-port"))
 
     @staticmethod
     def fake_wolfapi_response():
