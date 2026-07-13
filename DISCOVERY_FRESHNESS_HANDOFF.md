@@ -26,6 +26,13 @@ tree. Confirm the production migration, contract fixture and rollout gates
 below first. API failure means remote search is unavailable, not that cached
 servers disappeared.
 
+Hosted probe on 2026-07-13: `/api/v1/servers?limit=1` returned `200` with
+`contract_version`, `generated_at` and validation policy, but coverage,
+validation queue, stable UUID IDs and endpoint aliases were absent. Hosted
+`/api/v1/servers/search` and `/api/v1/servers/resolve` returned `404`. The strict
+opt-in client is therefore expected to reject the current hosted response until
+the new WolfAPI commits and migration are deployed.
+
 ## Implemented WolfAPI v1 contract
 
 The current WolfAPI development branch provides:

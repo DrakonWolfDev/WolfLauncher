@@ -171,6 +171,10 @@ Planned WolfAPI follow-up:
   aliases and freshness/validation fields; WolfAPI rows merge port corrections
   by stable ID; opt-in v1 list/search/resolve clients enforce rollout metadata.
   The deployed legacy endpoint remains the application default.
+- A read-only hosted probe on 2026-07-13 confirmed production still has the
+  earlier partial v1 list only: rollout coverage/queue and stable identity are
+  absent, and dedicated search/resolve return `404`. The strict canary should
+  continue to fail closed until WolfAPI is deployed.
 - WolfAPI development commit `69480db` implements bounded
   `/api/v1/servers`, `/search` and `/resolve` flows, ETags, request-time
   freshness coverage, validation queue lag, normalized provider/validation
