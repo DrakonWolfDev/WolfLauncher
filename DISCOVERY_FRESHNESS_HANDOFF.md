@@ -7,7 +7,9 @@ Last synchronized with WolfAPI development commit `69480db` on 2026-07-13.
 This file is the launcher-side companion to
 `../WolfAPI/DISCOVERY_FRESHNESS_CONTRACT.md`. Update both documents whenever a
 launcher-facing endpoint, field, identity rule, freshness policy or rollout
-gate changes.
+gate changes. This coordination is bidirectional: regardless of which
+repository a task originates in, inspect and update both sides when the shared
+feature materially requires it.
 
 WolfLauncher remains offline-first: cached SQLite rows render immediately,
 remote discovery is read-only, curated YAML remains user-owned, and selected

@@ -8,6 +8,28 @@ The app validates the local Steam/DayZ/Workshop setup, checks server status, com
 
 The upstream shell launcher is vendored at `external/dayz-linux-cli-launcher/` as the legacy reference engine.
 
+## Cross-Repository Workflow
+
+WolfAPI is cloned at `../WolfAPI`. The two repositories form one product
+boundary for public server discovery. Work may originate in either repository;
+when a task materially affects the shared feature, inspect and update both
+repositories as needed in the same work session. The user has explicitly
+authorized this coordinated workflow.
+
+- Read this file, `DISCOVERY_FRESHNESS_HANDOFF.md` and the sibling
+  `../WolfAPI/AGENTS.md` and `../WolfAPI/DISCOVERY_FRESHNESS_CONTRACT.md` before
+  changing shared endpoints, fields, identity, search/resolve behavior,
+  freshness and validation semantics, caching, polling or rollout gates.
+- Treat a necessary companion change as part of the in-scope task regardless
+  of which repository the request started in. Do not wait for a separate
+  prompt merely because the implementation crosses the repository boundary.
+- Keep the API contract and launcher handoff/truth documents synchronized.
+  Test each affected repository independently and commit changes separately so
+  each can be reviewed and pushed on its own.
+- Preserve unrelated and user-owned changes in both worktrees. Source
+  completion is not proof of deployment readiness; keep the legacy discovery
+  default until the hosted v1 contract and rollout gates are confirmed.
+
 ## Current Truth
 
 - `PROJECT_STATE.md` is the handoff snapshot.
@@ -111,11 +133,9 @@ The vendored script then:
   SQLite and local curated YAML promotion, and use `/api/health` only for
   diagnostics/status. When adopting v1, persist stable IDs separately from
   endpoint keys so port corrections merge rather than duplicate rows.
-- Cross-project changes flow both ways. If WolfAPI changes launcher-facing
-  fields, identity, endpoints, pagination or freshness semantics, update
-  `DISCOVERY_FRESHNESS_HANDOFF.md`, `PROJECT_STATE.md`, `ARCHITECTURE.md` and
-  `ROADMAP.md` as applicable. Record launcher constraints back in WolfAPI's
-  contract rather than letting the repositories drift.
+- If shared discovery behavior changes, update `DISCOVERY_FRESHNESS_HANDOFF.md`,
+  `PROJECT_STATE.md`, `ARCHITECTURE.md` and `ROADMAP.md` as applicable, and
+  record launcher constraints back in WolfAPI's contract.
 - Mod management is read-only and advisory; do not auto-subscribe or auto-download Workshop content without an explicit future design.
 - User settings and favourites live under `~/.config/wolflauncher`.
 - Prefer small, testable changes around launch command generation and platform detection.
