@@ -169,8 +169,9 @@ Planned WolfAPI follow-up:
 - `DISCOVERY_FRESHNESS_HANDOFF.md` records the cross-repository contract and
   rollout state; `ROADMAP.md` tracks the launcher adoption work.
 - The current launcher working tree contains the additive adoption foundation:
-  SQLite schema v3 preserves both earlier v2 layouts while combining stable IDs, endpoint
-  aliases and freshness/validation fields; WolfAPI rows merge port corrections
+  SQLite schema v4 preserves earlier layouts while combining stable IDs,
+  endpoint aliases, freshness/validation fields and API required-mod metadata;
+  WolfAPI rows merge port corrections
   by stable ID; opt-in v1 list/search/resolve clients enforce rollout metadata.
   Settings exposes v1 as an explicit staged provider while existing saved
   `wolfapi` selections remain on the separately labelled legacy fallback.
@@ -187,6 +188,10 @@ Planned WolfAPI follow-up:
   A startup audit confirms discovered SQLite rows are not automatically
   UDP-probed: startup status checks are curated-YAML-only, v1 refresh is
   HTTP-only and **Enrich visible** remains explicit.
+- WolfAPI v1 required-mod count/status/timestamps/error/hash now persist in
+  SQLite and appear as ready/stale/failed browsing evidence in tooltips and
+  copied details. Direct **Inspect mods** and launch-time lookup remain final
+  truth; the API job is disabled by default pending production observation.
 - A post-fix hosted probe on 2026-07-13 confirmed bounded list, dedicated
   search, exact resolution, ETags, rollout metadata, stable identity and aliases
   are live. The strict client imported 100 rows into isolated SQLite. Two
@@ -206,8 +211,9 @@ Planned WolfAPI follow-up:
   fields, stable UUID server IDs and endpoint aliases. The hosted deployment
   passed the documented rollout gates and v1 is now the fresh-install default;
   saved choices and the legacy fallback remain available.
-- SQLite schema v3 combines the two earlier v2 layouts, storing Workshop
-  metadata, stable server IDs and endpoint aliases; corrected endpoints merge
+- SQLite schema v4 preserves earlier layouts, storing Workshop metadata,
+  stable server IDs, endpoint aliases and API mod-metadata provenance;
+  corrected endpoints merge
   into one cached row without weakening offline behavior or curated YAML
   ownership.
 - WolfAPI `/api/health` remains operator/support data. Normal browsing should

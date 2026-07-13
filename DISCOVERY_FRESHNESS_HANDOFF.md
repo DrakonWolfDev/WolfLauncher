@@ -1,6 +1,6 @@
 # WolfAPI Discovery Freshness Handoff
 
-Last synchronized with WolfAPI development commit `ce0d1e6` on 2026-07-13.
+Last synchronized with WolfAPI migration `20260713_0007` on 2026-07-13.
 
 ## Purpose
 
@@ -59,6 +59,7 @@ WolfAPI `main` provides:
 GET /api/v1/servers
 GET /api/v1/servers/search?q=&map=&version=&limit=&offset=
 GET /api/v1/servers/resolve?host=&game_port=&query_port=
+GET /api/v1/servers/{server_id}/mods
 ```
 
 - bounded Postgres-backed pages that do not decode the full Redis directory;
@@ -71,6 +72,8 @@ GET /api/v1/servers/resolve?host=&game_port=&query_port=
 - opaque stable UUID `server_id` values;
 - `legacy_endpoint_id` for the current endpoint-derived identity;
 - `endpoint_aliases` containing current and corrected endpoint identities.
+- nullable required-mod count/status/timestamps/error/hash fields in list rows,
+  plus a cached-only full-manifest detail endpoint.
 
 Legacy `/api/servers` remains compatibility-only and endpoint-keyed.
 
@@ -78,9 +81,9 @@ Legacy `/api/servers` remains compatibility-only and endpoint-keyed.
 
 Foundation implemented locally on 2026-07-13:
 
-- SQLite schema v3 migrates either earlier schema-v2 layout in place and
+- SQLite schema v4 migrates earlier layouts in place and
   combines Workshop metadata with stable IDs, aliases, freshness and
-  validation state;
+  validation state, while retaining WolfAPI mod-metadata provenance;
 - WolfAPI rows are merged by stable ID so corrected ports move one row;
 - opt-in bounded list, remote search and exact-resolution clients exist;
 - v1 responses are rejected unless contract version, generation time,
@@ -106,6 +109,9 @@ Foundation implemented locally on 2026-07-13:
   freshness, validation and provider observation without adding a table column.
   Cached labels past `freshness_expires_at` say `expired; refresh pending`
   rather than guessing a new API state.
+- discovered rows persist WolfAPI's required-mod metadata status, timestamps,
+  error and manifest hash. Ready/stale/failed tooltips describe it as browsing
+  evidence and direct **Inspect mods** remains final selected-server truth.
 
 1. Migrate SQLite additively. Keep the existing endpoint `cache_key` for
    non-WolfAPI providers and launch/connect behavior, but add nullable
@@ -152,6 +158,9 @@ curated, selected-server and launch-time checks remain intentionally local.
 - WolfAPI has a transactional port-correction operation, but automatic use
   still needs trustworthy corrected-port evidence; A2S reachability alone does
   not provide it.
-- Required-mod count/manifest metadata remains a separate future bounded job.
+- Required-mod metadata is implemented behind WolfAPI's disabled-by-default,
+  ten-row bounded job. Its 2026-07-13 local canary returned 10/10 manifests,
+  including a confirmed zero; production enablement and scheduled-cycle
+  observation remain the rollout dependency.
 - Production proxy/CDN behavior and sustained-load peak RSS still need final
   deployment evidence.

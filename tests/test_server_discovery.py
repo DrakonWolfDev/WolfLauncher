@@ -559,6 +559,12 @@ class WolfApiDiscoveryTests(unittest.TestCase):
                 "validation_seen_at": "2026-07-13T12:00:00+00:00",
                 "provider_last_checked": "2026-07-13T11:55:00+00:00",
                 "provider_last_seen": "2026-07-13T11:55:00+00:00",
+                "required_mod_count": 17,
+                "mod_metadata_status": "ready",
+                "mod_metadata_checked_at": "2026-07-13T12:01:00+00:00",
+                "mod_metadata_expires_at": "2026-07-13T18:01:00+00:00",
+                "mod_metadata_error_code": "",
+                "mod_manifest_hash": "sha256:example",
             },
             "2026-07-13T12:05:00+00:00",
         )
@@ -570,6 +576,9 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         self.assertEqual(server.validation_status, "online")
         self.assertEqual(server.last_checked, "2026-07-13T12:00:00+00:00")
         self.assertEqual(server.last_seen, "2026-07-13T12:00:00+00:00")
+        self.assertEqual(server.required_mod_count, 17)
+        self.assertEqual(server.mod_metadata_status, "ready")
+        self.assertEqual(server.mod_manifest_hash, "sha256:example")
 
     def test_parse_wolfapi_response_deduplicates_and_limits_rows(self):
         servers = parse_wolfapi_servers(

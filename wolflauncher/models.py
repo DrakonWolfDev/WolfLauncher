@@ -34,6 +34,11 @@ class DiscoveredServer:
     last_checked: str = ""
     last_seen: str = ""
     required_mod_count: int | None = None
+    mod_metadata_status: str = ""
+    mod_metadata_checked_at: str = ""
+    mod_metadata_expires_at: str = ""
+    mod_metadata_error_code: str = ""
+    mod_manifest_hash: str = ""
     status_source: str = "provider"
     stable_server_id: str = ""
     endpoint_aliases: tuple[str, ...] = ()

@@ -111,9 +111,27 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
     if server.ping_ms is None:
         tooltips[8] = "Ping was not supplied by the discovery provider. Use Enrich visible to query it."
     if server.required_mod_count is None:
+        if server.mod_metadata_status == "failed":
+            tooltips[11] = (
+                "WolfAPI's required-mod lookup failed"
+                + (f" ({server.mod_metadata_error_code})" if server.mod_metadata_error_code else "")
+                + ". Use Inspect mods to query this server directly."
+            )
+        else:
+            tooltips[11] = (
+                "Required-mod count is unknown. "
+                "Use Inspect mods to query this server directly."
+            )
+    elif server.mod_metadata_status == "stale":
         tooltips[11] = (
-            "Required-mod count was not supplied by this provider. "
-            "Use Inspect mods to query this server directly."
+            f"WolfAPI last found {server.required_mod_count} required mod(s), but that "
+            "metadata is stale. Inspect mods before joining."
+        )
+    elif server.mod_metadata_status == "ready":
+        tooltips[11] = (
+            f"WolfAPI found {server.required_mod_count} required mod(s)"
+            + (f" at {server.mod_metadata_checked_at}" if server.mod_metadata_checked_at else "")
+            + ". This is browsing evidence; Inspect mods remains final truth."
         )
     status_tooltip = api_status_tooltip(server)
     if status_tooltip:
@@ -184,6 +202,17 @@ def discovered_server_details(server: DiscoveredServer) -> str:
         f"Last checked: {server.last_checked or 'Never'}",
         f"Last seen: {server.last_seen or 'Never'}",
     ])
+    if server.mod_metadata_status:
+        lines.append(
+            "API mod metadata: "
+            + server.mod_metadata_status.replace("_", " ").title()
+        )
+    if server.mod_metadata_checked_at:
+        lines.append(f"Mod metadata checked: {server.mod_metadata_checked_at}")
+    if server.mod_metadata_expires_at:
+        lines.append(f"Mod metadata expires: {server.mod_metadata_expires_at}")
+    if server.mod_metadata_error_code:
+        lines.append(f"Mod metadata error: {server.mod_metadata_error_code}")
     freshness = api_freshness_text(server)
     if freshness:
         lines.append(f"API freshness: {freshness}")

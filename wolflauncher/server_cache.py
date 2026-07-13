@@ -12,7 +12,7 @@ import yaml
 from .models import DiscoveredServer
 
 
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 DATA_DIR = Path.home() / ".local" / "share" / "wolflauncher"
 SERVER_CACHE_PATH = DATA_DIR / "server_cache.sqlite3"
 
@@ -83,6 +83,11 @@ def _initialize_schema_v1(connection: sqlite3.Connection) -> None:
             last_checked TEXT NOT NULL DEFAULT '',
             last_seen TEXT NOT NULL DEFAULT '',
             required_mod_count INTEGER,
+            mod_metadata_status TEXT NOT NULL DEFAULT '',
+            mod_metadata_checked_at TEXT NOT NULL DEFAULT '',
+            mod_metadata_expires_at TEXT NOT NULL DEFAULT '',
+            mod_metadata_error_code TEXT NOT NULL DEFAULT '',
+            mod_manifest_hash TEXT NOT NULL DEFAULT '',
             status_source TEXT NOT NULL DEFAULT 'provider',
             stable_server_id TEXT NOT NULL DEFAULT '',
             endpoint_aliases TEXT NOT NULL DEFAULT '[]',
@@ -169,6 +174,19 @@ def _migrate(connection: sqlite3.Connection, current_version: int, target_versio
         _initialize_alias_schema(connection)
         connection.execute("PRAGMA user_version = 3")
         current_version = 3
+    if current_version == 3 and target_version >= 4:
+        for definition in (
+            "mod_metadata_status TEXT NOT NULL DEFAULT ''",
+            "mod_metadata_checked_at TEXT NOT NULL DEFAULT ''",
+            "mod_metadata_expires_at TEXT NOT NULL DEFAULT ''",
+            "mod_metadata_error_code TEXT NOT NULL DEFAULT ''",
+            "mod_manifest_hash TEXT NOT NULL DEFAULT ''",
+        ):
+            connection.execute(
+                f"ALTER TABLE discovered_servers ADD COLUMN {definition}"
+            )
+        connection.execute("PRAGMA user_version = 4")
+        current_version = 4
     if current_version != target_version:
         raise RuntimeError(
             f"Unsupported server cache migration from version {current_version} to {target_version}."
@@ -215,6 +233,8 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             cache_key, source, display_name, server_name, host, game_port, query_port,
             map_name, players_current, players_max, ping_ms, version, password,
             modded, online, last_checked, last_seen, required_mod_count,
+            mod_metadata_status, mod_metadata_checked_at,
+            mod_metadata_expires_at, mod_metadata_error_code, mod_manifest_hash,
             status_source, stable_server_id,
             endpoint_aliases, freshness, freshness_expires_at, validation_status,
             validation_checked_at, validation_seen_at, validation_error_code,
@@ -224,6 +244,8 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             :cache_key, :source, :display_name, :server_name, :host, :game_port, :query_port,
             :map_name, :players_current, :players_max, :ping_ms, :version, :password,
             :modded, :online, :last_checked, :last_seen, :required_mod_count,
+            :mod_metadata_status, :mod_metadata_checked_at,
+            :mod_metadata_expires_at, :mod_metadata_error_code, :mod_manifest_hash,
             :status_source, :stable_server_id,
             :endpoint_aliases, :freshness, :freshness_expires_at, :validation_status,
             :validation_checked_at, :validation_seen_at, :validation_error_code,
@@ -247,6 +269,11 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             last_checked = excluded.last_checked,
             last_seen = excluded.last_seen,
             required_mod_count = excluded.required_mod_count,
+            mod_metadata_status = excluded.mod_metadata_status,
+            mod_metadata_checked_at = excluded.mod_metadata_checked_at,
+            mod_metadata_expires_at = excluded.mod_metadata_expires_at,
+            mod_metadata_error_code = excluded.mod_metadata_error_code,
+            mod_manifest_hash = excluded.mod_manifest_hash,
             status_source = excluded.status_source,
             stable_server_id = excluded.stable_server_id,
             endpoint_aliases = excluded.endpoint_aliases,
@@ -604,6 +631,11 @@ def _server_params(server: DiscoveredServer) -> dict[str, Any]:
         "last_checked": server.last_checked,
         "last_seen": server.last_seen,
         "required_mod_count": server.required_mod_count,
+        "mod_metadata_status": server.mod_metadata_status,
+        "mod_metadata_checked_at": server.mod_metadata_checked_at,
+        "mod_metadata_expires_at": server.mod_metadata_expires_at,
+        "mod_metadata_error_code": server.mod_metadata_error_code,
+        "mod_manifest_hash": server.mod_manifest_hash,
         "status_source": server.status_source,
         "stable_server_id": server.stable_server_id,
         "endpoint_aliases": json.dumps(list(server.endpoint_aliases)),
@@ -655,6 +687,11 @@ def _server_from_import_item(item: Any, index: int) -> DiscoveredServer:
         last_checked=str(item.get("last_checked") or ""),
         last_seen=str(item.get("last_seen") or ""),
         required_mod_count=_optional_int(item.get("required_mod_count")),
+        mod_metadata_status=str(item.get("mod_metadata_status") or ""),
+        mod_metadata_checked_at=str(item.get("mod_metadata_checked_at") or ""),
+        mod_metadata_expires_at=str(item.get("mod_metadata_expires_at") or ""),
+        mod_metadata_error_code=str(item.get("mod_metadata_error_code") or ""),
+        mod_manifest_hash=str(item.get("mod_manifest_hash") or ""),
         status_source=str(item.get("status_source") or "provider"),
         stable_server_id=str(item.get("stable_server_id") or item.get("server_id") or ""),
         endpoint_aliases=tuple(
@@ -729,6 +766,11 @@ def _row_to_server(row: sqlite3.Row) -> DiscoveredServer:
         last_checked=str(row["last_checked"]),
         last_seen=str(row["last_seen"]),
         required_mod_count=row["required_mod_count"],
+        mod_metadata_status=str(row["mod_metadata_status"]),
+        mod_metadata_checked_at=str(row["mod_metadata_checked_at"]),
+        mod_metadata_expires_at=str(row["mod_metadata_expires_at"]),
+        mod_metadata_error_code=str(row["mod_metadata_error_code"]),
+        mod_manifest_hash=str(row["mod_manifest_hash"]),
         status_source=str(row["status_source"] or "provider"),
         stable_server_id=str(row["stable_server_id"]),
         endpoint_aliases=tuple(json.loads(row["endpoint_aliases"] or "[]")),

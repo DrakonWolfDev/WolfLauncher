@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Migrated the discovered cache to schema v4 and consume WolfAPI v1
+  required-mod status, timestamps, error and manifest hash alongside the
+  nullable count. Browser tooltips distinguish ready, stale, failed and unknown
+  API evidence while preserving direct inspection as final truth.
 - Recorded WolfAPI's observed 4 GB memory exhaustion as a cross-project release blocker and paused further normal-path browser architecture pending API profiling, full-payload removal and mixed 1,000-client load gates.
 - Made two-stage local-plus-remote server search and exact advertised-endpoint resolution explicit cross-project requirements, including indexed API search and honest unavailable/not-found states.
 - Extended the cross-project handoff with bounded WolfAPI required-mod metadata polling, honest unknown/zero/stale/failure semantics, a manifest detail endpoint and a full launcher-facing enrichment inventory.

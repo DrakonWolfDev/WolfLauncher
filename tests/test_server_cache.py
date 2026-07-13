@@ -33,6 +33,8 @@ class ServerCacheTests(unittest.TestCase):
         self.assertIn("stable_server_id", columns)
         self.assertIn("endpoint_aliases", columns)
         self.assertIn("validation_status", columns)
+        self.assertIn("mod_metadata_status", columns)
+        self.assertIn("mod_manifest_hash", columns)
 
     def test_schema_v1_migrates_to_v3_without_losing_rows(self):
         tmpdir = tempfile.TemporaryDirectory()
@@ -188,6 +190,10 @@ class ServerCacheTests(unittest.TestCase):
             last_seen="2026-06-20T12:00:00Z",
             required_mod_count=12,
             status_source="local",
+            mod_metadata_status="ready",
+            mod_metadata_checked_at="2026-06-20T12:00:00Z",
+            mod_metadata_expires_at="2026-06-20T18:00:00Z",
+            mod_manifest_hash="sha256:example",
         )
 
         server_cache.upsert_server(connection, server)

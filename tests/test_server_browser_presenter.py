@@ -129,6 +129,24 @@ class ServerBrowserPresenterTests(unittest.TestCase):
             "Live (expired; refresh pending)",
         )
 
+    def test_required_mod_tooltip_preserves_api_preview_and_direct_truth(self):
+        server = DiscoveredServer(
+            name="Modded",
+            host="203.0.113.10",
+            game_port=2302,
+            query_port=27016,
+            required_mod_count=17,
+            mod_metadata_status="ready",
+            mod_metadata_checked_at="2026-07-13T12:00:00+00:00",
+        )
+
+        row = browser_row(server)
+        details = discovered_server_details(server)
+
+        self.assertIn("WolfAPI found 17 required mod(s)", row.tooltips[11])
+        self.assertIn("Inspect mods remains final truth", row.tooltips[11])
+        self.assertIn("API mod metadata: Ready", details)
+
     def test_browser_status_tooltip_explains_api_and_local_truth_boundary(self):
         server = DiscoveredServer(
             name="Freshness",

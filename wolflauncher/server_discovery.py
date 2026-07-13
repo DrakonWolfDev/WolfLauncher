@@ -614,6 +614,11 @@ def discovered_server_from_wolfapi_row(row: dict, timestamp: str = "") -> Discov
         provider_last_checked=str(row.get("provider_last_checked") or ""),
         provider_last_seen=str(row.get("provider_last_seen") or ""),
         required_mod_count=_required_mod_count(row),
+        mod_metadata_status=str(row.get("mod_metadata_status") or ""),
+        mod_metadata_checked_at=str(row.get("mod_metadata_checked_at") or ""),
+        mod_metadata_expires_at=str(row.get("mod_metadata_expires_at") or ""),
+        mod_metadata_error_code=str(row.get("mod_metadata_error_code") or ""),
+        mod_manifest_hash=str(row.get("mod_manifest_hash") or ""),
     )
 
 

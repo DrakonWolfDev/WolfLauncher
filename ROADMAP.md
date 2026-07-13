@@ -145,6 +145,9 @@ Priority 3 — Workshop readiness and information:
 - Completed — Mods rows show queued/downloading/verifying states during the batch, with a green per-row progress bar when Steam supplies a percentage and the existing forced local recheck producing the final verified **Installed** state.
 - Completed — progress UI uses mod names with numeric Workshop IDs only as fallback/support detail.
 - Completed — discovered rows show required-mod counts supplied by providers or learned from a successful direct server mod check; unknown remains blank rather than being treated as zero.
+- Completed — WolfAPI v1 mod-metadata status, checked/expiry/error/hash fields
+  persist in SQLite schema v4 and drive honest ready/stale/failed browsing
+  tooltips without replacing direct mod inspection.
 
 Priority 4 — discovery truth and regression coverage:
 
@@ -161,7 +164,10 @@ Discovery-freshness boundary:
 - Fixed startup enrichment has been removed. WolfAPI v1 freshness/validation evidence supports browsing, explicit visible-row enrichment remains available, and curated/selected/launch-time checks remain local truth.
 - Preserve honest provider-vs-local status without unnecessary queries for off-screen discovered rows.
 - Use `DISCOVERY_FRESHNESS_HANDOFF.md` as the cross-project implementation contract.
-- WolfAPI's matching contract now includes bounded required-mod metadata polling, nullable count/status fields, a full-manifest detail endpoint and the complete launcher-facing enrichment inventory; keep direct launcher lookup as selected-server/launch fallback.
+- WolfAPI's bounded required-mod metadata job, nullable summary fields and
+  cached full-manifest endpoint are implemented and passed a ten-server local
+  canary; keep direct launcher lookup as selected-server/launch fallback while
+  production enablement remains observed and opt-in.
 - Treat two-stage local-plus-remote search as a core scalability requirement: the first page is only a default view, while debounced indexed API search and exact host/port resolution must find rows anywhere in the canonical directory.
 - Pause further normal-path Server Browser architecture work until WolfAPI profiles/fixes its observed 4 GB memory exhaustion and provides the versioned paginated/search/freshness contract. Launcher-side selected-server, launch-safety, offline and unrelated work can continue independently.
 
