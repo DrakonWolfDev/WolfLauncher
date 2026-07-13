@@ -8,6 +8,14 @@ The app validates the local Steam/DayZ/Workshop setup, checks server status, com
 
 The upstream shell launcher is vendored at `external/dayz-linux-cli-launcher/` as the legacy reference engine.
 
+## Current Deployment Scope
+
+WolfLauncher currently runs only on the user's own systems; there is no
+external installed user base to preserve. Prefer the clearest coordinated
+API/Launcher implementation and direct, tested migrations over speculative
+third-party compatibility. Still preserve the user's settings, curated YAML,
+SQLite data and unrelated work unless a deliberate migration covers them.
+
 ## Cross-Repository Workflow
 
 WolfAPI is cloned at `../WolfAPI`. The two repositories form one product
@@ -27,8 +35,9 @@ authorized this coordinated workflow.
   Test each affected repository independently and commit changes separately so
   each can be reviewed and pushed on its own.
 - Preserve unrelated and user-owned changes in both worktrees. Source
-  completion is not proof of deployment readiness; keep the legacy discovery
-  default until the hosted v1 contract and rollout gates are confirmed.
+  completion is not proof of deployment readiness. WolfAPI v1 is the
+  fresh-install default after its gates passed; retain the explicit legacy
+  fallback until deliberately removed.
 
 ## Current Truth
 

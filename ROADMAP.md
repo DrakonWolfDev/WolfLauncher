@@ -69,6 +69,10 @@ the legacy fallback are preserved. The next slice is staged retirement of any
 redundant discovery-time probing while retaining selected-server and
 launch-time checks.
 
+API freshness/validation is now exposed through the existing Status tooltip
+and copied details. Expired cached labels are marked refresh-pending, while
+ping and final reachability remain local truths.
+
 The matching host-local origin load passed at about 680 requests/second with
 zero errors and p99 181 ms. The remaining load investigation is specifically
 the OpenResty/TLS/public routing path.

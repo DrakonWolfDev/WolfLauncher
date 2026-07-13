@@ -181,6 +181,9 @@ Planned WolfAPI follow-up:
   Exact `host:port` input uses alias-aware resolution for either port role.
   Fresh installations now select v1 by default; existing saved provider choices
   remain unchanged and the legacy endpoint remains selectable.
+  Existing Status tooltips and copied details expose API freshness, validation
+  and provider observation without changing the approved table hierarchy;
+  locally expired labels are marked refresh-pending rather than reclassified.
 - A post-fix hosted probe on 2026-07-13 confirmed bounded list, dedicated
   search, exact resolution, ETags, rollout metadata, stable identity and aliases
   are live. The strict client imported 100 rows into isolated SQLite. Two

@@ -117,6 +117,13 @@ The v0.6 SQLite foundation stores discovered public servers separately from cura
 
 WolfAPI should be treated as the companion hosted discovery service, not as the launcher source of truth. The bounded strict v1 path is the provider default for fresh installations after production and desktop canaries passed, while existing saved choices remain unchanged and `WolfAPI (legacy fallback)` stays selectable. V1 refreshes paginate in the background, and Server Browser search remains local-first before a debounced remote name search or exact `host:port` resolution merges additional matches. Exact resolution checks the supplied port as both game and query port, deduplicates stable IDs and preserves current/historical aliases. SQLite schema v2 retains endpoint `cache_key` values for launch/connect behavior and non-WolfAPI providers while storing stable IDs, aliases and freshness/validation state for WolfAPI rows; a corrected endpoint moves the stable row instead of creating a duplicate. `/api/health` remains diagnostics/support data. Launcher features must stay resilient when WolfAPI is unavailable, preserve the local SQLite cache and curated YAML promotion flow, and keep selected-server/launch-time truth checks local even after fixed startup polling is retired.
 
+API freshness and validation are presentation evidence, not local reachability.
+They appear in the existing Status tooltip and copied details without changing
+the approved table hierarchy. When a cached `freshness_expires_at` has passed,
+the launcher marks the stored label as expired/pending refresh rather than
+inventing the next server state. Ping and selected/launch-time checks remain
+local.
+
 ## Server Status
 
 Flow:

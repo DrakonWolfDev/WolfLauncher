@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Any
 
 from .models import DiscoveredServer
@@ -38,6 +39,50 @@ def live_name_text(server: DiscoveredServer) -> str:
     return live_name
 
 
+def api_freshness_text(
+    server: DiscoveredServer,
+    now: datetime | None = None,
+) -> str:
+    freshness = server.freshness.strip()
+    if not freshness:
+        return ""
+    label = freshness.replace("_", " ").title()
+    expires_at = server.freshness_expires_at.strip()
+    if not expires_at:
+        return label
+    try:
+        expires = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
+    except ValueError:
+        return label
+    if expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    if current >= expires:
+        return f"{label} (expired; refresh pending)"
+    return label
+
+
+def api_status_tooltip(server: DiscoveredServer) -> str:
+    lines = []
+    freshness = api_freshness_text(server)
+    if freshness:
+        lines.append(f"WolfAPI freshness: {freshness}")
+    if server.validation_status:
+        lines.append(
+            "WolfAPI validation: "
+            + server.validation_status.replace("_", " ").title()
+        )
+    if server.validation_checked_at:
+        lines.append(f"Validated at: {server.validation_checked_at}")
+    if server.provider_last_seen:
+        lines.append(f"Provider last saw server: {server.provider_last_seen}")
+    if lines:
+        lines.append("Local ping and launch-time checks remain separate.")
+    return "\n".join(lines)
+
+
 def browser_row(server: DiscoveredServer) -> BrowserRow:
     flags = []
     if server.password:
@@ -57,6 +102,9 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
         tooltips[12] = "This row has not been seen online yet."
     if server.ping_ms is None:
         tooltips[8] = "Ping was not supplied by the discovery provider. Use Enrich visible to query it."
+    status_tooltip = api_status_tooltip(server)
+    if status_tooltip:
+        tooltips[5] = status_tooltip
 
     return BrowserRow(
         values=[
@@ -114,8 +162,24 @@ def discovered_server_details(server: DiscoveredServer) -> str:
         f"Flags: {', '.join(flags) if flags else 'Vanilla/unknown'}",
         f"Last checked: {server.last_checked or 'Never'}",
         f"Last seen: {server.last_seen or 'Never'}",
-        f"Source: {server.source}",
     ])
+    freshness = api_freshness_text(server)
+    if freshness:
+        lines.append(f"API freshness: {freshness}")
+    if server.freshness_expires_at:
+        lines.append(f"Freshness expires: {server.freshness_expires_at}")
+    if server.validation_status:
+        lines.append(
+            "API validation: "
+            + server.validation_status.replace("_", " ").title()
+        )
+    if server.validation_checked_at:
+        lines.append(f"Validation checked: {server.validation_checked_at}")
+    if server.provider_last_checked:
+        lines.append(f"Provider checked: {server.provider_last_checked}")
+    if server.provider_last_seen:
+        lines.append(f"Provider last seen: {server.provider_last_seen}")
+    lines.append(f"Source: {server.source}")
     return "\n".join(lines).strip()
 
 

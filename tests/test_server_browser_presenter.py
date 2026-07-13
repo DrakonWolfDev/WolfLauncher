@@ -1,9 +1,11 @@
 import unittest
+from datetime import datetime, timezone
 
 from wolflauncher.server_browser_presenter import (
     browser_row,
     browser_style_terms,
     browser_summary_text,
+    api_freshness_text,
     discovered_server_details,
     players_text,
 )
@@ -80,6 +82,49 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertIn("Enrich visible", row.tooltips[8])
         self.assertEqual(row.status_colour, "#ff6b6b")
 
+    def test_api_freshness_marks_expired_cached_labels_without_guessing_next_state(self):
+        server = DiscoveredServer(
+            name="Freshness",
+            host="203.0.113.10",
+            game_port=2302,
+            query_port=27016,
+            freshness="live",
+            freshness_expires_at="2026-07-13T12:30:00+00:00",
+        )
+
+        self.assertEqual(
+            api_freshness_text(
+                server,
+                now=datetime(2026, 7, 13, 12, 29, tzinfo=timezone.utc),
+            ),
+            "Live",
+        )
+        self.assertEqual(
+            api_freshness_text(
+                server,
+                now=datetime(2026, 7, 13, 12, 31, tzinfo=timezone.utc),
+            ),
+            "Live (expired; refresh pending)",
+        )
+
+    def test_browser_status_tooltip_explains_api_and_local_truth_boundary(self):
+        server = DiscoveredServer(
+            name="Freshness",
+            host="203.0.113.10",
+            game_port=2302,
+            query_port=27016,
+            freshness="recent",
+            validation_status="online",
+            validation_checked_at="2026-07-13T12:00:00+00:00",
+            provider_last_seen="2026-07-13T11:55:00+00:00",
+        )
+
+        tooltip = browser_row(server).tooltips[5]
+
+        self.assertIn("WolfAPI freshness: Recent", tooltip)
+        self.assertIn("WolfAPI validation: Online", tooltip)
+        self.assertIn("Local ping and launch-time checks remain separate", tooltip)
+
     def test_discovered_details_use_shared_player_and_live_name_formatting(self):
         server = DiscoveredServer(
             name="Cached Name",
@@ -114,6 +159,27 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertIn("Last checked: Never", details)
         self.assertIn("Last seen: Never", details)
         self.assertTrue(details.endswith("Source: wolfapi"))
+
+    def test_discovered_details_include_api_freshness_and_validation(self):
+        server = DiscoveredServer(
+            name="API Truth",
+            host="203.0.113.10",
+            game_port=2302,
+            query_port=27016,
+            source="wolfapi",
+            freshness="recent",
+            freshness_expires_at="2026-07-14T12:00:00+00:00",
+            validation_status="online",
+            validation_checked_at="2026-07-13T12:00:00+00:00",
+            provider_last_checked="2026-07-13T11:55:00+00:00",
+        )
+
+        details = discovered_server_details(server)
+
+        self.assertIn("API freshness: Recent", details)
+        self.assertIn("Freshness expires: 2026-07-14T12:00:00+00:00", details)
+        self.assertIn("API validation: Online", details)
+        self.assertIn("Provider checked: 2026-07-13T11:55:00+00:00", details)
 
 
 if __name__ == "__main__":

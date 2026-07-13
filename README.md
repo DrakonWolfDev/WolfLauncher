@@ -258,6 +258,12 @@ Choose a server API provider in Settings, then use **Refresh database** in the S
 
 Full-snapshot provider refreshes sync their own cache rows rather than accumulating old entries. Bounded WolfAPI v1 refreshes fetch 100-row pages in the background up to the configured limit and merge by stable ID without deleting off-page rows. With v1 selected, Server Browser search displays SQLite matches immediately, waits briefly for typing to settle, then merges up to 100 remote matches from the full directory. An exact `host:port` search uses alias-aware resolution and checks the port as either game or query port. Failed refreshes and searches keep existing cached rows. Keep servers you care about in the curated `servers.yaml` list.
 
+Hover the Server Browser **Status** cell, or copy a server's details, to inspect
+WolfAPI freshness, validation time and provider observation. These fields are
+API-side directory evidence; local ping and final launch checks remain
+separate. If cached freshness has expired, WolfLauncher says a refresh is
+pending rather than asserting a new state.
+
 Settings also contains the refresh row limit, an opt-in automatic refresh toggle, and a comma-separated **Steam masters** endpoint list for cases where Valve's default DNS names do not resolve, for example `HOST:27011,HOST:27015`.
 
 When automatic refresh is enabled, WolfLauncher waits after startup and refreshes the selected provider at most once every 24 hours.

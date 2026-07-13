@@ -9,6 +9,9 @@
   and desktop canaries passed, while preserving saved provider choices and the
   explicit legacy fallback. Exact `host:port` searches now use alias-aware v1
   resolution for either game or query ports.
+- Added WolfAPI freshness, validation and provider-observation evidence to the
+  existing Status tooltip and copied server details without adding a table
+  column; expired cached labels are marked refresh-pending rather than guessed.
 - Added the opt-in WolfAPI v1 client/cache foundation: strict rollout-contract
   validation, bounded list/search/exact-resolution clients, an additive SQLite
   v1-to-v2 migration, stable server IDs, endpoint aliases, freshness and

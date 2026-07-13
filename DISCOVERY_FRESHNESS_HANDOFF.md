@@ -99,7 +99,11 @@ Foundation implemented locally on 2026-07-13:
   searchable locally;
 - v1 is the provider default for fresh installations after production and
   desktop canaries passed. Existing saved choices remain unchanged and the
-  legacy provider remains an explicit fallback.
+  legacy provider remains an explicit fallback;
+- the existing Status-cell tooltip and copied server details expose API
+  freshness, validation and provider observation without adding a table column.
+  Cached labels past `freshness_expires_at` say `expired; refresh pending`
+  rather than guessing a new API state.
 
 1. Migrate SQLite additively. Keep the existing endpoint `cache_key` for
    non-WolfAPI providers and launch/connect behavior, but add nullable
@@ -115,8 +119,9 @@ Foundation implemented locally on 2026-07-13:
 5. Implemented: exact `host:port` searches use `/resolve` for game/query-port
    and alias-aware lookups. Search and resolution never synchronously trigger
    UDP validation.
-6. Use API freshness/validation as browsing truth. Keep local ping blank until
-   measured locally; API-host latency is not player latency.
+6. Implemented: use API freshness/validation as browsing truth in existing
+   status tooltips and copied details. Keep local ping blank until measured
+   locally; API-host latency is not player latency.
 7. Retain selected-server and launch-time reachability/mod checks. V1 removes
    the need for fixed startup polling, not final join validation.
 
