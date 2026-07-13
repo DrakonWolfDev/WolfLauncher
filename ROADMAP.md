@@ -60,10 +60,21 @@ Launcher client imported 100 production rows successfully. External
 100-concurrency load still produced timeouts and high tail latency, so host and
 proxy evidence remains a rollout gate. The additive Launcher SQLite v2
 migration, stable-ID/alias merge behavior, strict parser and opt-in clients are
-implemented locally. See `DISCOVERY_FRESHNESS_HANDOFF.md`. The next launcher
-slice is background/UI orchestration after production gates pass; only then
+implemented locally. Settings now exposes a staged v1 provider while preserving
+existing legacy selections as an explicit fallback. See
+`DISCOVERY_FRESHNESS_HANDOFF.md`. The next launcher slice is debounced remote
+search/background pagination after staged-provider observation; only then
 retire fixed startup probing while retaining selected-server and launch-time
 checks.
+
+The matching host-local origin load passed at about 680 requests/second with
+zero errors and p99 181 ms. The remaining load investigation is specifically
+the OpenResty/TLS/public routing path.
+
+A hostname-preserving direct-LAN OpenResty run also passed at about 482
+requests/second with zero errors and p99 246 ms. The prior public-hostname
+timeouts were caused by local router NAT-loopback/hairpin testing, so origin
+and proxy capacity are cleared for staged adoption with external telemetry.
 
 - Keep WolfAPI as the preferred read-only discovered-server provider in WolfLauncher.
 - Treat Steam's 10,000-row server-list cap as a fast baseline rather than the complete directory.

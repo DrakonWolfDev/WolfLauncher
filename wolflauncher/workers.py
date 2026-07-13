@@ -10,6 +10,7 @@ from .server_discovery import (
     discover_dayz_servers_battlemetrics,
     discover_dayz_servers_web_api,
     discover_dayz_servers_wolfapi,
+    discover_dayz_servers_wolfapi_v1,
 )
 from .server_enrichment import enrich_discovered_server, enrichment_probe_servers
 from .status import ServerStatus, check_server
@@ -123,14 +124,27 @@ class BattleMetricsDiscoveryWorker(QThread):
 class WolfApiDiscoveryWorker(QThread):
     discovery_ready = Signal(object, str)
 
-    def __init__(self, limit: int = 10000, automatic: bool = False):
+    def __init__(
+        self,
+        limit: int = 10000,
+        automatic: bool = False,
+        use_v1: bool = False,
+    ):
         super().__init__()
         self.limit = limit
         self.automatic = automatic
+        self.use_v1 = use_v1
+
+    @property
+    def provider_label(self) -> str:
+        return "WolfAPI v1" if self.use_v1 else "WolfAPI legacy"
 
     def run(self):
         try:
-            servers = discover_dayz_servers_wolfapi(limit=self.limit)
+            if self.use_v1:
+                servers = discover_dayz_servers_wolfapi_v1(limit=self.limit)
+            else:
+                servers = discover_dayz_servers_wolfapi(limit=self.limit)
         except Exception as exc:
             self.discovery_ready.emit([], str(exc))
         else:

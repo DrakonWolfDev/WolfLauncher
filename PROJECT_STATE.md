@@ -93,7 +93,9 @@ Working:
 - Copy actions for discovered server connect addresses and details.
 - Steam master server candidate discovery import script.
 - Single in-app discovered-server database refresh using the provider selected in Settings.
-- WolfAPI discovered-server cache provider using `https://api.drakonwolf.ddns.net/api/servers`.
+- Explicit staged WolfAPI v1 provider using bounded strict responses, with the
+  legacy `/api/servers` provider preserved as a separately selectable fallback
+  and for existing saved settings.
 - WolfAPI rows currently require local **Enrich visible** queries for ping because the hosted API contract does not supply it; WolfLauncher accepts a future additive `ping_ms`, `ping` or `latency` field and explains blank provider ping cells in a tooltip.
 - Steam Web API server-list discovery with user-supplied API key.
 - BattleMetrics server discovery.
@@ -170,13 +172,21 @@ Planned WolfAPI follow-up:
   SQLite schema v2 preserves existing rows while adding stable IDs, endpoint
   aliases and freshness/validation fields; WolfAPI rows merge port corrections
   by stable ID; opt-in v1 list/search/resolve clients enforce rollout metadata.
-  The deployed legacy endpoint remains the application default.
+  Settings exposes v1 as an explicit staged provider while existing saved
+  `wolfapi` selections remain on the separately labelled legacy fallback.
 - A post-fix hosted probe on 2026-07-13 confirmed bounded list, dedicated
   search, exact resolution, ETags, rollout metadata, stable identity and aliases
   are live. The strict client imported 100 rows into isolated SQLite. Two
   external 1,000-request/100-concurrency mixes still produced 1 and 13
   timeouts with high tail latency, so the legacy provider remains the default
   pending host/container and reverse-proxy evidence.
+  The host-local origin comparison subsequently passed 1,000 requests at about
+  680 requests/second with zero errors and p99 181 ms, narrowing the remaining
+  gate to OpenResty/TLS/public routing rather than WolfAPI capacity.
+  A TLS/SNI-preserving direct-LAN OpenResty run then passed at about 482
+  requests/second with zero errors and p99 246 ms, identifying the earlier
+  external timeout pattern as local router NAT-loopback/hairpin behavior.
+  Origin and proxy capacity are cleared for staged adoption with telemetry.
 - WolfAPI development commit `552b9cf` implements and repairs bounded
   `/api/v1/servers`, `/search` and `/resolve` flows, ETags, request-time
   freshness coverage, validation queue lag, normalized provider/validation

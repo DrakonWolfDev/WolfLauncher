@@ -533,7 +533,8 @@ class MainWindow(QMainWindow):
 
         self.discovery_provider = QComboBox()
         self.discovery_provider.addItems([
-            "WolfAPI",
+            "WolfAPI v1 (staged)",
+            "WolfAPI (legacy fallback)",
             "BattleMetrics",
             "Steam Web API",
             "Steam Master",
@@ -655,7 +656,7 @@ class MainWindow(QMainWindow):
     def refresh_from_configured_provider(self):
         provider = self.discovery_provider_key()
         self.save_user_settings(silent=True)
-        if provider == "wolfapi":
+        if provider in ("wolfapi", "wolfapi_v1"):
             self.refresh_from_wolfapi()
         elif provider == "battlemetrics":
             self.refresh_from_battlemetrics()
@@ -754,9 +755,14 @@ class MainWindow(QMainWindow):
     def refresh_from_wolfapi(self):
         if self.wolfapi_worker and self.wolfapi_worker.isRunning():
             return
-        self.browser_summary.setText("Cached discovered servers: querying WolfAPI...")
+        use_v1 = self.discovery_provider_key() == "wolfapi_v1"
+        label = "WolfAPI v1" if use_v1 else "WolfAPI legacy"
+        self.browser_summary.setText(f"Cached discovered servers: querying {label}...")
         self._set_database_refresh_enabled(False)
-        self.wolfapi_worker = WolfApiDiscoveryWorker(limit=self.discovery_limit.value())
+        self.wolfapi_worker = WolfApiDiscoveryWorker(
+            limit=self.discovery_limit.value(),
+            use_v1=use_v1,
+        )
         self.wolfapi_worker.discovery_ready.connect(self.handle_wolfapi_ready)
         self.wolfapi_worker.start()
 
@@ -778,10 +784,11 @@ class MainWindow(QMainWindow):
             return
         self.browser_summary.setText("Cached discovered servers: quietly refreshing configured provider...")
         self._set_database_refresh_enabled(False)
-        if provider == "wolfapi":
+        if provider in ("wolfapi", "wolfapi_v1"):
             self.wolfapi_worker = WolfApiDiscoveryWorker(
                 limit=self.discovery_limit.value(),
                 automatic=True,
+                use_v1=provider == "wolfapi_v1",
             )
             self.wolfapi_worker.discovery_ready.connect(self.handle_wolfapi_ready)
             self.wolfapi_worker.start()
@@ -890,20 +897,22 @@ class MainWindow(QMainWindow):
 
     def handle_wolfapi_ready(self, servers, error: str):
         automatic = bool(self.wolfapi_worker and self.wolfapi_worker.automatic)
+        provider = "wolfapi_v1" if self.wolfapi_worker and self.wolfapi_worker.use_v1 else "wolfapi"
+        label = self.wolfapi_worker.provider_label if self.wolfapi_worker else "WolfAPI"
         self._set_database_refresh_enabled(True)
         if automatic:
-            self.mark_auto_refresh("wolfapi")
+            self.mark_auto_refresh(provider)
         if error:
             self.refresh_server_browser()
             if automatic:
                 self.statusBar().showMessage(
-                    f"WolfAPI auto-refresh failed; cached rows kept: {error}",
+                    f"{label} auto-refresh failed; cached rows kept: {error}",
                     7000,
                 )
                 return
             QMessageBox.warning(
                 self,
-                "WolfAPI discovery failed",
+                f"{label} discovery failed",
                 f"{error}\n\nExisting cached WolfAPI rows were kept.",
             )
             return
@@ -911,12 +920,12 @@ class MainWindow(QMainWindow):
         self.refresh_server_browser()
         if automatic:
             self.statusBar().showMessage(
-                f"WolfAPI auto-refresh added {inserted} row(s), removed {removed}.",
+                f"{label} auto-refresh added {inserted} row(s), removed {removed}.",
                 7000,
             )
             return
         self.statusBar().showMessage(
-            f"WolfAPI discovery complete: added {inserted} row(s), removed {removed} stale row(s).",
+            f"{label} discovery complete: added {inserted} row(s), removed {removed} stale row(s).",
             7000,
         )
 
@@ -1003,7 +1012,8 @@ class MainWindow(QMainWindow):
 
     def _provider_label(self, key: str) -> str:
         labels = {
-            "wolfapi": "WolfAPI",
+            "wolfapi_v1": "WolfAPI v1 (staged)",
+            "wolfapi": "WolfAPI (legacy fallback)",
             "battlemetrics": "BattleMetrics",
             "steam_web_api": "Steam Web API",
             "steam_master": "Steam Master",
@@ -1018,7 +1028,8 @@ class MainWindow(QMainWindow):
         if not hasattr(self, "discovery_provider"):
             return str(self.settings.get("discovery_provider") or "battlemetrics")
         keys = {
-            "WolfAPI": "wolfapi",
+            "WolfAPI v1 (staged)": "wolfapi_v1",
+            "WolfAPI (legacy fallback)": "wolfapi",
             "BattleMetrics": "battlemetrics",
             "Steam Web API": "steam_web_api",
             "Steam Master": "steam_master",
@@ -2010,9 +2021,12 @@ class MainWindow(QMainWindow):
             else:
                 provider_status = "OK"
                 provider_detail = ", ".join(address.address for address in addresses) if addresses else "Default Steam masters"
+        elif provider == "wolfapi_v1":
+            provider_status = "OK"
+            provider_detail = "WolfAPI v1 bounded discovery (staged)"
         elif provider == "wolfapi":
             provider_status = "OK"
-            provider_detail = "WolfAPI hosted cache"
+            provider_detail = "WolfAPI legacy hosted cache fallback"
         elif provider == "battlemetrics":
             provider_status = "OK"
             provider_detail = "BattleMetrics public API"

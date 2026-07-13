@@ -3,7 +3,12 @@ from unittest.mock import patch
 
 from wolflauncher.models import Server
 from wolflauncher.status import ServerStatus
-from wolflauncher.workers import StatusWorker, SteamDiscoveryWorker, _checked_server_status
+from wolflauncher.workers import (
+    StatusWorker,
+    SteamDiscoveryWorker,
+    WolfApiDiscoveryWorker,
+    _checked_server_status,
+)
 
 
 def sample_server(name: str = "Test") -> Server:
@@ -34,6 +39,32 @@ class WorkerTests(unittest.TestCase):
         worker.run()
 
         self.assertEqual(results, [([], "network down")])
+
+    @patch("wolflauncher.workers.discover_dayz_servers_wolfapi_v1")
+    def test_wolfapi_worker_uses_strict_bounded_v1_when_selected(self, discover):
+        discover.return_value = ["v1-server"]
+        results = []
+        worker = WolfApiDiscoveryWorker(limit=100, use_v1=True)
+        worker.discovery_ready.connect(lambda servers, error: results.append((servers, error)))
+
+        worker.run()
+
+        discover.assert_called_once_with(limit=100)
+        self.assertEqual(worker.provider_label, "WolfAPI v1")
+        self.assertEqual(results, [(["v1-server"], "")])
+
+    @patch("wolflauncher.workers.discover_dayz_servers_wolfapi")
+    def test_wolfapi_worker_preserves_legacy_fallback(self, discover):
+        discover.return_value = ["legacy-server"]
+        results = []
+        worker = WolfApiDiscoveryWorker(limit=500, use_v1=False)
+        worker.discovery_ready.connect(lambda servers, error: results.append((servers, error)))
+
+        worker.run()
+
+        discover.assert_called_once_with(limit=500)
+        self.assertEqual(worker.provider_label, "WolfAPI legacy")
+        self.assertEqual(results, [(["legacy-server"], "")])
 
     @patch("wolflauncher.workers.check_server")
     def test_checked_server_status_returns_successful_result(self, check_server):

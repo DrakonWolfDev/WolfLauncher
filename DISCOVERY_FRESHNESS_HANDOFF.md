@@ -1,6 +1,6 @@
 # WolfAPI Discovery Freshness Handoff
 
-Last synchronized with WolfAPI development commit `552b9cf` on 2026-07-13.
+Last synchronized with WolfAPI development commit `ce0d1e6` on 2026-07-13.
 
 ## Purpose
 
@@ -37,6 +37,19 @@ SQLite cache. Keep the legacy default while the load gate remains open: two
 multi-second p95/p99 latency. Host/container and reverse-proxy evidence is
 required before GUI orchestration or provider-default changes.
 
+The identical host-local origin mix then passed all 1,000 requests with zero
+errors at about 680 requests/second, p95 173 ms and p99 181 ms while web RSS
+remained near 78 MiB. WolfAPI origin capacity is therefore sufficient; direct
+OpenResty/LAN testing must isolate proxy behavior from public routing before
+the external load gate can close.
+
+The hostname-preserving direct-LAN OpenResty mix also passed all 1,000 requests
+with zero errors at about 482 requests/second, p95 234 ms and p99 246 ms. Since
+the test client is on the same LAN, the slow public-hostname run was a router
+NAT-loopback/hairpin artifact. Origin and proxy capacity gates now pass;
+preserve the legacy fallback and watch normal external telemetry during staged
+Launcher adoption.
+
 ## Implemented WolfAPI v1 contract
 
 The current WolfAPI development branch provides:
@@ -71,7 +84,11 @@ Foundation implemented locally on 2026-07-13:
 - v1 responses are rejected unless contract version, generation time,
   validation policy, coverage and queue metadata are present;
 - the hosted legacy endpoint remains the default and no GUI/startup behavior
-  has switched yet.
+  has switched for existing saved settings;
+- Settings now offers an explicit `WolfAPI v1 (staged)` provider alongside
+  `WolfAPI (legacy fallback)`. The staged worker uses only the bounded strict
+  v1 client, retains cached SQLite rows on failure and has its own 24-hour
+  automatic-refresh timestamp.
 
 1. Migrate SQLite additively. Keep the existing endpoint `cache_key` for
    non-WolfAPI providers and launch/connect behavior, but add nullable
