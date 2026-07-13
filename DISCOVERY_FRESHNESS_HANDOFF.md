@@ -51,6 +51,17 @@ Legacy `/api/servers` remains compatibility-only and endpoint-keyed.
 
 ## Launcher implementation choices
 
+Foundation implemented locally on 2026-07-13:
+
+- SQLite schema v2 migrates existing v1 caches in place and stores stable IDs,
+  aliases, freshness and validation state;
+- WolfAPI rows are merged by stable ID so corrected ports move one row;
+- opt-in bounded list, remote search and exact-resolution clients exist;
+- v1 responses are rejected unless contract version, generation time,
+  validation policy, coverage and queue metadata are present;
+- the hosted legacy endpoint remains the default and no GUI/startup behavior
+  has switched yet.
+
 1. Migrate SQLite additively. Keep the existing endpoint `cache_key` for
    non-WolfAPI providers and launch/connect behavior, but add nullable
    `stable_server_id`, freshness/validation fields and an alias mapping for

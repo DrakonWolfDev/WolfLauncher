@@ -16,6 +16,7 @@ from wolflauncher.server_discovery import (
     discover_dayz_servers,
     discover_dayz_servers_web_api,
     discover_dayz_servers_wolfapi,
+    discover_dayz_servers_wolfapi_v1,
     parse_master_address,
 )
 
@@ -27,6 +28,11 @@ def main() -> int:
     parser.add_argument("--web-api", action="store_true", help="Use Steam Web API instead of legacy UDP.")
     parser.add_argument("--battlemetrics", action="store_true", help="Use BattleMetrics instead of Steam.")
     parser.add_argument("--wolfapi", action="store_true", help="Use WolfAPI instead of Steam.")
+    parser.add_argument(
+        "--wolfapi-v1",
+        action="store_true",
+        help="Canary the bounded WolfAPI v1 contract instead of the deployed legacy path.",
+    )
     parser.add_argument("--web-api-key", default="", help="Steam Web API key. Defaults to environment.")
     parser.add_argument("--limit", type=int, default=500, help="Maximum discovery rows to fetch.")
     parser.add_argument("--filter", default="", help="Steam server filter. Defaults to DayZ appid.")
@@ -41,7 +47,10 @@ def main() -> int:
     args = parser.parse_args()
 
     try:
-        if args.wolfapi:
+        if args.wolfapi_v1:
+            source = "WolfAPI v1"
+            servers = discover_dayz_servers_wolfapi_v1(limit=args.limit, timeout=args.timeout)
+        elif args.wolfapi:
             source = "WolfAPI"
             servers = discover_dayz_servers_wolfapi(limit=args.limit, timeout=args.timeout)
         elif args.battlemetrics:

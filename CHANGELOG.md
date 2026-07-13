@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added the opt-in WolfAPI v1 client/cache foundation: strict rollout-contract
+  validation, bounded list/search/exact-resolution clients, an additive SQLite
+  v1-to-v2 migration, stable server IDs, endpoint aliases, freshness and
+  validation fields, and duplicate-free port-correction merging. The deployed
+  legacy WolfAPI URL remains the default.
 - Made native/external launch-engine changes invalidate and quietly recheck the selected server's mods using the newly authoritative Steam/Workshop context, matching Steam install mode changes.
 - Made Steam install mode changes deterministically start or queue a quiet forced mod recheck, instead of leaving the Mods tab waiting when the previous lookup had already finished.
 - Bound cached mod results to both the selected server and Workshop directory, preventing an in-flight check from an old Steam install mode being accepted after the mode changes and queuing a fresh check for the current context.

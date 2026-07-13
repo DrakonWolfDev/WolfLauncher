@@ -33,6 +33,16 @@ class DiscoveredServer:
     online: bool = False
     last_checked: str = ""
     last_seen: str = ""
+    stable_server_id: str = ""
+    endpoint_aliases: tuple[str, ...] = ()
+    freshness: str = ""
+    freshness_expires_at: str = ""
+    validation_status: str = ""
+    validation_checked_at: str = ""
+    validation_seen_at: str = ""
+    validation_error_code: str = ""
+    provider_last_checked: str = ""
+    provider_last_seen: str = ""
 
     @property
     def cache_key(self) -> str:

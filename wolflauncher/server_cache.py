@@ -12,7 +12,7 @@ import yaml
 from .models import DiscoveredServer
 
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 DATA_DIR = Path.home() / ".local" / "share" / "wolflauncher"
 SERVER_CACHE_PATH = DATA_DIR / "server_cache.sqlite3"
 
@@ -82,6 +82,16 @@ def _initialize_schema_v1(connection: sqlite3.Connection) -> None:
             online INTEGER NOT NULL DEFAULT 0,
             last_checked TEXT NOT NULL DEFAULT '',
             last_seen TEXT NOT NULL DEFAULT '',
+            stable_server_id TEXT NOT NULL DEFAULT '',
+            endpoint_aliases TEXT NOT NULL DEFAULT '[]',
+            freshness TEXT NOT NULL DEFAULT '',
+            freshness_expires_at TEXT NOT NULL DEFAULT '',
+            validation_status TEXT NOT NULL DEFAULT '',
+            validation_checked_at TEXT NOT NULL DEFAULT '',
+            validation_seen_at TEXT NOT NULL DEFAULT '',
+            validation_error_code TEXT NOT NULL DEFAULT '',
+            provider_last_checked TEXT NOT NULL DEFAULT '',
+            provider_last_seen TEXT NOT NULL DEFAULT '',
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
@@ -99,11 +109,53 @@ def _initialize_schema_v1(connection: sqlite3.Connection) -> None:
         "CREATE INDEX IF NOT EXISTS idx_discovered_servers_online "
         "ON discovered_servers(online)"
     )
+    connection.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS idx_discovered_servers_stable_server_id "
+        "ON discovered_servers(stable_server_id) WHERE stable_server_id != ''"
+    )
+    _initialize_alias_schema(connection)
     connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
 
 
+def _initialize_alias_schema(connection: sqlite3.Connection) -> None:
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS discovered_server_aliases (
+            endpoint_id TEXT PRIMARY KEY,
+            cache_key TEXT NOT NULL,
+            FOREIGN KEY(cache_key) REFERENCES discovered_servers(cache_key)
+                ON UPDATE CASCADE ON DELETE CASCADE
+        )
+        """
+    )
+    connection.execute(
+        "CREATE INDEX IF NOT EXISTS idx_discovered_server_aliases_cache_key "
+        "ON discovered_server_aliases(cache_key)"
+    )
+
+
 def _migrate(connection: sqlite3.Connection, current_version: int, target_version: int) -> None:
-    # Future schema changes should step version-by-version here so user caches are preserved.
+    if current_version == 1 and target_version >= 2:
+        for definition in (
+            "stable_server_id TEXT NOT NULL DEFAULT ''",
+            "endpoint_aliases TEXT NOT NULL DEFAULT '[]'",
+            "freshness TEXT NOT NULL DEFAULT ''",
+            "freshness_expires_at TEXT NOT NULL DEFAULT ''",
+            "validation_status TEXT NOT NULL DEFAULT ''",
+            "validation_checked_at TEXT NOT NULL DEFAULT ''",
+            "validation_seen_at TEXT NOT NULL DEFAULT ''",
+            "validation_error_code TEXT NOT NULL DEFAULT ''",
+            "provider_last_checked TEXT NOT NULL DEFAULT ''",
+            "provider_last_seen TEXT NOT NULL DEFAULT ''",
+        ):
+            connection.execute(f"ALTER TABLE discovered_servers ADD COLUMN {definition}")
+        connection.execute(
+            "CREATE UNIQUE INDEX idx_discovered_servers_stable_server_id "
+            "ON discovered_servers(stable_server_id) WHERE stable_server_id != ''"
+        )
+        _initialize_alias_schema(connection)
+        connection.execute("PRAGMA user_version = 2")
+        current_version = 2
     if current_version != target_version:
         raise RuntimeError(
             f"Unsupported server cache migration from version {current_version} to {target_version}."
@@ -116,17 +168,39 @@ def upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> N
 
 
 def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> None:
+    if server.stable_server_id:
+        existing = connection.execute(
+            "SELECT cache_key FROM discovered_servers WHERE stable_server_id = ?",
+            (server.stable_server_id,),
+        ).fetchone()
+        if existing and existing["cache_key"] != server.cache_key:
+            conflict = connection.execute(
+                "SELECT stable_server_id FROM discovered_servers WHERE cache_key = ?",
+                (server.cache_key,),
+            ).fetchone()
+            if conflict and conflict["stable_server_id"] not in {"", server.stable_server_id}:
+                raise ValueError("Corrected endpoint belongs to another stable server.")
+            connection.execute(
+                "DELETE FROM discovered_servers WHERE cache_key = ?",
+                (existing["cache_key"],),
+            )
     connection.execute(
         """
         INSERT INTO discovered_servers (
             cache_key, source, display_name, server_name, host, game_port, query_port,
             map_name, players_current, players_max, ping_ms, version, password,
-            modded, online, last_checked, last_seen
+            modded, online, last_checked, last_seen, stable_server_id,
+            endpoint_aliases, freshness, freshness_expires_at, validation_status,
+            validation_checked_at, validation_seen_at, validation_error_code,
+            provider_last_checked, provider_last_seen
         )
         VALUES (
             :cache_key, :source, :display_name, :server_name, :host, :game_port, :query_port,
             :map_name, :players_current, :players_max, :ping_ms, :version, :password,
-            :modded, :online, :last_checked, :last_seen
+            :modded, :online, :last_checked, :last_seen, :stable_server_id,
+            :endpoint_aliases, :freshness, :freshness_expires_at, :validation_status,
+            :validation_checked_at, :validation_seen_at, :validation_error_code,
+            :provider_last_checked, :provider_last_seen
         )
         ON CONFLICT(cache_key) DO UPDATE SET
             source = excluded.source,
@@ -145,10 +219,34 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             online = excluded.online,
             last_checked = excluded.last_checked,
             last_seen = excluded.last_seen,
+            stable_server_id = excluded.stable_server_id,
+            endpoint_aliases = excluded.endpoint_aliases,
+            freshness = excluded.freshness,
+            freshness_expires_at = excluded.freshness_expires_at,
+            validation_status = excluded.validation_status,
+            validation_checked_at = excluded.validation_checked_at,
+            validation_seen_at = excluded.validation_seen_at,
+            validation_error_code = excluded.validation_error_code,
+            provider_last_checked = excluded.provider_last_checked,
+            provider_last_seen = excluded.provider_last_seen,
             updated_at = CURRENT_TIMESTAMP
         """,
         _server_params(server),
     )
+    if server.stable_server_id:
+        aliases = {server.cache_key, *server.endpoint_aliases}
+        connection.execute(
+            "DELETE FROM discovered_server_aliases WHERE cache_key = ?",
+            (server.cache_key,),
+        )
+        connection.executemany(
+            """
+            INSERT INTO discovered_server_aliases (endpoint_id, cache_key)
+            VALUES (?, ?)
+            ON CONFLICT(endpoint_id) DO UPDATE SET cache_key = excluded.cache_key
+            """,
+            [(alias, server.cache_key) for alias in sorted(aliases) if alias],
+        )
 
 
 def upsert_servers(connection: sqlite3.Connection, servers: list[DiscoveredServer]) -> int:
@@ -169,11 +267,22 @@ def sync_source_servers(
 
     normalized = [replace(server, source=source) for server in servers]
     keys = {server.cache_key for server in normalized}
-
     before = connection.execute(
         "SELECT COUNT(*) FROM discovered_servers WHERE source = ?",
         (source,),
     ).fetchone()[0]
+    existing_stable_ids = {
+        row["stable_server_id"]
+        for row in connection.execute(
+            "SELECT stable_server_id FROM discovered_servers "
+            "WHERE source = ? AND stable_server_id != ''",
+            (source,),
+        ).fetchall()
+    }
+
+    for server in normalized:
+        if server.stable_server_id:
+            _upsert_server(connection, server)
 
     connection.execute("CREATE TEMP TABLE IF NOT EXISTS current_source_keys (cache_key TEXT PRIMARY KEY)")
     connection.execute("DELETE FROM current_source_keys")
@@ -200,6 +309,10 @@ def sync_source_servers(
     }
     inserted = 0
     for server in normalized:
+        if server.stable_server_id:
+            if server.stable_server_id not in existing_stable_ids:
+                inserted += 1
+            continue
         if server.cache_key in existing_keys:
             continue
         _upsert_server(connection, server)
@@ -246,6 +359,23 @@ def get_server(connection: sqlite3.Connection, cache_key: str) -> DiscoveredServ
     row = connection.execute(
         "SELECT * FROM discovered_servers WHERE cache_key = ?",
         (cache_key,),
+    ).fetchone()
+    return _row_to_server(row) if row else None
+
+
+def get_server_by_endpoint_alias(
+    connection: sqlite3.Connection,
+    endpoint_id: str,
+) -> DiscoveredServer | None:
+    row = connection.execute(
+        """
+        SELECT discovered_servers.*
+        FROM discovered_server_aliases
+        JOIN discovered_servers
+            ON discovered_servers.cache_key = discovered_server_aliases.cache_key
+        WHERE discovered_server_aliases.endpoint_id = ?
+        """,
+        (endpoint_id,),
     ).fetchone()
     return _row_to_server(row) if row else None
 
@@ -427,6 +557,16 @@ def _server_params(server: DiscoveredServer) -> dict[str, Any]:
         "online": 1 if server.online else 0,
         "last_checked": server.last_checked,
         "last_seen": server.last_seen,
+        "stable_server_id": server.stable_server_id,
+        "endpoint_aliases": json.dumps(list(server.endpoint_aliases)),
+        "freshness": server.freshness,
+        "freshness_expires_at": server.freshness_expires_at,
+        "validation_status": server.validation_status,
+        "validation_checked_at": server.validation_checked_at,
+        "validation_seen_at": server.validation_seen_at,
+        "validation_error_code": server.validation_error_code,
+        "provider_last_checked": server.provider_last_checked,
+        "provider_last_seen": server.provider_last_seen,
     }
 
 
@@ -466,6 +606,18 @@ def _server_from_import_item(item: Any, index: int) -> DiscoveredServer:
         online=_optional_bool(item.get("online", False)),
         last_checked=str(item.get("last_checked") or ""),
         last_seen=str(item.get("last_seen") or ""),
+        stable_server_id=str(item.get("stable_server_id") or item.get("server_id") or ""),
+        endpoint_aliases=tuple(
+            str(alias) for alias in item.get("endpoint_aliases", [])
+        ) if isinstance(item.get("endpoint_aliases", []), list) else (),
+        freshness=str(item.get("freshness") or ""),
+        freshness_expires_at=str(item.get("freshness_expires_at") or ""),
+        validation_status=str(item.get("validation_status") or ""),
+        validation_checked_at=str(item.get("validation_checked_at") or ""),
+        validation_seen_at=str(item.get("validation_seen_at") or ""),
+        validation_error_code=str(item.get("validation_error_code") or ""),
+        provider_last_checked=str(item.get("provider_last_checked") or ""),
+        provider_last_seen=str(item.get("provider_last_seen") or ""),
     )
 
 
@@ -526,6 +678,16 @@ def _row_to_server(row: sqlite3.Row) -> DiscoveredServer:
         online=bool(row["online"]),
         last_checked=str(row["last_checked"]),
         last_seen=str(row["last_seen"]),
+        stable_server_id=str(row["stable_server_id"]),
+        endpoint_aliases=tuple(json.loads(row["endpoint_aliases"] or "[]")),
+        freshness=str(row["freshness"]),
+        freshness_expires_at=str(row["freshness_expires_at"]),
+        validation_status=str(row["validation_status"]),
+        validation_checked_at=str(row["validation_checked_at"]),
+        validation_seen_at=str(row["validation_seen_at"]),
+        validation_error_code=str(row["validation_error_code"]),
+        provider_last_checked=str(row["provider_last_checked"]),
+        provider_last_seen=str(row["provider_last_seen"]),
     )
 
 

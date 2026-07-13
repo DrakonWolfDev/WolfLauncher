@@ -166,6 +166,11 @@ Planned WolfAPI follow-up:
 
 - `DISCOVERY_FRESHNESS_HANDOFF.md` records the cross-repository contract and
   rollout state; `ROADMAP.md` tracks the launcher adoption work.
+- The current launcher working tree contains the additive adoption foundation:
+  SQLite schema v2 preserves existing rows while adding stable IDs, endpoint
+  aliases and freshness/validation fields; WolfAPI rows merge port corrections
+  by stable ID; opt-in v1 list/search/resolve clients enforce rollout metadata.
+  The deployed legacy endpoint remains the application default.
 - WolfAPI development commit `69480db` implements bounded
   `/api/v1/servers`, `/search` and `/resolve` flows, ETags, request-time
   freshness coverage, validation queue lag, normalized provider/validation

@@ -25,6 +25,63 @@ class ServerCacheTests(unittest.TestCase):
 
         self.assertEqual(version, server_cache.SCHEMA_VERSION)
         self.assertIn("discovered_servers", {row["name"] for row in tables})
+        self.assertIn("discovered_server_aliases", {row["name"] for row in tables})
+        columns = {
+            row["name"]
+            for row in connection.execute("PRAGMA table_info(discovered_servers)")
+        }
+        self.assertIn("stable_server_id", columns)
+        self.assertIn("endpoint_aliases", columns)
+        self.assertIn("validation_status", columns)
+
+    def test_schema_v1_migrates_to_v2_without_losing_rows(self):
+        tmpdir = tempfile.TemporaryDirectory()
+        path = Path(tmpdir.name) / "server_cache.sqlite3"
+        self.addCleanup(tmpdir.cleanup)
+        connection = server_cache.sqlite3.connect(path)
+        connection.execute(
+            """
+            CREATE TABLE discovered_servers (
+                cache_key TEXT PRIMARY KEY,
+                source TEXT NOT NULL DEFAULT 'discovered',
+                display_name TEXT NOT NULL,
+                server_name TEXT NOT NULL DEFAULT '',
+                host TEXT NOT NULL,
+                game_port INTEGER NOT NULL,
+                query_port INTEGER NOT NULL,
+                map_name TEXT NOT NULL DEFAULT '',
+                players_current INTEGER,
+                players_max INTEGER,
+                ping_ms INTEGER,
+                version TEXT NOT NULL DEFAULT '',
+                password INTEGER NOT NULL DEFAULT 0,
+                modded INTEGER NOT NULL DEFAULT 0,
+                online INTEGER NOT NULL DEFAULT 0,
+                last_checked TEXT NOT NULL DEFAULT '',
+                last_seen TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+        )
+        connection.execute(
+            """
+            INSERT INTO discovered_servers (
+                cache_key, display_name, host, game_port, query_port
+            ) VALUES ('203.0.113.10:2302:27016', 'Existing', '203.0.113.10', 2302, 27016)
+            """
+        )
+        connection.execute("PRAGMA user_version = 1")
+        connection.commit()
+        connection.close()
+
+        migrated = server_cache.connect(path)
+        self.addCleanup(migrated.close)
+
+        self.assertEqual(migrated.execute("PRAGMA user_version").fetchone()[0], 2)
+        cached = server_cache.get_server(migrated, "203.0.113.10:2302:27016")
+        self.assertEqual(cached.name, "Existing")
+        self.assertEqual(cached.stable_server_id, "")
 
     def test_initialize_rejects_newer_schema_version(self):
         tmpdir = tempfile.TemporaryDirectory()
@@ -61,6 +118,56 @@ class ServerCacheTests(unittest.TestCase):
         server_cache.upsert_server(connection, server)
 
         self.assertEqual(server_cache.get_server(connection, server.cache_key), server)
+
+    def test_stable_wolfapi_id_moves_corrected_endpoint_without_duplicate(self):
+        connection = self.open_cache()
+        stable_id = "11111111-1111-1111-1111-111111111111"
+        original = DiscoveredServer(
+            name="Stable Server",
+            source="wolfapi",
+            host="203.0.113.10",
+            game_port=2302,
+            query_port=27016,
+            stable_server_id=stable_id,
+            endpoint_aliases=("203.0.113.10:2302:27016",),
+            freshness="recent",
+            validation_status="online",
+        )
+        corrected = DiscoveredServer(
+            name="Stable Server",
+            source="wolfapi",
+            host="203.0.113.10",
+            game_port=2402,
+            query_port=28016,
+            stable_server_id=stable_id,
+            endpoint_aliases=(
+                "203.0.113.10:2402:28016",
+                "203.0.113.10:2302:27016",
+            ),
+            freshness="live",
+            validation_status="online",
+        )
+
+        self.assertEqual(
+            server_cache.sync_source_servers(connection, "wolfapi", [original]),
+            (1, 0),
+        )
+        self.assertEqual(
+            server_cache.sync_source_servers(connection, "wolfapi", [corrected]),
+            (0, 0),
+        )
+
+        self.assertIsNone(server_cache.get_server(connection, original.cache_key))
+        cached = server_cache.get_server(connection, corrected.cache_key)
+        self.assertEqual(cached.stable_server_id, stable_id)
+        self.assertEqual(cached.endpoint_aliases, corrected.endpoint_aliases)
+        self.assertEqual(cached.freshness, "live")
+        old_alias = server_cache.get_server_by_endpoint_alias(
+            connection,
+            "203.0.113.10:2302:27016",
+        )
+        self.assertEqual(old_alias.cache_key, corrected.cache_key)
+        self.assertEqual(len(server_cache.search_servers(connection)), 1)
 
     def test_upsert_replaces_existing_cache_entry(self):
         connection = self.open_cache()

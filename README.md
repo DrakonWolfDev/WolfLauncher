@@ -274,6 +274,13 @@ The WolfAPI cache path is also available from the command line:
 .venv/bin/python scripts/discover_steam_servers.py --wolfapi --limit 500
 ```
 
+After the hosted service is deployed with the documented rollout metadata, the
+bounded v1 path can be canaried without changing the GUI provider default:
+
+```bash
+.venv/bin/python scripts/discover_steam_servers.py --wolfapi-v1 --limit 100
+```
+
 The Web API path is also available from the command line:
 
 ```bash

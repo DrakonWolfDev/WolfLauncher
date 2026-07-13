@@ -55,11 +55,12 @@ Status: complete. Native launch parity has been validated in real-world use and 
 Goal: turn WolfAPI from a Steam-capped cache into a resilient community server directory while keeping WolfLauncher usable offline and with curated local rows.
 
 Status: WolfAPI v1 is implemented on its current development branch but is not
-yet the launcher's assumed deployed contract. See
-`DISCOVERY_FRESHNESS_HANDOFF.md`. Launcher adoption should migrate SQLite to
-store stable server IDs and aliases, fetch bounded initial pages, use remote
-search/exact resolution for the full directory, and only then retire fixed
-startup probing while retaining selected-server/launch-time checks.
+yet the launcher's assumed deployed contract. The additive SQLite v2 migration,
+stable-ID/alias merge behavior, strict contract parser and opt-in bounded
+list/search/exact-resolution clients are implemented locally. See
+`DISCOVERY_FRESHNESS_HANDOFF.md`. The next launcher slice is background/UI
+orchestration after production gates pass; only then retire fixed startup
+probing while retaining selected-server/launch-time checks.
 
 - Keep WolfAPI as the preferred read-only discovered-server provider in WolfLauncher.
 - Treat Steam's 10,000-row server-list cap as a fast baseline rather than the complete directory.
