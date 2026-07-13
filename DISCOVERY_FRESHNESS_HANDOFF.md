@@ -17,25 +17,26 @@ server/launch-time checks remain local truth.
 
 ## Current deployment boundary
 
-WolfLauncher currently consumes the hosted legacy endpoint:
+WolfLauncher uses the hosted v1 endpoints for fresh-install default discovery:
 
 ```text
-GET https://api.drakonwolf.ddns.net/api/servers
+GET https://api.drakonwolf.ddns.net/api/v1/servers
+GET https://api.drakonwolf.ddns.net/api/v1/servers/search
+GET https://api.drakonwolf.ddns.net/api/v1/servers/resolve
 ```
 
-Do not switch the default URL merely because v1 exists in the sibling source
-tree. Confirm the production migration, contract fixture and rollout gates
-below first. API failure means remote search is unavailable, not that cached
-servers disappeared.
+V1 is the default provider for fresh installations after the production
+migration, contract fixture, origin load and proxy load gates passed. Existing
+saved choices remain unchanged and the explicit legacy fallback stays
+available at `GET /api/servers`. API failure means remote search is unavailable,
+not that cached servers disappeared.
 
 Post-fix probe on 2026-07-13: bounded list, dedicated search, exact resolution
 and conditional ETag requests all pass. Migration `20260713_0006`, rollout
 metadata, stable UUIDs and endpoint aliases are live; list/search/resolve agree
 on identity. The strict Launcher client imported 100 v1 rows into an isolated
-SQLite cache. Keep the legacy default while the load gate remains open: two
-1,000-request/100-concurrency external mixes produced 1 and 13 timeouts with
-multi-second p95/p99 latency. Host/container and reverse-proxy evidence is
-required before GUI orchestration or provider-default changes.
+SQLite cache. Two public-hostname tests from the same LAN initially showed
+timeouts and high tail latency, prompting the origin/proxy isolation below.
 
 The identical host-local origin mix then passed all 1,000 requests with zero
 errors at about 680 requests/second, p95 173 ms and p99 181 ms while web RSS
@@ -52,7 +53,7 @@ Launcher adoption.
 
 ## Implemented WolfAPI v1 contract
 
-The current WolfAPI development branch provides:
+WolfAPI `main` provides:
 
 ```text
 GET /api/v1/servers

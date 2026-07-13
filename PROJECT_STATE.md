@@ -190,9 +190,9 @@ Planned WolfAPI follow-up:
 - A post-fix hosted probe on 2026-07-13 confirmed bounded list, dedicated
   search, exact resolution, ETags, rollout metadata, stable identity and aliases
   are live. The strict client imported 100 rows into isolated SQLite. Two
-  external 1,000-request/100-concurrency mixes still produced 1 and 13
-  timeouts with high tail latency, so the legacy provider remains the default
-  pending host/container and reverse-proxy evidence.
+  public-hostname 1,000-request/100-concurrency mixes initially produced 1 and
+  13 timeouts with high tail latency, prompting host/container and
+  reverse-proxy isolation.
   The host-local origin comparison subsequently passed 1,000 requests at about
   680 requests/second with zero errors and p99 181 ms, narrowing the remaining
   gate to OpenResty/TLS/public routing rather than WolfAPI capacity.
@@ -200,15 +200,16 @@ Planned WolfAPI follow-up:
   requests/second with zero errors and p99 246 ms, identifying the earlier
   external timeout pattern as local router NAT-loopback/hairpin behavior.
   Origin and proxy capacity are cleared for staged adoption with telemetry.
-- WolfAPI development commit `552b9cf` implements and repairs bounded
+- WolfAPI commit `552b9cf` implements and repairs bounded
   `/api/v1/servers`, `/search` and `/resolve` flows, ETags, request-time
   freshness coverage, validation queue lag, normalized provider/validation
   fields, stable UUID server IDs and endpoint aliases. The hosted deployment
-  must pass the documented rollout gates before WolfLauncher switches from the
-  legacy `/api/servers` URL.
-- The additive SQLite v2 cache stores stable server IDs and endpoint aliases;
-  corrected endpoints merge into one cached row without weakening offline
-  behavior or curated YAML ownership.
+  passed the documented rollout gates and v1 is now the fresh-install default;
+  saved choices and the legacy fallback remain available.
+- SQLite schema v3 combines the two earlier v2 layouts, storing Workshop
+  metadata, stable server IDs and endpoint aliases; corrected endpoints merge
+  into one cached row without weakening offline behavior or curated YAML
+  ownership.
 - WolfAPI `/api/health` remains operator/support data. Normal browsing should
   consume only the public v1 contract and continue from SQLite during API
   failure.

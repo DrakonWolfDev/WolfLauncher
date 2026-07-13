@@ -78,8 +78,7 @@ Curated YAML status refresh and explicit selected/launch-time checks remain by
 design; discovered-row enrichment stays user-triggered.
 
 The matching host-local origin load passed at about 680 requests/second with
-zero errors and p99 181 ms. The remaining load investigation is specifically
-the OpenResty/TLS/public routing path.
+zero errors and p99 181 ms, clearing the application/origin capacity path.
 
 A hostname-preserving direct-LAN OpenResty run also passed at about 482
 requests/second with zero errors and p99 246 ms. The prior public-hostname
