@@ -100,6 +100,7 @@ from .server_browser_presenter import (
 from .server_browser_controller import BrowserQuery, browser_filter_options, load_browser_snapshot
 from .server_browser_table import populate_browser_table
 from .settings import (
+    DEFAULT_DISCOVERY_PROVIDER,
     load_favourites,
     load_settings,
     save_favourites,
@@ -117,6 +118,7 @@ from .workers import (
     SteamDiscoveryWorker,
     SteamWebApiDiscoveryWorker,
     WolfApiDiscoveryWorker,
+    WolfApiSearchWorker,
     WorkshopSubscriptionWorker,
     WorkshopStateWorker,
 )
@@ -156,6 +158,8 @@ class MainWindow(QMainWindow):
         self.web_api_worker = None
         self.battlemetrics_worker = None
         self.wolfapi_worker = None
+        self.wolfapi_search_worker = None
+        self.pending_wolfapi_search = ""
         self.enrichment_worker = None
         self.last_mod_result = None
         self.active_mod_server_key = ""
@@ -201,6 +205,10 @@ class MainWindow(QMainWindow):
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.refresh_statuses)
+        self.remote_search_timer = QTimer(self)
+        self.remote_search_timer.setSingleShot(True)
+        self.remote_search_timer.setInterval(450)
+        self.remote_search_timer.timeout.connect(self.start_remote_wolfapi_search)
 
         self.tabs = QTabWidget()
         self.tabs.addTab(self._build_servers_tab(), "Servers")
@@ -214,7 +222,6 @@ class MainWindow(QMainWindow):
         self.refresh_server_browser()
         self.update_settings_health()
         QTimer.singleShot(0, self.check_initial_server_mods)
-        QTimer.singleShot(5000, self.maybe_auto_enrich_top_servers)
         QTimer.singleShot(30000, self.maybe_auto_refresh_configured_provider)
 
     def _build_servers_tab(self) -> QWidget:
@@ -301,6 +308,7 @@ class MainWindow(QMainWindow):
         self.browser_search = QLineEdit()
         self.browser_search.setPlaceholderText("Search discovered servers")
         self.browser_search.textChanged.connect(self.refresh_server_browser)
+        self.browser_search.textChanged.connect(self.schedule_remote_wolfapi_search)
         filters.addWidget(QLabel("Search"))
         filters.addWidget(self.browser_search, 2)
 
@@ -321,11 +329,17 @@ class MainWindow(QMainWindow):
         self.browser_map = QComboBox()
         self.browser_map.addItem("Any map")
         self.browser_map.currentTextChanged.connect(self.refresh_server_browser)
+        self.browser_map.currentTextChanged.connect(
+            lambda _text: self.schedule_remote_wolfapi_search(self.browser_search.text())
+        )
         filters.addWidget(self.browser_map)
 
         self.browser_version = QComboBox()
         self.browser_version.addItem("Any version")
         self.browser_version.currentTextChanged.connect(self.refresh_server_browser)
+        self.browser_version.currentTextChanged.connect(
+            lambda _text: self.schedule_remote_wolfapi_search(self.browser_search.text())
+        )
 
         self.browser_source = QComboBox()
         self.browser_source.addItem("Any source")
@@ -572,16 +586,19 @@ class MainWindow(QMainWindow):
 
         self.discovery_provider = QComboBox()
         self.discovery_provider.addItems([
-            "WolfAPI",
+            "WolfAPI v1 (staged)",
+            "WolfAPI (legacy fallback)",
             "BattleMetrics",
             "Steam Web API",
             "Steam Master",
             "Disabled",
         ])
         self.discovery_provider.setCurrentText(
-            self._provider_label(str(self.settings.get("discovery_provider") or "battlemetrics"))
+            self._provider_label(
+                str(self.settings.get("discovery_provider") or DEFAULT_DISCOVERY_PROVIDER)
+            )
         )
-        self.discovery_provider.currentTextChanged.connect(self.handle_settings_changed)
+        self.discovery_provider.currentTextChanged.connect(self.handle_discovery_provider_changed)
         discovery_settings.addRow("Server API provider", self.discovery_provider)
 
         self.discovery_limit = QSpinBox()
@@ -706,7 +723,7 @@ class MainWindow(QMainWindow):
     def refresh_from_configured_provider(self):
         provider = self.discovery_provider_key()
         self.save_user_settings(silent=True)
-        if provider == "wolfapi":
+        if provider in ("wolfapi", "wolfapi_v1"):
             self.refresh_from_wolfapi()
         elif provider == "battlemetrics":
             self.refresh_from_battlemetrics()
@@ -805,9 +822,14 @@ class MainWindow(QMainWindow):
     def refresh_from_wolfapi(self):
         if self.wolfapi_worker and self.wolfapi_worker.isRunning():
             return
-        self.browser_summary.setText("Cached discovered servers: querying WolfAPI...")
+        use_v1 = self.discovery_provider_key() == "wolfapi_v1"
+        label = "WolfAPI v1" if use_v1 else "WolfAPI legacy"
+        self.browser_summary.setText(f"Cached discovered servers: querying {label}...")
         self._set_database_refresh_enabled(False)
-        self.wolfapi_worker = WolfApiDiscoveryWorker(limit=self.discovery_limit.value())
+        self.wolfapi_worker = WolfApiDiscoveryWorker(
+            limit=self.discovery_limit.value(),
+            use_v1=use_v1,
+        )
         self.wolfapi_worker.discovery_ready.connect(self.handle_wolfapi_ready)
         self.wolfapi_worker.start()
 
@@ -829,10 +851,11 @@ class MainWindow(QMainWindow):
             return
         self.browser_summary.setText("Cached discovered servers: quietly refreshing configured provider...")
         self._set_database_refresh_enabled(False)
-        if provider == "wolfapi":
+        if provider in ("wolfapi", "wolfapi_v1"):
             self.wolfapi_worker = WolfApiDiscoveryWorker(
                 limit=self.discovery_limit.value(),
                 automatic=True,
+                use_v1=provider == "wolfapi_v1",
             )
             self.wolfapi_worker.discovery_ready.connect(self.handle_wolfapi_ready)
             self.wolfapi_worker.start()
@@ -941,35 +964,95 @@ class MainWindow(QMainWindow):
 
     def handle_wolfapi_ready(self, servers, error: str):
         automatic = bool(self.wolfapi_worker and self.wolfapi_worker.automatic)
+        provider = "wolfapi_v1" if self.wolfapi_worker and self.wolfapi_worker.use_v1 else "wolfapi"
+        label = self.wolfapi_worker.provider_label if self.wolfapi_worker else "WolfAPI"
         self._set_database_refresh_enabled(True)
         if automatic:
-            self.mark_auto_refresh("wolfapi")
+            self.mark_auto_refresh(provider)
         if error:
             self.refresh_server_browser()
             if automatic:
                 self.statusBar().showMessage(
-                    f"WolfAPI auto-refresh failed; cached rows kept: {error}",
+                    f"{label} auto-refresh failed; cached rows kept: {error}",
                     7000,
                 )
                 return
             QMessageBox.warning(
                 self,
-                "WolfAPI discovery failed",
+                f"{label} discovery failed",
                 f"{error}\n\nExisting cached WolfAPI rows were kept.",
             )
             return
-        inserted, removed = server_cache.sync_source_servers(self.server_cache, "wolfapi", servers)
+        if provider == "wolfapi_v1":
+            inserted = server_cache.merge_source_servers(self.server_cache, "wolfapi", servers)
+            removed = 0
+        else:
+            inserted, removed = server_cache.sync_source_servers(self.server_cache, "wolfapi", servers)
         self.refresh_server_browser()
         if automatic:
             self.statusBar().showMessage(
-                f"WolfAPI auto-refresh added {inserted} row(s), removed {removed}.",
+                f"{label} auto-refresh added {inserted} row(s), removed {removed}.",
                 7000,
             )
             return
         self.statusBar().showMessage(
-            f"WolfAPI discovery complete: added {inserted} row(s), removed {removed} stale row(s).",
+            f"{label} discovery complete: added {inserted} row(s), removed {removed} stale row(s).",
             7000,
         )
+
+    def schedule_remote_wolfapi_search(self, text: str):
+        self.remote_search_timer.stop()
+        query = " ".join(text.split())
+        if self.discovery_provider_key() != "wolfapi_v1" or len(query) < 3:
+            self.pending_wolfapi_search = ""
+            return
+        self.pending_wolfapi_search = query
+        self.remote_search_timer.start()
+
+    def start_remote_wolfapi_search(self):
+        query = " ".join(self.browser_search.text().split())
+        if self.discovery_provider_key() != "wolfapi_v1" or len(query) < 3:
+            self.pending_wolfapi_search = ""
+            return
+        if self.wolfapi_search_worker and self.wolfapi_search_worker.isRunning():
+            self.pending_wolfapi_search = query
+            return
+        self.pending_wolfapi_search = ""
+        map_name = self._combo_filter_value(self.browser_map, "Any map")
+        version = self._combo_filter_value(self.browser_version, "Any version")
+        self.wolfapi_search_worker = WolfApiSearchWorker(
+            query,
+            limit=min(100, int(self.browser_limit.currentText())),
+            map_name=map_name,
+            version=version,
+        )
+        self.wolfapi_search_worker.search_ready.connect(self.handle_remote_wolfapi_search)
+        self.wolfapi_search_worker.finished.connect(self.finish_remote_wolfapi_search)
+        self.statusBar().showMessage(f'Searching WolfAPI v1 for "{query}"…')
+        self.wolfapi_search_worker.start()
+
+    def handle_remote_wolfapi_search(self, query: str, servers, error: str):
+        current_query = " ".join(self.browser_search.text().split())
+        if error:
+            if query == current_query:
+                self.statusBar().showMessage(
+                    f"WolfAPI v1 search unavailable; showing cached results: {error}",
+                    7000,
+                )
+            return
+        merged = server_cache.merge_source_servers(self.server_cache, "wolfapi", servers)
+        if query == current_query and self.discovery_provider_key() == "wolfapi_v1":
+            self.refresh_server_browser()
+            self.statusBar().showMessage(
+                f'WolfAPI v1 search merged {merged} result(s) for "{query}".',
+                5000,
+            )
+
+    def finish_remote_wolfapi_search(self):
+        self.wolfapi_search_worker = None
+        query = " ".join(self.browser_search.text().split())
+        if self.pending_wolfapi_search and self.pending_wolfapi_search == query:
+            self.remote_search_timer.start()
 
     def enrich_visible_discovered_servers(self):
         if self.enrichment_worker and self.enrichment_worker.isRunning():
@@ -978,12 +1061,12 @@ class MainWindow(QMainWindow):
         if not servers:
             QMessageBox.warning(self, "No visible servers", "No discovered servers are visible to enrich.")
             return
-        self.start_discovered_enrichment(servers, automatic=False)
+        self.start_discovered_enrichment(servers)
 
-    def start_discovered_enrichment(self, servers, automatic: bool):
+    def start_discovered_enrichment(self, servers):
         self.browser_summary.setText(f"Cached discovered servers: enriching {len(servers)} visible row(s)...")
         self.enrich_visible_button.setEnabled(False)
-        self.enrichment_worker = ServerEnrichmentWorker(servers, automatic=automatic)
+        self.enrichment_worker = ServerEnrichmentWorker(servers)
         self.enrichment_worker.enrichment_progress.connect(
             self.handle_enrichment_progress
         )
@@ -1000,13 +1083,9 @@ class MainWindow(QMainWindow):
         )
 
     def handle_enrichment_ready(self, servers, error: str):
-        automatic = bool(self.enrichment_worker and self.enrichment_worker.automatic)
         self.enrich_visible_button.setEnabled(True)
         count = server_cache.upsert_servers(self.server_cache, servers)
         self.refresh_server_browser()
-        if automatic:
-            self.settings["last_visible_enrichment_at"] = auto_refresh_timestamp()
-            save_settings(self.settings)
         if error:
             QMessageBox.warning(
                 self,
@@ -1015,18 +1094,9 @@ class MainWindow(QMainWindow):
             )
             return
         self.statusBar().showMessage(
-            f"{'Automatic e' if automatic else 'E'}nrichment complete: updated {count} discovered server row(s).",
+            f"Enrichment complete: updated {count} discovered server row(s).",
             7000,
         )
-
-    def maybe_auto_enrich_top_servers(self):
-        if self.enrichment_worker and self.enrichment_worker.isRunning():
-            return
-        if not auto_refresh_due(self.settings.get("last_visible_enrichment_at")):
-            return
-        servers = list(self.browser_servers[:30])
-        if servers:
-            self.start_discovered_enrichment(servers, automatic=True)
 
     def promote_selected_discovered_server(self):
         server = self.selected_discovered_server()
@@ -1120,28 +1190,32 @@ class MainWindow(QMainWindow):
 
     def _provider_label(self, key: str) -> str:
         labels = {
-            "wolfapi": "WolfAPI",
+            "wolfapi_v1": "WolfAPI v1 (staged)",
+            "wolfapi": "WolfAPI (legacy fallback)",
             "battlemetrics": "BattleMetrics",
             "steam_web_api": "Steam Web API",
             "steam_master": "Steam Master",
             "disabled": "Disabled",
         }
-        return labels.get(key, "BattleMetrics")
+        return labels.get(key, labels[DEFAULT_DISCOVERY_PROVIDER])
 
     def _native_steam_mode_label(self, key: str) -> str:
         return steam_mode_label(key)
 
     def discovery_provider_key(self) -> str:
         if not hasattr(self, "discovery_provider"):
-            return str(self.settings.get("discovery_provider") or "battlemetrics")
+            return str(
+                self.settings.get("discovery_provider") or DEFAULT_DISCOVERY_PROVIDER
+            )
         keys = {
-            "WolfAPI": "wolfapi",
+            "WolfAPI v1 (staged)": "wolfapi_v1",
+            "WolfAPI (legacy fallback)": "wolfapi",
             "BattleMetrics": "battlemetrics",
             "Steam Web API": "steam_web_api",
             "Steam Master": "steam_master",
             "Disabled": "disabled",
         }
-        return keys.get(self.discovery_provider.currentText(), "battlemetrics")
+        return keys.get(self.discovery_provider.currentText(), DEFAULT_DISCOVERY_PROVIDER)
 
     def launch_engine_key(self) -> str:
         if not hasattr(self, "launch_engine"):
@@ -1184,6 +1258,11 @@ class MainWindow(QMainWindow):
         )
         if hasattr(self, "subscribe_missing_button"):
             self.subscribe_missing_button.setVisible(enabled)
+
+    def handle_discovery_provider_changed(self, *_args):
+        self.handle_settings_changed()
+        if hasattr(self, "browser_search"):
+            self.schedule_remote_wolfapi_search(self.browser_search.text())
 
     def handle_launch_engine_changed(self, *_args):
         MainWindow._recheck_after_mod_context_change(
@@ -2564,9 +2643,12 @@ class MainWindow(QMainWindow):
             else:
                 provider_status = "OK"
                 provider_detail = ", ".join(address.address for address in addresses) if addresses else "Default Steam masters"
+        elif provider == "wolfapi_v1":
+            provider_status = "OK"
+            provider_detail = "WolfAPI v1 bounded discovery (staged)"
         elif provider == "wolfapi":
             provider_status = "OK"
-            provider_detail = "WolfAPI hosted cache"
+            provider_detail = "WolfAPI legacy hosted cache fallback"
         elif provider == "battlemetrics":
             provider_status = "OK"
             provider_detail = "BattleMetrics public API"

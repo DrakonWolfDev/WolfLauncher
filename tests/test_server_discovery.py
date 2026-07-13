@@ -1,4 +1,5 @@
 import unittest
+import urllib.parse
 from unittest.mock import patch
 
 from wolflauncher.models import DiscoveredServer
@@ -15,6 +16,7 @@ from wolflauncher.server_discovery import (
     discover_dayz_servers,
     discover_dayz_servers_battlemetrics,
     discover_dayz_servers_wolfapi,
+    discover_dayz_servers_wolfapi_v1,
     discovered_server_from_endpoint,
     discovered_server_from_battlemetrics_row,
     discovered_server_from_web_api_row,
@@ -25,6 +27,10 @@ from wolflauncher.server_discovery import (
     parse_master_server_response,
     parse_steam_web_api_servers,
     parse_wolfapi_servers,
+    parse_wolfapi_v1_servers,
+    parse_exact_server_endpoint,
+    resolve_dayz_server_wolfapi_v1,
+    search_dayz_servers_wolfapi_v1,
 )
 
 
@@ -533,6 +539,38 @@ class WolfApiDiscoveryTests(unittest.TestCase):
 
         self.assertEqual(server.ping_ms, 47)
 
+    def test_wolfapi_v1_row_preserves_stable_identity_and_freshness_contract(self):
+        server = discovered_server_from_wolfapi_row(
+            {
+                "server_id": "11111111-1111-1111-1111-111111111111",
+                "legacy_endpoint_id": "203.0.113.10:2402:28016",
+                "endpoint_aliases": [
+                    "203.0.113.10:2402:28016",
+                    "203.0.113.10:2302:27016",
+                ],
+                "ip": "203.0.113.10",
+                "game_port": 2402,
+                "query_port": 28016,
+                "name": "WolfAPI V1",
+                "freshness": "live",
+                "freshness_expires_at": "2026-07-13T12:30:00+00:00",
+                "validation_status": "online",
+                "validation_checked_at": "2026-07-13T12:00:00+00:00",
+                "validation_seen_at": "2026-07-13T12:00:00+00:00",
+                "provider_last_checked": "2026-07-13T11:55:00+00:00",
+                "provider_last_seen": "2026-07-13T11:55:00+00:00",
+            },
+            "2026-07-13T12:05:00+00:00",
+        )
+
+        self.assertEqual(server.stable_server_id, "11111111-1111-1111-1111-111111111111")
+        self.assertEqual(server.cache_key, "203.0.113.10:2402:28016")
+        self.assertEqual(len(server.endpoint_aliases), 2)
+        self.assertEqual(server.freshness, "live")
+        self.assertEqual(server.validation_status, "online")
+        self.assertEqual(server.last_checked, "2026-07-13T12:00:00+00:00")
+        self.assertEqual(server.last_seen, "2026-07-13T12:00:00+00:00")
+
     def test_parse_wolfapi_response_deduplicates_and_limits_rows(self):
         servers = parse_wolfapi_servers(
             {
@@ -578,6 +616,10 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         with self.assertRaisesRegex(WolfApiError, "server list"):
             parse_wolfapi_servers({"servers": {}})
 
+    def test_parse_wolfapi_v1_rejects_incomplete_rollout_metadata(self):
+        with self.assertRaisesRegex(WolfApiError, "rollout metadata"):
+            parse_wolfapi_v1_servers({"contract_version": "1", "servers": []})
+
     @patch("wolflauncher.server_discovery.urllib.request.urlopen")
     def test_wolfapi_discovery_fetches_default_endpoint(self, urlopen):
         class FakeResponse:
@@ -598,6 +640,96 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         request = urlopen.call_args.args[0]
         self.assertEqual(request.full_url, "https://api.drakonwolf.ddns.net/api/servers")
         self.assertEqual(urlopen.call_args.kwargs["timeout"], 7)
+
+    @patch("wolflauncher.server_discovery.urllib.request.urlopen")
+    def test_wolfapi_v1_initial_page_is_bounded(self, urlopen):
+        urlopen.return_value = self.fake_wolfapi_response()
+
+        servers = discover_dayz_servers_wolfapi_v1(limit=750, offset=25, timeout=4)
+
+        self.assertEqual(len(servers), 1)
+        request = urlopen.call_args.args[0]
+        parsed = urllib.parse.urlparse(request.full_url)
+        self.assertEqual(parsed.path, "/api/v1/servers")
+        self.assertEqual(urllib.parse.parse_qs(parsed.query), {"limit": ["500"], "offset": ["25"]})
+        self.assertEqual(urlopen.call_args.kwargs["timeout"], 4)
+
+    @patch("wolflauncher.server_discovery.urllib.request.urlopen")
+    def test_wolfapi_v1_search_normalizes_and_encodes_filters(self, urlopen):
+        urlopen.return_value = self.fake_wolfapi_response()
+
+        search_dayz_servers_wolfapi_v1(
+            "  Alpha   Server ", limit=25, offset=50,
+            map_name="chernarusplus", version="1.29",
+        )
+
+        request = urlopen.call_args.args[0]
+        parsed = urllib.parse.urlparse(request.full_url)
+        self.assertEqual(parsed.path, "/api/v1/servers/search")
+        self.assertEqual(
+            urllib.parse.parse_qs(parsed.query),
+            {
+                "q": ["Alpha Server"], "limit": ["25"], "offset": ["50"],
+                "map": ["chernarusplus"], "version": ["1.29"],
+            },
+        )
+
+    def test_wolfapi_v1_search_requires_text(self):
+        with self.assertRaisesRegex(ValueError, "query"):
+            search_dayz_servers_wolfapi_v1("   ")
+
+    @patch("wolflauncher.server_discovery.urllib.request.urlopen")
+    def test_wolfapi_v1_resolution_encodes_exact_endpoint(self, urlopen):
+        urlopen.return_value = self.fake_wolfapi_response()
+
+        resolve_dayz_server_wolfapi_v1(
+            "203.0.113.10", game_port=2302, query_port=27016,
+        )
+
+        request = urlopen.call_args.args[0]
+        parsed = urllib.parse.urlparse(request.full_url)
+        self.assertEqual(parsed.path, "/api/v1/servers/resolve")
+        self.assertEqual(
+            urllib.parse.parse_qs(parsed.query),
+            {"host": ["203.0.113.10"], "game_port": ["2302"], "query_port": ["27016"]},
+        )
+
+    def test_wolfapi_v1_resolution_requires_a_port(self):
+        with self.assertRaisesRegex(ValueError, "port"):
+            resolve_dayz_server_wolfapi_v1("203.0.113.10")
+
+    def test_exact_endpoint_parser_rejects_names_and_invalid_ports(self):
+        self.assertEqual(
+            parse_exact_server_endpoint(" 203.0.113.10:2302 "),
+            ("203.0.113.10", 2302),
+        )
+        self.assertEqual(
+            parse_exact_server_endpoint("dayz.example.test:27016"),
+            ("dayz.example.test", 27016),
+        )
+        self.assertIsNone(parse_exact_server_endpoint("Alpha Server"))
+        self.assertIsNone(parse_exact_server_endpoint("203.0.113.10:70000"))
+        self.assertIsNone(parse_exact_server_endpoint("203.0.113.10:not-a-port"))
+
+    @staticmethod
+    def fake_wolfapi_response():
+        class FakeResponse:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self):
+                return (
+                    b'{"contract_version":"1","generated_at":"2026-07-13T12:00:00Z",'
+                    b'"validation_policy":{"live_for_seconds":1800},'
+                    b'"coverage":{"eligible":1},'
+                    b'"validation_queue":{"ready":1},'
+                    b'"servers":[{"ip":"203.0.113.10","game_port":2302,"query_port":27016}]}'
+                )
+
+        return FakeResponse()
 
 
 if __name__ == "__main__":

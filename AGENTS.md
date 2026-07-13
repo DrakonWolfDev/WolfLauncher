@@ -8,6 +8,37 @@ The app validates the local Steam/DayZ/Workshop setup, checks server status, com
 
 The upstream shell launcher is vendored at `external/dayz-linux-cli-launcher/` as the legacy reference engine.
 
+## Current Deployment Scope
+
+WolfLauncher currently runs only on the user's own systems; there is no
+external installed user base to preserve. Prefer the clearest coordinated
+API/Launcher implementation and direct, tested migrations over speculative
+third-party compatibility. Still preserve the user's settings, curated YAML,
+SQLite data and unrelated work unless a deliberate migration covers them.
+
+## Cross-Repository Workflow
+
+WolfAPI is cloned at `../WolfAPI`. The two repositories form one product
+boundary for public server discovery. Work may originate in either repository;
+when a task materially affects the shared feature, inspect and update both
+repositories as needed in the same work session. The user has explicitly
+authorized this coordinated workflow.
+
+- Read this file, `DISCOVERY_FRESHNESS_HANDOFF.md` and the sibling
+  `../WolfAPI/AGENTS.md` and `../WolfAPI/DISCOVERY_FRESHNESS_CONTRACT.md` before
+  changing shared endpoints, fields, identity, search/resolve behavior,
+  freshness and validation semantics, caching, polling or rollout gates.
+- Treat a necessary companion change as part of the in-scope task regardless
+  of which repository the request started in. Do not wait for a separate
+  prompt merely because the implementation crosses the repository boundary.
+- Keep the API contract and launcher handoff/truth documents synchronized.
+  Test each affected repository independently and commit changes separately so
+  each can be reviewed and pushed on its own.
+- Preserve unrelated and user-owned changes in both worktrees. Source
+  completion is not proof of deployment readiness. WolfAPI v1 is the
+  fresh-install default after its gates passed; retain the explicit legacy
+  fallback until deliberately removed.
+
 ## Current Truth
 
 - `PROJECT_STATE.md` is the handoff snapshot.
@@ -99,9 +130,21 @@ The vendored script then:
 - Treat fonts, theme, colours and branding as a later visual-polish pass after layout hierarchy is settled.
 - Keep validated v0.8 behaviour stable while working on v0.9 native-launch hardening.
 - Keep local `servers.yaml` as the curated source even after adding SQLite for discovered servers; track `example.servers.yaml` as the repo template instead of committing personal server-list edits.
-- WolfAPI is the companion service for hosted discovered-server data. Current WolfAPI truth: Redis remains the hot public `/api/servers` cache, Postgres is durable canonical/history storage, Steam/BattleMetrics/live validation update Redis, and Postgres-to-Redis publish is manual recovery only unless explicitly changed in WolfAPI.
-- When building launcher features around WolfAPI, prefer additive client behavior: consume `/api/servers` for discovered rows, use `/api/health` only for diagnostics/status, keep remote data read-only, and preserve local curated YAML promotion as the user-owned path.
-- Cross-project ideas should flow both ways: launcher UX needs can inform future WolfAPI fields or endpoints, while WolfAPI freshness/source/validation state can inform launcher filters, badges and diagnostics after the API contract is stable.
+- WolfAPI is the companion hosted discovery service. Read
+  `DISCOVERY_FRESHNESS_HANDOFF.md` and the sibling
+  `../WolfAPI/DISCOVERY_FRESHNESS_CONTRACT.md` before making discovery contract,
+  cache identity or startup-polling choices.
+- WolfAPI v1 is implemented locally with bounded Postgres pages, indexed
+  search/exact resolution, freshness/validation metadata, stable UUID server
+  IDs and endpoint aliases. Keep the deployed legacy `/api/servers` path until
+  the v1 deployment/rollout gates in the handoff are confirmed.
+- Prefer additive client behavior: keep remote data read-only, preserve offline
+  SQLite and local curated YAML promotion, and use `/api/health` only for
+  diagnostics/status. When adopting v1, persist stable IDs separately from
+  endpoint keys so port corrections merge rather than duplicate rows.
+- If shared discovery behavior changes, update `DISCOVERY_FRESHNESS_HANDOFF.md`,
+  `PROJECT_STATE.md`, `ARCHITECTURE.md` and `ROADMAP.md` as applicable, and
+  record launcher constraints back in WolfAPI's contract.
 - Mod management is read-only and advisory; do not auto-subscribe or auto-download Workshop content without an explicit future design.
 - User settings and favourites live under `~/.config/wolflauncher`.
 - Prefer small, testable changes around launch command generation and platform detection.

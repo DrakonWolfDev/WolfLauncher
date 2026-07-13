@@ -17,6 +17,9 @@ DAYZ_APP_ID = 221100
 STEAM_WEB_API_SERVER_LIST_URL = "https://api.steampowered.com/IGameServersService/GetServerList/v1/"
 BATTLEMETRICS_SERVER_LIST_URL = "https://api.battlemetrics.com/servers"
 WOLFAPI_SERVER_LIST_URL = "https://api.drakonwolf.ddns.net/api/servers"
+WOLFAPI_V1_SERVER_LIST_URL = "https://api.drakonwolf.ddns.net/api/v1/servers"
+WOLFAPI_V1_SEARCH_URL = f"{WOLFAPI_V1_SERVER_LIST_URL}/search"
+WOLFAPI_V1_RESOLVE_URL = f"{WOLFAPI_V1_SERVER_LIST_URL}/resolve"
 MASTER_SERVER_HOST = "hl2master.steampowered.com"
 MASTER_SERVER_HOSTS = [
     MASTER_SERVER_HOST,
@@ -367,6 +370,106 @@ def discover_dayz_servers_wolfapi(
     url: str = "",
 ) -> list[DiscoveredServer]:
     endpoint = url or os.environ.get("WOLFLAUNCHER_WOLFAPI_SERVER_LIST_URL", "") or WOLFAPI_SERVER_LIST_URL
+    return _fetch_wolfapi_servers(endpoint, limit=limit, timeout=timeout)
+
+
+def discover_dayz_servers_wolfapi_v1(
+    limit: int = 100,
+    offset: int = 0,
+    timeout: float = 15.0,
+    url: str = "",
+) -> list[DiscoveredServer]:
+    endpoint = url or os.environ.get("WOLFLAUNCHER_WOLFAPI_V1_SERVER_LIST_URL", "") or WOLFAPI_V1_SERVER_LIST_URL
+    endpoint = _url_with_query(
+        endpoint,
+        {"limit": max(1, min(int(limit), 500)), "offset": max(0, int(offset))},
+    )
+    return _fetch_wolfapi_servers(endpoint, limit=limit, timeout=timeout, require_v1=True)
+
+
+def search_dayz_servers_wolfapi_v1(
+    query: str,
+    limit: int = 100,
+    offset: int = 0,
+    map_name: str = "",
+    version: str = "",
+    timeout: float = 15.0,
+    url: str = "",
+) -> list[DiscoveredServer]:
+    query = " ".join(query.split())
+    if not query:
+        raise ValueError("WolfAPI search query is required.")
+    params = {
+        "q": query,
+        "limit": max(1, min(int(limit), 500)),
+        "offset": max(0, int(offset)),
+    }
+    if map_name.strip():
+        params["map"] = map_name.strip()
+    if version.strip():
+        params["version"] = version.strip()
+    endpoint = url or os.environ.get("WOLFLAUNCHER_WOLFAPI_V1_SEARCH_URL", "") or WOLFAPI_V1_SEARCH_URL
+    return _fetch_wolfapi_servers(
+        _url_with_query(endpoint, params),
+        limit=limit,
+        timeout=timeout,
+        require_v1=True,
+    )
+
+
+def resolve_dayz_server_wolfapi_v1(
+    host: str,
+    game_port: int | None = None,
+    query_port: int | None = None,
+    timeout: float = 15.0,
+    url: str = "",
+) -> list[DiscoveredServer]:
+    host = host.strip()
+    if not host:
+        raise ValueError("WolfAPI resolution host is required.")
+    if game_port is None and query_port is None:
+        raise ValueError("WolfAPI resolution requires a game or query port.")
+    params: dict[str, str | int] = {"host": host}
+    if game_port is not None:
+        params["game_port"] = int(game_port)
+    if query_port is not None:
+        params["query_port"] = int(query_port)
+    endpoint = url or os.environ.get("WOLFLAUNCHER_WOLFAPI_V1_RESOLVE_URL", "") or WOLFAPI_V1_RESOLVE_URL
+    return _fetch_wolfapi_servers(
+        _url_with_query(endpoint, params),
+        limit=500,
+        timeout=timeout,
+        require_v1=True,
+    )
+
+
+def parse_exact_server_endpoint(value: str) -> tuple[str, int] | None:
+    """Recognize a complete host:port search without treating names as endpoints."""
+    value = value.strip()
+    if not value or any(character.isspace() for character in value) or value.count(":") != 1:
+        return None
+    host, port_text = value.rsplit(":", 1)
+    host = host.strip()
+    try:
+        port = int(port_text)
+    except ValueError:
+        return None
+    if not host or not 1 <= port <= 65535:
+        return None
+    return host, port
+
+
+def _url_with_query(url: str, params: dict[str, str | int]) -> str:
+    separator = "&" if "?" in url else "?"
+    return f"{url}{separator}{urllib.parse.urlencode(params)}"
+
+
+def _fetch_wolfapi_servers(
+    endpoint: str,
+    limit: int,
+    timeout: float,
+    require_v1: bool = False,
+) -> list[DiscoveredServer]:
     request = urllib.request.Request(endpoint, headers={"User-Agent": "WolfLauncher/0.7"})
 
     try:
@@ -384,6 +487,26 @@ def discover_dayz_servers_wolfapi(
     except json.JSONDecodeError as exc:
         raise WolfApiError("WolfAPI returned invalid JSON") from exc
 
+    if require_v1:
+        return parse_wolfapi_v1_servers(data, limit=limit)
+    return parse_wolfapi_servers(data, limit=limit)
+
+
+def parse_wolfapi_v1_servers(data, limit: int = 500) -> list[DiscoveredServer]:
+    if not isinstance(data, dict):
+        raise WolfApiError("WolfAPI v1 response must be an object.")
+    try:
+        contract_version = int(data.get("contract_version", 0))
+    except (TypeError, ValueError) as exc:
+        raise WolfApiError("WolfAPI returned an invalid v1 contract version.") from exc
+    if contract_version < 1:
+        raise WolfApiError("WolfAPI v1 contract is not available.")
+    required = ("generated_at", "validation_policy", "coverage", "validation_queue")
+    missing = [field for field in required if not data.get(field)]
+    if missing:
+        raise WolfApiError(
+            "WolfAPI v1 response is missing rollout metadata: " + ", ".join(missing)
+        )
     return parse_wolfapi_servers(data, limit=limit)
 
 
@@ -393,7 +516,7 @@ def parse_wolfapi_servers(data, limit: int = 10000) -> list[DiscoveredServer]:
         updated_at = ""
     elif isinstance(data, dict):
         rows = data.get("servers", data.get("data", []))
-        updated_at = str(data.get("updated_at") or "")
+        updated_at = str(data.get("generated_at") or data.get("updated_at") or "")
     else:
         rows = []
         updated_at = ""
@@ -408,9 +531,11 @@ def parse_wolfapi_servers(data, limit: int = 10000) -> list[DiscoveredServer]:
     limit = max(1, int(limit))
     for row in rows:
         server = discovered_server_from_wolfapi_row(row, timestamp)
-        if not server or server.cache_key in seen:
+        identity = server.stable_server_id if server else ""
+        identity = identity or (server.cache_key if server else "")
+        if not server or identity in seen:
             continue
-        seen.add(server.cache_key)
+        seen.add(identity)
         servers.append(server)
         if len(servers) >= limit:
             break
@@ -463,8 +588,31 @@ def discovered_server_from_wolfapi_row(row: dict, timestamp: str = "") -> Discov
         password=bool(row.get("password", False)),
         modded="mod" in gametype.lower() or bool(row.get("modded", False)),
         online=bool(online),
-        last_checked=timestamp,
-        last_seen=str(row.get("last_seen") or timestamp),
+        last_checked=str(
+            row.get("validation_checked_at")
+            or row.get("provider_last_checked")
+            or row.get("last_checked")
+            or timestamp
+        ),
+        last_seen=str(
+            row.get("validation_seen_at")
+            or row.get("provider_last_seen")
+            or row.get("last_seen")
+            or timestamp
+        ),
+        stable_server_id=str(row.get("server_id") or ""),
+        endpoint_aliases=tuple(
+            str(alias) for alias in row.get("endpoint_aliases", [])
+            if str(alias).strip()
+        ) if isinstance(row.get("endpoint_aliases", []), list) else (),
+        freshness=str(row.get("freshness") or ""),
+        freshness_expires_at=str(row.get("freshness_expires_at") or ""),
+        validation_status=str(row.get("validation_status") or ""),
+        validation_checked_at=str(row.get("validation_checked_at") or ""),
+        validation_seen_at=str(row.get("validation_seen_at") or ""),
+        validation_error_code=str(row.get("validation_error_code") or ""),
+        provider_last_checked=str(row.get("provider_last_checked") or ""),
+        provider_last_seen=str(row.get("provider_last_seen") or ""),
         required_mod_count=_required_mod_count(row),
     )
 

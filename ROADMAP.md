@@ -54,6 +54,38 @@ Status: complete. Native launch parity has been validated in real-world use and 
 
 Goal: turn WolfAPI from a Steam-capped cache into a resilient community server directory while keeping WolfLauncher usable offline and with curated local rows.
 
+Status: WolfAPI's v1 list, search, resolution, ETags, rollout metadata, stable
+IDs and endpoint aliases are deployed and pass functional canaries. The strict
+Launcher client imported 100 production rows successfully. External
+100-concurrency load still produced timeouts and high tail latency, so host and
+proxy evidence remains a rollout gate. The additive Launcher SQLite v2
+migration, stable-ID/alias merge behavior, strict parser and opt-in clients are
+implemented locally. Settings now exposes a staged v1 provider while preserving
+existing legacy selections as an explicit fallback. See
+`DISCOVERY_FRESHNESS_HANDOFF.md`. Debounced local-first remote search and
+bounded background pagination are now implemented, as is exact alias-aware
+`host:port` resolution. V1 is the fresh-install default while saved choices and
+the legacy fallback are preserved. The next slice is staged retirement of any
+redundant discovery-time probing while retaining selected-server and
+launch-time checks.
+
+API freshness/validation is now exposed through the existing Status tooltip
+and copied details. Expired cached labels are marked refresh-pending, while
+ping and final reachability remain local truths.
+
+Startup audit complete: there is no fixed discovered-row UDP polling to retire.
+Curated YAML status refresh and explicit selected/launch-time checks remain by
+design; discovered-row enrichment stays user-triggered.
+
+The matching host-local origin load passed at about 680 requests/second with
+zero errors and p99 181 ms. The remaining load investigation is specifically
+the OpenResty/TLS/public routing path.
+
+A hostname-preserving direct-LAN OpenResty run also passed at about 482
+requests/second with zero errors and p99 246 ms. The prior public-hostname
+timeouts were caused by local router NAT-loopback/hairpin testing, so origin
+and proxy capacity are cleared for staged adoption with external telemetry.
+
 - Keep WolfAPI as the preferred read-only discovered-server provider in WolfLauncher.
 - Treat Steam's 10,000-row server-list cap as a fast baseline rather than the complete directory.
 - Add slow, rate-limited BattleMetrics ingestion on the API side so WolfAPI can fill gaps without hammering public services.
@@ -118,18 +150,18 @@ Priority 3 — Workshop readiness and information:
 Priority 4 — discovery truth and regression coverage:
 
 - Completed — provider claims are shown in amber as **PROVIDER ONLINE/OFFLINE** with provenance guidance; successful or failed local enrichment changes the row to locally validated **ONLINE/OFFLINE** with its check timestamp.
-- Completed — live enrichment preserves top-to-bottom visible priority while checking concurrently, replaces obsolete cache keys when live game-port correction changes identity, reports incremental progress and automatically enriches the first 30 filtered/sorted rows at most once per day.
+- Completed — explicit visible-row enrichment preserves top-to-bottom priority while checking concurrently, replaces obsolete cache keys when live game-port correction changes identity and reports incremental progress without automatic discovered-server UDP polling.
 - Cover stopped Steam, Steam stopping mid-operation, partial completion, deleted/unavailable items, restart during downloads, secondary libraries, Flatpak Steam and launch-after-download in repeatable tests and the manual smoke checklist.
 
 Visual-polish review note:
 
 - Recheck the Mods table after fonts, theme, colours, icons and branding are introduced. Review column padding, row height, compact-column centring, name/URL balance and overall information density in the final visual system.
 
-Future discovery-freshness design problem:
+Discovery-freshness boundary:
 
-- Replace fixed startup enrichment batches with a less clunky freshness strategy. Explore validation-age scheduling, viewport/on-demand checks, small background budgets, reuse of recent local results and stable WolfAPI freshness/validation fields so opening WolfLauncher does not repeatedly poll a predetermined set of servers.
-- Preserve honest provider-vs-local status while avoiding unnecessary queries for rows that are off-screen, recently validated or unlikely to be used. Any future scheduler should remain quiet, bounded, cancellable and resilient when providers or individual servers are slow.
-- Use `DISCOVERY_FRESHNESS_HANDOFF.md` as the cross-project implementation contract. WolfAPI already exposes preliminary live/freshness fields, but their semantics and persistence must be hardened before the launcher removes compatibility polling.
+- Fixed startup enrichment has been removed. WolfAPI v1 freshness/validation evidence supports browsing, explicit visible-row enrichment remains available, and curated/selected/launch-time checks remain local truth.
+- Preserve honest provider-vs-local status without unnecessary queries for off-screen discovered rows.
+- Use `DISCOVERY_FRESHNESS_HANDOFF.md` as the cross-project implementation contract.
 - WolfAPI's matching contract now includes bounded required-mod metadata polling, nullable count/status fields, a full-manifest detail endpoint and the complete launcher-facing enrichment inventory; keep direct launcher lookup as selected-server/launch fallback.
 - Treat two-stage local-plus-remote search as a core scalability requirement: the first page is only a default view, while debounced indexed API search and exact host/port resolution must find rows anywhere in the canonical directory.
 - Pause further normal-path Server Browser architecture work until WolfAPI profiles/fixes its observed 4 GB memory exhaustion and provides the versioned paginated/search/freshness contract. Launcher-side selected-server, launch-safety, offline and unrelated work can continue independently.

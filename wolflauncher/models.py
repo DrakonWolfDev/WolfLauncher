@@ -35,6 +35,16 @@ class DiscoveredServer:
     last_seen: str = ""
     required_mod_count: int | None = None
     status_source: str = "provider"
+    stable_server_id: str = ""
+    endpoint_aliases: tuple[str, ...] = ()
+    freshness: str = ""
+    freshness_expires_at: str = ""
+    validation_status: str = ""
+    validation_checked_at: str = ""
+    validation_seen_at: str = ""
+    validation_error_code: str = ""
+    provider_last_checked: str = ""
+    provider_last_seen: str = ""
 
     @property
     def cache_key(self) -> str:

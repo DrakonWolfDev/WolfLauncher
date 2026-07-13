@@ -16,6 +16,10 @@ from .server_discovery import (
     discover_dayz_servers_battlemetrics,
     discover_dayz_servers_web_api,
     discover_dayz_servers_wolfapi,
+    discover_dayz_servers_wolfapi_v1,
+    parse_exact_server_endpoint,
+    resolve_dayz_server_wolfapi_v1,
+    search_dayz_servers_wolfapi_v1,
 )
 from .server_enrichment import enrich_discovered_server, enrichment_probe_servers
 from .status import ServerStatus, check_server
@@ -28,6 +32,7 @@ from .workshop_subscription import (
 
 MAX_STATUS_WORKERS = 8
 MAX_ENRICHMENT_WORKERS = 8
+WOLFAPI_V1_PAGE_SIZE = 100
 
 
 def _checked_server_status(server: Server) -> ServerStatus:
@@ -191,28 +196,101 @@ class BattleMetricsDiscoveryWorker(QThread):
 class WolfApiDiscoveryWorker(QThread):
     discovery_ready = Signal(object, str)
 
-    def __init__(self, limit: int = 10000, automatic: bool = False):
+    def __init__(
+        self,
+        limit: int = 10000,
+        automatic: bool = False,
+        use_v1: bool = False,
+    ):
         super().__init__()
         self.limit = limit
         self.automatic = automatic
+        self.use_v1 = use_v1
+
+    @property
+    def provider_label(self) -> str:
+        return "WolfAPI v1" if self.use_v1 else "WolfAPI legacy"
 
     def run(self):
         try:
-            servers = discover_dayz_servers_wolfapi(limit=self.limit)
+            if self.use_v1:
+                servers = discover_wolfapi_v1_pages(self.limit)
+            else:
+                servers = discover_dayz_servers_wolfapi(limit=self.limit)
         except Exception as exc:
             self.discovery_ready.emit([], str(exc))
         else:
             self.discovery_ready.emit(servers, "")
 
 
+def discover_wolfapi_v1_pages(limit: int) -> list:
+    """Fetch bounded v1 pages in a background worker up to the user limit."""
+    target = max(1, int(limit))
+    servers = []
+    offset = 0
+    while len(servers) < target:
+        page_limit = min(WOLFAPI_V1_PAGE_SIZE, target - len(servers))
+        page = discover_dayz_servers_wolfapi_v1(limit=page_limit, offset=offset)
+        servers.extend(page)
+        if len(page) < page_limit:
+            break
+        offset += len(page)
+    return servers[:target]
+
+
+class WolfApiSearchWorker(QThread):
+    search_ready = Signal(str, object, str)
+
+    def __init__(
+        self,
+        query: str,
+        limit: int = 100,
+        map_name: str = "",
+        version: str = "",
+    ):
+        super().__init__()
+        self.query = " ".join(query.split())
+        self.limit = limit
+        self.map_name = map_name
+        self.version = version
+
+    def run(self):
+        try:
+            endpoint = parse_exact_server_endpoint(self.query)
+            if endpoint is None:
+                servers = search_dayz_servers_wolfapi_v1(
+                    self.query,
+                    limit=self.limit,
+                    map_name=self.map_name,
+                    version=self.version,
+                )
+            else:
+                host, port = endpoint
+                resolved = [
+                    *resolve_dayz_server_wolfapi_v1(host, game_port=port),
+                    *resolve_dayz_server_wolfapi_v1(host, query_port=port),
+                ]
+                servers = []
+                seen = set()
+                for server in resolved:
+                    identity = server.stable_server_id or server.cache_key
+                    if identity in seen:
+                        continue
+                    seen.add(identity)
+                    servers.append(server)
+        except Exception as exc:
+            self.search_ready.emit(self.query, [], str(exc))
+        else:
+            self.search_ready.emit(self.query, servers, "")
+
+
 class ServerEnrichmentWorker(QThread):
     enrichment_ready = Signal(object, str)
     enrichment_progress = Signal(object, int, int)
 
-    def __init__(self, servers, automatic: bool = False):
+    def __init__(self, servers):
         super().__init__()
         self.servers = servers
-        self.automatic = automatic
 
     def run(self):
         checked_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()

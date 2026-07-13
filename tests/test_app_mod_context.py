@@ -30,21 +30,6 @@ def window_state(worker=None):
 
 
 class ModContextChangeTests(unittest.TestCase):
-    def test_automatic_enrichment_uses_only_first_thirty_rows(self):
-        servers = [object() for _ in range(40)]
-        window = SimpleNamespace(
-            enrichment_worker=None,
-            settings={},
-            browser_servers=servers,
-            start_discovered_enrichment=Mock(),
-        )
-
-        MainWindow.maybe_auto_enrich_top_servers(window)
-
-        window.start_discovered_enrichment.assert_called_once_with(
-            servers[:30], automatic=True
-        )
-
     def test_discovered_row_becomes_read_only_in_memory_context(self):
         discovered = DiscoveredServer(
             name="Provider name",

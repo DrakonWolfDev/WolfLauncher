@@ -93,7 +93,9 @@ Working:
 - Copy actions for discovered server connect addresses and details.
 - Steam master server candidate discovery import script.
 - Single in-app discovered-server database refresh using the provider selected in Settings.
-- WolfAPI discovered-server cache provider using `https://api.drakonwolf.ddns.net/api/servers`.
+- Explicit staged WolfAPI v1 provider using bounded strict responses, with the
+  legacy `/api/servers` provider preserved as a separately selectable fallback
+  and for existing saved settings.
 - WolfAPI rows currently require local **Enrich visible** queries for ping because the hosted API contract does not supply it; WolfLauncher accepts a future additive `ping_ms`, `ping` or `latency` field and explains blank provider ping cells in a tooltip.
 - Steam Web API server-list discovery with user-supplied API key.
 - BattleMetrics server discovery.
@@ -164,10 +166,52 @@ Working:
 
 Planned WolfAPI follow-up:
 
-- `ROADMAP.md` tracks a v0.8.x WolfAPI discovery-quality and submission side-track.
-- Current WolfAPI posture: Redis is the hot public cache for `/api/servers`; Postgres stores canonical rows, source observations, sync runs and validation attempts; scheduled Steam, BattleMetrics and live-validation jobs update Redis; manual `source=backfill` and `source=publish` exist for recovery; all manual sync calls require `SYNC_ADMIN_TOKEN`; Postgres-to-Redis publishing is not automatic.
-- WolfAPI `/api/health` now exposes Redis/cache state plus database row counts, latest sync runs, source-observation counts by source, recent validation success/failure summaries and recent activity windows. Launcher diagnostics may read this for support/status, but should not make user workflows depend on private operational fields unless the contract is intentionally promoted.
-- The intent is to combine Steam's capped list with slow BattleMetrics ingestion, freshness/stale tracking, roughly 30-day stale retention, stronger retention for user-submitted rows, and a future in-app "Add your server to WolfLauncher" submission flow.
+- `DISCOVERY_FRESHNESS_HANDOFF.md` records the cross-repository contract and
+  rollout state; `ROADMAP.md` tracks the launcher adoption work.
+- The current launcher working tree contains the additive adoption foundation:
+  SQLite schema v3 preserves both earlier v2 layouts while combining stable IDs, endpoint
+  aliases and freshness/validation fields; WolfAPI rows merge port corrections
+  by stable ID; opt-in v1 list/search/resolve clients enforce rollout metadata.
+  Settings exposes v1 as an explicit staged provider while existing saved
+  `wolfapi` selections remain on the separately labelled legacy fallback.
+  V1 refreshes paginate in bounded 100-row background requests and use
+  merge-only cache updates. Server Browser search is local-first with a 450 ms
+  debounced remote v1 search that merges stable-ID matches, preserves unrelated
+  rows and does not let stale completions replace the current query view.
+  Exact `host:port` input uses alias-aware resolution for either port role.
+  Fresh installations now select v1 by default; existing saved provider choices
+  remain unchanged and the legacy endpoint remains selectable.
+  Existing Status tooltips and copied details expose API freshness, validation
+  and provider observation without changing the approved table hierarchy;
+  locally expired labels are marked refresh-pending rather than reclassified.
+  A startup audit confirms discovered SQLite rows are not automatically
+  UDP-probed: startup status checks are curated-YAML-only, v1 refresh is
+  HTTP-only and **Enrich visible** remains explicit.
+- A post-fix hosted probe on 2026-07-13 confirmed bounded list, dedicated
+  search, exact resolution, ETags, rollout metadata, stable identity and aliases
+  are live. The strict client imported 100 rows into isolated SQLite. Two
+  external 1,000-request/100-concurrency mixes still produced 1 and 13
+  timeouts with high tail latency, so the legacy provider remains the default
+  pending host/container and reverse-proxy evidence.
+  The host-local origin comparison subsequently passed 1,000 requests at about
+  680 requests/second with zero errors and p99 181 ms, narrowing the remaining
+  gate to OpenResty/TLS/public routing rather than WolfAPI capacity.
+  A TLS/SNI-preserving direct-LAN OpenResty run then passed at about 482
+  requests/second with zero errors and p99 246 ms, identifying the earlier
+  external timeout pattern as local router NAT-loopback/hairpin behavior.
+  Origin and proxy capacity are cleared for staged adoption with telemetry.
+- WolfAPI development commit `552b9cf` implements and repairs bounded
+  `/api/v1/servers`, `/search` and `/resolve` flows, ETags, request-time
+  freshness coverage, validation queue lag, normalized provider/validation
+  fields, stable UUID server IDs and endpoint aliases. The hosted deployment
+  must pass the documented rollout gates before WolfLauncher switches from the
+  legacy `/api/servers` URL.
+- The additive SQLite v2 cache stores stable server IDs and endpoint aliases;
+  corrected endpoints merge into one cached row without weakening offline
+  behavior or curated YAML ownership.
+- WolfAPI `/api/health` remains operator/support data. Normal browsing should
+  consume only the public v1 contract and continue from SQLite during API
+  failure.
 - Current WolfLauncher behavior remains read-only for remote WolfAPI data; users can already promote discovered rows or add their own servers to the local curated YAML list.
 - Cross-project planning rule: launcher features should ask WolfAPI for stable fields/endpoints when they need source freshness, validation state or submission workflows; WolfAPI changes should consider how the Server Browser, diagnostics and promotion flow can use the data without harming offline/local operation.
 

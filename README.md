@@ -259,9 +259,15 @@ Imported rows stay separate from curated `servers.yaml`.
 
 Select an imported/discovered row and use **Promote to curated** to add it to `servers.yaml`. Right-click a discovered row to promote it or copy its connect address/details.
 
-Choose a server API provider in Settings, then use **Refresh database** in the Server Browser tab. WolfAPI uses the hosted cache at `https://api.drakonwolf.ddns.net/api/servers`, BattleMetrics works without a key, Steam Web API uses the saved Steam API key, and Steam Master uses Valve's legacy UDP master server path.
+Choose a server API provider in Settings, then use **Refresh database** in the Server Browser tab. **WolfAPI v1 (staged)** uses the deployed bounded contract with strict rollout validation and is selected by default for fresh installations; existing installations retain their saved choice. **WolfAPI (legacy fallback)** preserves the `/api/servers` path. Both remain read-only and preserve cached SQLite rows on failure. BattleMetrics works without a key, Steam Web API uses the saved Steam API key, and Steam Master uses Valve's legacy UDP master server path.
 
-Provider refreshes sync the provider-backed cache rather than accumulating old rows: servers no longer returned by a successful selected-service refresh are removed, a successful empty refresh clears that provider's discovered rows, and existing cache keys are left untouched so live enrichment is not repeated unnecessarily. Failed provider refreshes keep existing cached rows. Keep servers you care about in the curated `servers.yaml` list.
+Full-snapshot provider refreshes sync their own cache rows rather than accumulating old entries. Bounded WolfAPI v1 refreshes fetch 100-row pages in the background up to the configured limit and merge by stable ID without deleting off-page rows. With v1 selected, Server Browser search displays SQLite matches immediately, waits briefly for typing to settle, then merges up to 100 remote matches from the full directory. An exact `host:port` search uses alias-aware resolution and checks the port as either game or query port. Failed refreshes and searches keep existing cached rows. Keep servers you care about in the curated `servers.yaml` list.
+
+Hover the Server Browser **Status** cell, or copy a server's details, to inspect
+WolfAPI freshness, validation time and provider observation. These fields are
+API-side directory evidence; local ping and final launch checks remain
+separate. If cached freshness has expired, WolfLauncher says a refresh is
+pending rather than asserting a new state.
 
 Settings also contains the refresh row limit, an opt-in automatic refresh toggle, and a comma-separated **Steam masters** endpoint list for cases where Valve's default DNS names do not resolve, for example `HOST:27011,HOST:27015`.
 
@@ -277,6 +283,13 @@ The WolfAPI cache path is also available from the command line:
 
 ```bash
 .venv/bin/python scripts/discover_steam_servers.py --wolfapi --limit 500
+```
+
+After the hosted service is deployed with the documented rollout metadata, the
+bounded v1 path can be canaried without changing the GUI provider default:
+
+```bash
+.venv/bin/python scripts/discover_steam_servers.py --wolfapi-v1 --limit 100
 ```
 
 The Web API path is also available from the command line:
@@ -303,6 +316,7 @@ Use **Enrich visible** in the Server Browser tab to query the currently visible 
 | `PROJECT_STATE.md` | Current development snapshot and handoff notes |
 | `ARCHITECTURE.md` | Design decisions, module map and launch contract |
 | `ROADMAP.md` | Planned features and future milestones |
+| `DISCOVERY_FRESHNESS_HANDOFF.md` | WolfAPI v1 contract, rollout state and launcher adoption choices |
 | `CHANGELOG.md` | Version history and release notes |
 | `docs/RELEASE_CHECKLIST.md` | Automated and real-world release checks |
 | `external/dayz-linux-cli-launcher/` | Vendored MIT legacy launcher reference |

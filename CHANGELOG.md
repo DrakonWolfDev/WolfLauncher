@@ -7,14 +7,14 @@
 - Extended the cross-project handoff with bounded WolfAPI required-mod metadata polling, honest unknown/zero/stale/failure semantics, a manifest detail endpoint and a full launcher-facing enrichment inventory.
 - Added a detailed cross-project discovery-freshness handoff defining the WolfAPI contract, validation semantics, launcher migration, rollout gates and acceptance criteria needed to replace fixed startup polling safely.
 - Recorded fixed startup server polling as a future discovery-freshness design problem, with viewport demand, validation age, bounded background budgets and stable WolfAPI signals identified as better directions.
-- Made enrichment apply results in top-to-bottom browser order, atomically replace obsolete keys after live port correction, and automatically enrich the first 30 filtered/sorted rows at most once per day.
+- Made explicit visible-row enrichment apply results in top-to-bottom browser order and atomically replace obsolete keys after live port correction, without automatic discovered-server UDP polling.
 - Made visible-server enrichment bounded and parallel with incremental progress/cache updates, preventing a 200-row batch from appearing frozen behind sequential query timeouts.
 - Clarified blank discovered required-mod counts as provider-unknown values with an **Inspect mods** recovery tooltip.
 - Added a final isolated Workshop state query before launch; unavailable or newly unready Steam state cancels handoff instead of trusting an older Mods result.
 - Added live Mods-row queued, downloading, percentage-bar and verifying states while retaining the batch dialog and final forced local verification.
 - Added optional required-mod counts to discovered rows from provider fields or successful direct mod inspection, preserving blank as unknown.
 - Distinguished amber provider-reported discovery status from green/red locally validated status and added status-basis details and tooltips.
-- Migrated the discovered-server cache to schema v2 for optional required-mod counts and status provenance while preserving existing caches.
+- Migrated the discovered-server cache to schema v3, combining optional required-mod/status provenance with WolfAPI v1 identity and freshness fields while preserving both earlier schema-v2 layouts.
 - Recorded a follow-up review of Mods-table spacing, alignment and density for the later fonts/theme/icons/branding visual-polish pass.
 - Improved Mods-table readability with padded cells and headers, slightly taller rows, centred compact status/ID/size columns and a URL column that uses the remaining width.
 - Simplified the Mods table to Status, Name, Workshop ID, Size and Workshop URL; removed duplicate name/notes columns, moved the URL last and now shows published sizes for installed as well as missing mods.
@@ -40,6 +40,24 @@
 - Kept hidden Workshop monitors hidden by suppressing `QProgressDialog` updates until explicitly reopened, and simplified successful completion text to the downloaded mod count.
 - Replaced the successful download dialog's generic confirmation with **Launch server**, deferred until the isolated helper exits and a forced mod recheck confirms the downloaded set.
 - Added conservative restart/recovery detection for required items left in Steam's DayZ Workshop download staging area, with honest Mods guidance and guards against duplicate helper sessions or launch until a fresh check confirms readiness.
+- Added the staged WolfAPI v1 GUI provider with bounded 100-row background
+  pagination, merge-only off-page-safe caching and local-first Server Browser
+  search followed by a quiet 450 ms debounced remote directory search.
+- Made WolfAPI v1 the provider default for fresh installations after production
+  and desktop canaries passed, while preserving saved provider choices and the
+  explicit legacy fallback. Exact `host:port` searches now use alias-aware v1
+  resolution for either game or query ports.
+- Added WolfAPI freshness, validation and provider-observation evidence to the
+  existing Status tooltip and copied server details without adding a table
+  column; expired cached labels are marked refresh-pending rather than guessed.
+- Confirmed the v1 startup boundary: discovered SQLite rows are not
+  automatically UDP-probed, HTTP provider refresh remains quiet and bounded,
+  and curated/selected/launch-time checks remain local by design.
+- Added the opt-in WolfAPI v1 client/cache foundation: strict rollout-contract
+  validation, bounded list/search/exact-resolution clients, an additive SQLite
+  additive cache migration, stable server IDs, endpoint aliases, freshness and
+  validation fields, and duplicate-free port-correction merging. The deployed
+  legacy WolfAPI URL remains the default.
 - Made native/external launch-engine changes invalidate and quietly recheck the selected server's mods using the newly authoritative Steam/Workshop context, matching Steam install mode changes.
 - Made Steam install mode changes deterministically start or queue a quiet forced mod recheck, instead of leaving the Mods tab waiting when the previous lookup had already finished.
 - Bound cached mod results to both the selected server and Workshop directory, preventing an in-flight check from an old Steam install mode being accepted after the mode changes and queuing a fresh check for the current context.
