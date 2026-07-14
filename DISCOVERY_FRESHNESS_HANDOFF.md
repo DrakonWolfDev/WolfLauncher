@@ -15,6 +15,44 @@ WolfLauncher remains offline-first: cached SQLite rows render immediately,
 remote discovery is read-only, curated YAML remains user-owned, and selected
 server/launch-time checks remain local truth.
 
+## Future Codex resume note — 2026-07-14
+
+Treat WolfLauncher and `../WolfAPI` as one discovery product with two separately
+tested and committed repositories. The direction of the next request does not
+define the implementation boundary: a Launcher-originated task may require API
+work, and an API-originated task may require Launcher fields, persistence,
+presentation or truth-boundary changes. Read both `AGENTS.md` files, this file
+and `../WolfAPI/DISCOVERY_FRESHNESS_CONTRACT.md`; make necessary companion
+changes in the same session and keep both handoffs synchronized. Never wait for
+the user to repeat a shared request in the other repository.
+
+Current shared baseline:
+
+- WolfAPI migration `20260713_0007` is deployed with its bounded metadata job
+  persistently enabled in the production host's ignored `.env`;
+- WolfLauncher SQLite schema v4 persists count/status/timestamps/error/hash and
+  presents API metadata only as browsing evidence; direct **Inspect mods** and
+  launch-time lookup remain final truth;
+- four production metadata cycles completed 40/40 lookups without failure, but
+  the six-hour TTL and strict unknown-first ordering yielded 10 ready and 30
+  stale manifests among roughly 49,000 unknown eligible rows;
+- web memory remained about 75 MiB and the active worker about 709 MiB inside
+  the 4 GiB deployment limit, with no OOM or restart;
+- the real production directory contained 1,810 flagged and 50,492 unflagged
+  rows. This supersedes the earlier development-only zero-flag snapshot.
+
+The next shared task belongs primarily in WolfAPI: keep the ten-row global
+budget but balance new-coverage and expired-refresh candidates so useful
+manifests do not remain stale forever. Preserve failure cooldown, confirmed
+zero versus unknown, last-success retention, cached-only detail responses and
+the direct-Launcher-final-truth boundary. Update this file and inspect Launcher
+tests even if the response shape does not change.
+
+Quality filtering is a separate Launcher product decision. The API already
+demotes flagged rows without hiding them. Evaluate an explicit optional filter
+against real browsing behavior; do not silently change the default or remove
+flagged servers.
+
 ## Current deployment boundary
 
 WolfLauncher uses the hosted v1 endpoints for fresh-install default discovery:
@@ -165,8 +203,9 @@ curated, selected-server and launch-time checks remain intentionally local.
   manifests were ready afterward with no stale or failed rows; continue
   scheduled-cycle observation before increasing coverage.
 
-The 2026-07-13 quality snapshot contained 10,284 unflagged and zero flagged
-canonical rows. Keep the Launcher quality default unchanged until real flagged
-population data can demonstrate that a default filter materially helps.
+The earlier development snapshot contained no flagged rows, but the
+2026-07-14 production snapshot contained 1,810 flagged and 50,492 unflagged
+rows. Keep the current ranking behavior while an explicit optional Launcher
+filter is evaluated from real browsing behavior; do not silently hide rows.
 - Production proxy/CDN behavior and sustained-load peak RSS still need final
   deployment evidence.

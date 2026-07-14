@@ -1,5 +1,12 @@
 # WolfLauncher Project State
 
+Cross-repository handoff: read the **Future Codex resume note** in
+`DISCOVERY_FRESHNESS_HANDOFF.md` and its authoritative API companion in
+`../WolfAPI/DISCOVERY_FRESHNESS_CONTRACT.md`. Discovery development remains
+bidirectional regardless of which repository a request originates in. The next
+shared task is WolfAPI's bounded balance between new and expired required-mod
+metadata candidates; Launcher direct inspection remains final truth.
+
 Current snapshot: v0.8 native-launch parity validated; v0.9 native hardening is in progress and the initial GUI simplification pass is complete. Native launch is the default with the external launcher retained as a fallback.
 
 WolfLauncher is a Linux-first DayZ launcher GUI built with Python and PySide6. Its validated native Python engine is the default, with the existing MIT-licensed `dayz-linux-cli-launcher` style shell launcher retained as a fallback.
