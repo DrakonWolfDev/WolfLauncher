@@ -49,6 +49,11 @@ failure cooldown, confirmed zero versus unknown, last-success retention,
 cached-only detail responses and the direct-Launcher-final-truth boundary are
 unchanged. Observe initial production cycles at ten, then raise the global
 budget progressively using duration, upstream-error and worker-RSS evidence.
+The first production fair-lane cycle completed 10/10 without error on
+2026-07-14: seven new candidates and three expired successful manifests, with
+the unused retry slot spilling to new coverage. The queue returned to zero and
+worker health remained healthy. Keep the ten-row budget for additional cycles
+before increasing it.
 
 Quality filtering is a separate Launcher product decision. The API already
 demotes flagged rows without hiding them. Evaluate an explicit optional filter
