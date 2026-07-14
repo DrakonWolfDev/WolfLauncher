@@ -41,12 +41,14 @@ Current shared baseline:
 - the real production directory contained 1,810 flagged and 50,492 unflagged
   rows. This supersedes the earlier development-only zero-flag snapshot.
 
-The next shared task belongs primarily in WolfAPI: keep the ten-row global
-budget but balance new-coverage and expired-refresh candidates so useful
-manifests do not remain stale forever. Preserve failure cooldown, confirmed
-zero versus unknown, last-success retention, cached-only detail responses and
-the direct-Launcher-final-truth boundary. Update this file and inspect Launcher
-tests even if the response shape does not change.
+Implemented locally in WolfAPI on 2026-07-14: the ten-row global budget now
+uses bounded 60/30/10 new-coverage, expired-success refresh and retry lanes,
+with unused capacity spilling between lanes. The API health response exposes
+the latest lane counts. No Launcher schema, parser or UI change is required;
+failure cooldown, confirmed zero versus unknown, last-success retention,
+cached-only detail responses and the direct-Launcher-final-truth boundary are
+unchanged. Observe initial production cycles at ten, then raise the global
+budget progressively using duration, upstream-error and worker-RSS evidence.
 
 Quality filtering is a separate Launcher product decision. The API already
 demotes flagged rows without hiding them. Evaluate an explicit optional filter
@@ -197,11 +199,11 @@ curated, selected-server and launch-time checks remain intentionally local.
   still needs trustworthy corrected-port evidence; A2S reachability alone does
   not provide it.
 - Required-mod metadata is implemented behind WolfAPI's committed
-  disabled-by-default, ten-row bounded job. The local production `.env` now
-  enables it persistently: a normal Compose recreation retained the setting
-  and the first scheduled batch completed 10/10 in four seconds. Thirty
-  manifests were ready afterward with no stale or failed rows; continue
-  scheduled-cycle observation before increasing coverage.
+  disabled-by-default job. The local production `.env` enables it persistently.
+  Its original ten-row canary completed 40/40 across four cycles, then exposed
+  strict unknown-first refresh starvation. The local fair-lane fix reserves
+  new/refresh/retry capacity without changing the hard budget or Launcher
+  truth boundary; observe it in production before increasing coverage.
 
 The earlier development snapshot contained no flagged rows, but the
 2026-07-14 production snapshot contained 1,810 flagged and 50,492 unflagged

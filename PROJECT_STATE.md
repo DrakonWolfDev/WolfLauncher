@@ -4,8 +4,10 @@ Cross-repository handoff: read the **Future Codex resume note** in
 `DISCOVERY_FRESHNESS_HANDOFF.md` and its authoritative API companion in
 `../WolfAPI/DISCOVERY_FRESHNESS_CONTRACT.md`. Discovery development remains
 bidirectional regardless of which repository a request originates in. The next
-shared task is WolfAPI's bounded balance between new and expired required-mod
-metadata candidates; Launcher direct inspection remains final truth.
+shared task has a locally implemented WolfAPI balance between new, expired and
+retryable required-mod metadata candidates. Observe initial production cycles,
+then raise the global budget progressively; Launcher direct inspection remains
+final truth.
 
 Current snapshot: v0.8 native-launch parity validated; v0.9 native hardening is in progress and the initial GUI simplification pass is complete. Native launch is the default with the external launcher retained as a fallback.
 
