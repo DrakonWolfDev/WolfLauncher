@@ -56,6 +56,11 @@ The first production fair-lane cycle completed 10/10 without error on
 the unused retry slot spilling to new coverage. The queue returned to zero and
 worker health remained healthy. Keep the ten-row budget for additional cycles
 before increasing it.
+WolfAPI now also exposes latest-run duration, full ready backlog counts by lane
+and stable error-category counts in `mod_metadata` health. Promotion remains
+sequential: observe at least three healthy queue-draining cycles at 10 before
+50, then apply the same failure, duration and worker-RSS gates before 100.
+Measure sequential 100-row behavior before adding request concurrency.
 
 Production quality-filter evaluation on 2026-07-14 found 1,383 flagged rows in
 the current directory. Samples coherently showed impossible `bots=255`
@@ -66,6 +71,8 @@ schema v5 persists the advisory flags so cached/offline filtering agrees with
 v1 list and name-search requests. Exact resolution remains available, but the
 local visibility filter still applies. Visible flagged rows say the warning is
 advisory, not proof that a server is unsafe.
+The user confirmed the advanced control works on the real desktop on
+2026-07-14.
 
 ## Current deployment boundary
 

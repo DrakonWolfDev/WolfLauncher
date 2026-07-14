@@ -47,7 +47,7 @@ Status: complete. Native launch parity has been validated in real-world use and 
 - Build an internal launcher-engine module behind the existing GUI workflow. Completed for compact mod symlink names, mod link preparation, launch previews, native handoff and Steam command generation.
 - Reproduce the current external launcher command behaviour with test coverage.
 - Direct Steam/Proton launch handling has been validated for native and Flatpak Steam, with Steam running and stopped, and with unmodded, fully modded and partially missing-mod servers.
-- Investigate Steam Workshop mod installation routes, with Steam-native subscription/download flows preferred over custom file management. An opt-in ISteamUGC experiment now delegates confirmed subscriptions/downloads to the running Steam client; native and Flatpak real-world hardening remains.
+- Investigate Steam Workshop mod installation routes, with Steam-native subscription/download flows preferred over custom file management. An opt-in ISteamUGC experiment now delegates confirmed subscriptions/downloads to the running Steam client; native and the Flatpak Workshop/restart path have passed real-world testing, with continued hardening driven by observed failures.
 - Keep the external launcher path as a visible fallback during native hardening.
 
 ## v0.8.x - WolfAPI discovery quality and submissions
@@ -115,7 +115,7 @@ Status: in progress. Native hardening boundaries are established and the initial
 
 ### Experimental Workshop and join-flow hardening
 
-Real-world native-Steam testing confirmed subscription/download batches, isolated-helper cleanup and verified launch-after-download. Testing included a 34-mod subscription batch, a 61-mod lifecycle/stall investigation and successful post-fix multi-mod completion and launch. Flatpak and restart/recovery boundaries remain before the feature can leave experimental status.
+Real-world native-Steam testing confirmed subscription/download batches, isolated-helper cleanup and verified launch-after-download. Testing included a 34-mod subscription batch, a 61-mod lifecycle/stall investigation and successful post-fix multi-mod completion and launch. The user confirmed the Flatpak Workshop/restart path also works on 2026-07-14; keep the feature experimental while remaining failure cases are hardened.
 
 Priority 1 — safe Steam handoff:
 

@@ -70,7 +70,14 @@ Handoff recorded: 2026-07-11 after commit `05d0ce5` on `main`.
 - Commits `957bb8c`, `d7094ea`, `13f2087`, `92c2174`, `c995c14`, `af98eb1`, `7ced984`, `8cd8385` and `05d0ce5` hardened launch preflight, target selection, mod lookup/reporting and stale mod-result handling; each pushed slice passed its hosted matrix through the final run `29168383905`.
 - The working tree was clean and synchronized with `origin/main` before this handoff documentation refresh.
 
-Recommended next step: physically validate the experimental Workshop flow on Flatpak Steam. Real-world native-Steam testing confirmed successful subscription/download batches, safe hidden monitoring, bounded incomplete-item retries and launch after isolated-helper exit plus a fresh all-installed mod check. Restart/recovery conservatively guards relevant staged items. Discovered rows can now be inspected, resolved and launched directly through a read-only in-memory context; curated promotion remains optional. Preserve the approved four-tab hierarchy and validate this direct join flow on a real desktop. Run the current unit suite and keep the settled clean-profile startup smoke check for import/startup changes.
+The user confirmed the Flatpak Workshop/restart path and the advanced quality-
+warning control work on the real desktop on 2026-07-14. Real-world native-Steam
+testing had already confirmed successful subscription/download batches, safe
+hidden monitoring, bounded incomplete-item retries and launch after isolated-
+helper exit plus a fresh all-installed mod check. Continue treating Workshop
+management as experimental while responding to real-world failures; preserve
+the approved four-tab hierarchy and the settled clean-profile startup smoke
+check for import/startup changes.
 
 ## v0.9 GUI consistency handoff
 
@@ -320,7 +327,7 @@ Current handling:
 - Auto Steam selection is reported from the same detection snapshot as the candidate list so users can see why native or Flatpak Steam was chosen.
 - Native launch command generation now fails before handoff when the selected Steam mode lacks a detected command, with mode-specific guidance for native Steam, Flatpak Steam and `STEAM_ROOT`.
 - `STEAM_ROOT` detection reuses the native Steam command and running state when available, while Settings health warns if the selected library is complete but no launchable Steam command is detected.
-- Mod management remains read-only and advisory by default. An opt-in experimental control now uses the official Steam API redistributable already present in the selected Steam installation to confirm and request missing-item subscriptions through `ISteamUGC`, monitor progress, and verify local directories. Its Steamworks context is isolated in a spawned helper process that must exit before launch is re-enabled. It never vendors Valve's binary, downloads Workshop bytes itself, or removes subscriptions; manual Workshop links remain the fallback. Native Steam real-world testing passed; Flatpak testing is still required.
+- Mod management remains read-only and advisory by default. An opt-in experimental control now uses the official Steam API redistributable already present in the selected Steam installation to confirm and request missing-item subscriptions through `ISteamUGC`, monitor progress, and verify local directories. Its Steamworks context is isolated in a spawned helper process that must exit before launch is re-enabled. It never vendors Valve's binary, downloads Workshop bytes itself, or removes subscriptions; manual Workshop links remain the fallback. Native Steam and the Flatpak Workshop/restart path passed real-world testing.
 - Launch remains guarded: WolfLauncher warns about missing mods and Steam state before native handoff or calling the external fallback.
 - Hostnames are resolved before launch where possible to mirror the original terminal menu behaviour and avoid DayZSA API issues with DNS-based servers.
 - Python bytecode caches are ignored and should not be tracked as source.
