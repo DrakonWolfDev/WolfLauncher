@@ -30,9 +30,11 @@ Current shared baseline:
 
 - WolfAPI migration `20260713_0007` is deployed with its bounded metadata job
   persistently enabled in the production host's ignored `.env`;
-- WolfLauncher SQLite schema v4 persists count/status/timestamps/error/hash and
-  presents API metadata only as browsing evidence; direct **Inspect mods** and
-  launch-time lookup remain final truth;
+- WolfLauncher SQLite schema v5 persists count/status/timestamps/error/hash and
+  advisory quality flags. API metadata remains browsing evidence; direct
+  **Inspect mods** and launch-time lookup remain final truth. The advanced,
+  opt-in quality hide control filters cached rows and remote v1 list/name-search
+  calls without deleting data or changing the default;
 - four production metadata cycles completed 40/40 lookups without failure, but
   the six-hour TTL and strict unknown-first ordering yielded 10 ready and 30
   stale manifests among roughly 49,000 unknown eligible rows;
@@ -55,10 +57,15 @@ the unused retry slot spilling to new coverage. The queue returned to zero and
 worker health remained healthy. Keep the ten-row budget for additional cycles
 before increasing it.
 
-Quality filtering is a separate Launcher product decision. The API already
-demotes flagged rows without hiding them. Evaluate an explicit optional filter
-against real browsing behavior; do not silently change the default or remove
-flagged servers.
+Production quality-filter evaluation on 2026-07-14 found 1,383 flagged rows in
+the current directory. Samples coherently showed impossible `bots=255`
+telemetry and dense same-host populations, while some names could still be
+legitimate communities with bad provider data. WolfLauncher therefore adds an
+explicit advanced **Hide quality warnings** filter, off by default. SQLite
+schema v5 persists the advisory flags so cached/offline filtering agrees with
+v1 list and name-search requests. Exact resolution remains available, but the
+local visibility filter still applies. Visible flagged rows say the warning is
+advisory, not proof that a server is unsafe.
 
 ## Current deployment boundary
 
@@ -126,7 +133,7 @@ Legacy `/api/servers` remains compatibility-only and endpoint-keyed.
 
 Foundation implemented locally on 2026-07-13:
 
-- SQLite schema v4 migrates earlier layouts in place and
+- SQLite schema v5 migrates earlier layouts in place and
   combines Workshop metadata with stable IDs, aliases, freshness and
   validation state, while retaining WolfAPI mod-metadata provenance;
 - WolfAPI rows are merged by stable ID so corrected ports move one row;

@@ -115,6 +115,10 @@ Working:
 - Failed provider refreshes preserve existing discovered-server cache rows.
 - Server Browser map and version filters populated from cached/enriched values.
 - Server Browser source/style filtering, result-limit controls, reset controls and cache summary counts.
+- Server Browser advanced filtering includes an off-by-default **Hide quality
+  warnings** option. WolfAPI advisory flags persist in SQLite schema v5, remain
+  visible with explanatory detail by default, and filter cached plus remote v1
+  list/search results consistently when selected.
 - Server Browser data-aware sorting for cached rows, including numeric player/ping values and checked/seen timestamps.
 - Server Browser double-click promotion and context actions for connect/host/detail copying.
 - DNS hostname and direct IP support.
@@ -178,14 +182,16 @@ Planned WolfAPI follow-up:
 - `DISCOVERY_FRESHNESS_HANDOFF.md` records the cross-repository contract and
   rollout state; `ROADMAP.md` tracks the launcher adoption work.
 - The current launcher working tree contains the additive adoption foundation:
-  SQLite schema v4 preserves earlier layouts while combining stable IDs,
+  SQLite schema v5 preserves earlier layouts while combining stable IDs,
   endpoint aliases, freshness/validation fields and API required-mod metadata;
   WolfAPI rows merge port corrections
   by stable ID; opt-in v1 list/search/resolve clients enforce rollout metadata.
   Settings exposes v1 as an explicit staged provider while existing saved
   `wolfapi` selections remain on the separately labelled legacy fallback.
   V1 refreshes paginate in bounded 100-row background requests and use
-  merge-only cache updates. Server Browser search is local-first with a 450 ms
+  merge-only cache updates. Advisory API quality flags are retained for the
+  explicit off-by-default advanced hide control. Server Browser search is
+  local-first with a 450 ms
   debounced remote v1 search that merges stable-ID matches, preserves unrelated
   rows and does not let stale completions replace the current query view.
   Exact `host:port` input uses alias-aware resolution for either port role.
@@ -222,7 +228,7 @@ Planned WolfAPI follow-up:
   fields, stable UUID server IDs and endpoint aliases. The hosted deployment
   passed the documented rollout gates and v1 is now the fresh-install default;
   saved choices and the legacy fallback remain available.
-- SQLite schema v4 preserves earlier layouts, storing Workshop metadata,
+- SQLite schema v5 preserves earlier layouts, storing Workshop metadata,
   stable server IDs, endpoint aliases and API mod-metadata provenance;
   corrected endpoints merge
   into one cached row without weakening offline behavior or curated YAML

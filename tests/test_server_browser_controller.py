@@ -53,6 +53,7 @@ class ServerBrowserControllerTests(unittest.TestCase):
                     version="1.25",
                     source="battlemetrics",
                     modded=True,
+                    quality_flags=("suspicious_bots",),
                 ),
             ],
         )
@@ -80,6 +81,15 @@ class ServerBrowserControllerTests(unittest.TestCase):
 
         self.assertEqual(len(snapshot.servers), 1)
         self.assertEqual(snapshot.match_count, 3)
+
+    def test_snapshot_optionally_hides_quality_flagged_rows(self):
+        snapshot = load_browser_snapshot(
+            self.connection,
+            BrowserQuery(hide_quality_flagged=True),
+        )
+
+        self.assertNotIn("Offline Namalsk", [server.name for server in snapshot.servers])
+        self.assertEqual(snapshot.match_count, 2)
 
     def test_filter_options_are_distinct_and_sorted(self):
         options = browser_filter_options(self.connection)

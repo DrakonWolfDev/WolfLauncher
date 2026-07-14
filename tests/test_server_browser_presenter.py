@@ -104,6 +104,22 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertEqual(row.status_colour, "#f6c453")
         self.assertIn("not yet validated", row.tooltips[5])
 
+    def test_quality_warning_is_advisory_and_visible_when_not_hidden(self):
+        server = DiscoveredServer(
+            name="Provider Row",
+            host="203.0.113.20",
+            game_port=2302,
+            query_port=27016,
+            quality_flags=("suspicious_bots", "high_population_cluster"),
+        )
+
+        row = browser_row(server)
+        details = discovered_server_details(server)
+
+        self.assertEqual(row.values[10], "Quality warning")
+        self.assertIn("not proof the server is unsafe", row.tooltips[10])
+        self.assertIn("suspicious bots", details)
+
     def test_api_freshness_marks_expired_cached_labels_without_guessing_next_state(self):
         server = DiscoveredServer(
             name="Freshness",

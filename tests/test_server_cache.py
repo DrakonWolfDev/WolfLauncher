@@ -35,6 +35,26 @@ class ServerCacheTests(unittest.TestCase):
         self.assertIn("validation_status", columns)
         self.assertIn("mod_metadata_status", columns)
         self.assertIn("mod_manifest_hash", columns)
+        self.assertIn("quality_flags", columns)
+
+    def test_schema_v4_migrates_quality_flags_additively(self):
+        connection = server_cache.sqlite3.connect(":memory:")
+        self.addCleanup(connection.close)
+        connection.execute(
+            "CREATE TABLE discovered_servers (cache_key TEXT PRIMARY KEY)"
+        )
+        connection.execute("PRAGMA user_version = 4")
+
+        server_cache.initialize(connection)
+
+        columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")
+        }
+        self.assertEqual(
+            connection.execute("PRAGMA user_version").fetchone()[0],
+            server_cache.SCHEMA_VERSION,
+        )
+        self.assertIn("quality_flags", columns)
 
     def test_schema_v1_migrates_to_v3_without_losing_rows(self):
         tmpdir = tempfile.TemporaryDirectory()
@@ -639,6 +659,46 @@ class ServerCacheTests(unittest.TestCase):
         results = server_cache.search_servers(connection, source="import")
 
         self.assertEqual([server.name for server in results], ["Imported Server"])
+
+    def test_search_optionally_hides_quality_flagged_rows(self):
+        connection = self.open_cache()
+        server_cache.upsert_servers(
+            connection,
+            [
+                DiscoveredServer(
+                    name="Ordinary Server",
+                    host="203.0.113.10",
+                    game_port=2302,
+                    query_port=27016,
+                ),
+                DiscoveredServer(
+                    name="Suspicious Provider Row",
+                    host="203.0.113.20",
+                    game_port=2302,
+                    query_port=27016,
+                    quality_flags=("suspicious_bots", "high_population_cluster"),
+                ),
+            ],
+        )
+
+        all_rows = server_cache.search_servers(connection)
+        filtered = server_cache.search_servers(
+            connection, hide_quality_flagged=True
+        )
+        filtered_count = server_cache.count_search_servers(
+            connection, hide_quality_flagged=True
+        )
+
+        self.assertEqual(len(all_rows), 2)
+        self.assertEqual([server.name for server in filtered], ["Ordinary Server"])
+        self.assertEqual(filtered_count, 1)
+        cached = server_cache.get_server(
+            connection, "203.0.113.20:2302:27016"
+        )
+        self.assertEqual(
+            cached.quality_flags,
+            ("suspicious_bots", "high_population_cluster"),
+        )
 
     def test_search_filters_by_style_terms(self):
         connection = self.open_cache()

@@ -146,7 +146,7 @@ Priority 3 — Workshop readiness and information:
 - Completed — progress UI uses mod names with numeric Workshop IDs only as fallback/support detail.
 - Completed — discovered rows show required-mod counts supplied by providers or learned from a successful direct server mod check; unknown remains blank rather than being treated as zero.
 - Completed — WolfAPI v1 mod-metadata status, checked/expiry/error/hash fields
-  persist in SQLite schema v4 and drive honest ready/stale/failed browsing
+  persist in SQLite schema v5 and drive honest ready/stale/failed browsing
   tooltips without replacing direct mod inspection.
 
 Priority 4 — discovery truth and regression coverage:
@@ -173,8 +173,11 @@ Discovery-freshness boundary:
 - The former Server Browser architecture pause is cleared: WolfAPI memory,
   pagination/search/freshness and mixed-load gates passed. Continue normal
   cross-repository work only where it adds a measured user benefit.
-- Keep the quality default unchanged for now; the 2026-07-13 canonical snapshot
-  contained no flagged rows, so `quality=unflagged` would not alter results.
+- Completed — production evaluation found 1,383 currently flagged rows with
+  coherent suspicious-bot and dense same-host signals, but retained false-
+  positive risk. The advanced **Hide quality warnings** filter is therefore
+  explicit and off by default; schema v5 keeps cached/offline filtering aligned
+  with v1 list and name-search requests without deleting flagged rows.
 
 ## v0.9.9 - Packaging preparation
 

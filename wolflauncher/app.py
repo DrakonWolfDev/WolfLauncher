@@ -371,6 +371,20 @@ class MainWindow(QMainWindow):
         advanced_filters.addWidget(QLabel("Sort"))
         advanced_filters.addWidget(self.browser_sort)
         advanced_filters.addWidget(self.browser_descending)
+        self.browser_hide_quality_flagged = QCheckBox("Hide quality warnings")
+        self.browser_hide_quality_flagged.setToolTip(
+            "Hide rows WolfAPI flags for suspicious provider telemetry or dense "
+            "same-host populations. Off by default; exact/local data is retained."
+        )
+        self.browser_hide_quality_flagged.stateChanged.connect(
+            self.refresh_server_browser
+        )
+        self.browser_hide_quality_flagged.stateChanged.connect(
+            lambda _state: self.schedule_remote_wolfapi_search(
+                self.browser_search.text()
+            )
+        )
+        advanced_filters.addWidget(self.browser_hide_quality_flagged)
         advanced_filters.addWidget(QLabel("Limit"))
         advanced_filters.addWidget(self.browser_limit)
         advanced_filters.addStretch(1)
@@ -829,6 +843,9 @@ class MainWindow(QMainWindow):
         self.wolfapi_worker = WolfApiDiscoveryWorker(
             limit=self.discovery_limit.value(),
             use_v1=use_v1,
+            unflagged_only=(
+                use_v1 and self.browser_hide_quality_flagged.isChecked()
+            ),
         )
         self.wolfapi_worker.discovery_ready.connect(self.handle_wolfapi_ready)
         self.wolfapi_worker.start()
@@ -856,6 +873,10 @@ class MainWindow(QMainWindow):
                 limit=self.discovery_limit.value(),
                 automatic=True,
                 use_v1=provider == "wolfapi_v1",
+                unflagged_only=(
+                    provider == "wolfapi_v1"
+                    and self.browser_hide_quality_flagged.isChecked()
+                ),
             )
             self.wolfapi_worker.discovery_ready.connect(self.handle_wolfapi_ready)
             self.wolfapi_worker.start()
@@ -1025,6 +1046,7 @@ class MainWindow(QMainWindow):
             limit=min(100, int(self.browser_limit.currentText())),
             map_name=map_name,
             version=version,
+            unflagged_only=self.browser_hide_quality_flagged.isChecked(),
         )
         self.wolfapi_search_worker.search_ready.connect(self.handle_remote_wolfapi_search)
         self.wolfapi_search_worker.finished.connect(self.finish_remote_wolfapi_search)
@@ -1391,6 +1413,7 @@ class MainWindow(QMainWindow):
                 source=source,
                 style_terms=tuple(style_terms),
                 modded=modded,
+                hide_quality_flagged=self.browser_hide_quality_flagged.isChecked(),
                 sort_by=sort_key,
                 descending=self.browser_descending.isChecked(),
                 limit=limit,
@@ -1449,6 +1472,7 @@ class MainWindow(QMainWindow):
         self.browser_source.setCurrentText("Any source")
         self.browser_sort.setCurrentText("Name")
         self.browser_descending.setChecked(False)
+        self.browser_hide_quality_flagged.setChecked(False)
         self.browser_limit.setCurrentText("200")
         self.refresh_server_browser()
 

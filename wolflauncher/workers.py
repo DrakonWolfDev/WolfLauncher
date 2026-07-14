@@ -201,11 +201,13 @@ class WolfApiDiscoveryWorker(QThread):
         limit: int = 10000,
         automatic: bool = False,
         use_v1: bool = False,
+        unflagged_only: bool = False,
     ):
         super().__init__()
         self.limit = limit
         self.automatic = automatic
         self.use_v1 = use_v1
+        self.unflagged_only = unflagged_only
 
     @property
     def provider_label(self) -> str:
@@ -214,7 +216,12 @@ class WolfApiDiscoveryWorker(QThread):
     def run(self):
         try:
             if self.use_v1:
-                servers = discover_wolfapi_v1_pages(self.limit)
+                if self.unflagged_only:
+                    servers = discover_wolfapi_v1_pages(
+                        self.limit, unflagged_only=True
+                    )
+                else:
+                    servers = discover_wolfapi_v1_pages(self.limit)
             else:
                 servers = discover_dayz_servers_wolfapi(limit=self.limit)
         except Exception as exc:
@@ -223,14 +230,17 @@ class WolfApiDiscoveryWorker(QThread):
             self.discovery_ready.emit(servers, "")
 
 
-def discover_wolfapi_v1_pages(limit: int) -> list:
+def discover_wolfapi_v1_pages(limit: int, unflagged_only: bool = False) -> list:
     """Fetch bounded v1 pages in a background worker up to the user limit."""
     target = max(1, int(limit))
     servers = []
     offset = 0
     while len(servers) < target:
         page_limit = min(WOLFAPI_V1_PAGE_SIZE, target - len(servers))
-        page = discover_dayz_servers_wolfapi_v1(limit=page_limit, offset=offset)
+        kwargs = {"limit": page_limit, "offset": offset}
+        if unflagged_only:
+            kwargs["unflagged_only"] = True
+        page = discover_dayz_servers_wolfapi_v1(**kwargs)
         servers.extend(page)
         if len(page) < page_limit:
             break
@@ -247,23 +257,27 @@ class WolfApiSearchWorker(QThread):
         limit: int = 100,
         map_name: str = "",
         version: str = "",
+        unflagged_only: bool = False,
     ):
         super().__init__()
         self.query = " ".join(query.split())
         self.limit = limit
         self.map_name = map_name
         self.version = version
+        self.unflagged_only = unflagged_only
 
     def run(self):
         try:
             endpoint = parse_exact_server_endpoint(self.query)
             if endpoint is None:
-                servers = search_dayz_servers_wolfapi_v1(
-                    self.query,
-                    limit=self.limit,
-                    map_name=self.map_name,
-                    version=self.version,
-                )
+                kwargs = {
+                    "limit": self.limit,
+                    "map_name": self.map_name,
+                    "version": self.version,
+                }
+                if self.unflagged_only:
+                    kwargs["unflagged_only"] = True
+                servers = search_dayz_servers_wolfapi_v1(self.query, **kwargs)
             else:
                 host, port = endpoint
                 resolved = [

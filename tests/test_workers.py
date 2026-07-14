@@ -84,6 +84,16 @@ class WorkerTests(unittest.TestCase):
             ],
         )
 
+    @patch("wolflauncher.workers.discover_dayz_servers_wolfapi_v1")
+    def test_v1_background_discovery_forwards_quality_filter(self, discover):
+        discover.return_value = []
+
+        discover_wolfapi_v1_pages(100, unflagged_only=True)
+
+        discover.assert_called_once_with(
+            limit=100, offset=0, unflagged_only=True
+        )
+
     @patch("wolflauncher.workers.search_dayz_servers_wolfapi_v1")
     def test_v1_search_worker_preserves_query_and_filters(self, search):
         search.return_value = ["remote-server"]
@@ -101,6 +111,17 @@ class WorkerTests(unittest.TestCase):
             "Alpha Server", limit=50, map_name="chernarusplus", version="1.29"
         )
         self.assertEqual(results, [("Alpha Server", ["remote-server"], "")])
+
+    @patch("wolflauncher.workers.search_dayz_servers_wolfapi_v1")
+    def test_v1_search_worker_forwards_quality_filter(self, search):
+        search.return_value = []
+        worker = WolfApiSearchWorker("Alpha", unflagged_only=True)
+
+        worker.run()
+
+        search.assert_called_once_with(
+            "Alpha", limit=100, map_name="", version="", unflagged_only=True
+        )
 
     @patch("wolflauncher.workers.resolve_dayz_server_wolfapi_v1")
     @patch("wolflauncher.workers.search_dayz_servers_wolfapi_v1")

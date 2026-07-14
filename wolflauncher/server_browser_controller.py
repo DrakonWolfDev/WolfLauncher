@@ -14,6 +14,7 @@ class BrowserQuery:
     source: str = ""
     style_terms: tuple[str, ...] = ()
     modded: bool | None = None
+    hide_quality_flagged: bool = False
     sort_by: str = "name"
     descending: bool = False
     limit: int = 200
@@ -35,6 +36,7 @@ def load_browser_snapshot(connection: Any, query: BrowserQuery) -> BrowserSnapsh
         "source": query.source,
         "style_terms": list(query.style_terms),
         "modded": query.modded,
+        "hide_quality_flagged": query.hide_quality_flagged,
     }
     servers = server_cache.search_servers(
         connection,

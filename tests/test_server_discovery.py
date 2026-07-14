@@ -565,6 +565,7 @@ class WolfApiDiscoveryTests(unittest.TestCase):
                 "mod_metadata_expires_at": "2026-07-13T18:01:00+00:00",
                 "mod_metadata_error_code": "",
                 "mod_manifest_hash": "sha256:example",
+                "quality_flags": "suspicious_bots,high_population_cluster",
             },
             "2026-07-13T12:05:00+00:00",
         )
@@ -579,6 +580,10 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         self.assertEqual(server.required_mod_count, 17)
         self.assertEqual(server.mod_metadata_status, "ready")
         self.assertEqual(server.mod_manifest_hash, "sha256:example")
+        self.assertEqual(
+            server.quality_flags,
+            ("suspicious_bots", "high_population_cluster"),
+        )
 
     def test_parse_wolfapi_response_deduplicates_and_limits_rows(self):
         servers = parse_wolfapi_servers(
@@ -664,6 +669,16 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         self.assertEqual(urlopen.call_args.kwargs["timeout"], 4)
 
     @patch("wolflauncher.server_discovery.urllib.request.urlopen")
+    def test_wolfapi_v1_list_requests_unflagged_quality_when_selected(self, urlopen):
+        urlopen.return_value = self.fake_wolfapi_response()
+
+        discover_dayz_servers_wolfapi_v1(limit=100, unflagged_only=True)
+
+        request = urlopen.call_args.args[0]
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(request.full_url).query)
+        self.assertEqual(query["quality"], ["unflagged"])
+
+    @patch("wolflauncher.server_discovery.urllib.request.urlopen")
     def test_wolfapi_v1_search_normalizes_and_encodes_filters(self, urlopen):
         urlopen.return_value = self.fake_wolfapi_response()
 
@@ -682,6 +697,16 @@ class WolfApiDiscoveryTests(unittest.TestCase):
                 "map": ["chernarusplus"], "version": ["1.29"],
             },
         )
+
+    @patch("wolflauncher.server_discovery.urllib.request.urlopen")
+    def test_wolfapi_v1_search_requests_unflagged_quality_when_selected(self, urlopen):
+        urlopen.return_value = self.fake_wolfapi_response()
+
+        search_dayz_servers_wolfapi_v1("Alpha", unflagged_only=True)
+
+        request = urlopen.call_args.args[0]
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(request.full_url).query)
+        self.assertEqual(query["quality"], ["unflagged"])
 
     def test_wolfapi_v1_search_requires_text(self):
         with self.assertRaisesRegex(ValueError, "query"):

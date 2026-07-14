@@ -50,6 +50,7 @@ class DiscoveredServer:
     validation_error_code: str = ""
     provider_last_checked: str = ""
     provider_last_seen: str = ""
+    quality_flags: tuple[str, ...] = ()
 
     @property
     def cache_key(self) -> str:

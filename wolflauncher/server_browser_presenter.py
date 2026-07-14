@@ -89,6 +89,8 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
         flags.append("Password")
     if server.modded:
         flags.append("Mods")
+    if server.quality_flags:
+        flags.append("Quality warning")
     flags_text = ", ".join(flags) if flags else "Vanilla/unknown"
     live_name = live_name_text(server)
     tooltips = {}
@@ -139,6 +141,12 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
         tooltips[5] = "\n".join(
             part for part in (existing_status, status_tooltip) if part
         )
+    if server.quality_flags:
+        tooltips[10] = (
+            "WolfAPI quality warning: "
+            + ", ".join(flag.replace("_", " ") for flag in server.quality_flags)
+            + ". This is advisory provider-data screening, not proof the server is unsafe."
+        )
 
     return BrowserRow(
         values=[
@@ -187,6 +195,8 @@ def discovered_server_details(server: DiscoveredServer) -> str:
         flags.append("Password")
     if server.modded:
         flags.append("Mods")
+    if server.quality_flags:
+        flags.append("Quality warning")
     lines = [server.name]
     if live_name_text(server):
         lines.append(f"Live name: {server.server_name}")
@@ -206,6 +216,11 @@ def discovered_server_details(server: DiscoveredServer) -> str:
         lines.append(
             "API mod metadata: "
             + server.mod_metadata_status.replace("_", " ").title()
+        )
+    if server.quality_flags:
+        lines.append(
+            "API quality warnings: "
+            + ", ".join(flag.replace("_", " ") for flag in server.quality_flags)
         )
     if server.mod_metadata_checked_at:
         lines.append(f"Mod metadata checked: {server.mod_metadata_checked_at}")

@@ -378,11 +378,16 @@ def discover_dayz_servers_wolfapi_v1(
     offset: int = 0,
     timeout: float = 15.0,
     url: str = "",
+    unflagged_only: bool = False,
 ) -> list[DiscoveredServer]:
     endpoint = url or os.environ.get("WOLFLAUNCHER_WOLFAPI_V1_SERVER_LIST_URL", "") or WOLFAPI_V1_SERVER_LIST_URL
     endpoint = _url_with_query(
         endpoint,
-        {"limit": max(1, min(int(limit), 500)), "offset": max(0, int(offset))},
+        {
+            "limit": max(1, min(int(limit), 500)),
+            "offset": max(0, int(offset)),
+            **({"quality": "unflagged"} if unflagged_only else {}),
+        },
     )
     return _fetch_wolfapi_servers(endpoint, limit=limit, timeout=timeout, require_v1=True)
 
@@ -395,6 +400,7 @@ def search_dayz_servers_wolfapi_v1(
     version: str = "",
     timeout: float = 15.0,
     url: str = "",
+    unflagged_only: bool = False,
 ) -> list[DiscoveredServer]:
     query = " ".join(query.split())
     if not query:
@@ -408,6 +414,8 @@ def search_dayz_servers_wolfapi_v1(
         params["map"] = map_name.strip()
     if version.strip():
         params["version"] = version.strip()
+    if unflagged_only:
+        params["quality"] = "unflagged"
     endpoint = url or os.environ.get("WOLFLAUNCHER_WOLFAPI_V1_SEARCH_URL", "") or WOLFAPI_V1_SEARCH_URL
     return _fetch_wolfapi_servers(
         _url_with_query(endpoint, params),
@@ -619,7 +627,16 @@ def discovered_server_from_wolfapi_row(row: dict, timestamp: str = "") -> Discov
         mod_metadata_expires_at=str(row.get("mod_metadata_expires_at") or ""),
         mod_metadata_error_code=str(row.get("mod_metadata_error_code") or ""),
         mod_manifest_hash=str(row.get("mod_manifest_hash") or ""),
+        quality_flags=_quality_flags(row.get("quality_flags")),
     )
+
+
+def _quality_flags(value) -> tuple[str, ...]:
+    if isinstance(value, str):
+        value = value.split(",")
+    if not isinstance(value, (list, tuple)):
+        return ()
+    return tuple(dict.fromkeys(str(item).strip() for item in value if str(item).strip()))
 
 
 def fetch_battlemetrics_page(url: str, timeout: float = 15.0) -> dict:

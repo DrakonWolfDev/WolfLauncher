@@ -12,7 +12,7 @@ import yaml
 from .models import DiscoveredServer
 
 
-SCHEMA_VERSION = 4
+SCHEMA_VERSION = 5
 DATA_DIR = Path.home() / ".local" / "share" / "wolflauncher"
 SERVER_CACHE_PATH = DATA_DIR / "server_cache.sqlite3"
 
@@ -99,6 +99,7 @@ def _initialize_schema_v1(connection: sqlite3.Connection) -> None:
             validation_error_code TEXT NOT NULL DEFAULT '',
             provider_last_checked TEXT NOT NULL DEFAULT '',
             provider_last_seen TEXT NOT NULL DEFAULT '',
+            quality_flags TEXT NOT NULL DEFAULT '[]',
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
@@ -187,6 +188,13 @@ def _migrate(connection: sqlite3.Connection, current_version: int, target_versio
             )
         connection.execute("PRAGMA user_version = 4")
         current_version = 4
+    if current_version == 4 and target_version >= 5:
+        connection.execute(
+            "ALTER TABLE discovered_servers "
+            "ADD COLUMN quality_flags TEXT NOT NULL DEFAULT '[]'"
+        )
+        connection.execute("PRAGMA user_version = 5")
+        current_version = 5
     if current_version != target_version:
         raise RuntimeError(
             f"Unsupported server cache migration from version {current_version} to {target_version}."
@@ -238,7 +246,7 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             status_source, stable_server_id,
             endpoint_aliases, freshness, freshness_expires_at, validation_status,
             validation_checked_at, validation_seen_at, validation_error_code,
-            provider_last_checked, provider_last_seen
+            provider_last_checked, provider_last_seen, quality_flags
         )
         VALUES (
             :cache_key, :source, :display_name, :server_name, :host, :game_port, :query_port,
@@ -249,7 +257,7 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             :status_source, :stable_server_id,
             :endpoint_aliases, :freshness, :freshness_expires_at, :validation_status,
             :validation_checked_at, :validation_seen_at, :validation_error_code,
-            :provider_last_checked, :provider_last_seen
+            :provider_last_checked, :provider_last_seen, :quality_flags
         )
         ON CONFLICT(cache_key) DO UPDATE SET
             source = excluded.source,
@@ -285,6 +293,7 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             validation_error_code = excluded.validation_error_code,
             provider_last_checked = excluded.provider_last_checked,
             provider_last_seen = excluded.provider_last_seen,
+            quality_flags = excluded.quality_flags,
             updated_at = CURRENT_TIMESTAMP
         """,
         _server_params(server),
@@ -458,6 +467,7 @@ def search_servers(
     source: str = "",
     style_terms: list[str] | None = None,
     modded: bool | None = None,
+    hide_quality_flagged: bool = False,
     sort_by: str = "name",
     descending: bool = False,
     limit: int = 200,
@@ -470,6 +480,7 @@ def search_servers(
         source=source,
         style_terms=style_terms,
         modded=modded,
+        hide_quality_flagged=hide_quality_flagged,
     )
     order_sql = SORT_COLUMNS.get(sort_by, SORT_COLUMNS["name"])
     direction = "DESC" if descending else "ASC"
@@ -496,6 +507,7 @@ def count_search_servers(
     source: str = "",
     style_terms: list[str] | None = None,
     modded: bool | None = None,
+    hide_quality_flagged: bool = False,
 ) -> int:
     where_sql, params = _search_where(
         text=text,
@@ -505,6 +517,7 @@ def count_search_servers(
         source=source,
         style_terms=style_terms,
         modded=modded,
+        hide_quality_flagged=hide_quality_flagged,
     )
     row = connection.execute(
         f"""
@@ -562,6 +575,7 @@ def _search_where(
     source: str = "",
     style_terms: list[str] | None = None,
     modded: bool | None = None,
+    hide_quality_flagged: bool = False,
 ) -> tuple[str, list[Any]]:
     clauses = []
     params: list[Any] = []
@@ -606,6 +620,8 @@ def _search_where(
     if modded is not None:
         clauses.append("modded = ?")
         params.append(1 if modded else 0)
+    if hide_quality_flagged:
+        clauses.append("quality_flags = '[]'")
 
     where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
     return where_sql, params
@@ -647,6 +663,7 @@ def _server_params(server: DiscoveredServer) -> dict[str, Any]:
         "validation_error_code": server.validation_error_code,
         "provider_last_checked": server.provider_last_checked,
         "provider_last_seen": server.provider_last_seen,
+        "quality_flags": json.dumps(list(server.quality_flags)),
     }
 
 
@@ -705,6 +722,7 @@ def _server_from_import_item(item: Any, index: int) -> DiscoveredServer:
         validation_error_code=str(item.get("validation_error_code") or ""),
         provider_last_checked=str(item.get("provider_last_checked") or ""),
         provider_last_seen=str(item.get("provider_last_seen") or ""),
+        quality_flags=_quality_flags(item.get("quality_flags")),
     )
 
 
@@ -747,6 +765,21 @@ def _optional_bool(value: Any) -> bool:
     raise ValueError(f"Expected boolean value, got {value!r}.")
 
 
+def _quality_flags(value: Any) -> tuple[str, ...]:
+    if isinstance(value, str):
+        stripped = value.strip()
+        if stripped.startswith("["):
+            try:
+                value = json.loads(stripped)
+            except json.JSONDecodeError:
+                value = stripped
+        if isinstance(value, str):
+            value = value.split(",")
+    if not isinstance(value, (list, tuple)):
+        return ()
+    return tuple(dict.fromkeys(str(item).strip() for item in value if str(item).strip()))
+
+
 def _row_to_server(row: sqlite3.Row) -> DiscoveredServer:
     return DiscoveredServer(
         name=str(row["display_name"]),
@@ -782,6 +815,7 @@ def _row_to_server(row: sqlite3.Row) -> DiscoveredServer:
         validation_error_code=str(row["validation_error_code"]),
         provider_last_checked=str(row["provider_last_checked"]),
         provider_last_seen=str(row["provider_last_seen"]),
+        quality_flags=_quality_flags(row["quality_flags"]),
     )
 
 
