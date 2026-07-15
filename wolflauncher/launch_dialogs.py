@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 
 from .diagnostics import format_launch_output_report, post_handoff_launch_option_guidance
 from .platform_detection import dayz_process_check
+from .theme import set_monospace, set_ui_role
 
 
 POST_HANDOFF_PROCESS_CHECK_INTERVAL_MS = 5000
@@ -71,14 +72,17 @@ class LaunchDialog(PostHandoffProcessCheckMixin, QDialog):
         layout.addWidget(QLabel("Launch command:"))
         command_box = QLineEdit(self.command_text)
         command_box.setReadOnly(True)
+        set_monospace(command_box)
         layout.addWidget(command_box)
 
         self.output = QTextEdit()
         self.output.setReadOnly(True)
+        set_monospace(self.output)
         layout.addWidget(self.output)
 
         button_row = QHBoxLayout()
         self.close_button = QPushButton("Close")
+        set_ui_role(self.close_button, "primary")
         self.close_button.clicked.connect(self.close)
         self.close_button.setEnabled(False)
         copy_button = QPushButton("Copy")
@@ -144,6 +148,7 @@ class NativeLaunchPreviewDialog(PostHandoffProcessCheckMixin, QDialog):
         layout = QVBoxLayout(self)
         self.output = QTextEdit()
         self.output.setReadOnly(True)
+        set_monospace(self.output)
         self.output.setPlainText(preview_text)
         layout.addWidget(self.output)
 
@@ -154,6 +159,7 @@ class NativeLaunchPreviewDialog(PostHandoffProcessCheckMixin, QDialog):
         copy_command.setEnabled(bool(command))
         copy_command.clicked.connect(self.copy_native_command)
         self.launch_button = QPushButton("Launch native")
+        set_ui_role(self.launch_button, "primary")
         self.launch_button.setEnabled(bool(command))
         self.launch_button.clicked.connect(self.launch_native)
         close = QPushButton("Close")

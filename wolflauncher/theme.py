@@ -1,6 +1,6 @@
 """Shared visual tokens and application-level styling for WolfLauncher."""
 
-from PySide6.QtGui import QFontDatabase
+from PySide6.QtGui import QColor, QFontDatabase, QPalette
 from PySide6.QtWidgets import QApplication, QAbstractItemView, QTableView, QWidget
 
 
@@ -36,13 +36,18 @@ QPushButton {{ background-color: {c['surface_alt']}; color: {c['text']}; border:
 QPushButton:hover {{ background-color: {c['border']}; border-color: {c['border_strong']}; }}
 QPushButton:pressed {{ background-color: {c['surface']}; }}
 QPushButton:focus {{ border: 1px solid {c['accent']}; }}
+QPushButton:default {{ border: 1px solid {c['accent']}; }}
 QPushButton:disabled {{ color: {c['text_muted']}; background-color: {c['surface']}; }}
 QPushButton[uiRole="primary"] {{ background-color: {c['accent']}; color: {c['background']}; border-color: {c['accent']}; font-weight: 600; }}
 QPushButton[uiRole="primary"]:hover {{ background-color: {c['accent_hover']}; }}
 QPushButton[uiRole="primary"]:pressed {{ background-color: {c['accent_pressed']}; }}
 QPushButton[uiRole="primary"]:disabled {{ background-color: {c['surface']}; color: {c['text_muted']}; border-color: {c['border']}; }}
+QPushButton[uiRole="accent"] {{ color: {c['accent']}; border-color: {c['border_strong']}; background-color: transparent; }}
+QPushButton[uiRole="accent"]:hover {{ color: {c['background']}; border-color: {c['accent']}; background-color: {c['accent']}; }}
 QPushButton[uiRole="disclosure"] {{ background-color: transparent; color: {c['text_muted']}; border-color: transparent; padding-left: 2px; }}
 QPushButton[uiRole="disclosure"]:hover {{ color: {c['text']}; border-color: {c['border']}; }}
+QPushButton[uiRole="destructive"] {{ color: {c['negative']}; border-color: {c['negative']}; background-color: transparent; }}
+QPushButton[uiRole="destructive"]:hover {{ color: {c['background']}; background-color: {c['negative']}; }}
 QTabWidget::pane {{ background-color: {c['background']}; border: 1px solid {c['border']}; top: -1px; }}
 QTabBar::tab {{ background-color: {c['surface']}; color: {c['text_muted']}; border: 1px solid {c['border']}; padding: 9px 18px; }}
 QTabBar::tab:hover {{ color: {c['text']}; background-color: {c['surface_alt']}; }}
@@ -50,7 +55,9 @@ QTabBar::tab:selected {{ color: {c['text']}; background-color: {c['surface_alt']
 QTableView {{ background-color: {c['surface']}; alternate-background-color: {c['surface_alt']}; color: {c['text']}; border: 1px solid {c['border']}; gridline-color: {c['border']}; selection-background-color: {c['accent']}; selection-color: {c['background']}; }}
 QTableView::item {{ padding: {s['table_vertical']}px {s['table_horizontal']}px; }}
 QTableView::item:focus {{ border: 1px solid {c['accent_hover']}; }}
+QTableView:focus {{ border-color: {c['accent']}; }}
 QHeaderView::section {{ background-color: {c['surface_alt']}; color: {c['text_muted']}; border: 0; border-right: 1px solid {c['border']}; border-bottom: 1px solid {c['border']}; padding: {s['table_vertical']}px {s['table_horizontal']}px; font-weight: 600; }}
+QTableCornerButton::section {{ background-color: {c['surface_alt']}; border: 0; border-right: 1px solid {c['border']}; border-bottom: 1px solid {c['border']}; }}
 QCheckBox {{ spacing: 7px; background-color: transparent; }}
 QCheckBox:focus {{ color: {c['accent_hover']}; }}
 QProgressBar {{ background-color: {c['surface_alt']}; color: {c['text']}; border: 1px solid {c['border']}; border-radius: {s['radius']}px; text-align: center; }}
@@ -58,17 +65,52 @@ QProgressBar::chunk {{ background-color: {c['positive']}; border-radius: 3px; }}
 QMenu {{ background-color: {c['surface_alt']}; color: {c['text']}; border: 1px solid {c['border_strong']}; }}
 QMenu::item {{ padding: 6px 24px 6px 10px; }}
 QMenu::item:selected {{ background-color: {c['accent']}; color: {c['background']}; }}
+QMenu::separator {{ height: 1px; background-color: {c['border']}; margin: 4px 8px; }}
+QStatusBar {{ background-color: {c['surface']}; color: {c['text_muted']}; border-top: 1px solid {c['border']}; }}
+QStatusBar::item {{ border: 0; }}
 QScrollBar:vertical, QScrollBar:horizontal {{ background: {c['surface']}; border: 0; margin: 0; }}
 QScrollBar::handle:vertical, QScrollBar::handle:horizontal {{ background: {c['border_strong']}; border-radius: 4px; min-height: 24px; min-width: 24px; }}
 QScrollBar::handle:hover {{ background: {c['text_muted']}; }}
 QScrollBar::add-line, QScrollBar::sub-line {{ width: 0; height: 0; }}
+QScrollBar::add-page, QScrollBar::sub-page {{ background: transparent; }}
 """
 
 
 APPLICATION_STYLESHEET = _build_stylesheet()
 
 
+def build_palette() -> QPalette:
+    """Build a complete palette for Qt-owned and partially styled controls."""
+    c = COLOURS
+    palette = QPalette()
+    roles = {
+        QPalette.Window: c["background"],
+        QPalette.WindowText: c["text"],
+        QPalette.Base: c["surface"],
+        QPalette.AlternateBase: c["surface_alt"],
+        QPalette.ToolTipBase: c["surface_alt"],
+        QPalette.ToolTipText: c["text"],
+        QPalette.Text: c["text"],
+        QPalette.Button: c["surface_alt"],
+        QPalette.ButtonText: c["text"],
+        QPalette.BrightText: c["accent_hover"],
+        QPalette.Highlight: c["accent"],
+        QPalette.HighlightedText: c["background"],
+        QPalette.Link: c["accent"],
+        QPalette.LinkVisited: c["accent_hover"],
+        QPalette.PlaceholderText: c["text_muted"],
+    }
+    for role, colour in roles.items():
+        palette.setColor(role, QColor(colour))
+    for role in (QPalette.WindowText, QPalette.Text, QPalette.ButtonText):
+        palette.setColor(QPalette.Disabled, role, QColor(c["text_muted"]))
+    palette.setColor(QPalette.Disabled, QPalette.Highlight, QColor(c["border_strong"]))
+    palette.setColor(QPalette.Disabled, QPalette.HighlightedText, QColor(c["text_muted"]))
+    return palette
+
+
 def apply_application_theme(app: QApplication) -> None:
+    app.setPalette(build_palette())
     app.setStyleSheet(APPLICATION_STYLESHEET)
 
 
@@ -78,7 +120,12 @@ def set_ui_role(widget: QWidget, role: str) -> None:
 
 def set_monospace(widget: QWidget) -> None:
     """Use Qt's cross-platform system fixed font for technical values."""
-    widget.setFont(QFontDatabase.systemFont(QFontDatabase.FixedFont))
+    widget.setFont(monospace_font())
+
+
+def monospace_font():
+    """Return Qt's portable system fixed font."""
+    return QFontDatabase.systemFont(QFontDatabase.FixedFont)
 
 
 def configure_data_table(table: QTableView) -> None:
@@ -86,6 +133,8 @@ def configure_data_table(table: QTableView) -> None:
     table.setAlternatingRowColors(True)
     table.setShowGrid(False)
     table.verticalHeader().hide()
+    table.verticalHeader().setMinimumSectionSize(28)
+    table.verticalHeader().setDefaultSectionSize(30)
     table.horizontalHeader().setHighlightSections(False)
     table.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
     table.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)

@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QTableWidget
 from .models import DiscoveredServer
 from .server_browser_presenter import browser_row
 from .table_items import SortableTableWidgetItem
+from .theme import monospace_font
 
 
 def populate_browser_table(table: QTableWidget, servers: Sequence[DiscoveredServer]) -> None:
@@ -22,6 +23,8 @@ def populate_browser_table(table: QTableWidget, servers: Sequence[DiscoveredServ
                 item.setToolTip(row_data.tooltips[column])
             if column == 5:
                 item.setForeground(QColor(row_data.status_colour))
+            if column in {2, 3, 4, 8, 9, 11}:
+                item.setFont(monospace_font())
             table.setItem(row, column, item)
 
     table.resizeColumnsToContents()

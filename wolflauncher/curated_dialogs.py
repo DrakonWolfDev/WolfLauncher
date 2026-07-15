@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
 
 from .config import normalize_server_endpoint
 from .models import Server
+from .theme import set_monospace, set_ui_role
 
 
 class PromoteServerDialog(QDialog):
@@ -27,6 +28,7 @@ class PromoteServerDialog(QDialog):
         layout.addLayout(form)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        set_ui_role(buttons.button(QDialogButtonBox.Ok), "primary")
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -49,6 +51,7 @@ class EditCuratedServerDialog(QDialog):
         self.name = QLineEdit(server.name)
         self.group = QLineEdit(server.group)
         self.host = QLineEdit(server.host)
+        set_monospace(self.host)
         self.game_port = QSpinBox()
         self.game_port.setRange(1, 65535)
         self.game_port.setValue(server.game_port)
@@ -66,6 +69,7 @@ class EditCuratedServerDialog(QDialog):
         layout.addLayout(form)
 
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        set_ui_role(buttons.button(QDialogButtonBox.Ok), "primary")
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)

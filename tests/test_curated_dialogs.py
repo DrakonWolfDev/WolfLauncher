@@ -3,7 +3,8 @@ import unittest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QFontDatabase
+from PySide6.QtWidgets import QApplication, QDialogButtonBox
 
 from wolflauncher.curated_dialogs import EditCuratedServerDialog, PromoteServerDialog
 from wolflauncher.models import Server
@@ -21,6 +22,8 @@ class CuratedDialogTests(unittest.TestCase):
 
         self.assertEqual(dialog.curated_name(), "Curated name")
         self.assertEqual(dialog.curated_group(), "Discovered")
+        buttons = dialog.findChild(QDialogButtonBox)
+        self.assertEqual(buttons.button(QDialogButtonBox.Ok).property("uiRole"), "primary")
 
     def test_edit_dialog_preserves_server_fields(self):
         original = Server("Name", "Group", "example.test", 2302, 2303, True)
@@ -28,6 +31,11 @@ class CuratedDialogTests(unittest.TestCase):
         result = EditCuratedServerDialog(None, original).curated_server()
 
         self.assertEqual(result, original)
+        dialog = EditCuratedServerDialog(None, original)
+        self.assertEqual(
+            dialog.host.font().family(),
+            QFontDatabase.systemFont(QFontDatabase.FixedFont).family(),
+        )
 
     def test_edit_dialog_normalizes_host_port_and_default_group(self):
         original = Server("Name", "Group", "example.test", 2302, 2303)

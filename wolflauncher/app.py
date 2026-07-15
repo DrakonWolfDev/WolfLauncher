@@ -114,6 +114,7 @@ from .theme import (
     STATUS_COLOURS,
     apply_application_theme,
     configure_data_table,
+    monospace_font,
     set_monospace,
     set_ui_role,
 )
@@ -437,6 +438,7 @@ class MainWindow(QMainWindow):
         promote = QPushButton("Promote to curated")
         promote.clicked.connect(self.promote_selected_discovered_server)
         use_server = QPushButton("Inspect mods")
+        set_ui_role(use_server, "accent")
         use_server.clicked.connect(self.inspect_selected_discovered_server)
         launch_discovered = QPushButton("Launch server")
         set_ui_role(launch_discovered, "primary")
@@ -554,7 +556,6 @@ class MainWindow(QMainWindow):
         self.mods_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.mods_table.setSortingEnabled(True)
         configure_data_table(self.mods_table)
-        self.mods_table.verticalHeader().setDefaultSectionSize(30)
         self.mods_table.horizontalHeader().setStretchLastSection(True)
         self.mods_table.cellDoubleClicked.connect(self.handle_mod_double_clicked)
         self.mods_table.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -688,6 +689,7 @@ class MainWindow(QMainWindow):
 
         row = QHBoxLayout()
         health = QPushButton("Check health")
+        set_ui_role(health, "accent")
         health.clicked.connect(self.update_settings_health)
         save = QPushButton("Save settings")
         set_ui_role(save, "primary")
@@ -1494,6 +1496,8 @@ class MainWindow(QMainWindow):
 
     def _set_item(self, row: int, column: int, text: str, colour: str | None = None):
         item = QTableWidgetItem(text)
+        if column in {4, 5, 6, 7, 12, 15}:
+            item.setFont(monospace_font())
         if colour:
             item.setForeground(QColor(colour))
         self.table.setItem(row, column, item)
@@ -1507,6 +1511,8 @@ class MainWindow(QMainWindow):
     ):
         item = QTableWidgetItem(value)
         item.setData(Qt.UserRole, row)
+        if column in {4, 5, 6, 7, 12, 15}:
+            item.setFont(monospace_font())
         if cached and column in {3, 5, 8, 9, 10, 11, 12, 13, 14, 15}:
             item.setToolTip("Last known status; refresh is checking for current data.")
         self.table.setItem(row, column, item)
@@ -1931,6 +1937,8 @@ class MainWindow(QMainWindow):
             for column, value in enumerate(row_data.values):
                 item = QTableWidgetItem(value)
                 item.setData(Qt.UserRole, row_data.workshop_id)
+                if column in {2, 3, 4}:
+                    item.setFont(monospace_font())
                 if column in {0, 2, 3}:
                     item.setTextAlignment(Qt.AlignCenter)
                 if column == 0:
@@ -2505,6 +2513,7 @@ class MainWindow(QMainWindow):
             launch_button = box.addButton(
                 "Launch server", QMessageBox.ButtonRole.AcceptRole
             )
+            set_ui_role(launch_button, "primary")
             close_button = box.addButton("Close", QMessageBox.ButtonRole.RejectRole)
             box.setDefaultButton(launch_button)
             box.exec()
@@ -2969,6 +2978,7 @@ class MainWindow(QMainWindow):
                         "Install missing mods", QMessageBox.ButtonRole.ActionRole
                     )
                 launch_button = box.addButton("Launch anyway", QMessageBox.ButtonRole.DestructiveRole)
+                set_ui_role(launch_button, "destructive")
                 cancel_button = box.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
                 box.setDefaultButton(cancel_button)
                 box.exec()
