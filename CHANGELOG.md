@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Aligned ping presentation with DayZ's documented thresholds: 200–249 ms is
+  amber warning latency and 250 ms or higher is red/critical in discovered and
+  curated server views.
+- Recorded the three-character Server Browser search pause for joint
+  Launcher/API profiling without prematurely attributing it to the API.
 - Unified the Browser's visible Server Name: fresh locally validated live names take precedence, provider/cache names remain the fallback, and the separate internal Live Name column stays hidden even in the detailed view while provenance remains available in tooltips and copied details.
 - Normalized displayed map names with initial capitalization and Enoch shown as Livonia, promoted Flags and Required Mods into the default Browser view, renamed flags to explicit Modded/Vanilla labels, and display zero or unknown mod counts as an en dash while retaining explanatory tooltips.
 - Fixed wide-screen Server Browser proportions by bounding the Name column, letting Host absorb surplus table width and keeping common filters contiguous; added a high-contrast themed checkbox with a visible checked and unchecked state.

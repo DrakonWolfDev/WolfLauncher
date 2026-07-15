@@ -158,6 +158,11 @@ Foundation implemented locally on 2026-07-13:
 - Server Browser renders local SQLite matches immediately, then debounces v1
   remote search for 450 ms, merges stable-ID results without deleting unrelated
   rows and ignores stale completions for the visible query;
+- Observed UI issue for joint Launcher/API investigation: entering the third
+  search character can briefly freeze the Server Browser before subsequent
+  input becomes responsive. This coincides with the minimum-length remote
+  search transition, but whether the pause is in the client query/merge path,
+  the HTTP request, or the API remains unproven and must be profiled.
 - exact `host:port` searches use `/resolve` with the port checked as both game
   and query port, deduplicate by stable ID and make historical endpoint aliases
   searchable locally;

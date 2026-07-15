@@ -1,6 +1,10 @@
 """Shared, presentation-only labels for server data."""
 
 
+PING_WARNING_MS = 200
+PING_CRITICAL_MS = 250
+
+
 def display_map_name(map_name: str) -> str:
     value = map_name.strip()
     if not value:
@@ -26,3 +30,14 @@ def display_server_flags(
 
 def display_required_mod_count(count: int | None) -> str:
     return str(count) if count is not None and count > 0 else "–"
+
+
+def ping_severity(ping_ms: int | None) -> str:
+    """Classify latency using DayZ's documented warning thresholds."""
+    if ping_ms is None:
+        return "unknown"
+    if ping_ms >= PING_CRITICAL_MS:
+        return "critical"
+    if ping_ms >= PING_WARNING_MS:
+        return "warning"
+    return "normal"

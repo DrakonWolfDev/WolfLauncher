@@ -93,7 +93,7 @@ from .mods import (
 from .mod_presenter import combined_download_estimate, mod_download_size, mod_row, mod_summary_text
 from . import server_cache
 from .server_discovery import parse_master_address
-from .server_display import display_map_name, display_server_flags
+from .server_display import display_map_name, display_server_flags, ping_severity
 from .server_enrichment import (
     parse_connect_port,
 )
@@ -1634,9 +1634,10 @@ class MainWindow(QMainWindow):
                 ping = int(text[:-2])
             except ValueError:
                 return COLOURS["text_muted"]
-            if ping <= 50:
-                return STATUS_COLOURS["positive"]
-            if ping >= 150:
+            severity = ping_severity(ping)
+            if severity == "warning":
+                return STATUS_COLOURS["warning"]
+            if severity == "critical":
                 return STATUS_COLOURS["negative"]
             return COLOURS["text_muted"]
         if column == 15 and text:

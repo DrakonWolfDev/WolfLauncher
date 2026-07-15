@@ -87,6 +87,28 @@ class ServerBrowserTableTests(unittest.TestCase):
             STATUS_COLOURS["negative"],
         )
 
+    def test_ping_colours_follow_dayz_warning_thresholds(self):
+        table = QTableWidget(0, 15)
+        servers = [
+            DiscoveredServer(
+                name="Warning", host="one", game_port=2302, query_port=27016, ping_ms=200
+            ),
+            DiscoveredServer(
+                name="Critical", host="two", game_port=2302, query_port=27016, ping_ms=250
+            ),
+        ]
+
+        populate_browser_table(table, servers)
+
+        self.assertEqual(
+            table.item(0, 8).foreground().color().name(),
+            STATUS_COLOURS["warning"],
+        )
+        self.assertEqual(
+            table.item(1, 8).foreground().color().name(),
+            STATUS_COLOURS["negative"],
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

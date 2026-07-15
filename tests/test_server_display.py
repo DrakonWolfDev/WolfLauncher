@@ -4,6 +4,7 @@ from wolflauncher.server_display import (
     display_map_name,
     display_required_mod_count,
     display_server_flags,
+    ping_severity,
 )
 
 
@@ -23,6 +24,13 @@ class ServerDisplayTests(unittest.TestCase):
         self.assertEqual(display_required_mod_count(None), "–")
         self.assertEqual(display_required_mod_count(0), "–")
         self.assertEqual(display_required_mod_count(17), "17")
+
+    def test_ping_severity_matches_dayz_warning_thresholds(self):
+        self.assertEqual(ping_severity(None), "unknown")
+        self.assertEqual(ping_severity(199), "normal")
+        self.assertEqual(ping_severity(200), "warning")
+        self.assertEqual(ping_severity(249), "warning")
+        self.assertEqual(ping_severity(250), "critical")
 
 
 if __name__ == "__main__":

@@ -40,6 +40,8 @@ QLabel[uiRole="statusPositive"] {{ color: {c['positive']}; background-color: #1e
 QLabel[uiRole="statusNegative"] {{ color: {c['negative']}; background-color: #3a1e1e; border-radius: 9px; padding: 3px 9px; }}
 QLabel[uiRole="cardTitle"] {{ color: {c['text']}; font-weight: 600; }}
 QLabel[uiRole="cardMetadata"], QLabel[uiRole="cardStats"] {{ color: {c['text_muted']}; }}
+QLabel[uiRole="pingWarning"] {{ color: {c['warning']}; }}
+QLabel[uiRole="pingCritical"] {{ color: {c['negative']}; }}
 QToolTip {{ background-color: {c['surface_alt']}; color: {c['text']}; border: 1px solid {c['border_strong']}; padding: {s['compact']}px; }}
 QLineEdit, QComboBox, QSpinBox, QTextEdit {{ background-color: {c['surface_alt']}; color: {c['text']}; border: 1px solid {c['border']}; border-radius: {s['radius']}px; padding: {s['control_vertical']}px {s['control_horizontal']}px; }}
 QLineEdit:hover, QComboBox:hover, QSpinBox:hover, QTextEdit:hover {{ border-color: {c['border_strong']}; }}

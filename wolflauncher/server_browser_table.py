@@ -6,8 +6,9 @@ from PySide6.QtWidgets import QTableWidget
 
 from .models import DiscoveredServer
 from .server_browser_presenter import browser_row
+from .server_display import ping_severity
 from .table_items import SortableTableWidgetItem
-from .theme import monospace_font
+from .theme import STATUS_COLOURS, monospace_font
 
 
 def browser_name_column_width(viewport_width: int) -> int:
@@ -28,6 +29,12 @@ def populate_browser_table(table: QTableWidget, servers: Sequence[DiscoveredServ
                 item.setToolTip(row_data.tooltips[column])
             if column == 5:
                 item.setForeground(QColor(row_data.status_colour))
+            if column == 8:
+                severity = ping_severity(server.ping_ms)
+                if severity == "warning":
+                    item.setForeground(QColor(STATUS_COLOURS["warning"]))
+                elif severity == "critical":
+                    item.setForeground(QColor(STATUS_COLOURS["negative"]))
             if column in {7, 8}:
                 item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
             if column in {2, 3, 4, 8, 9, 11}:

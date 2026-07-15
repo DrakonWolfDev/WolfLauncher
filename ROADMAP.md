@@ -73,6 +73,11 @@ API freshness/validation is now exposed through the existing Status tooltip
 and copied details. Expired cached labels are marked refresh-pending, while
 ping and final reachability remain local truths.
 
+Investigate and profile the observed Server Browser pause when the third search
+character activates remote search. Separate client-side SQLite/query/merge and
+render timing from HTTP/API latency before assigning the cause or changing the
+debounce/search contract.
+
 Startup audit complete: there is no fixed discovered-row UDP polling to retire.
 Curated YAML status refresh and explicit selected/launch-time checks remain by
 design; discovered-row enrichment stays user-triggered.

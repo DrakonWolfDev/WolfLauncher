@@ -3,6 +3,7 @@
 from PySide6.QtCore import QPoint, Qt, Signal
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
+from .server_display import ping_severity
 from .theme import set_monospace, set_ui_role
 
 
@@ -45,7 +46,7 @@ class CuratedServerCard(QFrame):
         layout.addLayout(text, 1)
 
         self.stats_label = QLabel(self._stats(values))
-        set_ui_role(self.stats_label, "cardStats")
+        set_ui_role(self.stats_label, self._ping_role(values[12]))
         self.stats_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         set_monospace(self.stats_label)
         layout.addWidget(self.stats_label)
@@ -76,6 +77,19 @@ class CuratedServerCard(QFrame):
     @staticmethod
     def _stats(values: list[str]) -> str:
         return "\n".join(part for part in (values[10], values[12]) if part)
+
+    @staticmethod
+    def _ping_role(ping_text: str) -> str:
+        try:
+            ping_ms = int(ping_text.removesuffix("ms")) if ping_text else None
+        except ValueError:
+            ping_ms = None
+        severity = ping_severity(ping_ms)
+        if severity == "warning":
+            return "pingWarning"
+        if severity == "critical":
+            return "pingCritical"
+        return "cardStats"
 
     def set_selected(self, selected: bool) -> None:
         self.setProperty("selected", selected)
