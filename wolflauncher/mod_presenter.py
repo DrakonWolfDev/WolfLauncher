@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from .mods import ModCheckResult, RequiredMod
+from .theme import STATUS_COLOURS
 
 
 @dataclass(frozen=True)
@@ -101,22 +102,22 @@ def mod_row(mod: RequiredMod) -> ModRow:
         )
         status = "↻ Downloading"
         status += percent
-        colour = "#f6c453"
+        colour = STATUS_COLOURS["warning"]
     elif mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_DOWNLOAD_PENDING:
         status = "… Download pending"
-        colour = "#f6c453"
+        colour = STATUS_COLOURS["warning"]
     elif mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_NEEDS_UPDATE:
         status = "! Update required"
-        colour = "#f6c453"
+        colour = STATUS_COLOURS["warning"]
     elif mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_INSTALLED and not mod.installed:
         status = "… Verifying install"
-        colour = "#f6c453"
+        colour = STATUS_COLOURS["warning"]
     elif not mod.installed:
         status = "✗ Missing"
-        colour = "#ff6b6b"
+        colour = STATUS_COLOURS["negative"]
     else:
         status = "✓ Installed"
-        colour = "#6ee16e"
+        colour = STATUS_COLOURS["positive"]
     return ModRow(
         values=[
             status,

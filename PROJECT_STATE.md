@@ -81,7 +81,7 @@ check for import/startup changes.
 
 ## v0.9 GUI consistency handoff
 
-The approved direction is structural simplification first; theme, typography, fonts, colours and branding are a later visual-polish pass.
+The first visual-polish foundation is implemented with shared theme tokens and application-level QSS for the existing native widgets. `VISUAL_DESIGN.md` records the agreed Linux-first, Windows-ready direction: a restrained native Qt charcoal/amber visual system, accessible status cues and familiar cross-platform interaction rather than a literal HTML reproduction. Real-desktop contrast, scaling and density review remains required before deeper typography, icon or branding work.
 
 - Use this vertical hierarchy where a tab has comparable content: information/summary, common controls, results, then a bottom action row.
 - Keep the frequent path visible. For Server Browser this means search/common filters and Promote/Reset. For Mods this means recheck, open missing pages and filter.

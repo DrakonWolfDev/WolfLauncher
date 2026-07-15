@@ -8,6 +8,7 @@ from wolflauncher.mod_presenter import (
     mod_row,
     mod_summary_text,
 )
+from wolflauncher.theme import STATUS_COLOURS
 from wolflauncher.models import Server
 from wolflauncher.mods import ModCheckResult, RequiredMod
 from wolflauncher.workshop_subscription import (
@@ -135,9 +136,9 @@ class ModPresenterTests(unittest.TestCase):
             "https://example.test/111",
         ])
         self.assertEqual(installed.workshop_id, "111")
-        self.assertEqual(installed.status_colour, "#6ee16e")
+        self.assertEqual(installed.status_colour, STATUS_COLOURS["positive"])
         self.assertEqual(missing.values[0:4], ["✗ Missing", "Unknown", "222", "Unavailable"])
-        self.assertEqual(missing.status_colour, "#ff6b6b")
+        self.assertEqual(missing.status_colour, STATUS_COLOURS["negative"])
 
     def test_mod_row_uses_installed_name_as_fallback(self):
         row = mod_row(RequiredMod("111", installed=True, installed_name="Local Name"))

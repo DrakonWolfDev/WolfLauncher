@@ -157,6 +157,7 @@ Priority 4 — discovery truth and regression coverage:
 
 Visual-polish review note:
 
+- The shared QSS/theme-token foundation from `VISUAL_DESIGN.md` is complete and preserves the approved hierarchy. Validate it on a real Linux desktop before considering card rows or grouped Settings health sections. Retain standard Qt interaction, labelled actions, keyboard focus and colour-plus-text/icon status cues so the design translates cleanly to Windows later.
 - Recheck the Mods table after fonts, theme, colours, icons and branding are introduced. Review column padding, row height, compact-column centring, name/URL balance and overall information density in the final visual system.
 
 Discovery-freshness boundary:

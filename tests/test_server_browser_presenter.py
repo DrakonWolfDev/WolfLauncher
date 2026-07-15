@@ -9,6 +9,7 @@ from wolflauncher.server_browser_presenter import (
     discovered_server_details,
     players_text,
 )
+from wolflauncher.theme import STATUS_COLOURS
 from wolflauncher.models import DiscoveredServer
 
 
@@ -65,7 +66,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertEqual(row.sort_values[7], 12)
         self.assertEqual(row.tooltips[0], "Live name: Live Name")
         self.assertIn(12, row.tooltips)
-        self.assertEqual(row.status_colour, "#6ee16e")
+        self.assertEqual(row.status_colour, STATUS_COLOURS["positive"])
 
     def test_browser_row_hides_duplicate_live_name(self):
         server = DiscoveredServer(
@@ -83,7 +84,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertIn(1, row.tooltips)
         self.assertIn("Enrich visible", row.tooltips[8])
         self.assertIn("Inspect mods", row.tooltips[11])
-        self.assertEqual(row.status_colour, "#ff6b6b")
+        self.assertEqual(row.status_colour, STATUS_COLOURS["negative"])
 
     def test_provider_status_and_required_mod_count_are_explicit(self):
         server = DiscoveredServer(
@@ -101,7 +102,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
 
         self.assertEqual(row.values[5], "PROVIDER ONLINE")
         self.assertEqual(row.values[11], "23")
-        self.assertEqual(row.status_colour, "#f6c453")
+        self.assertEqual(row.status_colour, STATUS_COLOURS["warning"])
         self.assertIn("not yet validated", row.tooltips[5])
 
     def test_quality_warning_is_advisory_and_visible_when_not_hidden(self):

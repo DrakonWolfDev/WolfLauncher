@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from .models import DiscoveredServer
+from .theme import STATUS_COLOURS
 
 
 @dataclass(frozen=True)
@@ -185,7 +186,9 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
             server.source,
         ],
         tooltips=tooltips,
-        status_colour=("#6ee16e" if server.online else "#ff6b6b") if locally_checked else "#f6c453",
+        status_colour=(
+            STATUS_COLOURS["positive"] if server.online else STATUS_COLOURS["negative"]
+        ) if locally_checked else STATUS_COLOURS["warning"],
     )
 
 

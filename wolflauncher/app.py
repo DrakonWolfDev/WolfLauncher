@@ -110,6 +110,13 @@ from .settings import (
 from .settings_health import build_settings_health_snapshot
 from .status import ServerStatus, check_server
 from .ui_sections import set_disclosure_state
+from .theme import (
+    STATUS_COLOURS,
+    apply_application_theme,
+    configure_data_table,
+    set_monospace,
+    set_ui_role,
+)
 from .workers import (
     BattleMetricsDiscoveryWorker,
     ModWorker,
@@ -180,6 +187,7 @@ class MainWindow(QMainWindow):
         self.launcher_path = QLineEdit(
             str(self.settings.get("launcher_path") or find_default_launcher_path())
         )
+        set_monospace(self.launcher_path)
         self.player_name = QLineEdit(str(self.settings.get("player_name") or DEFAULT_PLAYER_NAME))
         self.launch_engine = QComboBox()
         self.launch_engine.addItems(["Native launcher", "External launcher"])
@@ -202,6 +210,7 @@ class MainWindow(QMainWindow):
         self.refresh_seconds.valueChanged.connect(self.handle_refresh_seconds_changed)
 
         self.last_refresh_label = QLabel("Last updated: never")
+        set_ui_role(self.last_refresh_label, "metadata")
 
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.refresh_statuses)
@@ -262,6 +271,7 @@ class MainWindow(QMainWindow):
         ])
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
+        configure_data_table(self.table)
         self.table.cellClicked.connect(self.handle_cell_clicked)
         self.table.cellDoubleClicked.connect(self.handle_cell_double_clicked)
         self.table.itemSelectionChanged.connect(self.handle_server_selection_changed)
@@ -289,6 +299,7 @@ class MainWindow(QMainWindow):
         self.refresh_status_button = QPushButton("Refresh status")
         self.refresh_status_button.clicked.connect(self.refresh_statuses)
         self.launch_button = QPushButton("Launch selected server")
+        set_ui_role(self.launch_button, "primary")
         self.launch_button.clicked.connect(self.launch_selected)
         buttons.addStretch(1)
         buttons.addWidget(add_server)
@@ -302,6 +313,7 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(widget)
 
         self.browser_summary = QLabel("Cached discovered servers: loading")
+        set_ui_role(self.browser_summary, "summary")
         layout.addWidget(self.browser_summary)
 
         filters = QHBoxLayout()
@@ -411,6 +423,7 @@ class MainWindow(QMainWindow):
         self.browser_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.browser_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.browser_table.setSortingEnabled(True)
+        configure_data_table(self.browser_table)
         self.browser_table.cellDoubleClicked.connect(self.handle_browser_double_clicked)
         self.browser_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.browser_table.customContextMenuRequested.connect(self.show_browser_context_menu)
@@ -426,6 +439,7 @@ class MainWindow(QMainWindow):
         use_server = QPushButton("Inspect mods")
         use_server.clicked.connect(self.inspect_selected_discovered_server)
         launch_discovered = QPushButton("Launch server")
+        set_ui_role(launch_discovered, "primary")
         launch_discovered.clicked.connect(self.launch_selected_discovered_server)
         clear_filters = QPushButton("Reset filters")
         clear_filters.clicked.connect(self.reset_browser_filters)
@@ -468,10 +482,12 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(widget)
 
         self.mod_summary = QLabel("Select a server to check its required mods.")
+        set_ui_role(self.mod_summary, "summary")
         layout.addWidget(self.mod_summary)
 
         buttons = QHBoxLayout()
         check = QPushButton("Recheck selected server mods")
+        set_ui_role(check, "primary")
         check.clicked.connect(lambda _checked=False: self.check_selected_server_mods(force=True))
         native_preview = QPushButton("Native launch preview")
         native_preview.clicked.connect(self.preview_native_launch)
@@ -537,10 +553,7 @@ class MainWindow(QMainWindow):
         self.mods_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.mods_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.mods_table.setSortingEnabled(True)
-        self.mods_table.setStyleSheet(
-            "QTableWidget::item { padding: 4px 8px; } "
-            "QHeaderView::section { padding: 4px 8px; }"
-        )
+        configure_data_table(self.mods_table)
         self.mods_table.verticalHeader().setDefaultSectionSize(30)
         self.mods_table.horizontalHeader().setStretchLastSection(True)
         self.mods_table.cellDoubleClicked.connect(self.handle_mod_double_clicked)
@@ -556,6 +569,7 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout(widget)
 
         self.system_summary = QLabel("Checking Steam and DayZ installation...")
+        set_ui_role(self.system_summary, "summary")
         layout.addWidget(self.system_summary)
 
         launcher_settings = QFormLayout()
@@ -585,6 +599,7 @@ class MainWindow(QMainWindow):
         self.health_table.setHorizontalHeaderLabels(["Check", "Status", "Details"])
         self.health_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.health_table.setEditTriggers(QTableWidget.NoEditTriggers)
+        configure_data_table(self.health_table)
         self.health_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.health_table.customContextMenuRequested.connect(self.show_health_context_menu)
         layout.addWidget(self.health_table)
@@ -675,6 +690,7 @@ class MainWindow(QMainWindow):
         health = QPushButton("Check health")
         health.clicked.connect(self.update_settings_health)
         save = QPushButton("Save settings")
+        set_ui_role(save, "primary")
         save.clicked.connect(self.save_user_settings)
         row.addWidget(self.settings_advanced_toggle)
         row.addStretch(1)
@@ -1705,7 +1721,7 @@ class MainWindow(QMainWindow):
             flags_text = ", ".join(flags) if flags else "Vanilla/unknown"
             ping_text = f"{status.ping}ms" if status.ping else ""
             self._set_item(row, 3, status.server_name or "Unknown")
-            self._set_item(row, 8, "ONLINE", "#6ee16e")
+            self._set_item(row, 8, "ONLINE", STATUS_COLOURS["positive"])
             self._set_item(row, 9, status.map_name)
             self._set_item(row, 10, status.players)
             self._set_item(row, 11, status.time)
@@ -1715,7 +1731,7 @@ class MainWindow(QMainWindow):
             self._set_item(row, 15, status.connect)
         else:
             self._set_item(row, 3, "")
-            self._set_item(row, 8, "OFFLINE", "#ff6b6b")
+            self._set_item(row, 8, "OFFLINE", STATUS_COLOURS["negative"])
             self._set_item(row, 9, status.error)
             for column in range(10, 16):
                 self._set_item(row, column, "")
@@ -2467,10 +2483,6 @@ class MainWindow(QMainWindow):
                 if not isinstance(progress, QProgressBar):
                     progress = QProgressBar()
                     progress.setTextVisible(True)
-                    progress.setStyleSheet(
-                        "QProgressBar { text-align: center; padding: 1px; } "
-                        "QProgressBar::chunk { background-color: #3da35a; }"
-                    )
                     self.mods_table.setCellWidget(row, 0, progress)
                 progress.setValue(percent)
                 progress.setFormat(f"Downloading {percent}%")
@@ -2701,10 +2713,10 @@ class MainWindow(QMainWindow):
 
     def _health_colour(self, status: str) -> str:
         if status == "OK":
-            return "#6ee16e"
+            return STATUS_COLOURS["positive"]
         if status == "WARN":
-            return "#f6c453"
-        return "#ff6b6b"
+            return STATUS_COLOURS["warning"]
+        return STATUS_COLOURS["negative"]
 
     def _set_health_item(self, row: int, column: int, text: str, colour: str | None = None):
         item = QTableWidgetItem(text)
@@ -2994,6 +3006,7 @@ class MainWindow(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
+    apply_application_theme(app)
     window = MainWindow()
     window.show()
     try:

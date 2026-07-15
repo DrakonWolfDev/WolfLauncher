@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added the first native UI theme pass: central charcoal/amber colour and spacing tokens, application-wide QSS for standard controls, tables, tabs, menus, progress and scrollbars, accessible focus treatment, semantic primary/summary/disclosure roles, portable technical text and quieter data-dense tables.
+- Added a cross-platform visual-design brief for the later native Qt polish pass, defining the restrained charcoal/amber direction, accessibility and cognitive-consistency principles, Linux/Windows scaling requirements and a behaviour-preserving implementation sequence.
 - Migrated the discovered cache to schema v4 and consume WolfAPI v1
   required-mod status, timestamps, error and manifest hash alongside the
   nullable count. Browser tooltips distinguish ready, stale, failed and unknown

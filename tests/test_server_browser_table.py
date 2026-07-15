@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QApplication, QTableWidget
 
 from wolflauncher.models import DiscoveredServer
 from wolflauncher.server_browser_table import populate_browser_table
+from wolflauncher.theme import STATUS_COLOURS
 from wolflauncher.table_items import SortableTableWidgetItem
 
 
@@ -40,7 +41,10 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertEqual(table.item(0, 7).sort_value, 12)
         self.assertEqual(table.item(0, 0).data(Qt.UserRole), server.cache_key)
         self.assertEqual(table.item(0, 0).toolTip(), "Live name: Live Name")
-        self.assertEqual(table.item(0, 5).foreground().color().name(), "#6ee16e")
+        self.assertEqual(
+            table.item(0, 5).foreground().color().name(),
+            STATUS_COLOURS["positive"],
+        )
         self.assertTrue(table.isSortingEnabled())
 
     def test_population_replaces_existing_rows_and_keeps_missing_ping_guidance(self):
@@ -57,7 +61,10 @@ class ServerBrowserTableTests(unittest.TestCase):
 
         self.assertEqual(table.rowCount(), 1)
         self.assertIn("Enrich visible", table.item(0, 8).toolTip())
-        self.assertEqual(table.item(0, 5).foreground().color().name(), "#ff6b6b")
+        self.assertEqual(
+            table.item(0, 5).foreground().color().name(),
+            STATUS_COLOURS["negative"],
+        )
 
 
 if __name__ == "__main__":
