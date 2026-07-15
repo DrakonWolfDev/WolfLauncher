@@ -254,7 +254,7 @@ def discovered_server_details(server: DiscoveredServer) -> str:
 def browser_summary_text(summary: dict[str, int], shown: int, match_count: int, limit: int) -> str:
     total = summary["total"]
     if total == 0:
-        return "Cached discovered servers: empty"
+        return "No discovered servers cached"
 
     parts = [
         f"Showing {shown} of {match_count} matching",
@@ -267,4 +267,4 @@ def browser_summary_text(summary: dict[str, int], shown: int, match_count: int, 
         parts[0] = f"Showing first {shown} of {match_count} matching"
     elif shown == 0:
         parts[0] = f"No matches from {total} cached"
-    return "Cached discovered servers: " + " | ".join(parts)
+    return " · ".join(parts)

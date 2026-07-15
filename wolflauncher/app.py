@@ -111,9 +111,11 @@ from .settings_health import build_settings_health_snapshot
 from .status import ServerStatus, check_server
 from .ui_sections import set_disclosure_state
 from .theme import (
+    COLOURS,
     STATUS_COLOURS,
     apply_application_theme,
     configure_data_table,
+    configure_priority_columns,
     monospace_font,
     set_monospace,
     set_ui_role,
@@ -238,7 +240,16 @@ class MainWindow(QMainWindow):
         widget = QWidget()
         layout = QVBoxLayout(widget)
 
-        layout.addWidget(self.last_refresh_label)
+        status_summary = QHBoxLayout()
+        status_summary.addWidget(self.last_refresh_label)
+        status_summary.addStretch(1)
+        self.curated_online_summary = QLabel("0 online")
+        set_ui_role(self.curated_online_summary, "statusPositive")
+        self.curated_offline_summary = QLabel("0 offline")
+        set_ui_role(self.curated_offline_summary, "statusNegative")
+        status_summary.addWidget(self.curated_online_summary)
+        status_summary.addWidget(self.curated_offline_summary)
+        layout.addLayout(status_summary)
 
         common_settings = QFormLayout()
         player_name_row = QHBoxLayout()
@@ -270,9 +281,18 @@ class MainWindow(QMainWindow):
             "Flags",
             "Connect",
         ])
+        for column in (10, 12):
+            self.table.horizontalHeaderItem(column).setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         configure_data_table(self.table)
+        configure_priority_columns(
+            self.table,
+            (0, 3, 8, 9, 10, 12, 15),
+            show_details=False,
+            stretch_columns=(3,),
+        )
+        self.table.verticalHeader().setDefaultSectionSize(34)
         self.table.cellClicked.connect(self.handle_cell_clicked)
         self.table.cellDoubleClicked.connect(self.handle_cell_double_clicked)
         self.table.itemSelectionChanged.connect(self.handle_server_selection_changed)
@@ -295,6 +315,22 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.table)
 
         buttons = QHBoxLayout()
+        self.servers_advanced_toggle = QPushButton()
+        self.servers_advanced_toggle.setCheckable(True)
+        self.servers_advanced_panel = QWidget()
+        servers_advanced_layout = QHBoxLayout(self.servers_advanced_panel)
+        servers_advanced_layout.setContentsMargins(0, 0, 0, 0)
+        self.servers_detailed_columns = QCheckBox("Show detailed columns")
+        self.servers_detailed_columns.toggled.connect(
+            lambda checked: configure_priority_columns(
+                self.table,
+                (0, 3, 8, 9, 10, 12, 15),
+                show_details=checked,
+                stretch_columns=(3,),
+            )
+        )
+        servers_advanced_layout.addWidget(self.servers_detailed_columns)
+        servers_advanced_layout.addStretch(1)
         add_server = QPushButton("Add curated server")
         add_server.clicked.connect(self.add_curated_server)
         self.refresh_status_button = QPushButton("Refresh status")
@@ -302,42 +338,45 @@ class MainWindow(QMainWindow):
         self.launch_button = QPushButton("Launch selected server")
         set_ui_role(self.launch_button, "primary")
         self.launch_button.clicked.connect(self.launch_selected)
+        buttons.addWidget(self.servers_advanced_toggle)
         buttons.addStretch(1)
         buttons.addWidget(add_server)
         buttons.addWidget(self.refresh_status_button)
         buttons.addWidget(self.launch_button)
         layout.addLayout(buttons)
+        layout.addWidget(self.servers_advanced_panel)
+        self.servers_advanced_toggle.toggled.connect(
+            lambda expanded: set_disclosure_state(
+                self.servers_advanced_toggle,
+                self.servers_advanced_panel,
+                "server table options",
+                expanded,
+            )
+        )
+        set_disclosure_state(
+            self.servers_advanced_toggle,
+            self.servers_advanced_panel,
+            "server table options",
+            False,
+        )
+        self.update_curated_status_summary()
         return widget
 
     def _build_server_browser_tab(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
 
-        self.browser_summary = QLabel("Cached discovered servers: loading")
-        set_ui_role(self.browser_summary, "summary")
-        layout.addWidget(self.browser_summary)
-
         filters = QHBoxLayout()
         self.browser_search = QLineEdit()
         self.browser_search.setPlaceholderText("Search discovered servers")
         self.browser_search.textChanged.connect(self.refresh_server_browser)
         self.browser_search.textChanged.connect(self.schedule_remote_wolfapi_search)
-        filters.addWidget(QLabel("Search"))
         filters.addWidget(self.browser_search, 2)
-
-        self.browser_online_only = QCheckBox("Online")
-        self.browser_online_only.stateChanged.connect(self.refresh_server_browser)
-        filters.addWidget(self.browser_online_only)
 
         self.browser_modded = QComboBox()
         self.browser_modded.addItems(["Any mods", "Modded", "Vanilla"])
         self.browser_modded.currentTextChanged.connect(self.refresh_server_browser)
         filters.addWidget(self.browser_modded)
-
-        self.browser_style = QComboBox()
-        self.browser_style.addItems(["Any style", "PvE", "PvP"])
-        self.browser_style.currentTextChanged.connect(self.refresh_server_browser)
-        filters.addWidget(self.browser_style)
 
         self.browser_map = QComboBox()
         self.browser_map.addItem("Any map")
@@ -346,6 +385,17 @@ class MainWindow(QMainWindow):
             lambda _text: self.schedule_remote_wolfapi_search(self.browser_search.text())
         )
         filters.addWidget(self.browser_map)
+
+        self.browser_online_only = QCheckBox("Online only")
+        self.browser_online_only.stateChanged.connect(self.refresh_server_browser)
+        filters.addWidget(self.browser_online_only)
+
+        self.browser_summary = QLabel("Loading discovered servers…")
+        set_ui_role(self.browser_summary, "metadata")
+
+        self.browser_style = QComboBox()
+        self.browser_style.addItems(["Any style", "PvE", "PvP"])
+        self.browser_style.currentTextChanged.connect(self.refresh_server_browser)
 
         self.browser_version = QComboBox()
         self.browser_version.addItem("Any version")
@@ -369,6 +419,7 @@ class MainWindow(QMainWindow):
         self.browser_limit.addItems(["200", "500", "1000"])
         self.browser_limit.currentTextChanged.connect(self.refresh_server_browser)
         layout.addLayout(filters)
+        layout.addWidget(self.browser_summary)
 
         self.browser_advanced_toggle = QPushButton()
         self.browser_advanced_toggle.setCheckable(True)
@@ -377,6 +428,8 @@ class MainWindow(QMainWindow):
         advanced_layout = QVBoxLayout(self.browser_advanced_panel)
         advanced_layout.setContentsMargins(0, 0, 0, 0)
         advanced_filters = QHBoxLayout()
+        advanced_filters.addWidget(QLabel("Style"))
+        advanced_filters.addWidget(self.browser_style)
         advanced_filters.addWidget(QLabel("Version"))
         advanced_filters.addWidget(self.browser_version)
         advanced_filters.addWidget(QLabel("Source"))
@@ -400,6 +453,16 @@ class MainWindow(QMainWindow):
         advanced_filters.addWidget(self.browser_hide_quality_flagged)
         advanced_filters.addWidget(QLabel("Limit"))
         advanced_filters.addWidget(self.browser_limit)
+        self.browser_detailed_columns = QCheckBox("Show detailed columns")
+        self.browser_detailed_columns.toggled.connect(
+            lambda checked: configure_priority_columns(
+                self.browser_table,
+                (0, 5, 6, 7, 8, 2),
+                show_details=checked,
+                stretch_columns=(0,),
+            )
+        )
+        advanced_filters.addWidget(self.browser_detailed_columns)
         advanced_filters.addStretch(1)
         advanced_layout.addLayout(advanced_filters)
 
@@ -421,10 +484,20 @@ class MainWindow(QMainWindow):
             "Last Seen",
             "Source",
         ])
+        for column in (7, 8):
+            self.browser_table.horizontalHeaderItem(column).setTextAlignment(
+                Qt.AlignRight | Qt.AlignVCenter
+            )
         self.browser_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.browser_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.browser_table.setSortingEnabled(True)
         configure_data_table(self.browser_table)
+        configure_priority_columns(
+            self.browser_table,
+            (0, 5, 6, 7, 8, 2),
+            show_details=False,
+            stretch_columns=(0,),
+        )
         self.browser_table.cellDoubleClicked.connect(self.handle_browser_double_clicked)
         self.browser_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.browser_table.customContextMenuRequested.connect(self.show_browser_context_menu)
@@ -451,6 +524,7 @@ class MainWindow(QMainWindow):
         advanced_tools.addWidget(self.refresh_database_button)
         advanced_tools.addWidget(self.enrich_visible_button)
         advanced_tools.addWidget(refresh)
+        advanced_tools.addWidget(clear_filters)
         advanced_tools.addStretch(1)
         advanced_layout.addLayout(advanced_tools)
 
@@ -459,7 +533,6 @@ class MainWindow(QMainWindow):
         buttons.addWidget(promote)
         buttons.addWidget(use_server)
         buttons.addWidget(launch_discovered)
-        buttons.addWidget(clear_filters)
         layout.addLayout(buttons)
         layout.addWidget(self.browser_advanced_panel)
 
@@ -1498,8 +1571,11 @@ class MainWindow(QMainWindow):
         item = QTableWidgetItem(text)
         if column in {4, 5, 6, 7, 12, 15}:
             item.setFont(monospace_font())
-        if colour:
-            item.setForeground(QColor(colour))
+        if column in {10, 12}:
+            item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        display_colour = colour or self._curated_cell_colour(column, text)
+        if display_colour:
+            item.setForeground(QColor(display_colour))
         self.table.setItem(row, column, item)
 
     def _set_curated_server_table_item(
@@ -1513,9 +1589,50 @@ class MainWindow(QMainWindow):
         item.setData(Qt.UserRole, row)
         if column in {4, 5, 6, 7, 12, 15}:
             item.setFont(monospace_font())
+        if column in {10, 12}:
+            item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        colour = self._curated_cell_colour(column, value)
+        if colour:
+            item.setForeground(QColor(colour))
         if cached and column in {3, 5, 8, 9, 10, 11, 12, 13, 14, 15}:
             item.setToolTip("Last known status; refresh is checking for current data.")
         self.table.setItem(row, column, item)
+
+    def _curated_cell_colour(self, column: int, text: str) -> str:
+        if column == 0 and text == "★":
+            return COLOURS["accent"]
+        if column == 8:
+            if text == "ONLINE":
+                return STATUS_COLOURS["positive"]
+            if text == "OFFLINE":
+                return STATUS_COLOURS["negative"]
+            return STATUS_COLOURS["warning"]
+        if column == 12 and text.endswith("ms"):
+            try:
+                ping = int(text[:-2])
+            except ValueError:
+                return COLOURS["text_muted"]
+            if ping <= 50:
+                return STATUS_COLOURS["positive"]
+            if ping >= 150:
+                return STATUS_COLOURS["negative"]
+            return COLOURS["text_muted"]
+        if column == 15 and text:
+            return COLOURS["accent"]
+        return ""
+
+    def update_curated_status_summary(self):
+        if not hasattr(self, "curated_online_summary"):
+            return
+        statuses = [
+            self.table.item(row, 8).text()
+            for row in range(self.table.rowCount())
+            if self.table.item(row, 8)
+        ]
+        online = statuses.count("ONLINE")
+        offline = statuses.count("OFFLINE")
+        self.curated_online_summary.setText(f"{online} online")
+        self.curated_offline_summary.setText(f"{offline} offline")
 
     def add_curated_server(self):
         dialog = EditCuratedServerDialog(
@@ -1579,8 +1696,16 @@ class MainWindow(QMainWindow):
         for column, value in enumerate(values):
             item = QTableWidgetItem(value)
             item.setData(Qt.UserRole, row)
+            if column in {4, 5, 6, 7, 12, 15}:
+                item.setFont(monospace_font())
+            if column in {10, 12}:
+                item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            colour = self._curated_cell_colour(column, value)
+            if colour:
+                item.setForeground(QColor(colour))
             self.table.setItem(row, column, item)
         self.table.resizeColumnsToContents()
+        self.update_curated_status_summary()
 
     def remove_curated_server_row(self, row: int):
         if row < 0 or row >= len(self.servers):
@@ -1614,6 +1739,7 @@ class MainWindow(QMainWindow):
         del self.servers[row]
         self.table.removeRow(row)
         self._reindex_server_rows()
+        self.update_curated_status_summary()
         self.update_launch_button_text()
 
     def edit_curated_server_row(self, row: int):
@@ -1726,7 +1852,7 @@ class MainWindow(QMainWindow):
                 flags.append("Mods")
             flags_text = ", ".join(flags) if flags else "Vanilla/unknown"
             ping_text = f"{status.ping}ms" if status.ping else ""
-            self._set_item(row, 3, status.server_name or "Unknown")
+            self._set_item(row, 3, status.server_name or self.servers[row].name)
             self._set_item(row, 8, "ONLINE", STATUS_COLOURS["positive"])
             self._set_item(row, 9, status.map_name)
             self._set_item(row, 10, status.players)
@@ -1736,11 +1862,12 @@ class MainWindow(QMainWindow):
             self._set_item(row, 14, flags_text)
             self._set_item(row, 15, status.connect)
         else:
-            self._set_item(row, 3, "")
+            self._set_item(row, 3, self.servers[row].name)
             self._set_item(row, 8, "OFFLINE", STATUS_COLOURS["negative"])
             self._set_item(row, 9, status.error)
             for column in range(10, 16):
                 self._set_item(row, column, "")
+        self.update_curated_status_summary()
 
     def handle_cell_clicked(self, row: int, column: int):
         if column == 0:

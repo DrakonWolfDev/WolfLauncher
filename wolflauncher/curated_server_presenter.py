@@ -8,7 +8,7 @@ def curated_server_row(server: Server, status: ServerStatus | None = None) -> li
         "★" if server.favourite else "☆",
         server.group,
         server.name,
-        "",
+        server.name,
         server.host,
         "Checking...",
         str(server.game_port),
@@ -36,7 +36,7 @@ def curated_server_row(server: Server, status: ServerStatus | None = None) -> li
         flags.append("Password")
     if status.modded:
         flags.append("Mods")
-    values[3] = status.server_name or "Unknown"
+    values[3] = status.server_name or server.name
     values[8] = "ONLINE"
     values[9] = status.map_name
     values[10] = status.players

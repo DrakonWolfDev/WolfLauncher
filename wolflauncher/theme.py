@@ -1,7 +1,14 @@
 """Shared visual tokens and application-level styling for WolfLauncher."""
 
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFontDatabase, QPalette
-from PySide6.QtWidgets import QApplication, QAbstractItemView, QTableView, QWidget
+from PySide6.QtWidgets import (
+    QApplication,
+    QAbstractItemView,
+    QHeaderView,
+    QTableView,
+    QWidget,
+)
 
 
 COLOURS = {
@@ -10,6 +17,7 @@ COLOURS = {
     "text_muted": "#a8a092", "accent": "#e8a33d", "accent_hover": "#f0b45a",
     "accent_pressed": "#c98528", "positive": "#6fcf97", "warning": "#e8a33d",
     "negative": "#e07a7a",
+    "table_selection": "#4a351b",
 }
 SPACING = {"compact": 4, "control_vertical": 6, "control_horizontal": 10,
            "table_vertical": 5, "table_horizontal": 8, "radius": 4}
@@ -25,6 +33,8 @@ QLabel {{ background-color: transparent; }}
 QLabel:disabled {{ color: {c['text_muted']}; }}
 QLabel[uiRole="summary"] {{ color: {c['text']}; font-weight: 600; padding: 2px 0 4px 0; }}
 QLabel[uiRole="metadata"] {{ color: {c['text_muted']}; }}
+QLabel[uiRole="statusPositive"] {{ color: {c['positive']}; background-color: #1e3a2e; border-radius: 9px; padding: 3px 9px; }}
+QLabel[uiRole="statusNegative"] {{ color: {c['negative']}; background-color: #3a1e1e; border-radius: 9px; padding: 3px 9px; }}
 QToolTip {{ background-color: {c['surface_alt']}; color: {c['text']}; border: 1px solid {c['border_strong']}; padding: {s['compact']}px; }}
 QLineEdit, QComboBox, QSpinBox, QTextEdit {{ background-color: {c['surface_alt']}; color: {c['text']}; border: 1px solid {c['border']}; border-radius: {s['radius']}px; padding: {s['control_vertical']}px {s['control_horizontal']}px; }}
 QLineEdit:hover, QComboBox:hover, QSpinBox:hover, QTextEdit:hover {{ border-color: {c['border_strong']}; }}
@@ -52,8 +62,9 @@ QTabWidget::pane {{ background-color: {c['background']}; border: 1px solid {c['b
 QTabBar::tab {{ background-color: {c['surface']}; color: {c['text_muted']}; border: 1px solid {c['border']}; padding: 9px 18px; }}
 QTabBar::tab:hover {{ color: {c['text']}; background-color: {c['surface_alt']}; }}
 QTabBar::tab:selected {{ color: {c['text']}; background-color: {c['surface_alt']}; border-bottom: 2px solid {c['accent']}; }}
-QTableView {{ background-color: {c['surface']}; alternate-background-color: {c['surface_alt']}; color: {c['text']}; border: 1px solid {c['border']}; gridline-color: {c['border']}; selection-background-color: {c['accent']}; selection-color: {c['background']}; }}
+QTableView {{ background-color: {c['surface']}; alternate-background-color: {c['surface_alt']}; color: {c['text']}; border: 1px solid {c['border']}; gridline-color: {c['border']}; selection-background-color: {c['table_selection']}; selection-color: {c['text']}; }}
 QTableView::item {{ padding: {s['table_vertical']}px {s['table_horizontal']}px; }}
+QTableView::item:hover {{ background-color: {c['surface_alt']}; }}
 QTableView::item:focus {{ border: 1px solid {c['accent_hover']}; }}
 QTableView:focus {{ border-color: {c['accent']}; }}
 QHeaderView::section {{ background-color: {c['surface_alt']}; color: {c['text_muted']}; border: 0; border-right: 1px solid {c['border']}; border-bottom: 1px solid {c['border']}; padding: {s['table_vertical']}px {s['table_horizontal']}px; font-weight: 600; }}
@@ -136,5 +147,27 @@ def configure_data_table(table: QTableView) -> None:
     table.verticalHeader().setMinimumSectionSize(28)
     table.verticalHeader().setDefaultSectionSize(30)
     table.horizontalHeader().setHighlightSections(False)
+    table.horizontalHeader().setDefaultAlignment(Qt.AlignLeft | Qt.AlignVCenter)
     table.setHorizontalScrollMode(QAbstractItemView.ScrollPerPixel)
     table.setVerticalScrollMode(QAbstractItemView.ScrollPerPixel)
+
+
+def configure_priority_columns(
+    table: QTableView,
+    primary_columns: tuple[int, ...],
+    show_details: bool,
+    stretch_columns: tuple[int, ...] = (),
+) -> None:
+    """Put task-critical columns first while retaining optional detail columns."""
+    header = table.horizontalHeader()
+    all_columns = tuple(range(table.model().columnCount()))
+    ordered = primary_columns + tuple(column for column in all_columns if column not in primary_columns)
+    for visual_index, logical_index in enumerate(ordered):
+        current_visual_index = header.visualIndex(logical_index)
+        if current_visual_index != visual_index:
+            header.moveSection(current_visual_index, visual_index)
+    for column in all_columns:
+        table.setColumnHidden(column, not show_details and column not in primary_columns)
+        mode = QHeaderView.Stretch if column in stretch_columns else QHeaderView.ResizeToContents
+        header.setSectionResizeMode(column, mode)
+    header.setStretchLastSection(False)

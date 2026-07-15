@@ -12,6 +12,7 @@ from wolflauncher.theme import (
     apply_application_theme,
     build_palette,
     configure_data_table,
+    configure_priority_columns,
     set_monospace,
     set_ui_role,
 )
@@ -55,6 +56,17 @@ class ThemeTests(unittest.TestCase):
         self.assertFalse(table.showGrid())
         self.assertTrue(table.verticalHeader().isHidden())
         self.assertFalse(table.horizontalHeader().highlightSections())
+
+    def test_priority_columns_reorder_and_retain_optional_details(self):
+        table = QTableWidget(0, 5)
+        configure_priority_columns(table, (0, 3, 4), show_details=False, stretch_columns=(0,))
+        header = table.horizontalHeader()
+        self.assertEqual([header.logicalIndex(index) for index in range(3)], [0, 3, 4])
+        self.assertTrue(table.isColumnHidden(1))
+        self.assertTrue(table.isColumnHidden(2))
+
+        configure_priority_columns(table, (0, 3, 4), show_details=True, stretch_columns=(0,))
+        self.assertFalse(any(table.isColumnHidden(column) for column in range(5)))
 
     def test_monospace_uses_the_platform_fixed_font(self):
         button = QPushButton("technical value")

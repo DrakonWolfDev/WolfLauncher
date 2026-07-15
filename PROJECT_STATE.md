@@ -83,6 +83,8 @@ check for import/startup changes.
 
 The native visual theme is implemented with shared tokens, a complete Qt palette and application-level QSS for the existing widgets and dialogs. It uses restrained charcoal surfaces, amber action hierarchy, semantic status colours, portable technical fonts and visible keyboard focus without changing the approved tab structure. The user confirmed the foundation at different resolutions; final real-desktop interaction review and later icon/branding work remain separate from this solid theme baseline.
 
+Server Browser and curated Servers now apply their HTML redesign references as native Qt layouts. Both default to compact task-first columns while retaining every operational field through an advanced detailed-columns control. Server Browser follows the search/common-filter/summary/table/action rhythm; curated Servers adds live online/offline summary badges and stronger favourite, status, ping and connect hierarchy without replacing its editable table or launch/context-menu workflows.
+
 - Use this vertical hierarchy where a tab has comparable content: information/summary, common controls, results, then a bottom action row.
 - Keep the frequent path visible. For Server Browser this means search/common filters and Promote/Reset. For Mods this means recheck, open missing pages and filter.
 - Put secondary filters, refresh/enrichment, parity, copying and specialist tools behind a compact direction-marked disclosure at the bottom.

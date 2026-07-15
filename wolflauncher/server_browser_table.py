@@ -23,6 +23,8 @@ def populate_browser_table(table: QTableWidget, servers: Sequence[DiscoveredServ
                 item.setToolTip(row_data.tooltips[column])
             if column == 5:
                 item.setForeground(QColor(row_data.status_colour))
+            if column in {7, 8}:
+                item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
             if column in {2, 3, 4, 8, 9, 11}:
                 item.setFont(monospace_font())
             table.setItem(row, column, item)

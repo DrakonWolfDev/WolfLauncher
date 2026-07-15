@@ -157,6 +157,7 @@ Priority 4 — discovery truth and regression coverage:
 
 Visual-polish review note:
 
+- Completed — Server Browser and curated Servers now use native adaptations of their redesign references, with compact default columns and all prior operational data retained behind detailed-column controls. Validate the new curated scanning hierarchy and table selection treatment on the real desktop before considering card-row widgets or delegates.
 - The shared QSS/theme-token foundation from `VISUAL_DESIGN.md` is complete, including the Qt fallback palette, transient dialogs, technical typography and semantic action roles. The user confirmed the foundation at different resolutions. Preserve this hierarchy and finish real-desktop keyboard/interaction review before considering card rows, grouped Settings health sections, icons or branding.
 - Recheck the Mods table after fonts, theme, colours, icons and branding are introduced. Review column padding, row height, compact-column centring, name/URL balance and overall information density in the final visual system.
 

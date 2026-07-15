@@ -21,6 +21,7 @@ class CuratedServerPresenterTests(unittest.TestCase):
 
         self.assertEqual(len(row), 16)
         self.assertEqual(row[:3], ["★", "Community", "Configured Name"])
+        self.assertEqual(row[3], "Configured Name")
         self.assertEqual(row[4:9], ["dayz.example.test", "Checking...", "2302", "27016", "Checking..."])
 
     def test_online_row_includes_live_values_and_flags(self):
@@ -48,7 +49,7 @@ class CuratedServerPresenterTests(unittest.TestCase):
     def test_online_row_handles_missing_name_ping_and_flags(self):
         row = curated_server_row(self.server, ServerStatus(online=True))
 
-        self.assertEqual(row[3], "Unknown")
+        self.assertEqual(row[3], "Configured Name")
         self.assertEqual(row[12], "")
         self.assertEqual(row[14], "Vanilla/unknown")
 
@@ -62,6 +63,7 @@ class CuratedServerPresenterTests(unittest.TestCase):
         row = curated_server_row(self.server, status)
 
         self.assertEqual(row[5], "203.0.113.10")
+        self.assertEqual(row[3], "Configured Name")
         self.assertEqual(row[8], "OFFLINE")
         self.assertEqual(row[9], "offline or no response")
         self.assertEqual(row[10:], ["", "", "", "", "", ""])
