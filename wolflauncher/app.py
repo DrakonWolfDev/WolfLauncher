@@ -471,7 +471,7 @@ class MainWindow(QMainWindow):
 
         self.browser_table = QTableWidget(0, 15)
         self.browser_table.setHorizontalHeaderLabels([
-            "Name",
+            "Server Name",
             "Live Name",
             "Host",
             "Game Port",
@@ -1533,6 +1533,7 @@ class MainWindow(QMainWindow):
             show_details=show_details,
             stretch_columns=() if show_details else (2,),
         )
+        self.browser_table.setColumnHidden(1, True)
         if not show_details:
             name_width = browser_name_column_width(self.browser_table.viewport().width())
             header = self.browser_table.horizontalHeader()

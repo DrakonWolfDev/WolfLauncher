@@ -7,6 +7,7 @@ from wolflauncher.server_browser_presenter import (
     browser_summary_text,
     browser_summary_tooltip,
     api_freshness_text,
+    display_server_name,
     discovered_server_details,
     players_text,
 )
@@ -65,13 +66,28 @@ class ServerBrowserPresenterTests(unittest.TestCase):
 
         row = browser_row(server)
 
+        self.assertEqual(row.values[0], "Live Name")
         self.assertEqual(row.values[1], "Live Name")
         self.assertEqual(row.values[7], "12/60")
         self.assertEqual(row.values[10], "Password, Modded")
         self.assertEqual(row.sort_values[7], 12)
-        self.assertEqual(row.tooltips[0], "Live name: Live Name")
+        self.assertIn("Locally validated live name", row.tooltips[0])
+        self.assertIn("Provider/cache name: Cached Name", row.tooltips[0])
         self.assertIn(12, row.tooltips)
         self.assertEqual(row.status_colour, STATUS_COLOURS["positive"])
+
+    def test_unified_name_uses_provider_name_until_live_name_is_local(self):
+        server = DiscoveredServer(
+            name="Provider Name",
+            server_name="Reported Live Name",
+            host="203.0.113.10",
+            game_port=2302,
+            query_port=27016,
+            status_source="provider",
+        )
+
+        self.assertEqual(display_server_name(server), "Provider Name")
+        self.assertEqual(browser_row(server).values[0], "Provider Name")
 
     def test_browser_row_hides_duplicate_live_name(self):
         server = DiscoveredServer(
@@ -86,7 +102,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         row = browser_row(server)
 
         self.assertEqual(row.values[1], "")
-        self.assertIn(1, row.tooltips)
+        self.assertIn(0, row.tooltips)
         self.assertIn("Enrich visible", row.tooltips[8])
         self.assertIn("Inspect mods", row.tooltips[11])
         self.assertEqual(row.values[10], "Vanilla")

@@ -41,6 +41,13 @@ def live_name_text(server: DiscoveredServer) -> str:
     return live_name
 
 
+def display_server_name(server: DiscoveredServer) -> str:
+    live_name = live_name_text(server)
+    if server.status_source == "local" and live_name:
+        return live_name
+    return (server.name or "").strip() or server.connect_target
+
+
 def api_freshness_text(
     server: DiscoveredServer,
     now: datetime | None = None,
@@ -93,10 +100,13 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
     )
     live_name = live_name_text(server)
     tooltips = {}
-    if live_name:
-        tooltips[0] = f"Live name: {server.server_name}"
+    if server.status_source == "local" and live_name:
+        tooltips[0] = (
+            "Locally validated live name."
+            + (f" Provider/cache name: {server.name}" if server.name else "")
+        )
     else:
-        tooltips[1] = "Same as display name, or not reported yet."
+        tooltips[0] = "Provider/cache name; local enrichment can supply a fresher live name."
     locally_checked = server.status_source == "local"
     if not server.last_checked:
         tooltips[12] = "This row has not been checked yet."
@@ -149,7 +159,7 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
 
     return BrowserRow(
         values=[
-            server.name,
+            display_server_name(server),
             live_name,
             server.host,
             str(server.game_port),
@@ -167,7 +177,7 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
             server.source,
         ],
         sort_values=[
-            server.name,
+            display_server_name(server),
             live_name or server.name,
             server.host,
             server.game_port,
