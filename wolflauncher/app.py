@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QFormLayout,
     QHBoxLayout,
+    QHeaderView,
     QLabel,
     QLineEdit,
     QListWidget,
@@ -102,7 +103,7 @@ from .server_browser_presenter import (
     discovered_server_details,
 )
 from .server_browser_controller import BrowserQuery, browser_filter_options, load_browser_snapshot
-from .server_browser_table import populate_browser_table
+from .server_browser_table import browser_name_column_width, populate_browser_table
 from .settings import (
     DEFAULT_DISCOVERY_PROVIDER,
     load_favourites,
@@ -371,20 +372,19 @@ class MainWindow(QMainWindow):
 
         filters = QHBoxLayout()
         self.browser_search = QLineEdit()
-        self.browser_search.setMaximumWidth(1000)
         self.browser_search.setPlaceholderText("Search discovered servers")
         self.browser_search.textChanged.connect(self.refresh_server_browser)
         self.browser_search.textChanged.connect(self.schedule_remote_wolfapi_search)
         filters.addWidget(self.browser_search, 2)
 
         self.browser_modded = QComboBox()
-        self.browser_modded.setMaximumWidth(150)
+        self.browser_modded.setFixedWidth(150)
         self.browser_modded.addItems(["Any mods", "Modded", "Vanilla"])
         self.browser_modded.currentTextChanged.connect(self.refresh_server_browser)
         filters.addWidget(self.browser_modded)
 
         self.browser_map = QComboBox()
-        self.browser_map.setMaximumWidth(180)
+        self.browser_map.setFixedWidth(180)
         self.browser_map.addItem("Any map")
         self.browser_map.currentTextChanged.connect(self.refresh_server_browser)
         self.browser_map.currentTextChanged.connect(
@@ -393,7 +393,7 @@ class MainWindow(QMainWindow):
         filters.addWidget(self.browser_map)
 
         self.browser_online_only = QCheckBox("Online only")
-        self.browser_online_only.setMaximumWidth(120)
+        self.browser_online_only.setFixedWidth(120)
         self.browser_online_only.stateChanged.connect(self.refresh_server_browser)
         filters.addWidget(self.browser_online_only)
 
@@ -462,12 +462,7 @@ class MainWindow(QMainWindow):
         advanced_filters.addWidget(self.browser_limit)
         self.browser_detailed_columns = QCheckBox("Show detailed columns")
         self.browser_detailed_columns.toggled.connect(
-            lambda checked: configure_priority_columns(
-                self.browser_table,
-                (0, 5, 6, 7, 8, 2),
-                show_details=checked,
-                stretch_columns=(0, 2),
-            )
+            self.configure_browser_columns
         )
         advanced_filters.addWidget(self.browser_detailed_columns)
         advanced_filters.addStretch(1)
@@ -499,12 +494,7 @@ class MainWindow(QMainWindow):
         self.browser_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.browser_table.setSortingEnabled(True)
         configure_data_table(self.browser_table)
-        configure_priority_columns(
-            self.browser_table,
-            (0, 5, 6, 7, 8, 2),
-            show_details=False,
-            stretch_columns=(0, 2),
-        )
+        self.configure_browser_columns(False)
         self.browser_table.cellDoubleClicked.connect(self.handle_browser_double_clicked)
         self.browser_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.browser_table.customContextMenuRequested.connect(self.show_browser_context_menu)
@@ -1521,10 +1511,32 @@ class MainWindow(QMainWindow):
         self.browser_servers = servers
 
         populate_browser_table(self.browser_table, servers)
+        self.configure_browser_columns()
         self.browser_summary.setText(
             browser_summary_text(snapshot.cache_summary, len(servers), snapshot.match_count, limit)
         )
         self.browser_summary.setToolTip(browser_summary_tooltip(snapshot.cache_summary))
+
+    def configure_browser_columns(self, show_details: bool | None = None):
+        if not hasattr(self, "browser_table"):
+            return
+        if show_details is None:
+            show_details = (
+                self.browser_detailed_columns.isChecked()
+                if hasattr(self, "browser_detailed_columns")
+                else False
+            )
+        configure_priority_columns(
+            self.browser_table,
+            (0, 5, 6, 7, 8, 2),
+            show_details=show_details,
+            stretch_columns=() if show_details else (2,),
+        )
+        if not show_details:
+            name_width = browser_name_column_width(self.browser_table.viewport().width())
+            header = self.browser_table.horizontalHeader()
+            header.setSectionResizeMode(0, QHeaderView.Interactive)
+            header.resizeSection(0, name_width)
 
     def _refresh_browser_filter_options(self):
         options = browser_filter_options(self.server_cache)
@@ -3224,6 +3236,10 @@ class MainWindow(QMainWindow):
         self.save_user_settings(silent=True)
         self.server_cache.close()
         super().closeEvent(event)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.configure_browser_columns()
 
 
 def main():

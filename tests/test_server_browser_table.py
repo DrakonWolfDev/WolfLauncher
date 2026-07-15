@@ -7,7 +7,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QApplication, QTableWidget
 
 from wolflauncher.models import DiscoveredServer
-from wolflauncher.server_browser_table import populate_browser_table
+from wolflauncher.server_browser_table import browser_name_column_width, populate_browser_table
 from wolflauncher.theme import STATUS_COLOURS
 from wolflauncher.table_items import SortableTableWidgetItem
 
@@ -46,6 +46,11 @@ class ServerBrowserTableTests(unittest.TestCase):
             STATUS_COLOURS["positive"],
         )
         self.assertTrue(table.isSortingEnabled())
+
+    def test_name_width_is_responsive_but_bounded_on_wide_displays(self):
+        self.assertEqual(browser_name_column_width(800), 360)
+        self.assertEqual(browser_name_column_width(1388), 582)
+        self.assertEqual(browser_name_column_width(1920), 600)
 
     def test_population_replaces_existing_rows_and_keeps_missing_ping_guidance(self):
         table = QTableWidget(3, 15)

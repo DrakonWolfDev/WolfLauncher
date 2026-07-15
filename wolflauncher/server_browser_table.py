@@ -10,6 +10,11 @@ from .table_items import SortableTableWidgetItem
 from .theme import monospace_font
 
 
+def browser_name_column_width(viewport_width: int) -> int:
+    """Keep Name useful without allowing it to consume a wide display."""
+    return max(360, min(600, int(max(1, viewport_width) * 0.42)))
+
+
 def populate_browser_table(table: QTableWidget, servers: Sequence[DiscoveredServer]) -> None:
     """Replace the discovered-server table rows while preserving sortable metadata."""
     table.setSortingEnabled(False)

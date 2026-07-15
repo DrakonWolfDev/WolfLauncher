@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import unittest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -28,6 +29,10 @@ class ThemeTests(unittest.TestCase):
         self.assertEqual(self.app.styleSheet(), APPLICATION_STYLESHEET)
         self.assertIn(COLOURS["background"], APPLICATION_STYLESHEET)
         self.assertIn(COLOURS["accent"], APPLICATION_STYLESHEET)
+        self.assertIn("check.svg", APPLICATION_STYLESHEET)
+        self.assertTrue(
+            (Path(__file__).resolve().parents[1] / "wolflauncher" / "assets" / "check.svg").is_file()
+        )
         self.assertEqual(
             self.app.palette().color(QPalette.Window).name(),
             COLOURS["background"],

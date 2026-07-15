@@ -1,5 +1,7 @@
 """Shared visual tokens and application-level styling for WolfLauncher."""
 
+from pathlib import Path
+
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFontDatabase, QPalette
 from PySide6.QtWidgets import (
@@ -26,6 +28,7 @@ STATUS_COLOURS = {key: COLOURS[key] for key in ("positive", "warning", "negative
 
 def _build_stylesheet() -> str:
     c, s = COLOURS, SPACING
+    check_icon = (Path(__file__).resolve().parent / "assets" / "check.svg").as_posix()
     return f"""
 QWidget {{ background-color: {c['background']}; color: {c['text']}; selection-background-color: {c['accent']}; selection-color: {c['background']}; }}
 QMainWindow, QDialog, QMessageBox {{ background-color: {c['background']}; }}
@@ -84,6 +87,10 @@ QHeaderView::section {{ background-color: {c['surface_alt']}; color: {c['text_mu
 QTableCornerButton::section {{ background-color: {c['surface_alt']}; border: 0; border-right: 1px solid {c['border']}; border-bottom: 1px solid {c['border']}; }}
 QCheckBox {{ spacing: 7px; background-color: transparent; }}
 QCheckBox:focus {{ color: {c['accent_hover']}; }}
+QCheckBox::indicator {{ width: 15px; height: 15px; border: 1px solid {c['border_strong']}; border-radius: 3px; background-color: {c['surface_alt']}; }}
+QCheckBox::indicator:hover {{ border-color: {c['accent']}; }}
+QCheckBox::indicator:checked {{ background-color: {c['accent']}; border-color: {c['accent']}; image: url("{check_icon}"); }}
+QCheckBox::indicator:disabled {{ background-color: {c['surface']}; border-color: {c['border']}; }}
 QProgressBar {{ background-color: {c['surface_alt']}; color: {c['text']}; border: 1px solid {c['border']}; border-radius: {s['radius']}px; text-align: center; }}
 QProgressBar::chunk {{ background-color: {c['positive']}; border-radius: 3px; }}
 QMenu {{ background-color: {c['surface_alt']}; color: {c['text']}; border: 1px solid {c['border_strong']}; }}
