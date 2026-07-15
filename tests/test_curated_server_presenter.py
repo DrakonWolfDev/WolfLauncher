@@ -43,15 +43,15 @@ class CuratedServerPresenterTests(unittest.TestCase):
 
         self.assertEqual(row[3], "Live Name")
         self.assertEqual(row[5], "203.0.113.10")
-        self.assertEqual(row[8:13], ["ONLINE", "chernarusplus", "12/60", "14:30", "42ms"])
-        self.assertEqual(row[14:], ["Password, Mods", "203.0.113.10:2402"])
+        self.assertEqual(row[8:13], ["ONLINE", "Chernarusplus", "12/60", "14:30", "42ms"])
+        self.assertEqual(row[14:], ["Password, Modded", "203.0.113.10:2402"])
 
     def test_online_row_handles_missing_name_ping_and_flags(self):
         row = curated_server_row(self.server, ServerStatus(online=True))
 
         self.assertEqual(row[3], "Configured Name")
         self.assertEqual(row[12], "")
-        self.assertEqual(row[14], "Vanilla/unknown")
+        self.assertEqual(row[14], "Vanilla")
 
     def test_offline_row_shows_resolution_and_error(self):
         status = ServerStatus(

@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import Any
 
 from .models import DiscoveredServer
+from .server_display import display_map_name, display_required_mod_count, display_server_flags
 from .theme import STATUS_COLOURS
 
 
@@ -85,14 +86,11 @@ def api_status_tooltip(server: DiscoveredServer) -> str:
 
 
 def browser_row(server: DiscoveredServer) -> BrowserRow:
-    flags = []
-    if server.password:
-        flags.append("Password")
-    if server.modded:
-        flags.append("Mods")
-    if server.quality_flags:
-        flags.append("Quality warning")
-    flags_text = ", ".join(flags) if flags else "Vanilla/unknown"
+    flags_text = display_server_flags(
+        server.password,
+        server.modded,
+        quality_warning=bool(server.quality_flags),
+    )
     live_name = live_name_text(server)
     tooltips = {}
     if live_name:
@@ -158,12 +156,12 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
             str(server.query_port),
             ("ONLINE" if server.online else "OFFLINE")
             if locally_checked else ("PROVIDER ONLINE" if server.online else "PROVIDER OFFLINE"),
-            server.map_name,
+            display_map_name(server.map_name),
             players_text(server.players_current, server.players_max),
             f"{server.ping_ms}ms" if server.ping_ms is not None else "",
             server.version,
             flags_text,
-            str(server.required_mod_count) if server.required_mod_count is not None else "",
+            display_required_mod_count(server.required_mod_count),
             server.last_checked,
             server.last_seen,
             server.source,
@@ -193,24 +191,22 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
 
 
 def discovered_server_details(server: DiscoveredServer) -> str:
-    flags = []
-    if server.password:
-        flags.append("Password")
-    if server.modded:
-        flags.append("Mods")
-    if server.quality_flags:
-        flags.append("Quality warning")
+    flags_text = display_server_flags(
+        server.password,
+        server.modded,
+        quality_warning=bool(server.quality_flags),
+    )
     lines = [server.name]
     if live_name_text(server):
         lines.append(f"Live name: {server.server_name}")
     lines.extend([
         server.connect_target,
         f"Query port: {server.query_port}",
-        f"Map: {server.map_name}",
+        f"Map: {display_map_name(server.map_name)}",
         f"Players: {players_text(server.players_current, server.players_max)}",
         f"Version: {server.version}",
-        f"Flags: {', '.join(flags) if flags else 'Vanilla/unknown'}",
-        f"Required mods: {server.required_mod_count if server.required_mod_count is not None else 'Unknown'}",
+        f"Flags: {flags_text}",
+        f"Required mods: {display_required_mod_count(server.required_mod_count)}",
         f"Status basis: {'Locally validated' if server.status_source == 'local' else 'Provider reported'}",
         f"Last checked: {server.last_checked or 'Never'}",
         f"Last seen: {server.last_seen or 'Never'}",

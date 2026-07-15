@@ -1,4 +1,5 @@
 from .models import Server
+from .server_display import display_map_name, display_server_flags
 from .status import ServerStatus
 
 
@@ -31,18 +32,13 @@ def curated_server_row(server: Server, status: ServerStatus | None = None) -> li
         values[9] = status.error
         return values
 
-    flags = []
-    if status.password:
-        flags.append("Password")
-    if status.modded:
-        flags.append("Mods")
     values[3] = status.server_name or server.name
     values[8] = "ONLINE"
-    values[9] = status.map_name
+    values[9] = display_map_name(status.map_name)
     values[10] = status.players
     values[11] = status.time
     values[12] = f"{status.ping}ms" if status.ping else ""
     values[13] = status.version
-    values[14] = ", ".join(flags) if flags else "Vanilla/unknown"
+    values[14] = display_server_flags(status.password, status.modded)
     values[15] = status.connect
     return values

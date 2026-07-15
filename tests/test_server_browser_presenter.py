@@ -67,7 +67,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
 
         self.assertEqual(row.values[1], "Live Name")
         self.assertEqual(row.values[7], "12/60")
-        self.assertEqual(row.values[10], "Password, Mods")
+        self.assertEqual(row.values[10], "Password, Modded")
         self.assertEqual(row.sort_values[7], 12)
         self.assertEqual(row.tooltips[0], "Live name: Live Name")
         self.assertIn(12, row.tooltips)
@@ -89,6 +89,8 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertIn(1, row.tooltips)
         self.assertIn("Enrich visible", row.tooltips[8])
         self.assertIn("Inspect mods", row.tooltips[11])
+        self.assertEqual(row.values[10], "Vanilla")
+        self.assertEqual(row.values[11], "–")
         self.assertEqual(row.status_colour, STATUS_COLOURS["negative"])
 
     def test_provider_status_and_required_mod_count_are_explicit(self):
@@ -122,7 +124,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         row = browser_row(server)
         details = discovered_server_details(server)
 
-        self.assertEqual(row.values[10], "Quality warning")
+        self.assertEqual(row.values[10], "Vanilla, Quality warning")
         self.assertIn("not proof the server is unsafe", row.tooltips[10])
         self.assertIn("suspicious bots", details)
 
@@ -217,7 +219,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         details = discovered_server_details(server)
 
         self.assertNotIn("Live name:", details)
-        self.assertIn("Flags: Password, Mods", details)
+        self.assertIn("Flags: Password, Modded", details)
         self.assertIn("Last checked: Never", details)
         self.assertIn("Last seen: Never", details)
         self.assertTrue(details.endswith("Source: wolfapi"))

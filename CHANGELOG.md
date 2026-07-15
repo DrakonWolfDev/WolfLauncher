@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Normalized displayed map names with initial capitalization and Enoch shown as Livonia, promoted Flags and Required Mods into the default Browser view, renamed flags to explicit Modded/Vanilla labels, and display zero or unknown mod counts as an en dash while retaining explanatory tooltips.
 - Fixed wide-screen Server Browser proportions by bounding the Name column, letting Host absorb surplus table width and keeping common filters contiguous; added a high-contrast themed checkbox with a visible checked and unchecked state.
 - Adapted Server Browser and curated Servers to their native redesign references: balanced Name/Host proportions, bounded common filters, concise discovery summaries, and a native curated card list with status edges, two-line metadata, compact player/ping blocks and per-row Connect actions. The original curated table and all discovered operational fields remain available as detailed views.
 - Completed the cohesive native-theme pass with a full Qt palette for partially native controls and dialogs, consistent technical fonts for paths/endpoints/identifiers, quieter dense tables, themed transient UI, and explicit primary, accent, disclosure and destructive action roles.

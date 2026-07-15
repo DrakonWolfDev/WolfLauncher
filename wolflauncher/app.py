@@ -93,6 +93,7 @@ from .mods import (
 from .mod_presenter import combined_download_estimate, mod_download_size, mod_row, mod_summary_text
 from . import server_cache
 from .server_discovery import parse_master_address
+from .server_display import display_map_name, display_server_flags
 from .server_enrichment import (
     parse_connect_port,
 )
@@ -1528,7 +1529,7 @@ class MainWindow(QMainWindow):
             )
         configure_priority_columns(
             self.browser_table,
-            (0, 5, 6, 7, 8, 2),
+            (0, 5, 6, 7, 8, 10, 11, 2),
             show_details=show_details,
             stretch_columns=() if show_details else (2,),
         )
@@ -1925,16 +1926,11 @@ class MainWindow(QMainWindow):
         update_status_cache(self.curated_status_cache, self.servers[row], status)
         self._set_item(row, 5, status.resolved_ip)
         if status.online:
-            flags = []
-            if status.password:
-                flags.append("Password")
-            if status.modded:
-                flags.append("Mods")
-            flags_text = ", ".join(flags) if flags else "Vanilla/unknown"
+            flags_text = display_server_flags(status.password, status.modded)
             ping_text = f"{status.ping}ms" if status.ping else ""
             self._set_item(row, 3, status.server_name or self.servers[row].name)
             self._set_item(row, 8, "ONLINE", STATUS_COLOURS["positive"])
-            self._set_item(row, 9, status.map_name)
+            self._set_item(row, 9, display_map_name(status.map_name))
             self._set_item(row, 10, status.players)
             self._set_item(row, 11, status.time)
             self._set_item(row, 12, ping_text)

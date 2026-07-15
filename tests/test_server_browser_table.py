@@ -48,9 +48,9 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertTrue(table.isSortingEnabled())
 
     def test_name_width_is_responsive_but_bounded_on_wide_displays(self):
-        self.assertEqual(browser_name_column_width(800), 360)
-        self.assertEqual(browser_name_column_width(1388), 582)
-        self.assertEqual(browser_name_column_width(1920), 600)
+        self.assertEqual(browser_name_column_width(800), 300)
+        self.assertEqual(browser_name_column_width(1388), 416)
+        self.assertEqual(browser_name_column_width(1920), 576)
 
     def test_population_replaces_existing_rows_and_keeps_missing_ping_guidance(self):
         table = QTableWidget(3, 15)

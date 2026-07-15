@@ -85,7 +85,7 @@ The native visual theme is implemented with shared tokens, a complete Qt palette
 
 Server Browser and curated Servers now apply their HTML redesign references as native Qt layouts. Server Browser uses bounded common filters, a concise summary and balanced Name/Host allocation while retaining every operational field through **Show detailed columns**. Curated Servers uses native card rows with status edges, two-line metadata, player/ping blocks, favourite and per-row Connect actions; **Show detailed table** preserves the original editable table, complete data, selection, context-menu and launch workflows.
 
-The Server Browser wide-screen policy caps Name at 600 logical pixels, scales it down to 42% of the viewport on narrower windows and assigns remaining table width to Host. Common filters remain contiguous instead of spreading across 1920×1080, and checkboxes use an explicit theme indicator rather than relying on an invisible dark desktop-style box.
+The Server Browser wide-screen policy caps Name at 600 logical pixels, scales it to 30% of the viewport with a 300-pixel floor and assigns remaining table width to Host. Common filters remain contiguous instead of spreading across 1920×1080, and checkboxes use an explicit theme indicator rather than relying on an invisible dark desktop-style box.
 
 - Use this vertical hierarchy where a tab has comparable content: information/summary, common controls, results, then a bottom action row.
 - Keep the frequent path visible. For Server Browser this means search/common filters and Promote/Reset. For Mods this means recheck, open missing pages and filter.
