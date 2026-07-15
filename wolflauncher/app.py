@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import datetime
 import sys
 
-from PySide6.QtCore import QPoint, QTimer, QUrl, Qt
+from PySide6.QtCore import QPoint, QSize, QTimer, QUrl, Qt
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -13,6 +13,8 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QMainWindow,
     QMessageBox,
     QDialog,
@@ -40,6 +42,7 @@ from .config import (
     update_curated_server,
 )
 from .curated_dialogs import EditCuratedServerDialog, PromoteServerDialog
+from .curated_server_cards import CuratedServerCard
 from .curated_server_presenter import curated_server_row
 from .diagnostics import (
     format_settings_health_report,
@@ -95,6 +98,7 @@ from .server_enrichment import (
 from .server_browser_presenter import (
     browser_style_terms,
     browser_summary_text,
+    browser_summary_tooltip,
     discovered_server_details,
 )
 from .server_browser_controller import BrowserQuery, browser_filter_options, load_browser_snapshot
@@ -312,7 +316,12 @@ class MainWindow(QMainWindow):
         last_row = self.saved_selected_row()
         if 0 <= last_row < len(self.servers):
             self.table.selectRow(last_row)
+        self.server_cards = QListWidget()
+        set_ui_role(self.server_cards, "serverCards")
+        self.server_cards.currentRowChanged.connect(self._select_curated_table_row)
+        layout.addWidget(self.server_cards)
         layout.addWidget(self.table)
+        self.table.hide()
 
         buttons = QHBoxLayout()
         self.servers_advanced_toggle = QPushButton()
@@ -320,15 +329,8 @@ class MainWindow(QMainWindow):
         self.servers_advanced_panel = QWidget()
         servers_advanced_layout = QHBoxLayout(self.servers_advanced_panel)
         servers_advanced_layout.setContentsMargins(0, 0, 0, 0)
-        self.servers_detailed_columns = QCheckBox("Show detailed columns")
-        self.servers_detailed_columns.toggled.connect(
-            lambda checked: configure_priority_columns(
-                self.table,
-                (0, 3, 8, 9, 10, 12, 15),
-                show_details=checked,
-                stretch_columns=(3,),
-            )
-        )
+        self.servers_detailed_columns = QCheckBox("Show detailed table")
+        self.servers_detailed_columns.toggled.connect(self.set_curated_detail_view)
         servers_advanced_layout.addWidget(self.servers_detailed_columns)
         servers_advanced_layout.addStretch(1)
         add_server = QPushButton("Add curated server")
@@ -360,6 +362,7 @@ class MainWindow(QMainWindow):
             False,
         )
         self.update_curated_status_summary()
+        self.refresh_curated_server_cards()
         return widget
 
     def _build_server_browser_tab(self) -> QWidget:
@@ -368,17 +371,20 @@ class MainWindow(QMainWindow):
 
         filters = QHBoxLayout()
         self.browser_search = QLineEdit()
+        self.browser_search.setMaximumWidth(1000)
         self.browser_search.setPlaceholderText("Search discovered servers")
         self.browser_search.textChanged.connect(self.refresh_server_browser)
         self.browser_search.textChanged.connect(self.schedule_remote_wolfapi_search)
         filters.addWidget(self.browser_search, 2)
 
         self.browser_modded = QComboBox()
+        self.browser_modded.setMaximumWidth(150)
         self.browser_modded.addItems(["Any mods", "Modded", "Vanilla"])
         self.browser_modded.currentTextChanged.connect(self.refresh_server_browser)
         filters.addWidget(self.browser_modded)
 
         self.browser_map = QComboBox()
+        self.browser_map.setMaximumWidth(180)
         self.browser_map.addItem("Any map")
         self.browser_map.currentTextChanged.connect(self.refresh_server_browser)
         self.browser_map.currentTextChanged.connect(
@@ -387,6 +393,7 @@ class MainWindow(QMainWindow):
         filters.addWidget(self.browser_map)
 
         self.browser_online_only = QCheckBox("Online only")
+        self.browser_online_only.setMaximumWidth(120)
         self.browser_online_only.stateChanged.connect(self.refresh_server_browser)
         filters.addWidget(self.browser_online_only)
 
@@ -459,7 +466,7 @@ class MainWindow(QMainWindow):
                 self.browser_table,
                 (0, 5, 6, 7, 8, 2),
                 show_details=checked,
-                stretch_columns=(0,),
+                stretch_columns=(0, 2),
             )
         )
         advanced_filters.addWidget(self.browser_detailed_columns)
@@ -496,7 +503,7 @@ class MainWindow(QMainWindow):
             self.browser_table,
             (0, 5, 6, 7, 8, 2),
             show_details=False,
-            stretch_columns=(0,),
+            stretch_columns=(0, 2),
         )
         self.browser_table.cellDoubleClicked.connect(self.handle_browser_double_clicked)
         self.browser_table.setContextMenuPolicy(Qt.CustomContextMenu)
@@ -1517,6 +1524,7 @@ class MainWindow(QMainWindow):
         self.browser_summary.setText(
             browser_summary_text(snapshot.cache_summary, len(servers), snapshot.match_count, limit)
         )
+        self.browser_summary.setToolTip(browser_summary_tooltip(snapshot.cache_summary))
 
     def _refresh_browser_filter_options(self):
         options = browser_filter_options(self.server_cache)
@@ -1634,6 +1642,62 @@ class MainWindow(QMainWindow):
         self.curated_online_summary.setText(f"{online} online")
         self.curated_offline_summary.setText(f"{offline} offline")
 
+    def set_curated_detail_view(self, show_details: bool):
+        configure_priority_columns(
+            self.table,
+            (0, 3, 8, 9, 10, 12, 15),
+            show_details=True,
+            stretch_columns=(3,),
+        )
+        self.server_cards.setVisible(not show_details)
+        self.table.setVisible(show_details)
+
+    def refresh_curated_server_cards(self):
+        if not hasattr(self, "server_cards"):
+            return
+        selected_row = self.table.currentRow()
+        self.server_cards.blockSignals(True)
+        self.server_cards.clear()
+        for row in range(self.table.rowCount()):
+            values = [self._server_cell(row, column) for column in range(16)]
+            card = CuratedServerCard(row, values, self.server_cards)
+            card.selected.connect(self._select_curated_card)
+            card.activated.connect(self._launch_curated_card)
+            card.favourite_requested.connect(self.toggle_favourite)
+            card.context_requested.connect(self.show_server_card_context_menu)
+            item = QListWidgetItem()
+            item.setData(Qt.UserRole, row)
+            item.setSizeHint(QSize(0, max(64, card.sizeHint().height() + 6)))
+            self.server_cards.addItem(item)
+            self.server_cards.setItemWidget(item, card)
+        if 0 <= selected_row < self.server_cards.count():
+            self.server_cards.setCurrentRow(selected_row)
+        self.server_cards.blockSignals(False)
+        self._sync_curated_card_selection()
+
+    def _select_curated_table_row(self, row: int):
+        if 0 <= row < self.table.rowCount() and self.table.currentRow() != row:
+            self.table.selectRow(row)
+        self._sync_curated_card_selection()
+
+    def _select_curated_card(self, row: int):
+        if 0 <= row < self.server_cards.count():
+            self.server_cards.setCurrentRow(row)
+        self._select_curated_table_row(row)
+
+    def _launch_curated_card(self, row: int):
+        self._select_curated_card(row)
+        self.launch_selected()
+
+    def _sync_curated_card_selection(self):
+        if not hasattr(self, "server_cards"):
+            return
+        selected_row = self.table.currentRow()
+        for row in range(self.server_cards.count()):
+            card = self.server_cards.itemWidget(self.server_cards.item(row))
+            if isinstance(card, CuratedServerCard):
+                card.set_selected(row == selected_row)
+
     def add_curated_server(self):
         dialog = EditCuratedServerDialog(
             self,
@@ -1706,6 +1770,7 @@ class MainWindow(QMainWindow):
             self.table.setItem(row, column, item)
         self.table.resizeColumnsToContents()
         self.update_curated_status_summary()
+        self.refresh_curated_server_cards()
 
     def remove_curated_server_row(self, row: int):
         if row < 0 or row >= len(self.servers):
@@ -1740,6 +1805,7 @@ class MainWindow(QMainWindow):
         self.table.removeRow(row)
         self._reindex_server_rows()
         self.update_curated_status_summary()
+        self.refresh_curated_server_cards()
         self.update_launch_button_text()
 
     def edit_curated_server_row(self, row: int):
@@ -1816,6 +1882,7 @@ class MainWindow(QMainWindow):
 
         self.servers[row] = updated
         self._set_item(row, 6, str(live_port))
+        self.refresh_curated_server_cards()
         self.statusBar().showMessage(
             f"Updated {updated.name} game port to live connect port {live_port}.",
             7000,
@@ -1831,6 +1898,7 @@ class MainWindow(QMainWindow):
         for column, value in enumerate(values):
             self._set_curated_server_table_item(row, column, value, cached=bool(cached))
         self.table.resizeColumnsToContents()
+        self.refresh_curated_server_cards()
 
     def _reindex_server_rows(self):
         for row in range(self.table.rowCount()):
@@ -1868,6 +1936,7 @@ class MainWindow(QMainWindow):
             for column in range(10, 16):
                 self._set_item(row, column, "")
         self.update_curated_status_summary()
+        self.refresh_curated_server_cards()
 
     def handle_cell_clicked(self, row: int, column: int):
         if column == 0:
@@ -1887,8 +1956,13 @@ class MainWindow(QMainWindow):
             self.favourites.add(key)
         else:
             self.favourites.discard(key)
-        self.table.setItem(row, 0, QTableWidgetItem("★" if server.favourite else "☆"))
+        favourite_item = QTableWidgetItem("★" if server.favourite else "☆")
+        favourite_item.setData(Qt.UserRole, row)
+        if server.favourite:
+            favourite_item.setForeground(QColor(COLOURS["accent"]))
+        self.table.setItem(row, 0, favourite_item)
         save_favourites(self.favourites)
+        self.refresh_curated_server_cards()
 
     def handle_refresh_finished(self):
         self._set_status_refresh_enabled(True)
@@ -1919,6 +1993,7 @@ class MainWindow(QMainWindow):
     def handle_server_selection_changed(self):
         self.active_discovered_server = None
         self.active_discovered_cache_key = ""
+        self._sync_curated_card_selection()
         self.update_launch_button_text()
         if not hasattr(self, "mod_summary"):
             return
@@ -2309,6 +2384,16 @@ class MainWindow(QMainWindow):
             menu.exec(self.table.viewport().mapToGlobal(pos))
             return
         self.table.selectRow(row)
+        menu = self._server_context_menu(row)
+        menu.exec(self.table.viewport().mapToGlobal(pos))
+
+    def show_server_card_context_menu(self, row: int, global_pos: QPoint):
+        if row < 0 or row >= len(self.servers):
+            return
+        self._select_curated_card(row)
+        self._server_context_menu(row).exec(global_pos)
+
+    def _server_context_menu(self, row: int) -> QMenu:
         menu = QMenu(self)
         add_action = QAction("Add curated server", self)
         refresh_selected_action = QAction("Refresh selected status", self)
@@ -2341,7 +2426,7 @@ class MainWindow(QMainWindow):
         menu.addAction(toggle_fav_action)
         menu.addSeparator()
         menu.addAction(remove_action)
-        menu.exec(self.table.viewport().mapToGlobal(pos))
+        return menu
 
     def _server_cell(self, row: int, column: int) -> str:
         item = self.table.item(row, column)

@@ -256,15 +256,16 @@ def browser_summary_text(summary: dict[str, int], shown: int, match_count: int, 
     if total == 0:
         return "No discovered servers cached"
 
-    parts = [
-        f"Showing {shown} of {match_count} matching",
-        f"{total} cached",
-        f"{summary['online']} online",
-        f"{summary['checked']} checked",
-        f"{summary['seen']} seen online",
-    ]
+    parts = [f"Showing {shown} of {match_count} matching", f"{summary['online']} online"]
     if shown == limit and match_count > shown:
         parts[0] = f"Showing first {shown} of {match_count} matching"
     elif shown == 0:
         parts[0] = f"No matches from {total} cached"
     return " · ".join(parts)
+
+
+def browser_summary_tooltip(summary: dict[str, int]) -> str:
+    return (
+        f"{summary['total']} cached · {summary['online']} provider/local online · "
+        f"{summary['checked']} checked · {summary['seen']} seen online"
+    )

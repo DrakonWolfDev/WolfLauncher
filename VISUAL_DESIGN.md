@@ -98,8 +98,9 @@ The visual pass should preserve the approved hierarchy and behaviour:
    contrast, collapsed/expanded states and the existing 1350x720 baseline.
 5. Revisit table density, fonts, icons and branding after the foundation is
    stable.
-6. Treat card-like curated server rows or grouped Settings health sections as
-   separate structural changes requiring another desktop review.
+6. Curated server card rows were approved and implemented as a separate
+   structural pass, with the complete table retained as a detailed view. Treat
+   grouped Settings health sections as another change requiring desktop review.
 7. Perform Windows font, scaling, standard-dialog and interaction testing when
    the Windows implementation phase begins.
 

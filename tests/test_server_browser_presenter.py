@@ -5,6 +5,7 @@ from wolflauncher.server_browser_presenter import (
     browser_row,
     browser_style_terms,
     browser_summary_text,
+    browser_summary_tooltip,
     api_freshness_text,
     discovered_server_details,
     players_text,
@@ -42,6 +43,9 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertIn("Showing first 200 of 350 matching", truncated)
         self.assertIn("No matches from 500 cached", no_matches)
         self.assertNotIn("Cached discovered servers:", truncated)
+        self.assertEqual(truncated, "Showing first 200 of 350 matching · 100 online")
+        self.assertIn("500 cached", browser_summary_tooltip(summary))
+        self.assertIn("200 checked", browser_summary_tooltip(summary))
 
     def test_browser_row_builds_display_sort_tooltip_and_colour_metadata(self):
         server = DiscoveredServer(

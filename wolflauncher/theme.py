@@ -35,6 +35,8 @@ QLabel[uiRole="summary"] {{ color: {c['text']}; font-weight: 600; padding: 2px 0
 QLabel[uiRole="metadata"] {{ color: {c['text_muted']}; }}
 QLabel[uiRole="statusPositive"] {{ color: {c['positive']}; background-color: #1e3a2e; border-radius: 9px; padding: 3px 9px; }}
 QLabel[uiRole="statusNegative"] {{ color: {c['negative']}; background-color: #3a1e1e; border-radius: 9px; padding: 3px 9px; }}
+QLabel[uiRole="cardTitle"] {{ color: {c['text']}; font-weight: 600; }}
+QLabel[uiRole="cardMetadata"], QLabel[uiRole="cardStats"] {{ color: {c['text_muted']}; }}
 QToolTip {{ background-color: {c['surface_alt']}; color: {c['text']}; border: 1px solid {c['border_strong']}; padding: {s['compact']}px; }}
 QLineEdit, QComboBox, QSpinBox, QTextEdit {{ background-color: {c['surface_alt']}; color: {c['text']}; border: 1px solid {c['border']}; border-radius: {s['radius']}px; padding: {s['control_vertical']}px {s['control_horizontal']}px; }}
 QLineEdit:hover, QComboBox:hover, QSpinBox:hover, QTextEdit:hover {{ border-color: {c['border_strong']}; }}
@@ -54,10 +56,21 @@ QPushButton[uiRole="primary"]:pressed {{ background-color: {c['accent_pressed']}
 QPushButton[uiRole="primary"]:disabled {{ background-color: {c['surface']}; color: {c['text_muted']}; border-color: {c['border']}; }}
 QPushButton[uiRole="accent"] {{ color: {c['accent']}; border-color: {c['border_strong']}; background-color: transparent; }}
 QPushButton[uiRole="accent"]:hover {{ color: {c['background']}; border-color: {c['accent']}; background-color: {c['accent']}; }}
+QPushButton[uiRole="accent"]:disabled {{ color: {c['text_muted']}; border-color: {c['border']}; background-color: {c['surface']}; }}
 QPushButton[uiRole="disclosure"] {{ background-color: transparent; color: {c['text_muted']}; border-color: transparent; padding-left: 2px; }}
 QPushButton[uiRole="disclosure"]:hover {{ color: {c['text']}; border-color: {c['border']}; }}
 QPushButton[uiRole="destructive"] {{ color: {c['negative']}; border-color: {c['negative']}; background-color: transparent; }}
 QPushButton[uiRole="destructive"]:hover {{ color: {c['background']}; background-color: {c['negative']}; }}
+QPushButton[uiRole="star"] {{ color: {c['text_muted']}; background-color: transparent; border-color: transparent; padding: 4px; font-size: 15px; }}
+QPushButton[uiRole="star"]:hover {{ color: {c['accent']}; border-color: {c['border']}; }}
+QPushButton[uiRole="star"][favourite="true"] {{ color: {c['accent']}; }}
+QFrame[uiRole="serverCard"] {{ background-color: {c['surface']}; border: 1px solid {c['border']}; border-left: 3px solid {c['warning']}; border-radius: 7px; }}
+QFrame[uiRole="serverCard"][onlineState="online"] {{ border-left-color: {c['positive']}; }}
+QFrame[uiRole="serverCard"][onlineState="offline"] {{ border-left-color: {c['negative']}; }}
+QFrame[uiRole="serverCard"][selected="true"] {{ background-color: {c['table_selection']}; border-color: {c['accent']}; }}
+QListWidget[uiRole="serverCards"] {{ background-color: {c['background']}; border: 0; outline: 0; }}
+QListWidget[uiRole="serverCards"]::item {{ background-color: transparent; border: 0; padding: 3px 0; }}
+QListWidget[uiRole="serverCards"]::item:selected {{ background-color: transparent; }}
 QTabWidget::pane {{ background-color: {c['background']}; border: 1px solid {c['border']}; top: -1px; }}
 QTabBar::tab {{ background-color: {c['surface']}; color: {c['text_muted']}; border: 1px solid {c['border']}; padding: 9px 18px; }}
 QTabBar::tab:hover {{ color: {c['text']}; background-color: {c['surface_alt']}; }}

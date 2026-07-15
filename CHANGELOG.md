@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Adapted Server Browser and curated Servers to their native redesign references: compact task-first columns, optional detailed fields, reference-style filters and action hierarchy, quieter discovery summaries, curated online/offline badges, and semantic favourite/status/ping/connect emphasis.
+- Adapted Server Browser and curated Servers to their native redesign references: balanced Name/Host proportions, bounded common filters, concise discovery summaries, and a native curated card list with status edges, two-line metadata, compact player/ping blocks and per-row Connect actions. The original curated table and all discovered operational fields remain available as detailed views.
 - Completed the cohesive native-theme pass with a full Qt palette for partially native controls and dialogs, consistent technical fonts for paths/endpoints/identifiers, quieter dense tables, themed transient UI, and explicit primary, accent, disclosure and destructive action roles.
 - Added the first native UI theme pass: central charcoal/amber colour and spacing tokens, application-wide QSS for standard controls, tables, tabs, menus, progress and scrollbars, accessible focus treatment, semantic primary/summary/disclosure roles, portable technical text and quieter data-dense tables.
 - Added a cross-platform visual-design brief for the later native Qt polish pass, defining the restrained charcoal/amber direction, accessibility and cognitive-consistency principles, Linux/Windows scaling requirements and a behaviour-preserving implementation sequence.
