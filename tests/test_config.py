@@ -384,7 +384,7 @@ servers:
                 encoding="utf-8",
             )
 
-            with self.assertRaisesRegex(ValueError, "Another curated server"):
+            with self.assertRaisesRegex(ValueError, "Another favourite server"):
                 config.update_curated_server(
                     path,
                     Server(

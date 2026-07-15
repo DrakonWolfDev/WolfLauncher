@@ -16,7 +16,7 @@ from .theme import set_monospace, set_ui_role
 class PromoteServerDialog(QDialog):
     def __init__(self, parent, name: str, group: str = "Discovered"):
         super().__init__(parent)
-        self.setWindowTitle("Promote to curated")
+        self.setWindowTitle("Add to Favourite Servers")
         self.resize(420, 140)
 
         layout = QVBoxLayout(self)
@@ -41,7 +41,7 @@ class PromoteServerDialog(QDialog):
 
 
 class EditCuratedServerDialog(QDialog):
-    def __init__(self, parent, server: Server, title: str = "Edit curated server"):
+    def __init__(self, parent, server: Server, title: str = "Edit favourite server"):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.resize(440, 240)

@@ -85,7 +85,7 @@ def add_curated_server(path: Path, server: Server) -> None:
             and int(item.get("game_port", 0)) == server.game_port
             and int(item.get("query_port", 0)) == server.query_port
         ):
-            raise ValueError("This server is already in the curated server list.")
+            raise ValueError("This server is already in the Favourite Servers list.")
 
     servers.append(
         {
@@ -144,7 +144,7 @@ def update_curated_server(path: Path, original: Server, updated: Server) -> bool
         if index == match_index or not isinstance(item, dict):
             continue
         if _same_server_entry(item, updated):
-            raise ValueError("Another curated server already uses that host and port combination.")
+            raise ValueError("Another favourite server already uses that host and port combination.")
 
     servers[match_index] = {
         "name": updated.name,

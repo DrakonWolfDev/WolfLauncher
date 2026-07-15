@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Renamed user-facing curated-server wording to the clearer UK English
+  **Favourite Servers**, while retaining the existing YAML format and internal
+  implementation identifiers.
 - Aligned ping presentation with DayZ's documented thresholds: 200–249 ms is
   amber warning latency and 250 ms or higher is red/critical in discovered and
   curated server views.

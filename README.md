@@ -55,8 +55,8 @@ Useful evidence for debugging:
 - SQLite-backed cache for discovered public servers.
 - Read-only discovered server browser with search, filters and cache sorting.
 - YAML/JSON import for discovered server cache rows.
-- Add, edit and remove curated servers from the Servers tab.
-- Promote discovered servers into the curated `servers.yaml` list with editable name/group.
+- Add, edit and remove Favourite Servers from the Servers tab.
+- Add discovered servers to the Favourite Servers list with an editable name/group.
 - Copy discovered server connect addresses and details.
 - Configurable discovered-server refresh provider for WolfAPI, BattleMetrics, Steam Web API or Steam master candidates.
 - WolfAPI hosted discovered-server cache provider.
@@ -72,7 +72,7 @@ Useful evidence for debugging:
 ### Server Monitoring
 
 - Live server status checks.
-- Last-known curated server status cache for calmer startup display.
+- Last-known Favourite Server status cache for calmer startup display.
 - Player counts and server information.
 - Resolved IP and connect address display.
 - Powered by `gamedig`.
@@ -226,11 +226,11 @@ servers:
 
 The `host` field may contain either a DNS hostname or an IP address.
 
-Use **Add curated server** on the Servers tab to add a server directly to
+Use **Add favourite server** on the Servers tab to add a server directly to
 `servers.yaml`. The dialog defaults to common DayZ ports, but both game and
 query ports can be edited before saving. If you paste `host:port` into the host
 field, WolfLauncher saves the host and game port separately. Newly added rows
-are checked on their own after saving. Existing curated servers can be edited,
+are checked on their own after saving. Existing Favourite Servers can be edited,
 removed or refreshed individually from the row context menu. If a live status
 refresh reports a different connect port, use **Apply live connect port** from
 the same context menu to save that game-port correction back to `servers.yaml`.
@@ -243,7 +243,7 @@ The Server Browser tab reads from the SQLite cache at:
 ~/.local/share/wolflauncher/server_cache.sqlite3
 ```
 
-Curated server rows keep their last-known live status in:
+Favourite Server rows keep their last-known live status in:
 
 ```text
 ~/.local/share/wolflauncher/curated_status.json
@@ -257,11 +257,11 @@ examples/discovered_servers.sample.yaml
 
 Imported rows stay separate from curated `servers.yaml`.
 
-Select an imported/discovered row and use **Promote to curated** to add it to `servers.yaml`. Right-click a discovered row to promote it or copy its connect address/details.
+Select an imported/discovered row and use **Add to Favourite Servers** to add it to `servers.yaml`. Right-click a discovered row to add it or copy its connect address/details.
 
 Choose a server API provider in Settings, then use **Refresh database** in the Server Browser tab. **WolfAPI v1 (staged)** uses the deployed bounded contract with strict rollout validation and is selected by default for fresh installations; existing installations retain their saved choice. **WolfAPI (legacy fallback)** preserves the `/api/servers` path. Both remain read-only and preserve cached SQLite rows on failure. BattleMetrics works without a key, Steam Web API uses the saved Steam API key, and Steam Master uses Valve's legacy UDP master server path.
 
-Full-snapshot provider refreshes sync their own cache rows rather than accumulating old entries. Bounded WolfAPI v1 refreshes fetch 100-row pages in the background up to the configured limit and merge by stable ID without deleting off-page rows. With v1 selected, Server Browser search displays SQLite matches immediately, waits briefly for typing to settle, then merges up to 100 remote matches from the full directory. An exact `host:port` search uses alias-aware resolution and checks the port as either game or query port. Failed refreshes and searches keep existing cached rows. Keep servers you care about in the curated `servers.yaml` list.
+Full-snapshot provider refreshes sync their own cache rows rather than accumulating old entries. Bounded WolfAPI v1 refreshes fetch 100-row pages in the background up to the configured limit and merge by stable ID without deleting off-page rows. With v1 selected, Server Browser search displays SQLite matches immediately, waits briefly for typing to settle, then merges up to 100 remote matches from the full directory. An exact `host:port` search uses alias-aware resolution and checks the port as either game or query port. Failed refreshes and searches keep existing cached rows. Keep servers you care about in the Favourite Servers `servers.yaml` list.
 
 Hover the Server Browser **Status** cell, or copy a server's details, to inspect
 WolfAPI freshness, validation time and provider observation. These fields are

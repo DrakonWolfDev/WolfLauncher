@@ -335,7 +335,7 @@ class MainWindow(QMainWindow):
         self.servers_detailed_columns.toggled.connect(self.set_curated_detail_view)
         servers_advanced_layout.addWidget(self.servers_detailed_columns)
         servers_advanced_layout.addStretch(1)
-        add_server = QPushButton("Add curated server")
+        add_server = QPushButton("Add favourite server")
         add_server.clicked.connect(self.add_curated_server)
         self.refresh_status_button = QPushButton("Refresh status")
         self.refresh_status_button.clicked.connect(self.refresh_statuses)
@@ -506,7 +506,7 @@ class MainWindow(QMainWindow):
         self.refresh_database_button.clicked.connect(self.refresh_from_configured_provider)
         self.enrich_visible_button = QPushButton("Enrich visible")
         self.enrich_visible_button.clicked.connect(self.enrich_visible_discovered_servers)
-        promote = QPushButton("Promote to curated")
+        promote = QPushButton("Add to Favourite Servers")
         promote.clicked.connect(self.promote_selected_discovered_server)
         use_server = QPushButton("Inspect mods")
         set_ui_role(use_server, "accent")
@@ -1220,7 +1220,7 @@ class MainWindow(QMainWindow):
             return
         name = dialog.curated_name()
         if not name:
-            QMessageBox.warning(self, "Name required", "Enter a curated server name.")
+            QMessageBox.warning(self, "Name required", "Enter a favourite server name.")
             return
 
         curated = Server(
@@ -1240,8 +1240,8 @@ class MainWindow(QMainWindow):
         self.add_curated_server_row(curated)
         QMessageBox.information(
             self,
-            "Server promoted",
-            f"{curated.name} was added to the curated Servers list.",
+            "Server added",
+            f"{curated.name} was added to Favourite Servers.",
         )
 
     def selected_discovered_server(self):
@@ -1455,7 +1455,7 @@ class MainWindow(QMainWindow):
     def refresh_selected_status(self):
         row = self.table.currentRow()
         if row < 0 or row >= len(self.servers):
-            QMessageBox.warning(self, "No server selected", "Select a curated server first.")
+            QMessageBox.warning(self, "No server selected", "Select a favourite server first.")
             return
         self.refresh_status_rows([row], f"Last updated: refreshing {self.servers[row].name}...")
 
@@ -1724,7 +1724,7 @@ class MainWindow(QMainWindow):
                 query_port=2303,
                 favourite=False,
             ),
-            title="Add curated server",
+            title="Add favourite server",
         )
         if dialog.exec() != QDialog.Accepted:
             return
@@ -1747,7 +1747,7 @@ class MainWindow(QMainWindow):
         row = len(self.servers) - 1
         self.table.selectRow(row)
         self.update_launch_button_text()
-        self.statusBar().showMessage(f"Added curated server: {server.name}", 7000)
+        self.statusBar().showMessage(f"Added favourite server: {server.name}", 7000)
         self.refresh_status_rows([row], f"Last updated: refreshing {server.name}...")
 
     def add_curated_server_row(self, server: Server):
@@ -1793,8 +1793,8 @@ class MainWindow(QMainWindow):
         server = self.servers[row]
         answer = QMessageBox.question(
             self,
-            "Remove curated server",
-            f"Remove {server.name} from the curated Servers list?",
+            "Remove favourite server",
+            f"Remove {server.name} from Favourite Servers?",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )
@@ -1871,7 +1871,7 @@ class MainWindow(QMainWindow):
 
         original = self.servers[row]
         if live_port == original.game_port:
-            self.statusBar().showMessage("Curated server already uses the live connect port.", 7000)
+            self.statusBar().showMessage("Favourite server already uses the live connect port.", 7000)
             return
 
         updated = Server(
@@ -2355,7 +2355,7 @@ class MainWindow(QMainWindow):
         menu = QMenu(self)
         inspect_action = QAction("Inspect mods", self)
         launch_action = QAction("Launch server", self)
-        promote_action = QAction("Promote to curated", self)
+        promote_action = QAction("Add to Favourite Servers", self)
         copy_connect_action = QAction("Copy connect address", self)
         copy_host_action = QAction("Copy host", self)
         copy_details_action = QAction("Copy server details", self)
@@ -2388,7 +2388,7 @@ class MainWindow(QMainWindow):
         row = self.table.rowAt(pos.y())
         if row < 0:
             menu = QMenu(self)
-            add_action = QAction("Add curated server", self)
+            add_action = QAction("Add favourite server", self)
             add_action.triggered.connect(self.add_curated_server)
             menu.addAction(add_action)
             menu.exec(self.table.viewport().mapToGlobal(pos))
@@ -2405,14 +2405,14 @@ class MainWindow(QMainWindow):
 
     def _server_context_menu(self, row: int) -> QMenu:
         menu = QMenu(self)
-        add_action = QAction("Add curated server", self)
+        add_action = QAction("Add favourite server", self)
         refresh_selected_action = QAction("Refresh selected status", self)
         apply_live_port_action = QAction("Apply live connect port", self)
         copy_connect_action = QAction("Copy connect address", self)
         copy_details_action = QAction("Copy server details", self)
-        edit_action = QAction("Edit curated server", self)
+        edit_action = QAction("Edit favourite server", self)
         toggle_fav_action = QAction("Toggle favourite", self)
-        remove_action = QAction("Remove from curated list", self)
+        remove_action = QAction("Remove from favourites", self)
         add_action.triggered.connect(self.add_curated_server)
         refresh_selected_action.triggered.connect(self.refresh_selected_status)
         apply_live_port_action.triggered.connect(
@@ -2852,7 +2852,7 @@ class MainWindow(QMainWindow):
 
         server = self.active_server_context()
         if not server:
-            QMessageBox.warning(self, "No server selected", "Select a curated server first.")
+            QMessageBox.warning(self, "No server selected", "Select a favourite server first.")
             return
         if server_key(server) != server_key(self.last_mod_result.server):
             QMessageBox.warning(
