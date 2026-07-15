@@ -41,7 +41,7 @@ class PromoteServerDialog(QDialog):
 
 
 class EditCuratedServerDialog(QDialog):
-    def __init__(self, parent, server: Server, title: str = "Edit favourite server"):
+    def __init__(self, parent, server: Server, title: str = "Edit a favourite server"):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.resize(440, 240)

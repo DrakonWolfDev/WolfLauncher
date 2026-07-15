@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added a one-time startup check that warns when the selected Steam installation
+  is not running or cannot be detected, explaining which Workshop features may
+  be incomplete while preserving server browsing.
+- Unfavouriting a saved server now offers to remove it from Favourite Servers
+  or keep it unstarred, and star changes persist to both the favourites index
+  and the user-owned YAML row.
+- Changed the add action to the more natural **Add a favourite server** wording.
 - Renamed user-facing curated-server wording to the clearer UK English
   **Favourite Servers**, while retaining the existing YAML format and internal
   implementation identifiers.

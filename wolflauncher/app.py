@@ -239,6 +239,7 @@ class MainWindow(QMainWindow):
         self.refresh_statuses()
         self.refresh_server_browser()
         self.update_settings_health()
+        QTimer.singleShot(0, self.check_startup_steam_state)
         QTimer.singleShot(0, self.check_initial_server_mods)
         QTimer.singleShot(30000, self.maybe_auto_refresh_configured_provider)
 
@@ -335,7 +336,7 @@ class MainWindow(QMainWindow):
         self.servers_detailed_columns.toggled.connect(self.set_curated_detail_view)
         servers_advanced_layout.addWidget(self.servers_detailed_columns)
         servers_advanced_layout.addStretch(1)
-        add_server = QPushButton("Add favourite server")
+        add_server = QPushButton("Add a favourite server")
         add_server.clicked.connect(self.add_curated_server)
         self.refresh_status_button = QPushButton("Refresh status")
         self.refresh_status_button.clicked.connect(self.refresh_statuses)
@@ -1347,6 +1348,23 @@ class MainWindow(QMainWindow):
     def selected_steam_install(self) -> SteamInstall | None:
         return select_steam_install(self.native_steam_mode_key())
 
+    def check_startup_steam_state(self):
+        """Surface Steam availability once the initial window has opened."""
+        install = self.selected_steam_install()
+        if install and install.running:
+            return
+        if install:
+            detail = f"{install_label(install)} was detected, but it is not currently running."
+        else:
+            detail = "WolfLauncher could not detect the selected Steam installation."
+        QMessageBox.warning(
+            self,
+            "Steam is not running",
+            f"{detail}\n\n"
+            "Start Steam and sign in for complete Workshop mod information, sizes and "
+            "download operations. You can continue browsing servers in the meantime.",
+        )
+
     def saved_selected_row(self) -> int:
         try:
             return int(self.settings.get("last_selected_row", -1))
@@ -1724,7 +1742,7 @@ class MainWindow(QMainWindow):
                 query_port=2303,
                 favourite=False,
             ),
-            title="Add favourite server",
+            title="Add a favourite server",
         )
         if dialog.exec() != QDialog.Accepted:
             return
@@ -1787,19 +1805,20 @@ class MainWindow(QMainWindow):
         self.update_curated_status_summary()
         self.refresh_curated_server_cards()
 
-    def remove_curated_server_row(self, row: int):
+    def remove_curated_server_row(self, row: int, confirm: bool = True):
         if row < 0 or row >= len(self.servers):
             return
         server = self.servers[row]
-        answer = QMessageBox.question(
-            self,
-            "Remove favourite server",
-            f"Remove {server.name} from Favourite Servers?",
-            QMessageBox.Yes | QMessageBox.No,
-            QMessageBox.No,
-        )
-        if answer != QMessageBox.Yes:
-            return
+        if confirm:
+            answer = QMessageBox.question(
+                self,
+                "Remove favourite server",
+                f"Remove {server.name} from Favourite Servers?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            if answer != QMessageBox.Yes:
+                return
 
         try:
             removed = remove_curated_server(self.config_path, server)
@@ -1960,15 +1979,45 @@ class MainWindow(QMainWindow):
         if row < 0 or row >= len(self.servers):
             return
         server = self.servers[row]
-        server.favourite = not server.favourite
-        key = server_key(server)
-        if server.favourite:
+        becoming_favourite = not server.favourite
+        if not becoming_favourite:
+            reply = QMessageBox.question(
+                self,
+                "Remove from Favourite Servers?",
+                f"Remove {server.name} from Favourite Servers?\n\n"
+                "Choose No to keep the server in the list with its star turned off.",
+                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel,
+                QMessageBox.No,
+            )
+            if reply == QMessageBox.Cancel:
+                return
+            if reply == QMessageBox.Yes:
+                self.remove_curated_server_row(row, confirm=False)
+                return
+
+        updated = replace(server, favourite=becoming_favourite)
+        try:
+            changed = update_curated_server(self.config_path, server, updated)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Could not update favourite", str(exc))
+            return
+        if not changed:
+            QMessageBox.warning(
+                self,
+                "Could not update favourite",
+                "This server was not found in servers.yaml.",
+            )
+            return
+
+        self.servers[row] = updated
+        key = server_key(updated)
+        if updated.favourite:
             self.favourites.add(key)
         else:
             self.favourites.discard(key)
-        favourite_item = QTableWidgetItem("★" if server.favourite else "☆")
+        favourite_item = QTableWidgetItem("★" if updated.favourite else "☆")
         favourite_item.setData(Qt.UserRole, row)
-        if server.favourite:
+        if updated.favourite:
             favourite_item.setForeground(QColor(COLOURS["accent"]))
         self.table.setItem(row, 0, favourite_item)
         save_favourites(self.favourites)
@@ -2388,7 +2437,7 @@ class MainWindow(QMainWindow):
         row = self.table.rowAt(pos.y())
         if row < 0:
             menu = QMenu(self)
-            add_action = QAction("Add favourite server", self)
+            add_action = QAction("Add a favourite server", self)
             add_action.triggered.connect(self.add_curated_server)
             menu.addAction(add_action)
             menu.exec(self.table.viewport().mapToGlobal(pos))
@@ -2405,7 +2454,7 @@ class MainWindow(QMainWindow):
 
     def _server_context_menu(self, row: int) -> QMenu:
         menu = QMenu(self)
-        add_action = QAction("Add favourite server", self)
+        add_action = QAction("Add a favourite server", self)
         refresh_selected_action = QAction("Refresh selected status", self)
         apply_live_port_action = QAction("Apply live connect port", self)
         copy_connect_action = QAction("Copy connect address", self)

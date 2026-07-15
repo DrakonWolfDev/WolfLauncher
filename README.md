@@ -104,6 +104,11 @@ These instructions target Linux Mint 21/22 and Ubuntu 22.04/24.04 family systems
 
 Steam and DayZ should already be installed through native Steam or Flatpak Steam. WolfLauncher does not install DayZ or Proton. The experimental Workshop control delegates confirmed subscriptions and downloads to the user's running Steam client.
 
+At startup, WolfLauncher checks the selected Steam installation and warns once
+if Steam is stopped or unavailable. Server browsing remains available, but
+Workshop mod information, sizes and download operations may be incomplete until
+Steam is running and signed in.
+
 The experimental control is disabled by default. Enable **Steam-native subscription controls** under the Settings advanced disclosure and run a successful mod check. Missing mods can then be requested from the Mods tab or directly from the missing-mod launch warning. Steam must be running under the same user and signed into an account that owns DayZ. **Hide monitor** only hides the progress window: the original helper continues monitoring in the background and launch remains blocked until it finishes. Use the install action again to reopen that same live monitor; WolfLauncher will not start a second Steamworks session. Flatpak compatibility remains under real-world test.
 
 After a successful batch, **Launch server** waits for the isolated Steamworks helper to exit and for a fresh mod check to confirm every required directory before starting the selected server. A failed or incomplete recheck returns control to the Mods tab instead of launching with stale readiness data.
@@ -226,7 +231,7 @@ servers:
 
 The `host` field may contain either a DNS hostname or an IP address.
 
-Use **Add favourite server** on the Servers tab to add a server directly to
+Use **Add a favourite server** on the Servers tab to add a server directly to
 `servers.yaml`. The dialog defaults to common DayZ ports, but both game and
 query ports can be edited before saving. If you paste `host:port` into the host
 field, WolfLauncher saves the host and game port separately. Newly added rows
