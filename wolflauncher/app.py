@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import datetime
 import sys
 
-from PySide6.QtCore import QPoint, QSize, QTimer, QUrl, Qt
+from PySide6.QtCore import QPoint, QProcess, QSize, QTimer, QUrl, Qt
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -57,7 +57,7 @@ from .curated_status_cache import (
 )
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from .launch_history import load_last_launch_report, save_last_launch_report
-from .launch_dialogs import LaunchDialog, NativeLaunchPreviewDialog
+from .launch_dialogs import LaunchDialog, NativeLaunchPreviewDialog, PreflightLaunchDialog
 from .launch_preflight import (
     LaunchPreflightAction,
     build_launch_preflight_state,
@@ -77,6 +77,7 @@ from .native_launcher import (
 from .platform_detection import (
     SteamInstall,
     best_install,
+    build_steam_start_command,
     dayz_process_check,
     detect_steam,
     select_steam_install,
@@ -161,6 +162,11 @@ class MainWindow(QMainWindow):
         self.mod_worker = None
         self.workshop_subscription_worker = None
         self.workshop_state_worker = None
+        self.preflight_dialog = None
+        self.preflight_mod_worker = None
+        self.preflight_workshop_worker = None
+        self.preflight_server = None
+        self.preflight_steam_attempts = 0
         self.workshop_subscription_dialog = None
         self.workshop_subscription_monitor_hidden = False
         self.workshop_subscription_names = {}
@@ -3017,38 +3023,144 @@ class MainWindow(QMainWindow):
             return
 
         self.save_user_settings(silent=True)
+        self.start_connect_preflight(server)
 
-        if not self.confirm_launch_preflight(server):
+    def start_connect_preflight(self, server: Server):
+        """Run the user-facing Steam, Workshop, launcher and process checklist."""
+        self.preflight_server = server
+        self.preflight_dialog = PreflightLaunchDialog(self, server.name)
+        self.preflight_dialog.finished.connect(self.cancel_connect_preflight)
+        self.preflight_dialog.show()
+        self.launch_button.setEnabled(False)
+        self.ensure_preflight_steam()
+
+    def cancel_connect_preflight(self, *_args):
+        worker = self.preflight_workshop_worker
+        if worker and worker.isRunning():
+            worker.cancel()
+        self.launch_button.setEnabled(True)
+
+    def fail_connect_preflight(self, key: str, detail: str):
+        if self.preflight_dialog:
+            self.preflight_dialog.set_failed(key, detail)
+        self.launch_button.setEnabled(True)
+
+    def ensure_preflight_steam(self):
+        dialog = self.preflight_dialog
+        if not dialog or not dialog.isVisible():
             return
-
         install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
-        result = usable_mod_result(
-            server, self.last_mod_result, install.workshop_dir if install else None
-        )
-        if (
-            bool(self.settings.get("experimental_workshop_subscription", False))
-            and install
-            and install.running
-            and result
-            and result.required_mods
-        ):
-            self.launch_button.setEnabled(False)
-            self.statusBar().showMessage("Verifying current Steam Workshop readiness before launch...")
-            self.workshop_state_worker = WorkshopStateWorker(
-                (mod.workshop_id for mod in result.required_mods), install
-            )
-            self.workshop_state_worker.state_ready.connect(
-                lambda state_result: self.finish_prelaunch_workshop_check(
-                    server, result, state_result
-                )
-            )
-            self.workshop_state_worker.finished.connect(
-                self.clear_workshop_state_worker
-            )
-            self.workshop_state_worker.start()
+        if not install or not install.dayz_dir:
+            self.fail_connect_preflight("steam", "The selected Steam/DayZ installation was not detected. Check Settings health.")
             return
+        if not install.workshop_dir:
+            self.fail_connect_preflight("mods", "The DayZ Workshop folder was not detected. Check Settings health.")
+            return
+        if install.running:
+            dialog.set_complete("steam", f"{install_label(install)} is running. Checking required mods…")
+            self.start_preflight_mod_check(install)
+            return
+        command = build_steam_start_command(install)
+        if not command:
+            self.fail_connect_preflight("steam", "The selected Steam client has no runnable command.")
+            return
+        dialog.set_working("steam", f"Starting {install_label(install)}…")
+        started, _pid = QProcess.startDetached(command[0], command[1:])
+        if not started:
+            self.fail_connect_preflight("steam", "Steam could not be started.")
+            return
+        self.preflight_steam_attempts = 0
+        QTimer.singleShot(1000, self.poll_preflight_steam)
 
-        self.perform_launch(server)
+    def poll_preflight_steam(self):
+        dialog = self.preflight_dialog
+        if not dialog or not dialog.isVisible():
+            return
+        self.preflight_steam_attempts += 1
+        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        if install and install.running:
+            dialog.set_complete("steam", f"{install_label(install)} is running. Checking required mods…")
+            self.start_preflight_mod_check(install)
+            return
+        if self.preflight_steam_attempts >= 60:
+            self.fail_connect_preflight("steam", "Steam was started, but did not become ready within 60 seconds. Sign in to Steam and try again.")
+            return
+        QTimer.singleShot(1000, self.poll_preflight_steam)
+
+    def start_preflight_mod_check(self, install: SteamInstall):
+        dialog = self.preflight_dialog
+        server = self.preflight_server
+        if not dialog or not server:
+            return
+        dialog.set_working("mods", "Checking the server manifest and local Workshop state…")
+        self.preflight_mod_worker = ModWorker(
+            server,
+            install.workshop_dir,
+            self.mod_check_steam_context(install),
+            workshop_install=install,
+        )
+        self.preflight_mod_worker.mods_ready.connect(self.finish_preflight_mod_check)
+        self.preflight_mod_worker.start()
+
+    def finish_preflight_mod_check(self, result: ModCheckResult):
+        self.preflight_mod_worker = None
+        dialog = self.preflight_dialog
+        server = self.preflight_server
+        if not dialog or not dialog.isVisible() or not server:
+            return
+        if server_key(result.server) != server_key(server) or not result.ok:
+            self.fail_connect_preflight("mods", result.error or "The required-mod check failed.")
+            return
+        self.last_mod_result = result
+        self.display_mods_result(result)
+        if result.missing_mods:
+            install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+            if not install or not install.running:
+                self.fail_connect_preflight("mods", "Steam stopped before required mods could be installed.")
+                return
+            dialog.set_working("mods", f"Installing or updating {len(result.missing_mods)} required Workshop item(s)…")
+            self.preflight_workshop_worker = WorkshopSubscriptionWorker(
+                [mod.workshop_id for mod in result.missing_mods], install
+            )
+            self.preflight_workshop_worker.progress_ready.connect(self.update_preflight_workshop_progress)
+            self.preflight_workshop_worker.subscription_ready.connect(self.finish_preflight_workshop)
+            self.preflight_workshop_worker.start()
+            return
+        dialog.set_complete("mods", f"All {len(result.required_mods)} required mod(s) are ready.")
+        self.finish_connect_preflight()
+
+    def update_preflight_workshop_progress(self, snapshots):
+        dialog = self.preflight_dialog
+        if not dialog or not snapshots:
+            return
+        installed = sum(1 for item in snapshots if item.installed)
+        active = current_workshop_item(snapshots)
+        suffix = f"; current item {active.percent}%" if active and active.percent is not None else ""
+        dialog.set_working("mods", f"Steam has prepared {installed} of {len(snapshots)} required item(s){suffix}.")
+
+    def finish_preflight_workshop(self, result):
+        self.preflight_workshop_worker = None
+        if not result.ok:
+            self.fail_connect_preflight("mods", result.error or "Steam did not finish every required Workshop item.")
+            return
+        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        if not install:
+            self.fail_connect_preflight("mods", "The selected Steam installation is no longer available.")
+            return
+        self.start_preflight_mod_check(install)
+
+    def finish_connect_preflight(self):
+        dialog = self.preflight_dialog
+        server = self.preflight_server
+        if not dialog or not server:
+            return
+        dialog.set_working("launcher", "Building the Steam launch command…")
+        try:
+            command = self.build_selected_launch_command(server)
+        except (NativeLaunchError, LaunchError) as exc:
+            self.fail_connect_preflight("launcher", str(exc))
+            return
+        dialog.start_launch(command)
 
     def finish_prelaunch_workshop_check(self, server, result, state_result):
         current = self.active_server_context()

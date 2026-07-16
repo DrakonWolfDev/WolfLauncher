@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Replaced the Connect-time prompt chain with a live pre-flight checklist that
+  starts the selected Steam client when necessary, verifies required mods,
+  automatically subscribes/updates incomplete Workshop items, rechecks local
+  readiness, hands the launch command to Steam and confirms the DayZ process.
 - Added a one-time startup check that warns when the selected Steam installation
   is not running or cannot be detected, explaining which Workshop features may
   be incomplete while preserving server browsing.

@@ -7,7 +7,7 @@ from PySide6.QtWidgets import QMessageBox
 
 from wolflauncher.app import MainWindow
 from wolflauncher.models import Server
-from wolflauncher.platform_detection import SteamInstall
+from wolflauncher.platform_detection import SteamInstall, build_steam_start_command
 
 
 def stopped_install() -> SteamInstall:
@@ -23,6 +23,18 @@ def stopped_install() -> SteamInstall:
 
 
 class StartupSteamCheckTests(unittest.TestCase):
+    def test_native_steam_start_command_uses_detected_executable(self):
+        self.assertEqual(build_steam_start_command(stopped_install()), ["steam"])
+
+    def test_flatpak_steam_start_command_uses_application_id(self):
+        install = stopped_install()
+        install.mode = "flatpak"
+        install.executable = "com.valvesoftware.Steam"
+        self.assertEqual(
+            build_steam_start_command(install),
+            ["flatpak", "run", "com.valvesoftware.Steam"],
+        )
+
     @patch("wolflauncher.app.QMessageBox.warning")
     def test_stopped_steam_is_explained_at_startup(self, warning):
         window = SimpleNamespace(selected_steam_install=Mock(return_value=stopped_install()))

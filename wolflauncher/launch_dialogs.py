@@ -135,6 +135,111 @@ class LaunchDialog(PostHandoffProcessCheckMixin, QDialog):
             self.close_button.setEnabled(True)
 
 
+class PreflightLaunchDialog(QDialog):
+    """Compact, live checklist for the automatic Connect workflow."""
+
+    PROCESS_CHECK_INTERVAL_MS = 2000
+    PROCESS_CHECK_ATTEMPTS = 30
+
+    def __init__(self, parent, server_name: str):
+        super().__init__(parent)
+        self.setWindowTitle(f"Connecting to {server_name}")
+        self.resize(560, 330)
+        self.process = QProcess(self)
+        self.process.setProcessChannelMode(QProcess.MergedChannels)
+        self.process.readyReadStandardOutput.connect(self.read_output)
+        self.process.finished.connect(self.handle_finished)
+        self.process.errorOccurred.connect(self.handle_process_error)
+        self.process_check_attempt = 0
+
+        layout = QVBoxLayout(self)
+        intro = QLabel(f"Preparing <b>{server_name}</b>")
+        layout.addWidget(intro)
+        self.steps = {}
+        for key, text in (
+            ("steam", "Steam running"),
+            ("mods", "Mods ready"),
+            ("launcher", "Launcher ready"),
+            ("game", "Game launching"),
+        ):
+            label = QLabel(f"○  {text}")
+            self.steps[key] = (label, text)
+            layout.addWidget(label)
+
+        self.detail = QLabel("Starting pre-flight…")
+        self.detail.setWordWrap(True)
+        layout.addWidget(self.detail)
+        self.output = QTextEdit()
+        self.output.setReadOnly(True)
+        self.output.setMaximumHeight(100)
+        set_monospace(self.output)
+        layout.addWidget(self.output)
+
+        buttons = QHBoxLayout()
+        self.close_button = QPushButton("Cancel")
+        self.close_button.clicked.connect(self.close)
+        buttons.addStretch(1)
+        buttons.addWidget(self.close_button)
+        layout.addLayout(buttons)
+
+    def set_working(self, key: str, detail: str = ""):
+        label, text = self.steps[key]
+        label.setText(f"◔  {text}")
+        if detail:
+            self.detail.setText(detail)
+
+    def set_complete(self, key: str, detail: str = ""):
+        label, text = self.steps[key]
+        label.setText(f"✓  {text}")
+        if detail:
+            self.detail.setText(detail)
+
+    def set_failed(self, key: str, detail: str):
+        label, text = self.steps[key]
+        label.setText(f"✗  {text}")
+        self.detail.setText(detail)
+        self.close_button.setText("Close")
+
+    def start_launch(self, command: list[str]):
+        self.set_complete("launcher", "Sending the launch instructions to Steam…")
+        self.process.start(command[0], command[1:])
+
+    def read_output(self):
+        data = bytes(self.process.readAllStandardOutput()).decode("utf-8", errors="replace")
+        if data:
+            self.output.moveCursor(QTextCursor.End)
+            self.output.insertPlainText(data)
+
+    def handle_finished(self, exit_code: int, _exit_status):
+        self.read_output()
+        if exit_code != 0:
+            self.set_failed("launcher", f"Steam launch handoff exited with code {exit_code}.")
+            return
+        self.set_working("game", "Steam accepted the launch. Waiting for the DayZ process…")
+        self.process_check_attempt = 0
+        QTimer.singleShot(self.PROCESS_CHECK_INTERVAL_MS, self.check_dayz_process)
+
+    def check_dayz_process(self):
+        self.process_check_attempt += 1
+        check = dayz_process_check()
+        if check.running:
+            self.set_complete("game", check.detail)
+            self.close_button.setText("Close")
+            return
+        if self.process_check_attempt < self.PROCESS_CHECK_ATTEMPTS:
+            QTimer.singleShot(self.PROCESS_CHECK_INTERVAL_MS, self.check_dayz_process)
+            return
+        self.set_failed(
+            "game",
+            "Steam accepted the launch, but no DayZ process was detected within 60 seconds. "
+            "Steam may still be preparing Proton or BattlEye.",
+        )
+
+    def handle_process_error(self, error):
+        if error == QProcess.ProcessError.FailedToStart:
+            self.set_failed("launcher", "The Steam launch command could not be started.")
+
+
 class NativeLaunchPreviewDialog(PostHandoffProcessCheckMixin, QDialog):
     def __init__(self, parent, title: str, preview_text: str, command: list[str]):
         super().__init__(parent)

@@ -311,6 +311,13 @@ def steam_command_detail(install: SteamInstall | None) -> str:
     return install.executable
 
 
+def build_steam_start_command(install: SteamInstall) -> list[str]:
+    """Build the selected client's normal start command without launching a game."""
+    if install.mode == "flatpak":
+        return ["flatpak", "run", FLATPAK_STEAM_ID] if install.executable else []
+    return [install.executable] if install.executable else []
+
+
 def steam_install_summary(install: SteamInstall | None) -> str:
     if not install:
         return "Not detected"
