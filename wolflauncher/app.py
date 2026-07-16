@@ -766,7 +766,7 @@ class MainWindow(QMainWindow):
         self.leopard_panel = QLabel(
             "Mostly harmless. This cupboard may contain diagnostics, advanced controls, "
             "and the occasional leopard. If you don't know what they're for, you probably "
-            "don't need them. Mind the leopard!"
+            "don't need them. Mind the leopard."
         )
         set_ui_role(self.leopard_panel, "metadata")
         self.leopard_panel.setWordWrap(True)
