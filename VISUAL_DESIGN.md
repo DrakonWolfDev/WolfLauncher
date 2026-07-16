@@ -43,7 +43,9 @@ copying browser-specific details exactly.
   must never sit at readable contrast directly behind dense text.
 - Use fine warm-grey framing with a restrained amber lower-edge detail to tie
   the application shell to the action colour without creating a gamer-style
-  glow. Future wolf branding should be small, geometric and secondary.
+  glow. Wolf branding is a small geometric, front-facing mark with amber eyes,
+  used for the application icon and a secondary tab-bar lockup rather than a
+  large header or illustrated mascot.
 - Avoid characters, weapons, zombies, military imagery, copied DayZ key art,
   distressed-metal framing, bright red chrome and prominent photographic
   scenery. WolfLauncher should remain calm, technical and recognisably its own.

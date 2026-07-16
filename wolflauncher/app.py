@@ -32,7 +32,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from PySide6.QtGui import QColor, QDesktopServices, QAction
+from PySide6.QtGui import QColor, QDesktopServices, QIcon, QAction
 
 from .config import (
     add_curated_server,
@@ -126,6 +126,7 @@ from .theme import (
     monospace_font,
     set_monospace,
     set_ui_role,
+    WOLF_MARK_PATH,
 )
 from .workers import (
     BattleMetricsDiscoveryWorker,
@@ -236,6 +237,7 @@ class MainWindow(QMainWindow):
 
         self.tabs = QTabWidget()
         self.tabs.setObjectName("mainTabs")
+        self.tabs.setCornerWidget(self._build_brand_lockup(), Qt.TopRightCorner)
         self.tabs.addTab(self._build_servers_tab(), "Servers")
         self.tabs.addTab(self._build_server_browser_tab(), "Server Browser")
         self.mods_tab_index = self.tabs.addTab(self._build_mods_tab(), "Mods")
@@ -249,6 +251,21 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(0, self.check_startup_steam_state)
         QTimer.singleShot(0, self.check_initial_server_mods)
         QTimer.singleShot(30000, self.maybe_auto_refresh_configured_provider)
+
+    def _build_brand_lockup(self) -> QWidget:
+        lockup = QWidget()
+        set_ui_role(lockup, "brandLockup")
+        layout = QHBoxLayout(lockup)
+        layout.setContentsMargins(8, 0, 10, 0)
+        layout.setSpacing(7)
+        mark = QLabel()
+        mark.setPixmap(QIcon(str(WOLF_MARK_PATH)).pixmap(QSize(22, 22)))
+        mark.setToolTip("WolfLauncher")
+        wordmark = QLabel("WOLF // LAUNCHER")
+        set_ui_role(wordmark, "brandWordmark")
+        layout.addWidget(mark)
+        layout.addWidget(wordmark)
+        return lockup
 
     def _build_servers_tab(self) -> QWidget:
         widget = QWidget()

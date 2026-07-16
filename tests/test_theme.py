@@ -45,6 +45,16 @@ class ThemeTests(unittest.TestCase):
         )
         self.assertIn("wolf-atmosphere-v1.png", APPLICATION_STYLESHEET)
         self.assertIn("QTabWidget#mainTabs::pane", APPLICATION_STYLESHEET)
+
+    def test_wolf_mark_is_packaged_with_theme(self):
+        mark = (
+            Path(__file__).resolve().parents[1]
+            / "wolflauncher"
+            / "assets"
+            / "wolf-mark.svg"
+        )
+        self.assertTrue(mark.is_file())
+        self.assertIn("#e8a33d", mark.read_text())
         self.assertEqual(
             self.app.palette().color(QPalette.Window).name(),
             COLOURS["background"],

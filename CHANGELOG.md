@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Added a compact geometric wolf identity mark for the application/window icon
+  and a restrained `WOLF // LAUNCHER` tab-bar lockup, without adding a large
+  branded header or reducing workspace height.
 - Established WolfLauncher's atmospheric visual direction with an original,
   low-contrast foggy treeline around the workspace perimeter, transparent
   content canvas, and restrained amber lower-edge framing that preserves the

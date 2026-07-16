@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QFontDatabase, QPalette
+from PySide6.QtGui import QColor, QFontDatabase, QIcon, QPalette
 from PySide6.QtWidgets import (
     QApplication,
     QAbstractItemView,
@@ -24,6 +24,8 @@ COLOURS = {
 SPACING = {"compact": 4, "control_vertical": 6, "control_horizontal": 10,
            "table_vertical": 5, "table_horizontal": 8, "radius": 4}
 STATUS_COLOURS = {key: COLOURS[key] for key in ("positive", "warning", "negative")}
+ASSETS_DIR = Path(__file__).resolve().parent / "assets"
+WOLF_MARK_PATH = ASSETS_DIR / "wolf-mark.svg"
 
 
 def _build_stylesheet() -> str:
@@ -43,6 +45,8 @@ QLabel[uiRole="metadata"] {{ color: {c['text_muted']}; }}
 QLabel[uiRole="statusPositive"] {{ color: {c['positive']}; background-color: #1e3a2e; border-radius: 9px; padding: 3px 9px; }}
 QLabel[uiRole="statusNegative"] {{ color: {c['negative']}; background-color: #3a1e1e; border-radius: 9px; padding: 3px 9px; }}
 QLabel[uiRole="cardTitle"] {{ color: {c['text']}; font-weight: 600; }}
+QWidget[uiRole="brandLockup"] {{ background-color: transparent; }}
+QLabel[uiRole="brandWordmark"] {{ color: {c['text_muted']}; font-weight: 600; letter-spacing: 1px; }}
 QLabel[uiRole="cardMetadata"], QLabel[uiRole="cardStats"] {{ color: {c['text_muted']}; }}
 QLabel[uiRole="pingWarning"] {{ color: {c['warning']}; }}
 QLabel[uiRole="pingCritical"] {{ color: {c['negative']}; }}
@@ -153,6 +157,7 @@ def build_palette() -> QPalette:
 def apply_application_theme(app: QApplication) -> None:
     app.setPalette(build_palette())
     app.setStyleSheet(APPLICATION_STYLESHEET)
+    app.setWindowIcon(QIcon(str(WOLF_MARK_PATH)))
 
 
 def set_ui_role(widget: QWidget, role: str) -> None:
