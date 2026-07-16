@@ -28,6 +28,11 @@ ASSETS_DIR = Path(__file__).resolve().parent / "assets"
 WOLF_MARK_PATH = ASSETS_DIR / "wolf-mark.svg"
 
 
+def theme_icon(name: str) -> QIcon:
+    """Return one of WolfLauncher's deliberately small native SVG icons."""
+    return QIcon(str(ASSETS_DIR / f"icon-{name}.svg"))
+
+
 def _build_stylesheet() -> str:
     c, s = COLOURS, SPACING
     check_icon = (Path(__file__).resolve().parent / "assets" / "check.svg").as_posix()

@@ -126,6 +126,7 @@ from .theme import (
     monospace_font,
     set_monospace,
     set_ui_role,
+    theme_icon,
     WOLF_MARK_PATH,
 )
 from .workers import (
@@ -238,10 +239,14 @@ class MainWindow(QMainWindow):
         self.tabs = QTabWidget()
         self.tabs.setObjectName("mainTabs")
         self.tabs.setCornerWidget(self._build_brand_lockup(), Qt.TopRightCorner)
-        self.tabs.addTab(self._build_servers_tab(), "Servers")
-        self.tabs.addTab(self._build_server_browser_tab(), "Server Browser")
-        self.mods_tab_index = self.tabs.addTab(self._build_mods_tab(), "Mods")
-        self.tabs.addTab(self._build_settings_tab(), "Settings")
+        self.tabs.addTab(self._build_servers_tab(), theme_icon("servers"), "Servers")
+        self.tabs.addTab(
+            self._build_server_browser_tab(), theme_icon("browser"), "Server Browser"
+        )
+        self.mods_tab_index = self.tabs.addTab(
+            self._build_mods_tab(), theme_icon("mods"), "Mods"
+        )
+        self.tabs.addTab(self._build_settings_tab(), theme_icon("settings"), "Settings")
         self.setCentralWidget(self.tabs)
 
         self.apply_refresh_timer()
@@ -353,10 +358,13 @@ class MainWindow(QMainWindow):
 
         buttons = QHBoxLayout()
         add_server = QPushButton("Add a favourite server")
+        add_server.setIcon(theme_icon("add"))
         add_server.clicked.connect(self.add_curated_server)
         self.refresh_status_button = QPushButton("Refresh status")
+        self.refresh_status_button.setIcon(theme_icon("refresh"))
         self.refresh_status_button.clicked.connect(self.refresh_statuses)
         self.launch_button = QPushButton("Launch selected server")
+        self.launch_button.setIcon(theme_icon("launch"))
         set_ui_role(self.launch_button, "primary")
         self.launch_button.clicked.connect(self.launch_selected)
         buttons.addStretch(1)
@@ -514,6 +522,7 @@ class MainWindow(QMainWindow):
         set_ui_role(use_server, "accent")
         use_server.clicked.connect(self.inspect_selected_discovered_server)
         launch_discovered = QPushButton("Launch server")
+        launch_discovered.setIcon(theme_icon("launch"))
         set_ui_role(launch_discovered, "primary")
         launch_discovered.clicked.connect(self.launch_selected_discovered_server)
         clear_filters = QPushButton("Reset filters")
@@ -563,6 +572,7 @@ class MainWindow(QMainWindow):
 
         buttons = QHBoxLayout()
         check = QPushButton("Recheck selected server mods")
+        check.setIcon(theme_icon("recheck"))
         set_ui_role(check, "primary")
         check.clicked.connect(lambda _checked=False: self.check_selected_server_mods(force=True))
         native_preview = QPushButton("Native launch preview")
@@ -749,6 +759,31 @@ class MainWindow(QMainWindow):
         support_tools.addWidget(import_file)
         support_tools.addStretch(1)
         advanced_layout.addLayout(support_tools)
+
+        self.leopard_toggle = QPushButton("▸ Beware of the leopard")
+        self.leopard_toggle.setCheckable(True)
+        set_ui_role(self.leopard_toggle, "disclosure")
+        self.leopard_panel = QLabel(
+            "Mostly harmless. This cupboard may contain diagnostics, advanced controls, "
+            "and the occasional leopard. If you don't know what they're for, you probably "
+            "don't need them. Mind the leopard!"
+        )
+        set_ui_role(self.leopard_panel, "metadata")
+        self.leopard_panel.setWordWrap(True)
+        self.leopard_panel.hide()
+        self.leopard_toggle.toggled.connect(
+            lambda expanded: (
+                self.leopard_panel.setVisible(expanded),
+                self.leopard_toggle.setText(
+                    f"{'▾' if expanded else '▸'} Beware of the leopard"
+                ),
+            )
+        )
+        leopard_row = QHBoxLayout()
+        leopard_row.addWidget(self.leopard_toggle)
+        leopard_row.addStretch(1)
+        advanced_layout.addLayout(leopard_row)
+        advanced_layout.addWidget(self.leopard_panel)
 
         row = QHBoxLayout()
         health = QPushButton("Check health")

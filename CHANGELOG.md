@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Added a deliberately restrained native SVG icon pass for the four primary
+  tabs and only the clearest Add, Refresh, Launch and Recheck actions, retaining
+  every text label and avoiding decorative table/filter iconography.
+- Added the entirely non-operational **Beware of the leopard** Settings
+  disclosure, which hides no setting, diagnostic or useful information.
 - Fixed Server Browser **Required Mods** sorting when known integer counts and
   unknown placeholder values share the column; sortable items now produce
   type-stable numeric, text and empty keys instead of comparing integers with

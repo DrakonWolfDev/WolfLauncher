@@ -55,6 +55,13 @@ class ThemeTests(unittest.TestCase):
         )
         self.assertTrue(mark.is_file())
         self.assertIn("#e8a33d", mark.read_text())
+
+    def test_restrained_icon_set_is_packaged_as_native_svg(self):
+        assets = Path(__file__).resolve().parents[1] / "wolflauncher" / "assets"
+        for name in (
+            "servers", "browser", "mods", "settings", "add", "refresh", "launch", "recheck"
+        ):
+            self.assertTrue((assets / f"icon-{name}.svg").is_file())
         self.assertEqual(
             self.app.palette().color(QPalette.Window).name(),
             COLOURS["background"],

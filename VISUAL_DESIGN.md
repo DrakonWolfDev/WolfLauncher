@@ -49,6 +49,10 @@ copying browser-specific details exactly.
 - Avoid characters, weapons, zombies, military imagery, copied DayZ key art,
   distressed-metal framing, bright red chrome and prominent photographic
   scenery. WolfLauncher should remain calm, technical and recognisably its own.
+- Keep icon use deliberately sparse: one muted geometric icon per primary tab,
+  plus only unambiguous repeated actions such as Add, Refresh, Launch and
+  Recheck. Text labels remain authoritative; tables, filters, statuses and
+  ordinary secondary actions do not receive decorative icons.
 - Use warm charcoal surfaces rather than pure black or generic platform grey,
   with two or three surface levels providing hierarchy.
 - Reserve amber/rust for the active tab, focus, favourites and the principal
