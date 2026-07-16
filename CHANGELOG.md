@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Made Favourite Servers card-only after desktop approval of the card layout,
+  removing the legacy server-table options disclosure and detailed-table view.
+- Promoted Steam-managed Workshop subscription and updates from an opt-in
+  experiment to the default mod-readiness path. Install/update controls and
+  per-mod recovery are always available, while manual missing-page opening now
+  lives under Advanced Mod Tools as a fallback.
 - Replaced the Connect-time prompt chain with a live pre-flight checklist that
   starts the selected Steam client when necessary, verifies required mods,
   automatically subscribes/updates incomplete Workshop items, rechecks local
@@ -24,7 +30,7 @@
 - Unified the Browser's visible Server Name: fresh locally validated live names take precedence, provider/cache names remain the fallback, and the separate internal Live Name column stays hidden even in the detailed view while provenance remains available in tooltips and copied details.
 - Normalized displayed map names with initial capitalization and Enoch shown as Livonia, promoted Flags and Required Mods into the default Browser view, renamed flags to explicit Modded/Vanilla labels, and display zero or unknown mod counts as an en dash while retaining explanatory tooltips.
 - Fixed wide-screen Server Browser proportions by bounding the Name column, letting Host absorb surplus table width and keeping common filters contiguous; added a high-contrast themed checkbox with a visible checked and unchecked state.
-- Adapted Server Browser and curated Servers to their native redesign references: balanced Name/Host proportions, bounded common filters, concise discovery summaries, and a native curated card list with status edges, two-line metadata, compact player/ping blocks and per-row Connect actions. The original curated table and all discovered operational fields remain available as detailed views.
+- Adapted Server Browser and curated Servers to their native redesign references: balanced Name/Host proportions, bounded common filters, concise discovery summaries, and a native curated card list with status edges, two-line metadata, compact player/ping blocks and per-row Connect actions.
 - Completed the cohesive native-theme pass with a full Qt palette for partially native controls and dialogs, consistent technical fonts for paths/endpoints/identifiers, quieter dense tables, themed transient UI, and explicit primary, accent, disclosure and destructive action roles.
 - Added the first native UI theme pass: central charcoal/amber colour and spacing tokens, application-wide QSS for standard controls, tables, tabs, menus, progress and scrollbars, accessible focus treatment, semantic primary/summary/disclosure roles, portable technical text and quieter data-dense tables.
 - Added a cross-platform visual-design brief for the later native Qt polish pass, defining the restrained charcoal/amber direction, accessibility and cognitive-consistency principles, Linux/Windows scaling requirements and a behaviour-preserving implementation sequence.

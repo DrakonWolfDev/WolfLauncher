@@ -333,15 +333,6 @@ class MainWindow(QMainWindow):
         self.table.hide()
 
         buttons = QHBoxLayout()
-        self.servers_advanced_toggle = QPushButton()
-        self.servers_advanced_toggle.setCheckable(True)
-        self.servers_advanced_panel = QWidget()
-        servers_advanced_layout = QHBoxLayout(self.servers_advanced_panel)
-        servers_advanced_layout.setContentsMargins(0, 0, 0, 0)
-        self.servers_detailed_columns = QCheckBox("Show detailed table")
-        self.servers_detailed_columns.toggled.connect(self.set_curated_detail_view)
-        servers_advanced_layout.addWidget(self.servers_detailed_columns)
-        servers_advanced_layout.addStretch(1)
         add_server = QPushButton("Add a favourite server")
         add_server.clicked.connect(self.add_curated_server)
         self.refresh_status_button = QPushButton("Refresh status")
@@ -349,27 +340,11 @@ class MainWindow(QMainWindow):
         self.launch_button = QPushButton("Launch selected server")
         set_ui_role(self.launch_button, "primary")
         self.launch_button.clicked.connect(self.launch_selected)
-        buttons.addWidget(self.servers_advanced_toggle)
         buttons.addStretch(1)
         buttons.addWidget(add_server)
         buttons.addWidget(self.refresh_status_button)
         buttons.addWidget(self.launch_button)
         layout.addLayout(buttons)
-        layout.addWidget(self.servers_advanced_panel)
-        self.servers_advanced_toggle.toggled.connect(
-            lambda expanded: set_disclosure_state(
-                self.servers_advanced_toggle,
-                self.servers_advanced_panel,
-                "server table options",
-                expanded,
-            )
-        )
-        set_disclosure_state(
-            self.servers_advanced_toggle,
-            self.servers_advanced_panel,
-            "server table options",
-            False,
-        )
         self.update_curated_status_summary()
         self.refresh_curated_server_cards()
         return widget
@@ -579,13 +554,12 @@ class MainWindow(QMainWindow):
         open_selected.clicked.connect(self.open_selected_workshop_page)
         open_missing = QPushButton("Open missing Workshop pages")
         open_missing.clicked.connect(self.open_missing_workshop_pages)
-        self.subscribe_missing_button = QPushButton("Subscribe to missing mods (experimental)")
+        self.subscribe_missing_button = QPushButton("Install/update missing mods")
         self.subscribe_missing_button.clicked.connect(self.subscribe_missing_workshop_mods)
         buttons.addWidget(check)
         self.mod_filter = QComboBox()
         self.mod_filter.addItems(["All mods", "Missing only", "Installed only"])
         self.mod_filter.currentTextChanged.connect(self.apply_mod_filter)
-        buttons.addWidget(open_missing)
         buttons.addWidget(self.subscribe_missing_button)
         buttons.addStretch(1)
         buttons.addWidget(QLabel("Filter"))
@@ -605,6 +579,7 @@ class MainWindow(QMainWindow):
         advanced_layout.addWidget(copy_report)
         advanced_layout.addWidget(copy_missing)
         advanced_layout.addWidget(open_selected)
+        advanced_layout.addWidget(open_missing)
         advanced_layout.addStretch(1)
 
         self.mods_advanced_toggle.toggled.connect(
@@ -719,18 +694,6 @@ class MainWindow(QMainWindow):
         self.discovery_auto_refresh.setChecked(bool(self.settings.get("discovery_auto_refresh", False)))
         self.discovery_auto_refresh.stateChanged.connect(self.handle_settings_changed)
         discovery_settings.addRow("Automatic refresh", self.discovery_auto_refresh)
-
-        self.experimental_workshop_subscription = QCheckBox(
-            "Enable Steam-native subscription controls (experimental)"
-        )
-        self.experimental_workshop_subscription.setChecked(
-            bool(self.settings.get("experimental_workshop_subscription", False))
-        )
-        self.experimental_workshop_subscription.stateChanged.connect(
-            self.handle_experimental_workshop_subscription_changed
-        )
-        discovery_settings.addRow("Workshop subscription", self.experimental_workshop_subscription)
-        self.update_experimental_workshop_controls()
 
         self.steam_web_api_key = QLineEdit(
             str(self.settings.get("steam_web_api_key") or "")
@@ -1381,19 +1344,6 @@ class MainWindow(QMainWindow):
         self.save_user_settings(silent=True)
         self.update_settings_health()
 
-    def handle_experimental_workshop_subscription_changed(self, *_args):
-        self.update_experimental_workshop_controls()
-        self.handle_settings_changed()
-
-    def update_experimental_workshop_controls(self):
-        enabled = (
-            self.experimental_workshop_subscription.isChecked()
-            if hasattr(self, "experimental_workshop_subscription")
-            else bool(self.settings.get("experimental_workshop_subscription", False))
-        )
-        if hasattr(self, "subscribe_missing_button"):
-            self.subscribe_missing_button.setVisible(enabled)
-
     def handle_discovery_provider_changed(self, *_args):
         self.handle_settings_changed()
         if hasattr(self, "browser_search"):
@@ -1456,9 +1406,6 @@ class MainWindow(QMainWindow):
             "discovery_auto_refresh": self.discovery_auto_refresh.isChecked()
             if hasattr(self, "discovery_auto_refresh")
             else bool(self.settings.get("discovery_auto_refresh", False)),
-            "experimental_workshop_subscription": self.experimental_workshop_subscription.isChecked()
-            if hasattr(self, "experimental_workshop_subscription")
-            else bool(self.settings.get("experimental_workshop_subscription", False)),
             "steam_web_api_key": self.steam_web_api_key.text().strip()
             if hasattr(self, "steam_web_api_key")
             else str(self.settings.get("steam_web_api_key") or ""),
@@ -1680,16 +1627,6 @@ class MainWindow(QMainWindow):
         offline = statuses.count("OFFLINE")
         self.curated_online_summary.setText(f"{online} online")
         self.curated_offline_summary.setText(f"{offline} offline")
-
-    def set_curated_detail_view(self, show_details: bool):
-        configure_priority_columns(
-            self.table,
-            (0, 3, 8, 9, 10, 12, 15),
-            show_details=True,
-            stretch_columns=(3,),
-        )
-        self.server_cards.setVisible(not show_details)
-        self.table.setVisible(show_details)
 
     def refresh_curated_server_cards(self):
         if not hasattr(self, "server_cards"):
@@ -2124,13 +2061,7 @@ class MainWindow(QMainWindow):
         self.active_mod_server_key = selected_key
         self.pending_mod_check_row = None
         self.pending_mod_server = None
-        workshop_install = (
-            install
-            if bool(self.settings.get("experimental_workshop_subscription", False))
-            and install
-            and install.running
-            else None
-        )
+        workshop_install = install if install and install.running else None
         self.mod_worker = ModWorker(
             server, workshop_dir, steam_context, workshop_install=workshop_install
         )
@@ -2388,9 +2319,6 @@ class MainWindow(QMainWindow):
         copy_name_action.triggered.connect(lambda: self.copy_to_clipboard(self._mods_cell(row, 1), "Mod name"))
         copy_url_action.triggered.connect(lambda: self.copy_to_clipboard(self._mods_cell(row, 4), "Workshop URL"))
         check_update_action.triggered.connect(lambda: self.check_update_mod_row(row))
-        check_update_action.setVisible(
-            bool(self.settings.get("experimental_workshop_subscription", False))
-        )
         menu.addAction(check_update_action)
         menu.addSeparator()
         menu.addAction(open_action)
@@ -2541,13 +2469,6 @@ class MainWindow(QMainWindow):
             QDesktopServices.openUrl(QUrl(mod.workshop_url))
 
     def subscribe_missing_workshop_mods(self):
-        if not bool(self.settings.get("experimental_workshop_subscription", False)):
-            QMessageBox.information(
-                self,
-                "Experimental feature disabled",
-                "Enable Steam-native subscription controls in Settings first.",
-            )
-            return
         result = self._selected_mod_result(successful=True)
         if not result:
             QMessageBox.warning(
@@ -2616,8 +2537,7 @@ class MainWindow(QMainWindow):
             f"({absent_count} missing, {update_count} update/pending) using the signed-in "
             f"Steam account. Missing items will be subscribed; existing items will be "
             f"asked to update.\n\n{names}\n\n"
-            f"{combined_download_estimate(missing)}\n\n"
-            "This feature is experimental. Continue?",
+            f"{combined_download_estimate(missing)}\n\nContinue?",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
         )
@@ -2676,7 +2596,7 @@ class MainWindow(QMainWindow):
         self.workshop_subscription_dialog = QProgressDialog(
             "Sending subscriptions to Steam...", "Hide monitor", 0, 100, self
         )
-        self.workshop_subscription_dialog.setWindowTitle("Steam Workshop (experimental)")
+        self.workshop_subscription_dialog.setWindowTitle("Steam Workshop")
         self.workshop_subscription_dialog.setMinimumDuration(0)
         self.workshop_subscription_dialog.setAutoClose(False)
         self.workshop_subscription_dialog.setAutoReset(False)
@@ -3332,18 +3252,16 @@ class MainWindow(QMainWindow):
                         "build the DayZ mod command."
                     )
                     open_button = box.addButton("Open Workshop", QMessageBox.ButtonRole.ActionRole)
-                    install_button = None
-                    if bool(self.settings.get("experimental_workshop_subscription", False)):
-                        install_button = box.addButton(
-                            "Install missing mods", QMessageBox.ButtonRole.ActionRole
-                        )
+                    install_button = box.addButton(
+                        "Install/update mods", QMessageBox.ButtonRole.ActionRole
+                    )
                     cancel_button = box.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
                     box.setDefaultButton(cancel_button)
                     box.exec()
                     clicked = box.clickedButton()
                     if clicked == open_button:
                         self.open_missing_workshop_pages()
-                    elif install_button is not None and clicked == install_button:
+                    elif clicked == install_button:
                         self.subscribe_missing_workshop_mods()
                     return False
 
@@ -3355,11 +3273,9 @@ class MainWindow(QMainWindow):
                     f"{names}\n\nOpen the missing Workshop page(s), launch anyway, or cancel?"
                 )
                 open_button = box.addButton("Open Workshop", QMessageBox.ButtonRole.ActionRole)
-                install_button = None
-                if bool(self.settings.get("experimental_workshop_subscription", False)):
-                    install_button = box.addButton(
-                        "Install missing mods", QMessageBox.ButtonRole.ActionRole
-                    )
+                install_button = box.addButton(
+                    "Install/update mods", QMessageBox.ButtonRole.ActionRole
+                )
                 launch_button = box.addButton("Launch anyway", QMessageBox.ButtonRole.DestructiveRole)
                 set_ui_role(launch_button, "destructive")
                 cancel_button = box.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
@@ -3369,7 +3285,7 @@ class MainWindow(QMainWindow):
                 if clicked == open_button:
                     self.open_missing_workshop_pages()
                     return False
-                if install_button is not None and clicked == install_button:
+                if clicked == install_button:
                     self.subscribe_missing_workshop_mods()
                     return False
                 if clicked != launch_button:

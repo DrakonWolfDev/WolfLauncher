@@ -75,7 +75,7 @@ warning control work on the real desktop on 2026-07-14. Real-world native-Steam
 testing had already confirmed successful subscription/download batches, safe
 hidden monitoring, bounded incomplete-item retries and launch after isolated-
 helper exit plus a fresh all-installed mod check. Continue treating Workshop
-management as experimental while responding to real-world failures; preserve
+management as a default Steam-managed capability while responding to real-world failures; preserve
 the approved four-tab hierarchy and the settled clean-profile startup smoke
 check for import/startup changes.
 
@@ -83,7 +83,7 @@ check for import/startup changes.
 
 The native visual theme is implemented with shared tokens, a complete Qt palette and application-level QSS for the existing widgets and dialogs. It uses restrained charcoal surfaces, amber action hierarchy, semantic status colours, portable technical fonts and visible keyboard focus without changing the approved tab structure. The user confirmed the foundation at different resolutions; final real-desktop interaction review and later icon/branding work remain separate from this solid theme baseline.
 
-Server Browser and curated Servers now apply their HTML redesign references as native Qt layouts. Server Browser uses bounded common filters, a concise summary and balanced Name/Host allocation while retaining every operational field through **Show detailed columns**. Curated Servers uses native card rows with status edges, two-line metadata, player/ping blocks, favourite and per-row Connect actions; **Show detailed table** preserves the original editable table, complete data, selection, context-menu and launch workflows.
+Server Browser and curated Servers now apply their HTML redesign references as native Qt layouts. Server Browser uses bounded common filters, a concise summary and balanced Name/Host allocation while retaining every operational field through **Show detailed columns**. Favourite Servers is card-only after desktop approval, with status edges, two-line metadata, player/ping blocks, favourite controls and per-row Connect actions. Its hidden table-backed state remains an internal implementation detail for status and launch context, not a user-facing alternate view.
 
 The Server Browser wide-screen policy caps Name at 600 logical pixels, scales it to 30% of the viewport with a 300-pixel floor and assigns remaining table width to Host. Common filters remain contiguous instead of spreading across 1920×1080, and checkboxes use an explicit theme indicator rather than relying on an invisible dark desktop-style box.
 
@@ -333,7 +333,7 @@ Current handling:
 - Auto Steam selection is reported from the same detection snapshot as the candidate list so users can see why native or Flatpak Steam was chosen.
 - Native launch command generation now fails before handoff when the selected Steam mode lacks a detected command, with mode-specific guidance for native Steam, Flatpak Steam and `STEAM_ROOT`.
 - `STEAM_ROOT` detection reuses the native Steam command and running state when available, while Settings health warns if the selected library is complete but no launchable Steam command is detected.
-- Mod management remains read-only and advisory by default. An opt-in experimental control now uses the official Steam API redistributable already present in the selected Steam installation to confirm and request missing-item subscriptions through `ISteamUGC`, monitor progress, and verify local directories. Its Steamworks context is isolated in a spawned helper process that must exit before launch is re-enabled. It never vendors Valve's binary, downloads Workshop bytes itself, or removes subscriptions; manual Workshop links remain the fallback. Native Steam and the Flatpak Workshop/restart path passed real-world testing.
+- Steam-managed mod readiness is now the default Connect behavior. WolfLauncher uses the official Steam API redistributable already present in the selected Steam installation to inspect item state, request missing-item subscriptions and updates through `ISteamUGC`, monitor progress, and verify local directories. Its Steamworks context is isolated in a spawned helper process that must exit before launch continues. WolfLauncher never vendors Valve's binary, downloads Workshop bytes itself, or removes subscriptions; manual Workshop links remain the advanced fallback. Native Steam, Flatpak Workshop/restart and the complete missing-plus-update automatic Connect path passed real-world testing.
 - Launch remains guarded: WolfLauncher warns about missing mods and Steam state before native handoff or calling the external fallback.
 - Hostnames are resolved before launch where possible to mirror the original terminal menu behaviour and avoid DayZSA API issues with DNS-based servers.
 - Python bytecode caches are ignored and should not be tracked as source.

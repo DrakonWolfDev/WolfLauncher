@@ -118,9 +118,9 @@ Status: in progress. Native hardening boundaries are established and the initial
 - Add regression tests for launch command generation, host resolution and Steam mode detection.
   Current coverage includes resolved external/native targets, DNS failures, non-default ports, player-name argument safety, native/Flatpak/`STEAM_ROOT` selection and deterministic complete-install priority.
 
-### Experimental Workshop and join-flow hardening
+### Workshop and join-flow hardening
 
-Real-world native-Steam testing confirmed subscription/download batches, isolated-helper cleanup and verified launch-after-download. Testing included a 34-mod subscription batch, a 61-mod lifecycle/stall investigation and successful post-fix multi-mod completion and launch. The user confirmed the Flatpak Workshop/restart path also works on 2026-07-14; keep the feature experimental while remaining failure cases are hardened.
+Real-world native-Steam testing confirmed subscription/download batches, isolated-helper cleanup and verified launch-after-download. Testing included a 34-mod subscription batch, a 61-mod lifecycle/stall investigation and successful post-fix multi-mod completion and launch. The user confirmed the Flatpak Workshop/restart path on 2026-07-14 and the complete automatic Connect path on 2026-07-16, including a missing-mod subscription, an existing-mod update, Steam handoff, DayZ process detection and playable server entry. Steam-managed Workshop resolution is now the default rather than an opt-in experiment.
 
 Priority 1 — safe Steam handoff:
 
@@ -143,8 +143,8 @@ Priority 3 — Workshop readiness and information:
 - Completed — missing mods can be requested from the Mods tab or launch warning after explicit confirmation, with bounded retry for incomplete Steam download requests.
 - Completed — batch progress shows installed count, current mod name and percentage when Steam supplies it; successful completion offers the guarded **Launch server** continuation.
 - Completed — if Steam stops reporting any state, byte or directory progress for two minutes, the isolated helper exits with an explicit incomplete result so AppID 221100 is released instead of leaving DayZ shown as running until the full operation timeout.
-- Completed — normal experimental mod checks and a final isolated pre-handoff query use `ISteamUGC::GetItemState`; launch is cancelled if the fresh result is unavailable or reports update/pending/downloading items.
-- Completed — when experimental Steam integration is enabled and Steam is running, the normal selected-server mod check performs a batch Workshop item-state check so **Installed**, **Update required**, **Download pending** and **Downloading** are represented honestly instead of treating directory presence as readiness.
+- Completed — normal mod checks and a final isolated pre-handoff query use `ISteamUGC::GetItemState`; launch is cancelled if the fresh result is unavailable or reports update/pending/downloading items.
+- Completed — when Steam is running, the normal selected-server mod check performs a batch Workshop item-state check so **Installed**, **Update required**, **Download pending** and **Downloading** are represented honestly instead of treating directory presence as readiness.
 - Completed — Mods rows provide **Check/update this mod** through the same isolated Steam helper for targeted recovery, while the ordinary server-level check remains the primary way to validate the complete required set.
 - Completed — Mods rows and the Steam confirmation use Steam published-file metadata for pre-download sizes, switch to remaining transfer bytes once available, and label genuinely unavailable or partial totals explicitly.
 - Completed — Mods rows show queued/downloading/verifying states during the batch, with a green per-row progress bar when Steam supplies a percentage and the existing forced local recheck producing the final verified **Installed** state.
@@ -162,7 +162,7 @@ Priority 4 — discovery truth and regression coverage:
 
 Visual-polish review note:
 
-- Completed — Server Browser now uses bounded responsive filters, balanced primary columns and concise summary text; curated Servers uses native card rows with the original table retained as its detailed view. Validate card selection, favourite, context and per-row Connect interaction on the real desktop before further structural polish.
+- Completed — Server Browser now uses bounded responsive filters, balanced primary columns and concise summary text; curated Servers uses approved native card rows as its sole visible layout. Card selection, favourite, context and per-row Connect interaction passed real-desktop use.
 - The shared QSS/theme-token foundation from `VISUAL_DESIGN.md` is complete, including the Qt fallback palette, transient dialogs, technical typography and semantic action roles. The user confirmed the foundation at different resolutions. Preserve this hierarchy and finish real-desktop keyboard/interaction review before considering grouped Settings health sections, icons or branding.
 - Recheck the Mods table after fonts, theme, colours, icons and branding are introduced. Review column padding, row height, compact-column centring, name/URL balance and overall information density in the final visual system.
 
