@@ -255,9 +255,6 @@ Planned WolfAPI follow-up:
 ## Known bugs
 
 - DayZ currently does not run when the Steam launch options contain `__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%`.
-- Server Browser sorting does not currently reorder rows correctly when the
-  **Required Mods** column is selected. Other column sorting remains functional;
-  defer diagnosis and repair to a dedicated presentation/sort-value pass.
 
 Current handling:
 

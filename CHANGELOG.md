@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Fixed Server Browser **Required Mods** sorting when known integer counts and
+  unknown placeholder values share the column; sortable items now produce
+  type-stable numeric, text and empty keys instead of comparing integers with
+  strings.
 - Added a compact geometric wolf identity mark for the application/window icon
   and a restrained `WOLF // LAUNCHER` tab-bar lockup, without adding a large
   branded header or reducing workspace height.

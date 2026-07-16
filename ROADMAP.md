@@ -115,8 +115,6 @@ Status: in progress. Native hardening boundaries are established and the initial
 - Continue small behavior-preserving extractions from `app.py`, with startup smoke checks after Qt import or initialization changes.
 - Preserve the approved GUI hierarchy: keep common browsing and launching calm and obvious while retaining advanced discovery, diagnostics, parity and fallback controls through clearly labelled disclosures or context-sensitive settings.
 - Improve structured launch errors and user-facing diagnostics.
-- Fix the known Server Browser **Required Mods** column sorting bug in a later
-  presentation pass; other Browser column sorting remains functional.
 - Add regression tests for launch command generation, host resolution and Steam mode detection.
   Current coverage includes resolved external/native targets, DNS failures, non-default ports, player-name argument safety, native/Flatpak/`STEAM_ROOT` selection and deterministic complete-install priority.
 

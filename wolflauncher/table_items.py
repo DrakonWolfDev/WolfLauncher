@@ -1,10 +1,14 @@
 from PySide6.QtWidgets import QTableWidgetItem
 
+_DEFAULT_SORT_VALUE = object()
+
 
 class SortableTableWidgetItem(QTableWidgetItem):
-    def __init__(self, text: str, sort_value=None):
+    def __init__(self, text: str, sort_value=_DEFAULT_SORT_VALUE):
         super().__init__(text)
-        self.sort_value = sort_value if sort_value is not None else text.casefold()
+        self.sort_value = (
+            text.casefold() if sort_value is _DEFAULT_SORT_VALUE else sort_value
+        )
 
     def __lt__(self, other):
         if isinstance(other, SortableTableWidgetItem):
@@ -14,7 +18,9 @@ class SortableTableWidgetItem(QTableWidgetItem):
     def _normalized_sort_value(self):
         value = self.sort_value
         if value is None or value == "":
-            return (1, "")
+            return (2, "")
+        if isinstance(value, (int, float)):
+            return (0, value)
         if isinstance(value, str):
-            return (0, value.casefold())
-        return (0, value)
+            return (1, value.casefold())
+        return (1, str(value).casefold())

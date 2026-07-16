@@ -54,6 +54,25 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertEqual(browser_name_column_width(1388), 416)
         self.assertEqual(browser_name_column_width(1920), 576)
 
+    def test_required_mods_sort_handles_known_and_unknown_counts(self):
+        table = QTableWidget(0, 15)
+        unknown = DiscoveredServer(
+            name="Unknown mods", host="203.0.113.11", game_port=2302, query_port=27016
+        )
+        known = DiscoveredServer(
+            name="Known mods",
+            host="203.0.113.12",
+            game_port=2302,
+            query_port=27016,
+            required_mod_count=17,
+        )
+
+        populate_browser_table(table, [unknown, known])
+        table.sortItems(11, Qt.AscendingOrder)
+
+        self.assertEqual(table.item(0, 11).text(), "17")
+        self.assertEqual(table.item(1, 11).text(), "–")
+
     def test_detailed_view_keeps_internal_live_name_hidden(self):
         table = QTableWidget(0, 15)
         checkbox = QCheckBox()
