@@ -252,9 +252,12 @@ Planned WolfAPI follow-up:
 - Current WolfLauncher behavior remains read-only for remote WolfAPI data; users can already promote discovered rows or add their own servers to the local curated YAML list.
 - Cross-project planning rule: launcher features should ask WolfAPI for stable fields/endpoints when they need source freshness, validation state or submission workflows; WolfAPI changes should consider how the Server Browser, diagnostics and promotion flow can use the data without harming offline/local operation.
 
-## Known bug
+## Known bugs
 
 - DayZ currently does not run when the Steam launch options contain `__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%`.
+- Server Browser sorting does not currently reorder rows correctly when the
+  **Required Mods** column is selected. Other column sorting remains functional;
+  defer diagnosis and repair to a dedicated presentation/sort-value pass.
 
 Current handling:
 
