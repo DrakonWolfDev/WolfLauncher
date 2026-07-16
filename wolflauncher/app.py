@@ -235,6 +235,7 @@ class MainWindow(QMainWindow):
         self.remote_search_timer.timeout.connect(self.start_remote_wolfapi_search)
 
         self.tabs = QTabWidget()
+        self.tabs.setObjectName("mainTabs")
         self.tabs.addTab(self._build_servers_tab(), "Servers")
         self.tabs.addTab(self._build_server_browser_tab(), "Server Browser")
         self.mods_tab_index = self.tabs.addTab(self._build_mods_tab(), "Mods")
@@ -251,6 +252,7 @@ class MainWindow(QMainWindow):
 
     def _build_servers_tab(self) -> QWidget:
         widget = QWidget()
+        set_ui_role(widget, "workspace")
         layout = QVBoxLayout(widget)
 
         status_summary = QHBoxLayout()
@@ -351,6 +353,7 @@ class MainWindow(QMainWindow):
 
     def _build_server_browser_tab(self) -> QWidget:
         widget = QWidget()
+        set_ui_role(widget, "workspace")
         layout = QVBoxLayout(widget)
 
         filters = QHBoxLayout()
@@ -534,6 +537,7 @@ class MainWindow(QMainWindow):
 
     def _build_mods_tab(self) -> QWidget:
         widget = QWidget()
+        set_ui_role(widget, "workspace")
         layout = QVBoxLayout(widget)
 
         self.mod_summary = QLabel("Select a server to check its required mods.")
@@ -620,6 +624,7 @@ class MainWindow(QMainWindow):
 
     def _build_settings_tab(self) -> QWidget:
         widget = QWidget()
+        set_ui_role(widget, "workspace")
         layout = QVBoxLayout(widget)
 
         self.system_summary = QLabel("Checking Steam and DayZ installation...")

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Established WolfLauncher's atmospheric visual direction with an original,
+  low-contrast foggy treeline around the workspace perimeter, transparent
+  content canvas, and restrained amber lower-edge framing that preserves the
+  existing calm, readable interface.
 - Made Favourite Servers card-only after desktop approval of the card layout,
   removing the legacy server-table options disclosure and detailed-table view.
 - Promoted Steam-managed Workshop subscription and updates from an opt-in

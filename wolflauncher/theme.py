@@ -29,9 +29,13 @@ STATUS_COLOURS = {key: COLOURS[key] for key in ("positive", "warning", "negative
 def _build_stylesheet() -> str:
     c, s = COLOURS, SPACING
     check_icon = (Path(__file__).resolve().parent / "assets" / "check.svg").as_posix()
+    atmosphere = (
+        Path(__file__).resolve().parent / "assets" / "wolf-atmosphere-v1.png"
+    ).as_posix()
     return f"""
 QWidget {{ background-color: {c['background']}; color: {c['text']}; selection-background-color: {c['accent']}; selection-color: {c['background']}; }}
 QMainWindow, QDialog, QMessageBox {{ background-color: {c['background']}; }}
+QWidget[uiRole="workspace"] {{ background-color: transparent; }}
 QLabel {{ background-color: transparent; }}
 QLabel:disabled {{ color: {c['text_muted']}; }}
 QLabel[uiRole="summary"] {{ color: {c['text']}; font-weight: 600; padding: 2px 0 4px 0; }}
@@ -73,14 +77,18 @@ QFrame[uiRole="serverCard"] {{ background-color: {c['surface']}; border: 1px sol
 QFrame[uiRole="serverCard"][onlineState="online"] {{ border-left-color: {c['positive']}; }}
 QFrame[uiRole="serverCard"][onlineState="offline"] {{ border-left-color: {c['negative']}; }}
 QFrame[uiRole="serverCard"][selected="true"] {{ background-color: {c['table_selection']}; border-color: {c['accent']}; }}
-QListWidget[uiRole="serverCards"] {{ background-color: {c['background']}; border: 0; outline: 0; }}
+QListWidget[uiRole="serverCards"] {{ background-color: rgba(21, 19, 15, 88); border: 0; outline: 0; }}
 QListWidget[uiRole="serverCards"]::item {{ background-color: transparent; border: 0; padding: 3px 0; }}
 QListWidget[uiRole="serverCards"]::item:selected {{ background-color: transparent; }}
 QTabWidget::pane {{ background-color: {c['background']}; border: 1px solid {c['border']}; top: -1px; }}
+QTabWidget#mainTabs {{ background-color: transparent; }}
+QTabWidget#mainTabs::pane {{ background-color: {c['background']}; border: 1px solid {c['border_strong']}; border-bottom: 1px solid {c['accent_pressed']}; border-image: url("{atmosphere}") 0 0 0 0 stretch stretch; top: -1px; }}
+QTabWidget#mainTabs QStackedWidget {{ background-color: transparent; }}
 QTabBar::tab {{ background-color: {c['surface']}; color: {c['text_muted']}; border: 1px solid {c['border']}; padding: 9px 18px; }}
 QTabBar::tab:hover {{ color: {c['text']}; background-color: {c['surface_alt']}; }}
 QTabBar::tab:selected {{ color: {c['text']}; background-color: {c['surface_alt']}; border-bottom: 2px solid {c['accent']}; }}
-QTableView {{ background-color: {c['surface']}; alternate-background-color: {c['surface_alt']}; color: {c['text']}; border: 1px solid {c['border']}; gridline-color: {c['border']}; selection-background-color: {c['table_selection']}; selection-color: {c['text']}; }}
+QTableView {{ background-color: rgba(28, 25, 18, 222); alternate-background-color: rgba(32, 28, 21, 232); color: {c['text']}; border: 1px solid {c['border']}; gridline-color: {c['border']}; selection-background-color: {c['table_selection']}; selection-color: {c['text']}; }}
+QTableView QWidget {{ background-color: transparent; }}
 QTableView::item {{ padding: {s['table_vertical']}px {s['table_horizontal']}px; }}
 QTableView::item:hover {{ background-color: {c['surface_alt']}; }}
 QTableView::item:focus {{ border: 1px solid {c['accent_hover']}; }}

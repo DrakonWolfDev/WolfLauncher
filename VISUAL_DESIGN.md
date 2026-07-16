@@ -34,6 +34,19 @@ copying browser-specific details exactly.
 
 ## Visual language
 
+- Use a restrained **Wolf at the treeline** atmosphere around the workspace
+  perimeter: a near-black, desaturated foggy conifer line concentrated in
+  otherwise unused lower space, fading to charcoal behind functional content.
+  The atmosphere supplies identity and depth, never information or spectacle.
+- Keep controls, cards and data surfaces opaque enough for dependable contrast.
+  Background art must disappear naturally as a page fills with results and
+  must never sit at readable contrast directly behind dense text.
+- Use fine warm-grey framing with a restrained amber lower-edge detail to tie
+  the application shell to the action colour without creating a gamer-style
+  glow. Future wolf branding should be small, geometric and secondary.
+- Avoid characters, weapons, zombies, military imagery, copied DayZ key art,
+  distressed-metal framing, bright red chrome and prominent photographic
+  scenery. WolfLauncher should remain calm, technical and recognisably its own.
 - Use warm charcoal surfaces rather than pure black or generic platform grey,
   with two or three surface levels providing hierarchy.
 - Reserve amber/rust for the active tab, focus, favourites and the principal
@@ -98,10 +111,12 @@ The visual pass should preserve the approved hierarchy and behaviour:
    contrast, collapsed/expanded states and the existing 1350x720 baseline.
 5. Revisit table density, fonts, icons and branding after the foundation is
    stable.
-6. Curated server card rows were approved and implemented as a separate
-   structural pass, with the complete table retained as a detailed view. Treat
-   grouped Settings health sections as another change requiring desktop review.
-7. Perform Windows font, scaling, standard-dialog and interaction testing when
+6. Curated server card rows were approved and implemented as the sole visible
+   Favourite Servers layout. Treat grouped Settings health sections as another
+   change requiring desktop review.
+7. Add the low-contrast perimeter atmosphere as a reviewable visual layer,
+   preserving the ability to adjust or remove it independently of content.
+8. Perform Windows font, scaling, standard-dialog and interaction testing when
    the Windows implementation phase begins.
 
 QSS cannot provide content-dependent cell colours, reliable per-row side

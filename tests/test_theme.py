@@ -33,6 +33,18 @@ class ThemeTests(unittest.TestCase):
         self.assertTrue(
             (Path(__file__).resolve().parents[1] / "wolflauncher" / "assets" / "check.svg").is_file()
         )
+
+    def test_atmosphere_asset_is_packaged_with_theme(self):
+        self.assertTrue(
+            (
+                Path(__file__).resolve().parents[1]
+                / "wolflauncher"
+                / "assets"
+                / "wolf-atmosphere-v1.png"
+            ).is_file()
+        )
+        self.assertIn("wolf-atmosphere-v1.png", APPLICATION_STYLESHEET)
+        self.assertIn("QTabWidget#mainTabs::pane", APPLICATION_STYLESHEET)
         self.assertEqual(
             self.app.palette().color(QPalette.Window).name(),
             COLOURS["background"],
