@@ -1,4 +1,6 @@
 import unittest
+from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from wolflauncher.models import DiscoveredServer, Server
@@ -8,6 +10,7 @@ from wolflauncher.workers import (
     StatusWorker,
     SteamDiscoveryWorker,
     WolfApiDiscoveryWorker,
+    WolfApiCacheMergeWorker,
     WolfApiSearchWorker,
     discover_wolfapi_v1_pages,
     _checked_server_status,
@@ -19,6 +22,32 @@ def sample_server(name: str = "Test") -> Server:
 
 
 class WorkerTests(unittest.TestCase):
+    def test_wolfapi_cache_merge_worker_commits_with_its_own_connection(self):
+        server = DiscoveredServer(
+            "WolfAPI", "203.0.113.10", 2302, 27016, stable_server_id="stable-1"
+        )
+        results = []
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "servers.sqlite3"
+            worker = WolfApiCacheMergeWorker(path, [server], bounded_v1=True)
+            worker.merge_ready.connect(
+                lambda inserted, removed, error: results.append(
+                    (inserted, removed, error)
+                )
+            )
+
+            worker.run()
+
+            from wolflauncher import server_cache
+
+            connection = server_cache.connect(path)
+            try:
+                stored = server_cache.get_server(connection, server.cache_key)
+            finally:
+                connection.close()
+        self.assertEqual(results, [(1, 0, "")])
+        self.assertIsNotNone(stored)
+
     def test_status_worker_filters_invalid_requested_rows(self):
         servers = [sample_server("One"), sample_server("Two")]
 

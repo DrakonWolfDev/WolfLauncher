@@ -55,6 +55,30 @@ class ServerBrowserControllerTests(unittest.TestCase):
                     modded=True,
                     quality_flags=("suspicious_bots",),
                 ),
+                DiscoveredServer(
+                    name="Lower Bitterroot",
+                    host="203.0.113.40",
+                    game_port=2302,
+                    query_port=27016,
+                    map_name="bitterroot",
+                    source="wolfapi",
+                ),
+                DiscoveredServer(
+                    name="Upper Bitterroot",
+                    host="203.0.113.41",
+                    game_port=2302,
+                    query_port=27016,
+                    map_name="Bitterroot",
+                    source="wolfapi",
+                ),
+                DiscoveredServer(
+                    name="Livonia alias",
+                    host="203.0.113.42",
+                    game_port=2302,
+                    query_port=27016,
+                    map_name="enoch",
+                    source="wolfapi",
+                ),
             ],
         )
 
@@ -73,14 +97,14 @@ class ServerBrowserControllerTests(unittest.TestCase):
 
         self.assertEqual([server.name for server in snapshot.servers], ["Busy PvP Namalsk"])
         self.assertEqual(snapshot.match_count, 1)
-        self.assertEqual(snapshot.cache_summary["total"], 3)
+        self.assertEqual(snapshot.cache_summary["total"], 6)
         self.assertEqual(snapshot.cache_summary["online"], 2)
 
     def test_snapshot_count_is_not_limited_to_visible_rows(self):
         snapshot = load_browser_snapshot(self.connection, BrowserQuery(limit=1))
 
         self.assertEqual(len(snapshot.servers), 1)
-        self.assertEqual(snapshot.match_count, 3)
+        self.assertEqual(snapshot.match_count, 6)
 
     def test_snapshot_optionally_hides_quality_flagged_rows(self):
         snapshot = load_browser_snapshot(
@@ -89,14 +113,29 @@ class ServerBrowserControllerTests(unittest.TestCase):
         )
 
         self.assertNotIn("Offline Namalsk", [server.name for server in snapshot.servers])
-        self.assertEqual(snapshot.match_count, 2)
+        self.assertEqual(snapshot.match_count, 5)
 
     def test_filter_options_are_distinct_and_sorted(self):
         options = browser_filter_options(self.connection)
 
-        self.assertEqual(options["map"], ["chernarusplus", "namalsk"])
+        self.assertEqual(
+            options["map"],
+            ["Bitterroot", "Chernarusplus", "Livonia", "Namalsk"],
+        )
         self.assertEqual(options["version"], ["1.25", "1.26"])
         self.assertEqual(options["source"], ["battlemetrics", "wolfapi"])
+
+    def test_canonical_map_filter_matches_all_cached_casing_and_aliases(self):
+        bitterroot = load_browser_snapshot(
+            self.connection, BrowserQuery(map_name="Bitterroot")
+        )
+        livonia = load_browser_snapshot(
+            self.connection, BrowserQuery(map_name="Livonia")
+        )
+
+        self.assertEqual(bitterroot.match_count, 2)
+        self.assertEqual(livonia.match_count, 1)
+        self.assertEqual(livonia.servers[0].map_name, "enoch")
 
 
 if __name__ == "__main__":

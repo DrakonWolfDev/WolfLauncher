@@ -3,6 +3,7 @@ from typing import Any
 
 from . import server_cache
 from .models import DiscoveredServer
+from .server_display import display_map_name
 
 
 @dataclass(frozen=True)
@@ -53,8 +54,13 @@ def load_browser_snapshot(connection: Any, query: BrowserQuery) -> BrowserSnapsh
 
 
 def browser_filter_options(connection: Any) -> dict[str, list[str]]:
+    map_labels = {}
+    for value in server_cache.distinct_values(connection, "map"):
+        label = display_map_name(value)
+        if label:
+            map_labels.setdefault(label.casefold(), label)
     return {
-        "map": server_cache.distinct_values(connection, "map"),
+        "map": sorted(map_labels.values(), key=str.casefold),
         "version": server_cache.distinct_values(connection, "version"),
         "source": server_cache.distinct_values(connection, "source"),
     }

@@ -157,11 +157,47 @@ Working:
 - Explicit staged WolfAPI v1 provider using bounded strict responses, with the
   legacy `/api/servers` provider preserved as a separately selectable fallback
   and for existing saved settings.
-- WolfAPI rows currently require local **Enrich visible** queries for ping because the hosted API contract does not supply it; WolfLauncher accepts a future additive `ping_ms`, `ping` or `latency` field and explains blank provider ping cells in a tooltip.
+- WolfAPI rows leave ping blank until measured locally. Selecting a discovered
+  row for at least 450 ms quietly checks only that server, reuses a successful
+  result for two minutes and waits five minutes before retrying a failed check.
+  API freshness supplies the normal browsing state; provider provenance stays
+  in tooltips/details. The advanced **Check visible servers** bulk operation is
+  retained but is no longer the expected browsing path.
+- Opening Server Browser renders the existing cache and does not trigger a
+  provider refresh. A selected-server local result replaces only that table row
+  rather than rebuilding the full result set twice.
+- A locally confirmed selected row starts one lightweight required-mod/local
+  Workshop comparison. Its transient Mods-cell readiness is cached for 15
+  minutes (five after failure) and never mutates Steam. The secondary **View mod
+  details** action retains the complete metadata-rich Mods workflow; the named
+  **Launch [server]** primary action always runs the existing final pre-flight
+  before any subscription, update or launch handoff.
+- **Mods** (Any/Modded/Vanilla) and **Game Style** (Any/PvE/PvP) are both in the
+  common filter row between Search and Map. Search expands and contracts to
+  absorb row width while the categorical controls remain compact. Up to three distinct
+  deliberately selected endpoints may be status-checked concurrently, with a
+  separate three-runner cap for readiness previews. Duplicate endpoints are
+  suppressed and excess interest is queued rather than widening without bound.
+- Browser preview startup reuses the most recent Settings health Steam snapshot
+  so filesystem/library detection does not block the UI thread. Provider data
+  changes only through explicit refresh or the existing optional once-daily
+  configured-provider refresh, never merely by opening the tab.
+- Map filter options use the same presentation normalization as table rows and
+  deduplicate raw provider casing. Canonical selections still match all stored
+  variants; **Livonia** matches both legacy `enoch` and `livonia` values.
+- Advanced **Check visible servers** buffers its concurrent results until the
+  worker completes. It no longer commits each row or rebuilds the table every
+  ten results on the UI thread; progress copy is throttled and one final
+  transaction/refresh applies the batch.
+- WolfAPI discovery download, JSON parsing/normalization and SQLite merge run in
+  a separate helper process rather than Python GUI-process threads. The helper
+  owns its cache connection and returns only inserted/removed/error summary
+  data after commit, preventing shared-GIL work from pausing the existing table.
 - Steam Web API server-list discovery with user-supplied API key.
 - BattleMetrics server discovery.
 - Optional quiet rate-limited startup refresh for the selected discovery provider, throttled to once per day.
-- Enrichment of visible discovered servers with live status data.
+- Debounced selected-server enrichment with bounded cache/retry intervals, plus
+  an explicit advanced bulk check for visible discovered servers.
 - Live enrichment preserves cached display names, stores differing live server names separately and updates game ports from queried connect addresses when available.
 - Live enrichment probes a bounded set of likely query ports when discovered rows have uncertain port data.
 - Failed provider refreshes preserve existing discovered-server cache rows.

@@ -103,7 +103,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
 
         self.assertEqual(row.values[1], "")
         self.assertIn(0, row.tooltips)
-        self.assertIn("Enrich visible", row.tooltips[8])
+        self.assertIn("when you select", row.tooltips[8])
         self.assertIn("Inspect mods", row.tooltips[11])
         self.assertEqual(row.values[10], "Vanilla")
         self.assertEqual(row.values[11], "–")
@@ -123,10 +123,32 @@ class ServerBrowserPresenterTests(unittest.TestCase):
 
         row = browser_row(server)
 
-        self.assertEqual(row.values[5], "PROVIDER ONLINE")
+        self.assertEqual(row.values[5], "RECENT")
         self.assertEqual(row.values[11], "23")
         self.assertEqual(row.status_colour, STATUS_COLOURS["warning"])
         self.assertIn("not yet validated", row.tooltips[5])
+
+    def test_provider_status_uses_api_freshness_language(self):
+        expected = {
+            "live": ("LIVE", STATUS_COLOURS["positive"]),
+            "recent": ("RECENT", STATUS_COLOURS["warning"]),
+            "stale": ("STALE", STATUS_COLOURS["warning"]),
+            "offline": ("OFFLINE", STATUS_COLOURS["negative"]),
+            "unverified": ("UNVERIFIED", STATUS_COLOURS["warning"]),
+        }
+        for freshness, (label, colour) in expected.items():
+            with self.subTest(freshness=freshness):
+                row = browser_row(
+                    DiscoveredServer(
+                        name="Provider",
+                        host="203.0.113.20",
+                        game_port=2302,
+                        query_port=27016,
+                        freshness=freshness,
+                    )
+                )
+                self.assertEqual(row.values[5], label)
+                self.assertEqual(row.status_colour, colour)
 
     def test_quality_warning_is_advisory_and_visible_when_not_hidden(self):
         server = DiscoveredServer(
@@ -235,7 +257,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         details = discovered_server_details(server)
 
         self.assertNotIn("Live name:", details)
-        self.assertIn("Flags: Password, Modded", details)
+        self.assertIn("Features: Password, Modded", details)
         self.assertIn("Last checked: Never", details)
         self.assertIn("Last seen: Never", details)
         self.assertTrue(details.endswith("Source: wolfapi"))

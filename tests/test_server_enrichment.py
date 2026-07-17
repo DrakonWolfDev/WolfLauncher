@@ -1,10 +1,12 @@
 import unittest
+from datetime import datetime, timezone
 
 from wolflauncher.models import DiscoveredServer
 from wolflauncher.server_enrichment import (
     candidate_query_ports,
     enrich_discovered_server,
     enrichment_probe_servers,
+    local_enrichment_due,
     parse_connect_port,
     parse_players,
 )
@@ -42,6 +44,7 @@ class ServerEnrichmentTests(unittest.TestCase):
                 password=True,
                 modded=True,
                 connect="203.0.113.10:2302",
+                time="14:30",
             ),
             "2026-06-20T14:00:00+00:00",
         )
@@ -60,6 +63,56 @@ class ServerEnrichmentTests(unittest.TestCase):
         self.assertEqual(enriched.last_checked, "2026-06-20T14:00:00+00:00")
         self.assertEqual(enriched.last_seen, "2026-06-20T14:00:00+00:00")
         self.assertEqual(enriched.status_source, "local")
+
+    def test_enrichment_preserves_api_metadata_it_did_not_measure(self):
+        candidate = self.make_candidate()
+        candidate.stable_server_id = "stable-1"
+        candidate.freshness = "recent"
+        candidate.quality_flags = ("advisory",)
+
+        enriched = enrich_discovered_server(
+            candidate,
+            ServerStatus(True, players="1/10", connect="203.0.113.10:2302"),
+            "2026-06-20T14:00:00+00:00",
+        )
+
+        self.assertEqual(enriched.stable_server_id, "stable-1")
+        self.assertEqual(enriched.freshness, "recent")
+        self.assertEqual(enriched.quality_flags, ("advisory",))
+
+    def test_recent_local_success_is_not_rechecked_until_ttl(self):
+        candidate = self.make_candidate()
+        candidate.status_source = "local"
+        candidate.online = True
+        candidate.last_checked = "2026-06-20T14:00:00+00:00"
+        now = datetime(2026, 6, 20, 14, 1, tzinfo=timezone.utc)
+
+        self.assertFalse(local_enrichment_due(candidate, now=now))
+        self.assertTrue(
+            local_enrichment_due(
+                candidate,
+                now=datetime(2026, 6, 20, 14, 2, tzinfo=timezone.utc),
+            )
+        )
+
+    def test_failed_local_check_uses_longer_retry_cooldown(self):
+        candidate = self.make_candidate()
+        candidate.status_source = "local"
+        candidate.online = False
+        candidate.last_checked = "2026-06-20T14:00:00+00:00"
+
+        self.assertFalse(
+            local_enrichment_due(
+                candidate,
+                now=datetime(2026, 6, 20, 14, 4, tzinfo=timezone.utc),
+            )
+        )
+        self.assertTrue(
+            local_enrichment_due(
+                candidate,
+                now=datetime(2026, 6, 20, 14, 5, tzinfo=timezone.utc),
+            )
+        )
 
     def test_offline_status_only_marks_checked_and_offline(self):
         enriched = enrich_discovered_server(

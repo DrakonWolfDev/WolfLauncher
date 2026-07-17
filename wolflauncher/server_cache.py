@@ -609,8 +609,12 @@ def _search_where(
     if online_only:
         clauses.append("online = 1")
     if map_name:
-        clauses.append("map_name = ? COLLATE NOCASE")
-        params.append(map_name)
+        if map_name.casefold() == "livonia":
+            clauses.append("map_name COLLATE NOCASE IN (?, ?)")
+            params.extend(["enoch", "livonia"])
+        else:
+            clauses.append("map_name = ? COLLATE NOCASE")
+            params.append(map_name)
     if version:
         clauses.append("version = ? COLLATE NOCASE")
         params.append(version)

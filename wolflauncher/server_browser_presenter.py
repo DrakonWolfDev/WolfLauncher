@@ -92,6 +92,32 @@ def api_status_tooltip(server: DiscoveredServer) -> str:
     return "\n".join(lines)
 
 
+def browser_status(server: DiscoveredServer) -> tuple[str, str]:
+    """Return a human-facing status and colour without exposing provider jargon."""
+    if server.status_source == "local":
+        return (
+            ("ONLINE", STATUS_COLOURS["positive"])
+            if server.online
+            else ("OFFLINE", STATUS_COLOURS["negative"])
+        )
+    freshness = server.freshness.strip().lower()
+    if freshness == "live":
+        return "LIVE", STATUS_COLOURS["positive"]
+    if freshness == "recent":
+        return "RECENT", STATUS_COLOURS["warning"]
+    if freshness == "stale":
+        return "STALE", STATUS_COLOURS["warning"]
+    if freshness == "offline" or server.validation_status.strip().lower() == "offline":
+        return "OFFLINE", STATUS_COLOURS["negative"]
+    if freshness == "unverified":
+        return "UNVERIFIED", STATUS_COLOURS["warning"]
+    return (
+        ("RECENT", STATUS_COLOURS["warning"])
+        if server.online
+        else ("UNVERIFIED", STATUS_COLOURS["warning"])
+    )
+
+
 def browser_row(server: DiscoveredServer) -> BrowserRow:
     flags_text = display_server_flags(
         server.password,
@@ -108,6 +134,7 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
     else:
         tooltips[0] = "Provider/cache name; local enrichment can supply a fresher live name."
     locally_checked = server.status_source == "local"
+    status_text, status_colour = browser_status(server)
     if not server.last_checked:
         tooltips[12] = "This row has not been checked yet."
     elif locally_checked:
@@ -120,7 +147,7 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
     if not server.last_seen:
         tooltips[13] = "This row has not been seen online yet."
     if server.ping_ms is None:
-        tooltips[8] = "Ping was not supplied by the discovery provider. Use Enrich visible to query it."
+        tooltips[8] = "Ping is measured locally when you select this server."
     if server.required_mod_count is None:
         if server.mod_metadata_status == "failed":
             tooltips[11] = (
@@ -164,8 +191,7 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
             server.host,
             str(server.game_port),
             str(server.query_port),
-            ("ONLINE" if server.online else "OFFLINE")
-            if locally_checked else ("PROVIDER ONLINE" if server.online else "PROVIDER OFFLINE"),
+            status_text,
             display_map_name(server.map_name),
             players_text(server.players_current, server.players_max),
             f"{server.ping_ms}ms" if server.ping_ms is not None else "",
@@ -194,9 +220,7 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
             server.source,
         ],
         tooltips=tooltips,
-        status_colour=(
-            STATUS_COLOURS["positive"] if server.online else STATUS_COLOURS["negative"]
-        ) if locally_checked else STATUS_COLOURS["warning"],
+        status_colour=status_colour,
     )
 
 
@@ -215,8 +239,8 @@ def discovered_server_details(server: DiscoveredServer) -> str:
         f"Map: {display_map_name(server.map_name)}",
         f"Players: {players_text(server.players_current, server.players_max)}",
         f"Version: {server.version}",
-        f"Flags: {flags_text}",
-        f"Required mods: {display_required_mod_count(server.required_mod_count)}",
+        f"Features: {flags_text}",
+        f"Mods: {display_required_mod_count(server.required_mod_count)}",
         f"Status basis: {'Locally validated' if server.status_source == 'local' else 'Provider reported'}",
         f"Last checked: {server.last_checked or 'Never'}",
         f"Last seen: {server.last_seen or 'Never'}",

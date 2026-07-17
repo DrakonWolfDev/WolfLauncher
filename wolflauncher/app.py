@@ -1,8 +1,10 @@
 import os
+import json
 from dataclasses import replace
 from pathlib import Path
 from datetime import datetime
 import sys
+import time
 
 from PySide6.QtCore import QPoint, QProcess, QSize, QTimer, QUrl, Qt
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
@@ -54,7 +56,10 @@ from .diagnostics import (
     format_settings_health_report,
     run_diagnostics,
 )
-from .discovery_refresh import auto_refresh_due, auto_refresh_timestamp
+from .discovery_refresh import (
+    auto_refresh_due,
+    auto_refresh_timestamp,
+)
 from .curated_status_cache import (
     cached_status_for_server,
     load_status_cache,
@@ -82,6 +87,7 @@ from .native_launcher import (
 from .platform_detection import (
     SteamInstall,
     best_install,
+    best_install_from,
     build_steam_start_command,
     dayz_process_check,
     detect_steam,
@@ -113,6 +119,7 @@ from . import server_cache
 from .server_discovery import parse_master_address
 from .server_display import display_map_name, display_server_flags, ping_severity
 from .server_enrichment import (
+    local_enrichment_due,
     parse_connect_port,
 )
 from .server_browser_presenter import (
@@ -122,7 +129,12 @@ from .server_browser_presenter import (
     discovered_server_details,
 )
 from .server_browser_controller import BrowserQuery, browser_filter_options, load_browser_snapshot
-from .server_browser_table import browser_name_column_width, populate_browser_table
+from .server_browser_table import (
+    browser_name_column_width,
+    populate_browser_table,
+    update_browser_mod_cell,
+    update_browser_table_row,
+)
 from .settings import (
     DEFAULT_DISCOVERY_PROVIDER,
     load_favourites,
@@ -155,6 +167,7 @@ from .workers import (
     SteamDiscoveryWorker,
     SteamWebApiDiscoveryWorker,
     WolfApiDiscoveryWorker,
+    WolfApiCacheMergeWorker,
     WolfApiSearchWorker,
     WorkshopSubscriptionWorker,
     WorkshopStateWorker,
@@ -164,6 +177,9 @@ from .workshop_subscription import (
     current_workshop_item,
     workshop_recovery_state,
 )
+
+
+MAX_SELECTED_BROWSER_RUNNERS = 3
 
 
 class MainWindow(QMainWindow):
@@ -178,6 +194,7 @@ class MainWindow(QMainWindow):
         self.curated_status_cache = load_status_cache()
         self.settings = load_settings()
         self.favourites = load_favourites()
+        self.detected_steam_installs = []
         self.worker = None
         self.mod_worker = None
         self.workshop_subscription_worker = None
@@ -200,9 +217,18 @@ class MainWindow(QMainWindow):
         self.web_api_worker = None
         self.battlemetrics_worker = None
         self.wolfapi_worker = None
+        self.wolfapi_refresh_process = None
+        self.wolfapi_cache_worker = None
+        self.wolfapi_cache_context = (False, "WolfAPI", "wolfapi")
         self.wolfapi_search_worker = None
         self.pending_wolfapi_search = ""
         self.enrichment_worker = None
+        self.enrichment_mode = ""
+        self.selection_enrichment_workers = {}
+        self.pending_selection_checks = {}
+        self.browser_mod_workers = {}
+        self.pending_browser_mod_previews = {}
+        self.browser_mod_results = {}
         self.last_mod_result = None
         self.active_mod_server_key = ""
         self.pending_mod_check_row = None
@@ -253,6 +279,12 @@ class MainWindow(QMainWindow):
         self.remote_search_timer.setSingleShot(True)
         self.remote_search_timer.setInterval(450)
         self.remote_search_timer.timeout.connect(self.start_remote_wolfapi_search)
+        self.browser_selection_timer = QTimer(self)
+        self.browser_selection_timer.setSingleShot(True)
+        self.browser_selection_timer.setInterval(450)
+        self.browser_selection_timer.timeout.connect(
+            self.check_selected_discovered_server_status
+        )
 
         self.tabs = QTabWidget()
         self.tabs.setObjectName("mainTabs")
@@ -402,9 +434,11 @@ class MainWindow(QMainWindow):
         filters = QHBoxLayout()
         self.browser_search = QLineEdit()
         self.browser_search.setPlaceholderText("Search discovered servers")
+        self.browser_search.setMinimumWidth(280)
+        self.browser_search.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.browser_search.textChanged.connect(self.refresh_server_browser)
         self.browser_search.textChanged.connect(self.schedule_remote_wolfapi_search)
-        filters.addWidget(self.browser_search, 2)
+        filters.addWidget(self.browser_search, 1)
 
         self.browser_modded = QComboBox()
         self.browser_modded.setFixedWidth(150)
@@ -430,8 +464,10 @@ class MainWindow(QMainWindow):
         set_ui_role(self.browser_summary, "metadata")
 
         self.browser_style = QComboBox()
-        self.browser_style.addItems(["Any style", "PvE", "PvP"])
+        self.browser_style.setFixedWidth(150)
+        self.browser_style.addItems(["Any game style", "PvE", "PvP"])
         self.browser_style.currentTextChanged.connect(self.refresh_server_browser)
+        filters.insertWidget(2, self.browser_style)
 
         self.browser_version = QComboBox()
         self.browser_version.addItem("Any version")
@@ -464,8 +500,6 @@ class MainWindow(QMainWindow):
         advanced_layout = QVBoxLayout(self.browser_advanced_panel)
         advanced_layout.setContentsMargins(0, 0, 0, 0)
         advanced_filters = QHBoxLayout()
-        advanced_filters.addWidget(QLabel("Style"))
-        advanced_filters.addWidget(self.browser_style)
         advanced_filters.addWidget(QLabel("Version"))
         advanced_filters.addWidget(self.browser_version)
         advanced_filters.addWidget(QLabel("Source"))
@@ -509,8 +543,8 @@ class MainWindow(QMainWindow):
             "Players",
             "Ping",
             "Version",
-            "Flags",
-            "Required Mods",
+            "Features",
+            "Mods",
             "Last Checked",
             "Last Seen",
             "Source",
@@ -538,12 +572,14 @@ class MainWindow(QMainWindow):
         buttons = QHBoxLayout()
         self.refresh_database_button = QPushButton("Refresh database")
         self.refresh_database_button.clicked.connect(self.refresh_from_configured_provider)
-        self.enrich_visible_button = QPushButton("Enrich visible")
+        self.enrich_visible_button = QPushButton("Check visible servers")
+        self.enrich_visible_button.setToolTip(
+            "Advanced bulk check. Normal browsing checks only the selected server."
+        )
         self.enrich_visible_button.clicked.connect(self.enrich_visible_discovered_servers)
         self.browser_promote_button = QPushButton("Add to Favourite Servers")
         self.browser_promote_button.clicked.connect(self.promote_selected_discovered_server)
-        self.browser_inspect_button = QPushButton("Inspect mods")
-        set_ui_role(self.browser_inspect_button, "accent")
+        self.browser_inspect_button = QPushButton("View mod details")
         self.browser_inspect_button.clicked.connect(self.inspect_selected_discovered_server)
         self.browser_launch_button = QPushButton("Launch server")
         self.browser_launch_button.setIcon(theme_icon("launch"))
@@ -570,7 +606,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.browser_advanced_panel)
 
         QWidget.setTabOrder(self.browser_search, self.browser_modded)
-        QWidget.setTabOrder(self.browser_modded, self.browser_map)
+        QWidget.setTabOrder(self.browser_modded, self.browser_style)
+        QWidget.setTabOrder(self.browser_style, self.browser_map)
         QWidget.setTabOrder(self.browser_map, self.browser_online_only)
         QWidget.setTabOrder(self.browser_online_only, self.browser_table)
         QWidget.setTabOrder(self.browser_table, self.browser_advanced_toggle)
@@ -1145,21 +1182,58 @@ class MainWindow(QMainWindow):
         self.battlemetrics_worker.start()
 
     def refresh_from_wolfapi(self):
-        if self.wolfapi_worker and self.wolfapi_worker.isRunning():
+        if self.wolfapi_refresh_process and self.wolfapi_refresh_process.state() != QProcess.NotRunning:
             return
         use_v1 = self.discovery_provider_key() == "wolfapi_v1"
+        self.start_wolfapi_refresh_process(automatic=False, use_v1=use_v1)
+
+    def start_wolfapi_refresh_process(self, automatic: bool, use_v1: bool):
         label = "WolfAPI v1" if use_v1 else "WolfAPI legacy"
-        self.browser_summary.setText(f"Cached discovered servers: querying {label}...")
+        self.browser_summary.setText(f"Cached discovered servers: querying {label}…")
         self._set_database_refresh_enabled(False)
-        self.wolfapi_worker = WolfApiDiscoveryWorker(
-            limit=self.discovery_limit.value(),
-            use_v1=use_v1,
-            unflagged_only=(
-                use_v1 and self.browser_hide_quality_flagged.isChecked()
-            ),
+        self.wolfapi_cache_context = (
+            automatic,
+            label,
+            "wolfapi_v1" if use_v1 else "wolfapi",
         )
-        self.wolfapi_worker.discovery_ready.connect(self.handle_wolfapi_ready)
-        self.wolfapi_worker.start()
+        process = QProcess(self)
+        self.wolfapi_refresh_process = process
+        process.setProgram(sys.executable)
+        arguments = [
+            "-m",
+            "wolflauncher.wolfapi_refresh_process",
+            "--cache",
+            str(server_cache.SERVER_CACHE_PATH),
+            "--limit",
+            str(self.discovery_limit.value()),
+        ]
+        if use_v1:
+            arguments.append("--v1")
+        if use_v1 and self.browser_hide_quality_flagged.isChecked():
+            arguments.append("--unflagged-only")
+        process.setArguments(arguments)
+        process.finished.connect(self.handle_wolfapi_refresh_process_finished)
+        process.start()
+
+    def handle_wolfapi_refresh_process_finished(self, _exit_code: int, _status):
+        process = self.wolfapi_refresh_process
+        automatic, label, provider = self.wolfapi_cache_context
+        self._set_database_refresh_enabled(True)
+        if process is None:
+            return
+        stdout = bytes(process.readAllStandardOutput()).decode("utf-8", errors="replace")
+        stderr = bytes(process.readAllStandardError()).decode("utf-8", errors="replace").strip()
+        try:
+            payload = json.loads(stdout.strip())
+            inserted = int(payload.get("inserted", 0))
+            removed = int(payload.get("removed", 0))
+            error = str(payload.get("error") or "")
+        except (ValueError, TypeError, json.JSONDecodeError):
+            inserted, removed = 0, 0
+            error = stderr or "WolfAPI refresh helper returned an invalid response."
+        if automatic:
+            self.mark_auto_refresh(provider)
+        self.handle_wolfapi_cache_ready(inserted, removed, error)
 
     def maybe_auto_refresh_configured_provider(self):
         if not hasattr(self, "discovery_auto_refresh") or not self.discovery_auto_refresh.isChecked():
@@ -1175,22 +1249,18 @@ class MainWindow(QMainWindow):
             return
         if self.wolfapi_worker and self.wolfapi_worker.isRunning():
             return
+        if self.wolfapi_refresh_process and self.wolfapi_refresh_process.state() != QProcess.NotRunning:
+            return
+        if self.wolfapi_cache_worker and self.wolfapi_cache_worker.isRunning():
+            return
         if not self.should_auto_refresh_provider(provider):
             return
         self.browser_summary.setText("Cached discovered servers: quietly refreshing configured provider...")
         self._set_database_refresh_enabled(False)
         if provider in ("wolfapi", "wolfapi_v1"):
-            self.wolfapi_worker = WolfApiDiscoveryWorker(
-                limit=self.discovery_limit.value(),
-                automatic=True,
-                use_v1=provider == "wolfapi_v1",
-                unflagged_only=(
-                    provider == "wolfapi_v1"
-                    and self.browser_hide_quality_flagged.isChecked()
-                ),
+            self.start_wolfapi_refresh_process(
+                automatic=True, use_v1=provider == "wolfapi_v1"
             )
-            self.wolfapi_worker.discovery_ready.connect(self.handle_wolfapi_ready)
-            self.wolfapi_worker.start()
         elif provider == "battlemetrics":
             self.battlemetrics_worker = BattleMetricsDiscoveryWorker(
                 limit=self.discovery_limit.value(),
@@ -1298,10 +1368,10 @@ class MainWindow(QMainWindow):
         automatic = bool(self.wolfapi_worker and self.wolfapi_worker.automatic)
         provider = "wolfapi_v1" if self.wolfapi_worker and self.wolfapi_worker.use_v1 else "wolfapi"
         label = self.wolfapi_worker.provider_label if self.wolfapi_worker else "WolfAPI"
-        self._set_database_refresh_enabled(True)
         if automatic:
             self.mark_auto_refresh(provider)
         if error:
+            self._set_database_refresh_enabled(True)
             self.refresh_server_browser()
             if automatic:
                 self.statusBar().showMessage(
@@ -1315,11 +1385,37 @@ class MainWindow(QMainWindow):
                 f"{error}\n\nExisting cached WolfAPI rows were kept.",
             )
             return
-        if provider == "wolfapi_v1":
-            inserted = server_cache.merge_source_servers(self.server_cache, "wolfapi", servers)
-            removed = 0
-        else:
-            inserted, removed = server_cache.sync_source_servers(self.server_cache, "wolfapi", servers)
+        self.browser_summary.setText(
+            f"Cached discovered servers: updating {label} results…"
+        )
+        self.wolfapi_cache_context = (automatic, label, provider)
+        self.wolfapi_cache_worker = WolfApiCacheMergeWorker(
+            server_cache.SERVER_CACHE_PATH,
+            servers,
+            bounded_v1=provider == "wolfapi_v1",
+        )
+        self.wolfapi_cache_worker.merge_ready.connect(
+            self.handle_wolfapi_cache_ready
+        )
+        self.wolfapi_cache_worker.start()
+
+    def handle_wolfapi_cache_ready(self, inserted: int, removed: int, error: str):
+        automatic, label, _provider = self.wolfapi_cache_context
+        self._set_database_refresh_enabled(True)
+        if error:
+            self.refresh_server_browser()
+            if automatic:
+                self.statusBar().showMessage(
+                    f"{label} cache update failed; existing rows kept: {error}",
+                    7000,
+                )
+                return
+            QMessageBox.warning(
+                self,
+                f"{label} cache update failed",
+                f"{error}\n\nExisting cached WolfAPI rows were kept.",
+            )
+            return
         self.refresh_server_browser()
         if automatic:
             self.statusBar().showMessage(
@@ -1394,10 +1490,14 @@ class MainWindow(QMainWindow):
         if not servers:
             QMessageBox.warning(self, "No visible servers", "No discovered servers are visible to enrich.")
             return
-        self.start_discovered_enrichment(servers)
+        self.start_discovered_enrichment(servers, mode="bulk")
 
-    def start_discovered_enrichment(self, servers):
-        self.browser_summary.setText(f"Cached discovered servers: enriching {len(servers)} visible row(s)...")
+    def start_discovered_enrichment(self, servers, mode: str = "bulk"):
+        self.enrichment_mode = mode
+        if mode == "bulk":
+            self.browser_summary.setText(
+                f"Checking {len(servers)} visible server(s) locally..."
+            )
         self.enrich_visible_button.setEnabled(False)
         self.enrichment_worker = ServerEnrichmentWorker(servers)
         self.enrichment_worker.enrichment_progress.connect(
@@ -1407,18 +1507,23 @@ class MainWindow(QMainWindow):
         self.enrichment_worker.start()
 
     def handle_enrichment_progress(self, payload, completed: int, total: int):
-        old_cache_key, server = payload
-        server_cache.replace_server_key(self.server_cache, old_cache_key, server)
-        if completed == total or completed % 10 == 0:
-            self.refresh_server_browser()
-        self.browser_summary.setText(
-            f"Cached discovered servers: enriched {completed} of {total} visible row(s)..."
-        )
+        if (
+            self.enrichment_mode == "bulk"
+            and (completed == total or completed % 5 == 0)
+        ):
+            self.browser_summary.setText(
+                f"Checked {completed} of {total} visible server(s) locally..."
+            )
 
     def handle_enrichment_ready(self, servers, error: str):
+        mode = self.enrichment_mode
+        self.enrichment_mode = ""
         self.enrich_visible_button.setEnabled(True)
-        count = server_cache.upsert_servers(self.server_cache, servers)
-        self.refresh_server_browser()
+        if mode == "selection":
+            count = len(servers)
+        else:
+            count = server_cache.upsert_servers(self.server_cache, servers)
+            self.refresh_server_browser()
         if error:
             QMessageBox.warning(
                 self,
@@ -1426,9 +1531,151 @@ class MainWindow(QMainWindow):
                 f"Updated {count} row(s) before enrichment stopped:\n\n{error}",
             )
             return
-        self.statusBar().showMessage(
-            f"Enrichment complete: updated {count} discovered server row(s).",
-            7000,
+        if mode == "bulk":
+            self.statusBar().showMessage(
+                f"Local checks complete: updated {count} discovered server row(s).",
+                7000,
+            )
+        else:
+            self.schedule_selected_discovered_server_check()
+
+    def schedule_selected_discovered_server_check(self):
+        if not hasattr(self, "browser_selection_timer"):
+            return
+        self.browser_selection_timer.stop()
+        server = self.selected_discovered_server()
+        if server is not None and local_enrichment_due(server):
+            self.browser_selection_timer.start()
+        elif server is not None and server.status_source == "local" and server.online:
+            self.start_selected_server_mod_preview(server)
+
+    def check_selected_discovered_server_status(self):
+        server = self.selected_discovered_server()
+        if server is None:
+            return
+        if not local_enrichment_due(server):
+            if server.status_source == "local" and server.online:
+                self.start_selected_server_mod_preview(server)
+            return
+        row = self.browser_table.currentRow()
+        status_item = self.browser_table.item(row, 5) if row >= 0 else None
+        if status_item is not None:
+            status_item.setText("CHECKING…")
+            status_item.setForeground(QColor(STATUS_COLOURS["warning"]))
+        self.start_selected_discovered_enrichment(server)
+
+    def start_selected_discovered_enrichment(self, server: DiscoveredServer):
+        cache_key = server.cache_key
+        if cache_key in self.selection_enrichment_workers:
+            return
+        if len(self.selection_enrichment_workers) >= MAX_SELECTED_BROWSER_RUNNERS:
+            self.pending_selection_checks[cache_key] = server
+            return
+        worker = ServerEnrichmentWorker([server])
+        self.selection_enrichment_workers[cache_key] = worker
+        worker.enrichment_progress.connect(self.handle_selected_enrichment_progress)
+        worker.finished.connect(
+            lambda key=cache_key: self.handle_selected_enrichment_finished(key)
+        )
+        worker.start()
+
+    def handle_selected_enrichment_progress(self, payload, _completed: int, _total: int):
+        old_cache_key, server = payload
+        server_cache.replace_server_key(self.server_cache, old_cache_key, server)
+        update_browser_table_row(self.browser_table, old_cache_key, server)
+        if server.online:
+            self.start_selected_server_mod_preview(server)
+
+    def handle_selected_enrichment_finished(self, cache_key: str):
+        self.selection_enrichment_workers.pop(cache_key, None)
+        while (
+            self.pending_selection_checks
+            and len(self.selection_enrichment_workers) < MAX_SELECTED_BROWSER_RUNNERS
+        ):
+            pending_key = next(iter(self.pending_selection_checks))
+            server = self.pending_selection_checks.pop(pending_key)
+            if local_enrichment_due(server):
+                self.start_selected_discovered_enrichment(server)
+        self.schedule_selected_discovered_server_check()
+
+    def start_selected_server_mod_preview(self, discovered: DiscoveredServer):
+        cache_key = discovered.cache_key
+        cached = self.browser_mod_results.get(cache_key)
+        now = time.monotonic()
+        if cached and now - cached[0] < (900 if cached[1].ok else 300):
+            self.apply_browser_mod_preview(cache_key, cached[1])
+            return
+        if cache_key in self.browser_mod_workers:
+            return
+        if len(self.browser_mod_workers) >= MAX_SELECTED_BROWSER_RUNNERS:
+            self.pending_browser_mod_previews[cache_key] = discovered
+            return
+        install = self.selected_browser_preview_install()
+        if not install or not install.workshop_dir:
+            return
+        update_browser_mod_cell(
+            self.browser_table,
+            cache_key,
+            "CHECKING…",
+            "Comparing this server's required mods with the selected Steam Workshop installation.",
+            STATUS_COLOURS["warning"],
+        )
+        worker = ModWorker(
+            self.discovered_server_context(discovered),
+            install.workshop_dir,
+            self.mod_check_steam_context(install),
+            workshop_install=install if install.running else None,
+            include_metadata=False,
+        )
+        self.browser_mod_workers[cache_key] = worker
+        worker.mods_ready.connect(
+            lambda result, key=cache_key: self.finish_browser_mod_preview(key, result)
+        )
+        worker.finished.connect(
+            lambda key=cache_key: self.handle_browser_mod_preview_finished(key)
+        )
+        worker.start()
+
+    def finish_browser_mod_preview(self, cache_key: str, result: ModCheckResult):
+        self.browser_mod_results[cache_key] = (time.monotonic(), result)
+        self.apply_browser_mod_preview(cache_key, result)
+
+    def handle_browser_mod_preview_finished(self, cache_key: str):
+        self.browser_mod_workers.pop(cache_key, None)
+        while (
+            self.pending_browser_mod_previews
+            and len(self.browser_mod_workers) < MAX_SELECTED_BROWSER_RUNNERS
+        ):
+            pending_key = next(iter(self.pending_browser_mod_previews))
+            server = self.pending_browser_mod_previews.pop(pending_key)
+            self.start_selected_server_mod_preview(server)
+
+    def apply_browser_mod_preview(self, cache_key: str, result: ModCheckResult):
+        if not result.ok:
+            update_browser_mod_cell(
+                self.browser_table,
+                cache_key,
+                "UNAVAILABLE",
+                result.error or "Required-mod readiness could not be checked.",
+                STATUS_COLOURS["warning"],
+            )
+            return
+        missing = len(result.missing_mods)
+        if missing:
+            update_browser_mod_cell(
+                self.browser_table,
+                cache_key,
+                f"{missing} MISSING",
+                "Launch will open pre-flight and offer to install or update the missing Workshop items.",
+                STATUS_COLOURS["negative"],
+            )
+            return
+        update_browser_mod_cell(
+            self.browser_table,
+            cache_key,
+            "READY",
+            "Local Workshop readiness preview. Launch pre-flight performs the final check.",
+            STATUS_COLOURS["positive"],
         )
 
     def promote_selected_discovered_server(self):
@@ -1573,6 +1820,15 @@ class MainWindow(QMainWindow):
     def selected_steam_install(self) -> SteamInstall | None:
         return select_steam_install(self.native_steam_mode_key())
 
+    def selected_browser_preview_install(self) -> SteamInstall | None:
+        """Reuse the latest health snapshot so browsing never scans Steam on the UI thread."""
+        installs = list(self.detected_steam_installs)
+        if not installs:
+            return None
+        if self.launch_engine_key() == "native":
+            return select_steam_install(self.native_steam_mode_key(), installs=installs)
+        return best_install_from(installs)
+
     def check_startup_steam_state(self):
         """Surface Steam availability once the initial window has opened."""
         install = self.selected_steam_install()
@@ -1706,6 +1962,9 @@ class MainWindow(QMainWindow):
         if not hasattr(self, "browser_table"):
             return
 
+        selected = self.selected_discovered_server()
+        selected_key = selected.cache_key if selected else ""
+        scroll_value = self.browser_table.verticalScrollBar().value()
         self._refresh_browser_filter_options()
         sort_key = self.browser_sort.currentText().lower().replace(" ", "_")
         modded = None
@@ -1739,6 +1998,19 @@ class MainWindow(QMainWindow):
         self.browser_servers = servers
 
         populate_browser_table(self.browser_table, servers)
+        if selected_key:
+            for row in range(self.browser_table.rowCount()):
+                item = self.browser_table.item(row, 0)
+                if item and item.data(Qt.UserRole) == selected_key:
+                    self.browser_table.selectRow(row)
+                    break
+        self.browser_table.verticalScrollBar().setValue(scroll_value)
+        for server in servers:
+            cached = self.browser_mod_results.get(server.cache_key)
+            if cached and time.monotonic() - cached[0] < (
+                900 if cached[1].ok else 300
+            ):
+                self.apply_browser_mod_preview(server.cache_key, cached[1])
         self.configure_browser_columns()
         self.browser_summary.setText(
             browser_summary_text(snapshot.cache_summary, len(servers), snapshot.match_count, limit)
@@ -1759,6 +2031,13 @@ class MainWindow(QMainWindow):
             button = getattr(self, button_name, None)
             if button is not None:
                 button.setEnabled(enabled)
+        launch_button = getattr(self, "browser_launch_button", None)
+        if launch_button is not None:
+            launch_button.setText(
+                f"Launch {selected.name}" if selected else "Launch selected server"
+            )
+        if hasattr(self, "schedule_selected_discovered_server_check"):
+            self.schedule_selected_discovered_server_check()
 
     def configure_browser_columns(self, show_details: bool | None = None):
         if not hasattr(self, "browser_table"):
@@ -1821,7 +2100,7 @@ class MainWindow(QMainWindow):
         self.browser_search.clear()
         self.browser_online_only.setChecked(False)
         self.browser_modded.setCurrentText("Any mods")
-        self.browser_style.setCurrentText("Any style")
+        self.browser_style.setCurrentText("Any game style")
         self.browser_map.setCurrentText("Any map")
         self.browser_version.setCurrentText("Any version")
         self.browser_source.setCurrentText("Any source")
@@ -3306,6 +3585,7 @@ class MainWindow(QMainWindow):
         if not hasattr(self, "health_table"):
             return
         install_rows = detect_steam()
+        self.detected_steam_installs = install_rows
         provider = self.discovery_provider_key()
         provider_detail = self.discovery_provider.currentText()
         if provider == "steam_web_api":

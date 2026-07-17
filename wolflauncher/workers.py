@@ -1,10 +1,12 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 import threading
+from pathlib import Path
 
 from PySide6.QtCore import QThread, Signal
 
 from .models import Server
+from . import server_cache
 from .mods import (
     apply_workshop_metadata,
     apply_workshop_item_states,
@@ -72,16 +74,24 @@ class StatusWorker(QThread):
 class ModWorker(QThread):
     mods_ready = Signal(object)
 
-    def __init__(self, server: Server, workshop_dir, steam_context: str = "", workshop_install=None):
+    def __init__(
+        self,
+        server: Server,
+        workshop_dir,
+        steam_context: str = "",
+        workshop_install=None,
+        include_metadata: bool = True,
+    ):
         super().__init__()
         self.server = server
         self.workshop_dir = workshop_dir
         self.steam_context = steam_context
         self.workshop_install = workshop_install
+        self.include_metadata = include_metadata
 
     def run(self):
         result = check_server_mods(self.server, self.workshop_dir, self.steam_context)
-        if result.ok and result.required_mods:
+        if self.include_metadata and result.ok and result.required_mods:
             apply_workshop_metadata(
                 result,
                 fetch_workshop_metadata(mod.workshop_id for mod in result.required_mods),
@@ -229,6 +239,37 @@ class WolfApiDiscoveryWorker(QThread):
             self.discovery_ready.emit([], str(exc))
         else:
             self.discovery_ready.emit(servers, "")
+
+
+class WolfApiCacheMergeWorker(QThread):
+    merge_ready = Signal(int, int, str)
+
+    def __init__(self, cache_path: Path, servers, bounded_v1: bool):
+        super().__init__()
+        self.cache_path = Path(cache_path)
+        self.servers = list(servers)
+        self.bounded_v1 = bounded_v1
+
+    def run(self):
+        connection = None
+        try:
+            connection = server_cache.connect(self.cache_path)
+            if self.bounded_v1:
+                inserted = server_cache.merge_source_servers(
+                    connection, "wolfapi", self.servers
+                )
+                removed = 0
+            else:
+                inserted, removed = server_cache.sync_source_servers(
+                    connection, "wolfapi", self.servers
+                )
+        except Exception as exc:
+            self.merge_ready.emit(0, 0, str(exc))
+        else:
+            self.merge_ready.emit(inserted, removed, "")
+        finally:
+            if connection is not None:
+                connection.close()
 
 
 def discover_wolfapi_v1_pages(limit: int, unflagged_only: bool = False) -> list:

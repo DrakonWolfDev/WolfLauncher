@@ -156,8 +156,15 @@ Priority 3 — Workshop readiness and information:
 
 Priority 4 — discovery truth and regression coverage:
 
-- Completed — provider claims are shown in amber as **PROVIDER ONLINE/OFFLINE** with provenance guidance; successful or failed local enrichment changes the row to locally validated **ONLINE/OFFLINE** with its check timestamp.
-- Completed — explicit visible-row enrichment preserves top-to-bottom priority while checking concurrently, replaces obsolete cache keys when live game-port correction changes identity and reports incremental progress without automatic discovered-server UDP polling.
+- Completed — Server Browser uses WolfAPI freshness language—Live, Recent,
+  Stale, Offline and Unverified—instead of implementation-facing provider
+  labels. A 450 ms deliberate selection triggers one local check, successful
+  results are reused for two minutes and failures have a five-minute cooldown;
+  local results remain explicit Online/Offline truth.
+- Completed — explicit visible-row enrichment preserves top-to-bottom priority
+  while checking concurrently and reports throttled progress without automatic
+  discovered-server UDP polling. Results are applied in one final transaction
+  and table refresh so per-row commits/rebuilds cannot freeze browsing.
 - Cover stopped Steam, Steam stopping mid-operation, partial completion, deleted/unavailable items, restart during downloads, secondary libraries, Flatpak Steam and launch-after-download in repeatable tests and the manual smoke checklist.
 
 Visual-polish review note:

@@ -1,7 +1,10 @@
 import unittest
 from datetime import datetime, timedelta, timezone
 
-from wolflauncher.discovery_refresh import auto_refresh_due, auto_refresh_timestamp
+from wolflauncher.discovery_refresh import (
+    auto_refresh_due,
+    auto_refresh_timestamp,
+)
 from wolflauncher.settings import DEFAULT_DISCOVERY_PROVIDER
 
 

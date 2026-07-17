@@ -2,6 +2,57 @@
 
 ## Unreleased
 
+- Replaced normal-path **Enrich visible** sweeps with a 450 ms debounced local
+  check of only the deliberately selected discovered server. Successful checks
+  are reused for two minutes and failures observe a five-minute retry cooldown;
+  the bounded bulk check remains available as **Check visible servers** under
+  advanced tools.
+- Replaced implementation-facing **PROVIDER ONLINE/OFFLINE** Browser labels
+  with WolfAPI truth states—Live, Recent, Stale, Offline and Unverified—while
+  locally checked rows remain Online/Offline and provider provenance stays in
+  tooltips/details. Renamed Flags to Features and Required Mods to Mods.
+- Made discovered-server enrichment preserve stable identity, freshness,
+  quality and mod metadata that a local status query did not measure.
+- Selected-server checks now update only their existing row and preserve the
+  current selection and viewport instead of rebuilding and snapping the table
+  during ordinary inspection.
+- Added a lightweight, session-cached mod-readiness preview after a deliberately
+  selected server has been locally confirmed online. The Browser Mods cell can
+  show Checking, Ready, a missing count or Unavailable without subscribing to
+  anything; successful previews last 15 minutes and failures cool down for five.
+- Renamed the secondary Browser action to **View mod details** and made the
+  primary action name the selected destination. **Launch [server]** always
+  enters the existing authoritative Steam/Workshop pre-flight, which remains
+  the only path that can offer installation or updates.
+- Restored both Vanilla/Modded and PvE/PvP to the common Browser controls in the
+  order Search, Mods, Game Style and Map. Search is the row's elastic control so
+  it absorbs width changes without gaps while the categorical controls remain
+  compact. Deliberate selected-
+  server status and readiness work now uses separate three-runner bounded pools
+  with endpoint deduplication, queued overflow and the existing cooldowns.
+- Browser readiness previews reuse the latest Settings
+  Steam-detection snapshot instead of rescanning Steam libraries on the UI
+  thread, and Mods-cell updates preserve selection, sorting and scroll position.
+- Fixed **Check visible servers** freezing the Browser by removing per-result
+  UI-thread SQLite commits and repeated full-table rebuilds. Bulk results now
+  remain in the worker, progress text is throttled, and completion performs one
+  transaction followed by one table refresh. Game Style is now self-labelled by
+  its **Any game style** dropdown without a separate field label.
+- Moved the automatic WolfAPI response-to-SQLite merge off the UI thread into a
+  dedicated cache worker with its own connection. Cached results remain usable
+  while the transaction runs, followed by one visible-list refresh after commit.
+- Isolated the complete WolfAPI refresh pipeline in a helper process after
+  desktop testing showed Python-thread JSON parsing/normalization could still
+  pause Qt through the shared interpreter lock. HTTP paging, parsing and SQLite
+  merge now complete outside the GUI process before one small result handoff.
+- Removed the trial automatic refresh on Server Browser tab opening after
+  desktop testing found any list replacement disruptive. Opening the Browser
+  now renders cached data only; explicit refresh and the existing optional
+  once-daily provider refresh remain the update paths.
+- Canonicalized Server Browser map filter options case-insensitively so provider
+  variants such as `Bitterroot` and `bitterroot` produce one **Bitterroot**
+  choice. Filter matching remains case-insensitive and preserves the existing
+  Enoch/Livonia display alias.
 - Replaced the visible Settings health table with three native grouped
   readiness cards for Launcher, Steam/DayZ and Graphics/launch state. The full
   snapshot remains authoritative for copying and is available through an

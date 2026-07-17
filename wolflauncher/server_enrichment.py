@@ -1,11 +1,16 @@
 from __future__ import annotations
 
+from dataclasses import replace
+from datetime import datetime, timezone
+
 from .models import DiscoveredServer, Server
 from .status import ServerStatus
 
 
 COMMON_DAYZ_QUERY_PORT = 27016
 COMMON_GAME_TO_QUERY_OFFSET = COMMON_DAYZ_QUERY_PORT - 2302
+LOCAL_ONLINE_TTL_SECONDS = 120
+LOCAL_FAILURE_RETRY_SECONDS = 300
 
 
 def enrich_discovered_server(
@@ -14,37 +19,20 @@ def enrich_discovered_server(
     checked_at: str,
 ) -> DiscoveredServer:
     if not status.online:
-        return DiscoveredServer(
-            name=server.name,
-            source=server.source,
-            server_name=server.server_name,
-            host=server.host,
-            game_port=server.game_port,
-            query_port=server.query_port,
-            map_name=server.map_name,
-            players_current=server.players_current,
-            players_max=server.players_max,
-            ping_ms=server.ping_ms,
-            version=server.version,
-            password=server.password,
-            modded=server.modded,
+        return replace(
+            server,
             online=False,
             last_checked=checked_at,
-            last_seen=server.last_seen,
             status_source="local",
-            required_mod_count=server.required_mod_count,
         )
 
     players_current, players_max = parse_players(status.players)
     game_port = parse_connect_port(status.connect) or server.game_port
 
-    return DiscoveredServer(
-        name=server.name,
-        source=server.source,
+    return replace(
+        server,
         server_name=status.server_name,
-        host=server.host,
         game_port=game_port,
-        query_port=server.query_port,
         map_name=status.map_name,
         players_current=players_current,
         players_max=players_max,
@@ -56,8 +44,29 @@ def enrich_discovered_server(
         last_checked=checked_at,
         last_seen=checked_at,
         status_source="local",
-        required_mod_count=server.required_mod_count,
     )
+
+
+def local_enrichment_due(
+    server: DiscoveredServer,
+    now: datetime | None = None,
+    online_ttl_seconds: int = LOCAL_ONLINE_TTL_SECONDS,
+    failure_retry_seconds: int = LOCAL_FAILURE_RETRY_SECONDS,
+) -> bool:
+    """Bound repeated local probes while keeping selected-row data responsive."""
+    if server.status_source != "local" or not server.last_checked:
+        return True
+    try:
+        checked = datetime.fromisoformat(server.last_checked.replace("Z", "+00:00"))
+    except ValueError:
+        return True
+    if checked.tzinfo is None:
+        checked = checked.replace(tzinfo=timezone.utc)
+    current = now or datetime.now(timezone.utc)
+    if current.tzinfo is None:
+        current = current.replace(tzinfo=timezone.utc)
+    ttl = online_ttl_seconds if server.online else failure_retry_seconds
+    return (current - checked).total_seconds() >= ttl
 
 
 def enrichment_probe_servers(server: DiscoveredServer) -> list[Server]:

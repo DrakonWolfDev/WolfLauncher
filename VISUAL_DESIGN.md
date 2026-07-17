@@ -152,6 +152,47 @@ Launch action. Discovered-server inspections pair that forward action with a
 contextual left-arrow return to the Browser results. A real-desktop keyboard,
 density and handoff review remains before this flow pass is considered settled.
 
+Server Browser uses directory freshness as the calm scanning state: Live,
+Recent, Stale, Offline or Unverified. Provider provenance belongs in tooltips
+and contextual detail rather than being repeated as table jargon. Holding a
+selection briefly may show Checking and perform one bounded local query; its
+Online/Offline result, ping and other live fields then take precedence for a
+short cache window. Bulk visible-row checking is an advanced diagnostic action,
+not part of ordinary browsing.
+Opening the Browser renders cached rows only and must not replace them
+automatically. A selected-server check updates that row in place; it must not
+rebuild or visibly bounce the surrounding result list.
+After a selected server is locally confirmed, its Mods cell may quietly move
+from directory metadata to a short local readiness state: Checking, Ready,
+`N missing` or Unavailable. This is preview feedback, not launch authority and
+never initiates a Workshop change. Keep **View mod details** secondary; the
+primary action names the selected server and deliberately enters pre-flight.
+Treat this hierarchy as provisional until the next desktop design review.
+Keep both **Mods** and **Game Style** in the common scanning controls. Use the
+order Search, Mods, Game Style, Map and bound Search so it does not crowd out
+the categorical dropdowns. Keep the group contiguous by making Search the
+elastic control; do not distribute surplus space as gaps or force the entire
+group into a fixed left-aligned block.
+Selected-server checks may
+use a small bounded runner pool to keep comparison responsive, but must retain
+per-endpoint deduplication/cooldowns and must never become automatic visible-row
+probing.
+Do not pair tab opening with a provider refresh or automatic first-page local
+probe sweep. Cached/API freshness is sufficient until the user explicitly
+refreshes or expresses interest through selection. Preview setup must reuse background/cached platform
+context and preserve the table viewport; filesystem detection or row resorting
+must not visibly freeze or disorient browsing.
+Common dropdowns should self-label where their neutral choice is unambiguous;
+use **Any game style** rather than spending horizontal space on a separate Game
+Style label. Advanced bulk checks may update compact progress copy, but must not
+commit rows or rebuild/sort the results table repeatedly while running.
+Provider downloads and large cache merges are both background work. Keep the
+previous cached result surface interactive until the merge transaction commits,
+then refresh the visible page once without clearing it during the operation.
+For WolfAPI, "background" means process isolation: Python threads still share
+the GUI interpreter lock. HTTP paging, JSON normalization and cache merging must
+remain outside the Qt process, with only the final compact summary handed back.
+
 Mods deliberately remains table-first because required sets commonly contain
 dozens of items. A draggable horizontal master/detail split pairs a focused
 Status, Name, Workshop ID and Size table with one selection-driven Workshop
