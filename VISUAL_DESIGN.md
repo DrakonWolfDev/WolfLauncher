@@ -262,6 +262,30 @@ high-resolution scaling.
 Region may remain absent until the shared API field is implemented; its absence
 must not block improving the existing selected-server panel.
 
+The first review found the plain full-height text card insufficiently distinct.
+The inspector now uses a restrained selected-server identity band: small
+eyebrow and semantic status badge, stronger name, amber technical endpoint and
+a compact Map/Players/Ping facts strip. Lower truth, feature, mod-readiness and
+support sections remain quiet so the emphasis does not become decorative or
+compete with the Launch action.
+
+An original WolfLauncher-owned environmental atlas fills the inspector's
+otherwise-unused lower space with map flavour: severe snow for Namalsk, misty
+conifers for Chernarus, wet green lowlands for Enoch/Livonia and volcanic cold
+for Sakhal. Unknown and community maps use a more heavily darkened neutral
+treatment. This is ambient category artwork, not a server banner, map screenshot
+or claim about the selected server; all operational meaning remains in
+selectable text. The artwork expands only after the compact identity, facts,
+truth, readiness and support content has taken the space it needs.
+The initial square-panel atlas cropped into close terrain when fitted to the
+narrow tall inspector. Its v2 replacement uses four purpose-composed portrait
+vistas in a horizontal source atlas so distant horizons and environmental depth
+survive the actual panel proportions.
+The rendered vista receives a native charcoal vignette: pronounced vertical
+fades dissolve its top and bottom into the inspector surface, while a lighter
+side falloff removes the hard rectangular edge without obscuring the map
+flavour or competing with the semantic status border.
+
 Mods deliberately remains table-first because required sets commonly contain
 dozens of items. A draggable horizontal master/detail split pairs a focused
 Status, Name, Workshop ID and Size table with one selection-driven Workshop

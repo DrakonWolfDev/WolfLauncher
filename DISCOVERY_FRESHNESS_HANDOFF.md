@@ -238,6 +238,40 @@ repositories; finally evaluate country coverage before selecting any additional
 data source. Update this handoff and the API contract together when the fields
 are implemented.
 
+### Paused implementation handoff — 2026-07-17
+
+The Server Browser visual pass is approved and should be treated as the stable
+presentation target while country and game time remain explicit unknowns. The
+selected-server inspector uses a dense table/master-detail split, grouped
+selectable metadata and an original map-family atmosphere in otherwise-unused
+lower space. Do not reopen that hierarchy when adding the fields; populate the
+existing Region and Game Time positions.
+
+Resume the data work across both repositories in this order:
+
+1. Capture a sanitized real BattleMetrics response fixture that contains its
+   country/location value. Confirm its exact JSON path and value format rather
+   than coding from the web presentation or an assumed key.
+2. In WolfAPI, normalize trustworthy BattleMetrics country values to nullable
+   ISO 3166-1 alpha-2 `country_code`, retain explicit provider provenance, add
+   an additive Alembic migration and preserve the values through ingestion,
+   canonical merging, recovery publishing and port correction.
+3. Expose `country_code` and its provenance consistently from v1 list, search
+   and resolve rows. Null remains unknown; the existing integer `region` stays
+   a separate Steam compatibility field. Measure coverage before considering
+   any IP-geolocation fallback.
+4. In WolfLauncher, add the matching nullable model and additive SQLite fields,
+   parse all v1 response shapes, preserve country across stable-ID merges and
+   local enrichment, and populate the inspector's existing Region value.
+5. Separately retain locally measured `ServerStatus.time` as nullable
+   `game_time` through discovered-server enrichment and Launcher SQLite, then
+   populate the existing Game Time value. Do not publish this rapidly changing
+   state through WolfAPI initially.
+
+Test and commit WolfAPI and WolfLauncher separately. Deployment and migration
+readiness remain distinct from source completion; keep the legacy API fallback
+until a deliberate later removal.
+
 ## Rollout gates
 
 - Production reports `contract_version >= 1`, `generated_at`, validation

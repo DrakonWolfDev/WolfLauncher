@@ -73,6 +73,8 @@ wolflauncher/
                          Pure discovered-row and copied-details presentation
   server_browser_table.py
                          Qt discovered-row population
+  server_map_atmosphere.py
+                         Map-family selection and inspector atlas rendering
   settings.py            JSON settings and favourites under ~/.config/wolflauncher
   settings_health.py     Settings health snapshot construction
   status.py              gamedig server status and DNS resolution

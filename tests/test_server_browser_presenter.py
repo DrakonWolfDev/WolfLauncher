@@ -38,9 +38,11 @@ class ServerBrowserPresenterTests(unittest.TestCase):
 
         self.assertEqual(detail.title, "Namalsk Adventure")
         self.assertEqual(detail.status_kind, "ready")
-        self.assertIn("Map  Namalsk", detail.overview)
-        self.assertIn("Region  Not available", detail.overview)
-        self.assertIn("Game time  Unknown until locally checked", detail.overview)
+        self.assertEqual(detail.map_name, "Namalsk")
+        self.assertEqual(detail.region, "Not available")
+        self.assertEqual(detail.game_time, "Unknown until locally checked")
+        self.assertEqual(detail.players, "12/60")
+        self.assertEqual(detail.ping, "42 ms")
         self.assertEqual(detail.mods, "Ready locally")
         self.assertIn("Query port  27016", detail.diagnostics)
 

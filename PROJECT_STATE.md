@@ -138,6 +138,19 @@ unavailable and Game Time explicitly unknown pending their separate data work.
 The split ratio, exact columns and high-resolution density remain provisional
 until real-desktop review; Favourite Servers, Mods and Settings remain locked
 unless a concrete usability issue is found.
+The inspector's follow-up identity treatment uses a distinct header, semantic
+status badge, highlighted endpoint and compact Map/Players/Ping facts strip;
+the lower truth/readiness/support content intentionally remains subdued.
+Its original environmental atlas fills the otherwise-empty lower inspector with
+snow, conifer, wetland or volcanic map flavour for known map families and a
+darker neutral fallback. The art is explicitly atmospheric rather than
+server-supplied evidence and expands only after the complete selectable detail
+content. The active v2 atlas uses purpose-composed portrait vistas so its
+distant horizons survive the inspector crop; the discarded square-panel v1 is
+not shipped or referenced.
+The renderer applies a charcoal top/bottom vignette and lighter side falloff so
+the remaining-space artwork dissolves into the inspector instead of ending as
+a visibly separate rectangle.
 
 - Use this vertical hierarchy where a tab has comparable content: information/summary, common controls, results, then a bottom action row.
 - Keep the frequent path visible. For Server Browser this means search/common filters and Promote/Reset. For Mods this means recheck, open missing pages and filter.
@@ -428,6 +441,11 @@ Current handling:
 ## Next step
 
 Use v0.9 native-launch hardening as the next active development target:
+
+- The approved Server Browser visual pass is paused with explicit Region and
+  Game Time unknowns. Resume their coordinated WolfAPI/Launcher implementation
+  from `DISCOVERY_FRESHNESS_HANDOFF.md`; do not reopen the inspector hierarchy
+  or infer either value from an untrusted source.
 
 - Keep native launch as the default and retain the external launcher as a fallback.
 - Preserve the completed launch-dialog, Settings-health, worker, curated-dialog and Server Browser query/presentation boundaries while continuing small `app.py` extractions.

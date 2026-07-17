@@ -21,7 +21,11 @@ class BrowserInspector:
     status: str
     status_kind: str
     endpoint: str
-    overview: str
+    map_name: str
+    region: str
+    game_time: str
+    players: str
+    ping: str
     truth: str
     features: str
     mods: str
@@ -269,12 +273,11 @@ def browser_inspector(
         status=status.title(),
         status_kind=status_kind,
         endpoint=server.connect_target,
-        overview=(
-            f"Map  {display_map_name(server.map_name)}\n"
-            "Region  Not available\n"
-            "Game time  Unknown until locally checked\n"
-            f"Players  {players}    Ping  {ping}"
-        ),
+        map_name=display_map_name(server.map_name),
+        region="Not available",
+        game_time="Unknown until locally checked",
+        players=players,
+        ping=ping,
         truth=truth,
         features=features,
         mods=mods,

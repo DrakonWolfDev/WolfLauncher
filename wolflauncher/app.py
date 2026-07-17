@@ -136,6 +136,7 @@ from .server_browser_table import (
     update_browser_mod_cell,
     update_browser_table_row,
 )
+from .server_map_atmosphere import ServerMapAtmosphereFrame
 from .settings import (
     DEFAULT_DISCOVERY_PROVIDER,
     load_favourites,
@@ -572,20 +573,64 @@ class MainWindow(QMainWindow):
         set_ui_role(self.browser_detail_card, "browserDetail")
         self.browser_detail_card.setProperty("serverStatus", "warning")
         detail_layout = QVBoxLayout(self.browser_detail_card)
-        detail_layout.setContentsMargins(16, 16, 16, 16)
-        detail_layout.setSpacing(10)
+        detail_layout.setContentsMargins(0, 0, 0, 0)
+        detail_layout.setSpacing(0)
+        self.browser_detail_header = QFrame()
+        set_ui_role(self.browser_detail_header, "browserDetailHeader")
+        header_layout = QVBoxLayout(self.browser_detail_header)
+        header_layout.setContentsMargins(16, 14, 16, 14)
+        header_layout.setSpacing(6)
+        header_top = QHBoxLayout()
+        self.browser_detail_eyebrow = QLabel("SELECTED SERVER")
+        set_ui_role(self.browser_detail_eyebrow, "inspectorLabel")
+        self.browser_detail_status = QLabel("NO SELECTION")
+        set_ui_role(self.browser_detail_status, "browserStatus")
+        self.browser_detail_status.setProperty("serverStatus", "warning")
+        header_top.addWidget(self.browser_detail_eyebrow)
+        header_top.addStretch(1)
+        header_top.addWidget(self.browser_detail_status)
+        header_layout.addLayout(header_top)
         self.browser_detail_title = QLabel("Select a server to inspect its details")
         self.browser_detail_title.setWordWrap(True)
-        set_ui_role(self.browser_detail_title, "cardTitle")
-        self.browser_detail_status = QLabel("No server selected")
-        set_ui_role(self.browser_detail_status, "metadata")
+        set_ui_role(self.browser_detail_title, "inspectorTitle")
+        header_layout.addWidget(self.browser_detail_title)
         self.browser_detail_endpoint = QLabel("")
         set_monospace(self.browser_detail_endpoint)
-        self.browser_detail_overview = QLabel(
-            "Selection-driven status, players, ping and mod readiness will appear here."
+        set_ui_role(self.browser_detail_endpoint, "browserEndpoint")
+        header_layout.addWidget(self.browser_detail_endpoint)
+        detail_layout.addWidget(self.browser_detail_header)
+
+        facts = QFrame()
+        set_ui_role(facts, "browserFacts")
+        facts_layout = QGridLayout(facts)
+        facts_layout.setContentsMargins(14, 12, 14, 12)
+        facts_layout.setHorizontalSpacing(8)
+        facts_layout.setVerticalSpacing(4)
+        self.browser_detail_map = QLabel("—")
+        self.browser_detail_players = QLabel("—")
+        self.browser_detail_ping = QLabel("—")
+        for column, (heading, value) in enumerate((
+            ("MAP", self.browser_detail_map),
+            ("PLAYERS", self.browser_detail_players),
+            ("PING", self.browser_detail_ping),
+        )):
+            label = QLabel(heading)
+            set_ui_role(label, "inspectorLabel")
+            set_ui_role(value, "inspectorValue")
+            facts_layout.addWidget(label, 0, column)
+            facts_layout.addWidget(value, 1, column)
+            facts_layout.setColumnStretch(column, 1)
+        detail_layout.addWidget(facts)
+
+        detail_body = QWidget()
+        body_layout = QVBoxLayout(detail_body)
+        body_layout.setContentsMargins(16, 14, 16, 14)
+        body_layout.setSpacing(12)
+        self.browser_detail_context = QLabel(
+            "Selection-driven truth and mod readiness will appear here."
         )
-        self.browser_detail_overview.setWordWrap(True)
-        set_ui_role(self.browser_detail_overview, "metadata")
+        self.browser_detail_context.setWordWrap(True)
+        set_ui_role(self.browser_detail_context, "metadata")
         self.browser_detail_truth = QLabel("")
         self.browser_detail_truth.setWordWrap(True)
         set_ui_role(self.browser_detail_truth, "metadata")
@@ -597,17 +642,20 @@ class MainWindow(QMainWindow):
         self.browser_detail_diagnostics.setWordWrap(True)
         set_ui_role(self.browser_detail_diagnostics, "metadata")
         for child in (
-            self.browser_detail_title,
-            self.browser_detail_status,
-            self.browser_detail_endpoint,
-            self.browser_detail_overview,
+            self.browser_detail_context,
             self.browser_detail_truth,
             self.browser_detail_features,
             self.browser_detail_mods,
+            self.browser_detail_diagnostics,
         ):
-            detail_layout.addWidget(child)
-        detail_layout.addStretch(1)
-        detail_layout.addWidget(self.browser_detail_diagnostics)
+            body_layout.addWidget(child)
+        detail_layout.addWidget(detail_body)
+        self.browser_detail_atmosphere = ServerMapAtmosphereFrame()
+        set_ui_role(self.browser_detail_atmosphere, "browserAtmosphere")
+        self.browser_detail_atmosphere.setSizePolicy(
+            QSizePolicy.Expanding, QSizePolicy.Expanding
+        )
+        detail_layout.addWidget(self.browser_detail_atmosphere, 1)
 
         self.browser_splitter = QSplitter(Qt.Horizontal)
         self.browser_splitter.setObjectName("browserSplitter")
@@ -2113,10 +2161,15 @@ class MainWindow(QMainWindow):
         if selected is None:
             self.browser_detail_card.setProperty("serverStatus", "warning")
             self.browser_detail_title.setText("Select a server to inspect its details")
-            self.browser_detail_status.setText("No server selected")
+            self.browser_detail_status.setText("NO SELECTION")
+            self.browser_detail_status.setProperty("serverStatus", "warning")
             self.browser_detail_endpoint.clear()
-            self.browser_detail_overview.setText(
-                "Selection-driven status, players, ping and mod readiness will appear here."
+            self.browser_detail_atmosphere.set_map_name("")
+            self.browser_detail_map.setText("—")
+            self.browser_detail_players.setText("—")
+            self.browser_detail_ping.setText("—")
+            self.browser_detail_context.setText(
+                "Selection-driven truth and mod readiness will appear here."
             )
             for label in (
                 self.browser_detail_truth,
@@ -2142,15 +2195,24 @@ class MainWindow(QMainWindow):
                 detail_edge = "offline"
             self.browser_detail_card.setProperty("serverStatus", detail_edge)
             self.browser_detail_title.setText(detail.title)
-            self.browser_detail_status.setText(status_override or detail.status)
+            self.browser_detail_status.setText((status_override or detail.status).upper())
+            self.browser_detail_status.setProperty("serverStatus", detail_edge)
             self.browser_detail_endpoint.setText(detail.endpoint)
-            self.browser_detail_overview.setText(detail.overview)
+            self.browser_detail_atmosphere.set_map_name(detail.map_name)
+            self.browser_detail_map.setText(detail.map_name)
+            self.browser_detail_players.setText(detail.players)
+            self.browser_detail_ping.setText(detail.ping)
+            self.browser_detail_context.setText(
+                f"Region  {detail.region}\nGame time  {detail.game_time}"
+            )
             self.browser_detail_truth.setText(f"Truth basis\n{detail.truth}")
             self.browser_detail_features.setText(f"Features\n{detail.features}")
             self.browser_detail_mods.setText(f"Mod readiness\n{detail.mods}")
             self.browser_detail_diagnostics.setText(detail.diagnostics)
         self.browser_detail_card.style().unpolish(self.browser_detail_card)
         self.browser_detail_card.style().polish(self.browser_detail_card)
+        self.browser_detail_status.style().unpolish(self.browser_detail_status)
+        self.browser_detail_status.style().polish(self.browser_detail_status)
 
     def configure_browser_columns(self, show_details: bool | None = None):
         if not hasattr(self, "browser_table"):

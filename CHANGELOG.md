@@ -8,7 +8,18 @@
   features and transient mod readiness. Its semantic edge distinguishes
   positive, uncertain/checking and confidently offline states; Region and Game
   Time remain explicit unavailable/unknown placeholders pending their planned
-  data plumbing.
+  data plumbing. A follow-up identity band gives the selection a stronger name,
+  semantic status badge, highlighted endpoint and compact Map/Players/Ping
+  facts. An original low-contrast environmental atlas adds honest map-family
+  flavour for Namalsk, Chernarus, Enoch/Livonia and Sakhal, with a darker
+  neutral fallback rather than pretending to show server-provided banners. It
+  expands through the otherwise-unused lower inspector after all operational
+  and support information, removing the large dead area without sitting behind
+  selectable text. Purpose-composed portrait vistas replace the initial square
+  source panels so the narrow inspector retains distant horizons and depth
+  instead of cropping into close terrain. A native charcoal vignette fades the
+  artwork into the inspector at every edge, with stronger vertical falloff and
+  restrained sides that preserve the semantic status border.
 - Replaced normal-path **Enrich visible** sweeps with a 450 ms debounced local
   check of only the deliberately selected discovered server. Successful checks
   are reused for two minutes and failures observe a five-minute retry cooldown;

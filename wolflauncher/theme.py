@@ -94,6 +94,16 @@ QFrame[uiRole="browserDetail"] {{ background-color: {c['surface']}; border: 1px 
 QFrame[uiRole="browserDetail"][serverStatus="ready"] {{ border-left-color: {c['positive']}; }}
 QFrame[uiRole="browserDetail"][serverStatus="offline"] {{ border-left-color: {c['negative']}; }}
 QFrame[uiRole="browserDetail"][serverStatus="warning"] {{ border-left-color: {c['warning']}; }}
+QFrame[uiRole="browserDetailHeader"] {{ background-color: {c['surface_alt']}; border: 0; border-bottom: 1px solid {c['border_strong']}; }}
+QFrame[uiRole="browserFacts"] {{ background-color: #181610; border: 0; border-bottom: 1px solid {c['border']}; }}
+QFrame[uiRole="browserAtmosphere"] {{ background-color: #181610; border: 0; border-top: 1px solid {c['border']}; }}
+QLabel[uiRole="inspectorLabel"] {{ color: {c['text_muted']}; font-size: 9px; font-weight: 600; letter-spacing: 1px; }}
+QLabel[uiRole="inspectorTitle"] {{ color: {c['text']}; font-size: 15px; font-weight: 600; }}
+QLabel[uiRole="inspectorValue"] {{ color: {c['text']}; font-size: 13px; font-weight: 600; }}
+QLabel[uiRole="browserEndpoint"] {{ color: {c['accent_hover']}; background-color: #181610; border: 1px solid {c['border']}; border-radius: 4px; padding: 6px 8px; }}
+QLabel[uiRole="browserStatus"] {{ color: {c['warning']}; background-color: #3a301e; border-radius: 8px; padding: 2px 7px; font-size: 9px; font-weight: 600; }}
+QLabel[uiRole="browserStatus"][serverStatus="ready"] {{ color: {c['positive']}; background-color: #1e3a2e; }}
+QLabel[uiRole="browserStatus"][serverStatus="offline"] {{ color: {c['negative']}; background-color: #3a1e1e; }}
 QFrame[uiRole="healthGroup"] {{ background-color: {c['surface']}; border: 1px solid {c['border']}; border-left: 3px solid {c['positive']}; border-radius: 7px; }}
 QFrame[uiRole="healthGroup"][healthStatus="WARN"] {{ border-left-color: {c['warning']}; }}
 QFrame[uiRole="healthGroup"][healthStatus="MISSING"] {{ border-left-color: {c['negative']}; }}
