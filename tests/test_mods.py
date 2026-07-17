@@ -12,6 +12,8 @@ from wolflauncher.mods import (
     RequiredMod,
     check_server_mods,
     fetch_workshop_file_sizes,
+    fetch_workshop_metadata,
+    apply_workshop_metadata,
     fetch_required_mods,
     format_missing_workshop_links,
     format_mod_check_report,
@@ -34,6 +36,34 @@ class FakeResponse:
 
 
 class WorkshopFileSizeTests(unittest.TestCase):
+    def test_fetches_public_display_metadata_in_one_batch(self):
+        payload = {
+            "response": {
+                "publishedfiledetails": [{
+                    "publishedfileid": "111",
+                    "result": 1,
+                    "file_size": "1048576",
+                    "description": "A useful mod",
+                    "preview_url": "https://cdn.example.test/preview.jpg",
+                }]
+            }
+        }
+        with patch(
+            "wolflauncher.mods.urllib.request.urlopen",
+            return_value=FakeResponse(payload),
+        ):
+            metadata = fetch_workshop_metadata(["111"])
+
+        self.assertEqual(metadata["111"]["file_size"], 1048576)
+        self.assertEqual(metadata["111"]["description"], "A useful mod")
+        result = ModCheckResult(True, make_server(), [RequiredMod("111")])
+        apply_workshop_metadata(result, metadata)
+        self.assertEqual(result.required_mods[0].workshop_file_size, 1048576)
+        self.assertEqual(
+            result.required_mods[0].workshop_preview_url,
+            "https://cdn.example.test/preview.jpg",
+        )
+
     def test_fetches_public_batch_file_sizes(self):
         payload = {
             "response": {

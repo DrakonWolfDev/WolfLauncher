@@ -29,6 +29,8 @@ class RequiredMod:
     workshop_downloaded: int = 0
     workshop_total: int = 0
     workshop_file_size: int = 0
+    workshop_description: str = ""
+    workshop_preview_url: str = ""
 
     @property
     def ready(self) -> bool:
@@ -113,9 +115,55 @@ def fetch_workshop_file_sizes(workshop_ids) -> dict[str, int]:
     return sizes
 
 
+def fetch_workshop_metadata(workshop_ids) -> dict[str, dict[str, Any]]:
+    """Fetch public display metadata for Workshop items in one bounded batch."""
+    ids = tuple(dict.fromkeys(str(item).strip() for item in workshop_ids if str(item).strip()))
+    if not ids:
+        return {}
+    fields = [("itemcount", str(len(ids)))]
+    fields.extend((f"publishedfileids[{index}]", item) for index, item in enumerate(ids))
+    request = urllib.request.Request(
+        WORKSHOP_DETAILS_URL,
+        data=urllib.parse.urlencode(fields).encode("ascii"),
+        headers={"User-Agent": "WolfLauncher/0.8"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=10) as response:
+            payload = json.loads(response.read().decode("utf-8", errors="replace"))
+    except (OSError, ValueError, urllib.error.URLError):
+        return {}
+    details = payload.get("response", {}).get("publishedfiledetails", [])
+    metadata = {}
+    for detail in details if isinstance(details, list) else []:
+        try:
+            workshop_id = str(detail["publishedfileid"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if workshop_id not in ids or int(detail.get("result") or 0) != 1:
+            continue
+        metadata[workshop_id] = {
+            "file_size": max(0, int(detail.get("file_size") or 0)),
+            "description": str(detail.get("description") or "").strip(),
+            "preview_url": str(detail.get("preview_url") or "").strip(),
+        }
+    return metadata
+
+
 def apply_workshop_file_sizes(result: ModCheckResult, sizes: dict[str, int]) -> ModCheckResult:
     for mod in result.required_mods:
         mod.workshop_file_size = max(0, int(sizes.get(mod.workshop_id, 0)))
+    return result
+
+
+def apply_workshop_metadata(
+    result: ModCheckResult, metadata: dict[str, dict[str, Any]]
+) -> ModCheckResult:
+    for mod in result.required_mods:
+        detail = metadata.get(mod.workshop_id, {})
+        mod.workshop_file_size = max(0, int(detail.get("file_size") or 0))
+        mod.workshop_description = str(detail.get("description") or "").strip()
+        mod.workshop_preview_url = str(detail.get("preview_url") or "").strip()
     return result
 
 

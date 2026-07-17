@@ -53,7 +53,41 @@ Handoff recorded: 2026-07-11 after commit `05d0ce5` on `main`.
 - Desktop feedback aligned both browser-style tabs: Server Browser information now precedes search/common filters, and advanced disclosures sit at the bottom of both Server Browser and Mods.
 - The Server Browser bottom row aligns its advanced disclosure on the left with Promote/Reset on the right; the approved Mods layout remains unchanged.
 - User desktop review approved the current Server Browser and Mods direction. Do not undo their hierarchy or move advanced controls back above the results without new review.
-- User desktop review approved the simplified Settings hierarchy: installation summary and launch choices remain visible above health results, Check health and Save settings remain persistent, and discovery/import/copy support controls remain available through a bottom disclosure.
+- Server Browser disables Promote/Inspect/Launch until a real row is selected
+  without duplicating the selected row in a footer. Inspecting a discovered row
+  carries its read-only context into Mods, which separates stable server
+  identity, readiness guidance and technical check detail; its resolution
+  action is enabled only when needed and its persistent primary Launch action
+  closes the inspect/resolve/join loop. A contextual left-arrow Back action
+  returns discovered-server inspections to the Browser results and restores
+  table focus.
+- Browser and Mods use explicit visual tab order, and keyboard row activation
+  follows the same Inspect/Open Workshop behaviour as mouse activation.
+- Mods remains table-first for scanning large required-mod sets, using a
+  draggable horizontal split between a focused four-column table and one
+  selected-mod Workshop inspector. The existing bounded public Steam metadata
+  batch supplies optional descriptions, file sizes and preview URLs;
+  thumbnails load asynchronously only for the selected row, and missing
+  metadata degrades to honest placeholders. On taller windows the inspector's
+  preview and local typography scale within bounded limits without changing
+  the dense table or global UI scale.
+- Real-desktop review approved the resizable Mods table/inspector design as
+  final at 720p and high resolution, including semantic selected-mod edges and
+  the splitter gutter. Preserve this structure and spacing; do not reopen Mods
+  without a concrete usability problem.
+- The selected-mod inspector now uses a semantic green/red/amber left edge for
+  ready/missing/update states and a narrow splitter gutter provides breathing
+  room from the table without sacrificing its density.
+- Settings now presents three native readiness groups—Launcher, Steam and
+  DayZ, and Graphics and launch—instead of exposing the exhaustive health table
+  as its primary surface. Launch choices remain visible above the groups;
+  Check health and Save settings remain persistent. The complete snapshot is
+  preserved for reports and an explicit full-health dialog under discovery
+  and support tools.
+- Real-desktop review approved the grouped Settings page as final, including
+  the shared label/detail guide, fourth-row breathing room, persistent actions
+  and full-health support dialog. Treat Settings as complete; do not change its
+  hierarchy or spacing without a newly observed usability problem.
 - User desktop review approved the Servers consistency pass: refresh status and common player controls precede the curated table, while Add/Refresh/Launch remain persistent at the bottom. The external launcher path moved to Settings and appears beside a half-width engine selector only when the external fallback is selected; native mode restores the selector to full width.
 - A final real-desktop review passed across all four tabs after the Settings and Servers consistency changes.
 - `wolflauncher/table_items.py` now owns the Server Browser's data-aware Qt sorting item, with direct numeric, text and empty-value tests.
@@ -81,9 +115,14 @@ check for import/startup changes.
 
 ## v0.9 GUI consistency handoff
 
-The native visual theme is implemented with shared tokens, a complete Qt palette and application-level QSS for the existing widgets and dialogs. It uses restrained charcoal surfaces, amber action hierarchy, semantic status colours, portable technical fonts and visible keyboard focus without changing the approved tab structure. The user confirmed the foundation at different resolutions; final real-desktop interaction review and later icon/branding work remain separate from this solid theme baseline.
+The native visual theme is implemented with shared tokens, a complete Qt palette and application-level QSS for the existing widgets and dialogs. It uses restrained charcoal surfaces, amber action hierarchy, semantic status colours, portable technical fonts and visible keyboard focus without changing the approved tab structure. The user confirmed the foundation at different resolutions. The original perimeter atmosphere, wolf identity mark and restrained tab/action icon set are also implemented; the current review pass is concentrating on Server Browser and Mods interaction flow.
 
 Server Browser and curated Servers now apply their HTML redesign references as native Qt layouts. Server Browser uses bounded common filters, a concise summary and balanced Name/Host allocation while retaining every operational field through **Show detailed columns**. Favourite Servers is card-only after desktop approval, with status edges, two-line metadata, player/ping blocks, favourite controls and per-row Connect actions. Its hidden table-backed state remains an internal implementation detail for status and launch context, not a user-facing alternate view.
+
+Real-desktop review now considers Favourite Servers final alongside Settings.
+Preserve its card-only hierarchy, status edge, metadata/stats balance,
+favourite control and per-row Connect action; do not reopen its structure or
+spacing without a concrete usability issue.
 
 The Server Browser wide-screen policy caps Name at 600 logical pixels, scales it to 30% of the viewport with a 300-pixel floor and assigns remaining table width to Host. Common filters remain contiguous instead of spreading across 1920×1080, and checkboxes use an explicit theme indicator rather than relying on an invisible dark desktop-style box.
 

@@ -163,8 +163,28 @@ Priority 4 — discovery truth and regression coverage:
 Visual-polish review note:
 
 - Completed — Server Browser now uses bounded responsive filters, balanced primary columns and concise summary text; curated Servers uses approved native card rows as its sole visible layout. Card selection, favourite, context and per-row Connect interaction passed real-desktop use.
-- The shared QSS/theme-token foundation from `VISUAL_DESIGN.md` is complete, including the Qt fallback palette, transient dialogs, technical typography and semantic action roles. The user confirmed the foundation at different resolutions. Preserve this hierarchy and finish real-desktop keyboard/interaction review before considering grouped Settings health sections, icons or branding.
-- Recheck the Mods table after fonts, theme, colours, icons and branding are introduced. Review column padding, row height, compact-column centring, name/URL balance and overall information density in the final visual system.
+- Completed/final — Favourite Servers passed final real-desktop review. Preserve
+  its card-only hierarchy and interactions; remaining visual work belongs to
+  Server Browser or shared cross-tab flow rather than another Servers redesign.
+- The shared QSS/theme-token foundation from `VISUAL_DESIGN.md` is complete, including the Qt fallback palette, transient dialogs, technical typography and semantic action roles. The user confirmed the foundation at different resolutions. The perimeter atmosphere, wolf identity mark and restrained tab/action icon set are implemented. Preserve this hierarchy and finish the current real-desktop Browser/Mods interaction review before considering grouped Settings health sections.
+- In progress — Server Browser gates its direct actions to a real row without
+  duplicating table selection in a footer. Mods separates server identity,
+  readiness guidance and technical check detail, enables mod resolution only
+  when needed, and retains a primary Launch action. Discovered-server
+  inspection also has a contextual Back to Server Browser action. Explicit tab
+  order and keyboard row activation cover the principal path. Complete the
+  real-desktop review of table density and the inspect/resolve/launch handoff.
+- Completed — Mods now uses a draggable table/inspector split. The dense table
+  keeps only Status, Name, Workshop ID and Size; selection drives a right-hand
+  panel with an optional asynchronous thumbnail, fuller description, size,
+  readiness and Open Workshop action. Real-desktop review approved the layout
+  and its bounded high-resolution media/type scaling as final.
+- Completed — Settings now groups launcher, Steam/DayZ and graphics/launch
+  readiness into three glanceable native cards. Exhaustive detection and
+  troubleshooting rows remain available through the support disclosure and a
+  dedicated full-health dialog without dominating the common Settings view.
+  Real-desktop review approved the hierarchy, spacing and aligned row guides
+  as final.
 
 Discovery-freshness boundary:
 

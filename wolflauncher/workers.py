@@ -6,10 +6,10 @@ from PySide6.QtCore import QThread, Signal
 
 from .models import Server
 from .mods import (
-    apply_workshop_file_sizes,
+    apply_workshop_metadata,
     apply_workshop_item_states,
     check_server_mods,
-    fetch_workshop_file_sizes,
+    fetch_workshop_metadata,
 )
 from .server_discovery import (
     discover_dayz_servers,
@@ -81,11 +81,12 @@ class ModWorker(QThread):
 
     def run(self):
         result = check_server_mods(self.server, self.workshop_dir, self.steam_context)
-        if result.ok and result.required_mods and self.workshop_install:
-            apply_workshop_file_sizes(
+        if result.ok and result.required_mods:
+            apply_workshop_metadata(
                 result,
-                fetch_workshop_file_sizes(mod.workshop_id for mod in result.required_mods),
+                fetch_workshop_metadata(mod.workshop_id for mod in result.required_mods),
             )
+        if result.ok and result.required_mods and self.workshop_install:
             states = query_workshop_item_states_isolated(
                 (mod.workshop_id for mod in result.required_mods), self.workshop_install
             )

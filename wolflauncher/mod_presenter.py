@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import re
 
 from .mods import ModCheckResult, RequiredMod
 from .theme import STATUS_COLOURS
@@ -34,6 +35,34 @@ def mod_file_size(mod: RequiredMod) -> str:
     return format_byte_size(size) if size > 0 else "Unavailable"
 
 
+def mod_description_preview(mod: RequiredMod, limit: int = 120) -> str:
+    text = re.sub(r"\[/?[^\]]+\]", "", mod.workshop_description)
+    text = re.sub(r"https?://\S+", "", text)
+    text = " ".join(text.split())
+    if not text:
+        return "No Workshop description supplied."
+    return text if len(text) <= limit else text[: limit - 1].rstrip() + "…"
+
+
+def mod_inspector_scale(window_height: int) -> float:
+    """Scale inspector media from the established 720p baseline."""
+    return max(1.0, min(1.4, max(0, window_height) / 720))
+
+
+def mod_inspector_type_scale(window_height: int) -> float:
+    """Grow inspector type more gently than its preview image."""
+    growth = (max(0, window_height) - 720) / 1800
+    return max(1.0, min(1.22, 1.0 + growth))
+
+
+def mod_detail_status(mod: RequiredMod) -> str:
+    if mod.ready:
+        return "ready"
+    if not mod.installed:
+        return "missing"
+    return "warning"
+
+
 def combined_download_estimate(mods: list[RequiredMod]) -> str:
     known = [
         mod for mod in mods
@@ -65,27 +94,39 @@ def mod_result_context(result: ModCheckResult) -> str:
 
 
 def mod_summary_text(result: ModCheckResult) -> str:
-    context = mod_result_context(result)
     if not result.ok:
-        return f"Could not check mods for {result.server.name}: {result.error}{context}"
+        return f"Check failed: {result.error}"
 
     required_count = len(result.required_mods)
     if required_count == 0:
-        return (
-            f"{result.server.name}: no required mods reported by the server API. "
-            f"Installed Workshop mods found locally: {result.installed_count}.{context}"
-        )
+        return "Required 0  ·  Ready 0  ·  Missing 0  ·  Update/pending 0"
 
     missing_count = len(result.missing_mods)
     summary = (
-        f"{result.server.name}: Required {required_count} | "
-        f"Ready {required_count - missing_count} | Missing {len(result.absent_mods)} | "
-        f"Update/pending {len(result.update_mods)} | "
-        f"Local Workshop mods found: {result.installed_count}{context}"
+        f"Required {required_count}  ·  Ready {required_count - missing_count}  ·  "
+        f"Missing {len(result.absent_mods)}  ·  "
+        f"Update/pending {len(result.update_mods)}"
     )
     if result.workshop_state_error:
         summary += f" Steam item state unavailable: {result.workshop_state_error}"
     return summary
+
+
+def mod_server_heading(result: ModCheckResult) -> str:
+    """Return the stable selected-server identity above volatile check details."""
+    return f"Required mods for {result.server.name}  ·  {result.server.connect_target}"
+
+
+def mod_readiness_text(result: ModCheckResult) -> str:
+    if not result.ok:
+        return "Mod readiness could not be confirmed. Recheck before launching."
+    missing_count = len(result.missing_mods)
+    if missing_count:
+        noun = "item" if missing_count == 1 else "items"
+        return f"Action required: resolve {missing_count} Workshop {noun} before launching."
+    if not result.required_mods:
+        return "Ready to launch: this server reports no required mods."
+    return f"Ready to launch: all {len(result.required_mods)} required mods are installed."
 
 
 def mod_row(mod: RequiredMod) -> ModRow:
@@ -124,7 +165,6 @@ def mod_row(mod: RequiredMod) -> ModRow:
             mod.name or mod.installed_name or "Unknown",
             mod.workshop_id,
             mod_file_size(mod),
-            mod.workshop_url,
         ],
         workshop_id=mod.workshop_id,
         status_colour=colour,

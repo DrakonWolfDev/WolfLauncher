@@ -86,6 +86,21 @@ QFrame[uiRole="serverCard"] {{ background-color: {c['surface']}; border: 1px sol
 QFrame[uiRole="serverCard"][onlineState="online"] {{ border-left-color: {c['positive']}; }}
 QFrame[uiRole="serverCard"][onlineState="offline"] {{ border-left-color: {c['negative']}; }}
 QFrame[uiRole="serverCard"][selected="true"] {{ background-color: {c['table_selection']}; border-color: {c['accent']}; }}
+QFrame[uiRole="modDetail"] {{ background-color: {c['surface']}; border: 1px solid {c['border']}; border-left: 3px solid {c['accent_pressed']}; border-radius: 7px; }}
+QFrame[uiRole="modDetail"][modStatus="ready"] {{ border-left-color: {c['positive']}; }}
+QFrame[uiRole="modDetail"][modStatus="missing"] {{ border-left-color: {c['negative']}; }}
+QFrame[uiRole="modDetail"][modStatus="warning"] {{ border-left-color: {c['warning']}; }}
+QFrame[uiRole="healthGroup"] {{ background-color: {c['surface']}; border: 1px solid {c['border']}; border-left: 3px solid {c['positive']}; border-radius: 7px; }}
+QFrame[uiRole="healthGroup"][healthStatus="WARN"] {{ border-left-color: {c['warning']}; }}
+QFrame[uiRole="healthGroup"][healthStatus="MISSING"] {{ border-left-color: {c['negative']}; }}
+QLabel[uiRole="healthBadge"] {{ color: {c['positive']}; background-color: #1e3a2e; border-radius: 8px; padding: 2px 7px; font-size: 10px; font-weight: 600; }}
+QLabel[uiRole="healthBadge"][healthStatus="WARN"] {{ color: {c['warning']}; background-color: #3a301e; }}
+QLabel[uiRole="healthBadge"][healthStatus="MISSING"] {{ color: {c['negative']}; background-color: #3a1e1e; }}
+QLabel[uiRole="modThumbnail"] {{ background-color: {c['surface_alt']}; color: {c['text_muted']}; border: 1px solid {c['border']}; border-radius: 4px; }}
+QSplitter::handle {{ background-color: {c['border']}; width: 2px; }}
+QSplitter::handle:hover {{ background-color: {c['accent_pressed']}; }}
+QSplitter#modsSplitter::handle {{ background-color: transparent; }}
+QSplitter#modsSplitter::handle:hover {{ background-color: {c['surface_alt']}; }}
 QListWidget[uiRole="serverCards"] {{ background-color: rgba(21, 19, 15, 88); border: 0; outline: 0; }}
 QListWidget[uiRole="serverCards"]::item {{ background-color: transparent; border: 0; padding: 3px 0; }}
 QListWidget[uiRole="serverCards"]::item:selected {{ background-color: transparent; }}

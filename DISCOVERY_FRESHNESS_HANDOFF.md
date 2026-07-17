@@ -203,6 +203,41 @@ servers only, v1 automatic refresh is HTTP-only and discovered-row live probing
 remains the explicit **Enrich visible** action. No probing removal is required;
 curated, selected-server and launch-time checks remain intentionally local.
 
+## Planned Server Browser location and game-time fields
+
+The next Server Browser data pass should keep stable discovery metadata separate
+from rapidly changing live server state:
+
+- **Game Time** is Launcher-owned live state. `gamedig` already returns it as
+  `ServerStatus.time`; discovered-server enrichment currently discards it. Add a
+  nullable `game_time` field to `DiscoveredServer`, persist it through an
+  additive SQLite schema migration, populate it only from explicit local
+  enrichment and show an honest unknown value until measured. Do not initially
+  publish game time through WolfAPI because a cached directory value would age
+  quickly and could look live when it is not.
+- **Region** in the user interface means a trustworthy geographical country,
+  not WolfAPI's existing integer `region` field. That existing value is the
+  Steam master-server region code and is frequently `-1`; preserve it for
+  compatibility but never present it as a country.
+- Add a nullable `country_code` field to the WolfAPI v1 contract only when it
+  can be normalized from a known source to an ISO 3166-1 alpha-2 code. Null
+  explicitly means unknown. Record provider provenance, avoid guessing from an
+  IP address, and measure real coverage before considering a separate IP
+  geolocation source.
+- WolfLauncher should parse and cache `country_code` additively, preserve it
+  across stable-ID merges and local enrichment, and display a compact country
+  label or flag with an unknown fallback.
+- Refactor discovered-server enrichment to preserve fields it did not measure
+  (prefer `dataclasses.replace` over reconstructing a partial object). This is
+  required before adding either field because the current reconstruction can
+  drop newer API metadata.
+
+Implementation order: first retain and present locally measured `game_time`;
+then add the shared nullable `country_code` contract and persistence in both
+repositories; finally evaluate country coverage before selecting any additional
+data source. Update this handoff and the API contract together when the fields
+are implemented.
+
 ## Rollout gates
 
 - Production reports `contract_version >= 1`, `generated_at`, validation

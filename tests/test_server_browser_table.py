@@ -5,7 +5,7 @@ from types import SimpleNamespace
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QCheckBox, QTableWidget
+from PySide6.QtWidgets import QApplication, QCheckBox, QPushButton, QTableWidget
 
 from wolflauncher.app import MainWindow
 from wolflauncher.models import DiscoveredServer
@@ -53,6 +53,19 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertEqual(browser_name_column_width(800), 300)
         self.assertEqual(browser_name_column_width(1388), 416)
         self.assertEqual(browser_name_column_width(1920), 576)
+
+    def test_browser_next_actions_require_a_selected_server(self):
+        buttons = [QPushButton(), QPushButton(), QPushButton()]
+        window = SimpleNamespace(
+            browser_promote_button=buttons[0],
+            browser_inspect_button=buttons[1],
+            browser_launch_button=buttons[2],
+            selected_discovered_server=lambda: None,
+        )
+
+        MainWindow.update_browser_selection_context(window)
+
+        self.assertFalse(any(button.isEnabled() for button in buttons))
 
     def test_required_mods_sort_handles_known_and_unknown_counts(self):
         table = QTableWidget(0, 15)

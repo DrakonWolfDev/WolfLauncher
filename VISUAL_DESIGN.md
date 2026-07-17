@@ -138,3 +138,64 @@ lowest-risk point for implementation is after current functional hardening has
 settled enough that controls and data are no longer moving frequently. A
 behaviour-preserving theme foundation can then precede any larger Servers or
 Settings restructuring.
+
+## Current implementation status
+
+The shared palette, QSS, typography, action roles, application/window mark,
+tab-bar lockup, restrained SVG tab/action icons and low-contrast perimeter
+atmosphere are implemented. Favourite Servers uses the approved native card
+layout. The current review is intentionally narrower: Server Browser gates its
+direct actions to a real selection without repeating the selected row, and
+Mods separates server identity, readiness guidance and technical detail while
+preserving the server through inspection, Workshop resolution and a persistent
+Launch action. Discovered-server inspections pair that forward action with a
+contextual left-arrow return to the Browser results. A real-desktop keyboard,
+density and handoff review remains before this flow pass is considered settled.
+
+Mods deliberately remains table-first because required sets commonly contain
+dozens of items. A draggable horizontal master/detail split pairs a focused
+Status, Name, Workshop ID and Size table with one selection-driven Workshop
+inspector. The inspector borrows the Favourite Servers card language without
+converting every mod into a card. It may show optional public Workshop
+description and thumbnail metadata, but the table remains stable while
+scanning and the detail view works with mouse or keyboard selection rather
+than relying on hover-only disclosure.
+On taller desktop windows, the inspector scales its preview and local
+typography from the 720p baseline within separate bounded limits. Typography
+grows more gently than the preview; table text and the surrounding application
+remain at the established density.
+Mods avoids hover-only description and Steam-path disclosures; the selected
+card owns visible Workshop detail and explicit support reports retain technical
+context.
+
+Real-desktop review approved this Mods master/detail direction as final at the
+720p baseline and a taller high-resolution window. Preserve the four-column
+table, draggable inspector, semantic selected-item edge, gutter and separately
+bounded media/type scaling unless testing reveals a concrete interaction
+problem.
+The selected-mod inspector uses the shared semantic edge language—green ready,
+red missing and amber update/pending—and a narrow gutter separates it from the
+table while retaining a draggable split.
+
+Settings uses a small number of operational health groups rather than a table
+or one card per individual check. Launcher readiness, Steam and DayZ, and
+Graphics and launch each aggregate their status while retaining concise,
+selectable row detail. Exhaustive health rows belong in an explicit support
+dialog and copied reports, preserving diagnostics without making them the
+primary visual hierarchy.
+
+Real-desktop review approved the Settings layout as final. Preserve the three
+group hierarchy, shared row-label guide, bottom inset, persistent health/save
+actions and explicit full-health support dialog unless a concrete usability
+issue is later observed.
+
+Real-desktop review also approved Favourite Servers as final. Preserve the
+card-only layout, status edge, two-level metadata, player/ping block, favourite
+control and row-level Connect action unless later usage reveals a concrete
+problem.
+
+The settled cross-tab visual pattern is a dense operational surface paired
+with calm contextual grouping, restrained amber selection, semantic status
+edges and no decorative clutter. Carry that pattern into unfinished surfaces
+such as Server Browser without mechanically converting completed tabs or
+forcing every screen into the same widget structure.

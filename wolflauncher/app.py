@@ -5,11 +5,14 @@ from datetime import datetime
 import sys
 
 from PySide6.QtCore import QPoint, QProcess, QSize, QTimer, QUrl, Qt
+from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
     QFileDialog,
+    QFrame,
     QFormLayout,
+    QGridLayout,
     QHBoxLayout,
     QHeaderView,
     QLabel,
@@ -24,7 +27,9 @@ from PySide6.QtWidgets import (
     QPushButton,
     QProgressDialog,
     QProgressBar,
+    QSizePolicy,
     QSpinBox,
+    QSplitter,
     QTabWidget,
     QTableWidget,
     QTableWidgetItem,
@@ -32,7 +37,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from PySide6.QtGui import QColor, QDesktopServices, QIcon, QAction
+from PySide6.QtGui import QColor, QDesktopServices, QIcon, QPixmap, QAction
 
 from .config import (
     add_curated_server,
@@ -91,7 +96,19 @@ from .mods import (
     format_missing_workshop_links,
     format_mod_check_report,
 )
-from .mod_presenter import combined_download_estimate, mod_download_size, mod_row, mod_summary_text
+from .mod_presenter import (
+    combined_download_estimate,
+    mod_description_preview,
+    mod_detail_status,
+    mod_download_size,
+    mod_file_size,
+    mod_inspector_scale,
+    mod_inspector_type_scale,
+    mod_readiness_text,
+    mod_row,
+    mod_server_heading,
+    mod_summary_text,
+)
 from . import server_cache
 from .server_discovery import parse_master_address
 from .server_display import display_map_name, display_server_flags, ping_severity
@@ -115,6 +132,7 @@ from .settings import (
     server_key,
 )
 from .settings_health import build_settings_health_snapshot
+from .settings_health_presenter import GROUP_SPECS, settings_health_groups
 from .status import ServerStatus, check_server
 from .ui_sections import set_disclosure_state
 from .theme import (
@@ -240,7 +258,7 @@ class MainWindow(QMainWindow):
         self.tabs.setObjectName("mainTabs")
         self.tabs.setCornerWidget(self._build_brand_lockup(), Qt.TopRightCorner)
         self.tabs.addTab(self._build_servers_tab(), theme_icon("servers"), "Servers")
-        self.tabs.addTab(
+        self.server_browser_tab_index = self.tabs.addTab(
             self._build_server_browser_tab(), theme_icon("browser"), "Server Browser"
         )
         self.mods_tab_index = self.tabs.addTab(
@@ -504,9 +522,15 @@ class MainWindow(QMainWindow):
         self.browser_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.browser_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.browser_table.setSortingEnabled(True)
+        self.browser_table.setTabKeyNavigation(False)
         configure_data_table(self.browser_table)
         self.configure_browser_columns(False)
-        self.browser_table.cellDoubleClicked.connect(self.handle_browser_double_clicked)
+        self.browser_table.itemActivated.connect(
+            lambda item: self.handle_browser_double_clicked(item.row(), item.column())
+        )
+        self.browser_table.itemSelectionChanged.connect(
+            self.update_browser_selection_context
+        )
         self.browser_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.browser_table.customContextMenuRequested.connect(self.show_browser_context_menu)
         layout.addWidget(self.browser_table)
@@ -516,15 +540,15 @@ class MainWindow(QMainWindow):
         self.refresh_database_button.clicked.connect(self.refresh_from_configured_provider)
         self.enrich_visible_button = QPushButton("Enrich visible")
         self.enrich_visible_button.clicked.connect(self.enrich_visible_discovered_servers)
-        promote = QPushButton("Add to Favourite Servers")
-        promote.clicked.connect(self.promote_selected_discovered_server)
-        use_server = QPushButton("Inspect mods")
-        set_ui_role(use_server, "accent")
-        use_server.clicked.connect(self.inspect_selected_discovered_server)
-        launch_discovered = QPushButton("Launch server")
-        launch_discovered.setIcon(theme_icon("launch"))
-        set_ui_role(launch_discovered, "primary")
-        launch_discovered.clicked.connect(self.launch_selected_discovered_server)
+        self.browser_promote_button = QPushButton("Add to Favourite Servers")
+        self.browser_promote_button.clicked.connect(self.promote_selected_discovered_server)
+        self.browser_inspect_button = QPushButton("Inspect mods")
+        set_ui_role(self.browser_inspect_button, "accent")
+        self.browser_inspect_button.clicked.connect(self.inspect_selected_discovered_server)
+        self.browser_launch_button = QPushButton("Launch server")
+        self.browser_launch_button.setIcon(theme_icon("launch"))
+        set_ui_role(self.browser_launch_button, "primary")
+        self.browser_launch_button.clicked.connect(self.launch_selected_discovered_server)
         clear_filters = QPushButton("Reset filters")
         clear_filters.clicked.connect(self.reset_browser_filters)
         refresh = QPushButton("Refresh cache view")
@@ -539,11 +563,20 @@ class MainWindow(QMainWindow):
 
         buttons.addWidget(self.browser_advanced_toggle)
         buttons.addStretch(1)
-        buttons.addWidget(promote)
-        buttons.addWidget(use_server)
-        buttons.addWidget(launch_discovered)
+        buttons.addWidget(self.browser_promote_button)
+        buttons.addWidget(self.browser_inspect_button)
+        buttons.addWidget(self.browser_launch_button)
         layout.addLayout(buttons)
         layout.addWidget(self.browser_advanced_panel)
+
+        QWidget.setTabOrder(self.browser_search, self.browser_modded)
+        QWidget.setTabOrder(self.browser_modded, self.browser_map)
+        QWidget.setTabOrder(self.browser_map, self.browser_online_only)
+        QWidget.setTabOrder(self.browser_online_only, self.browser_table)
+        QWidget.setTabOrder(self.browser_table, self.browser_advanced_toggle)
+        QWidget.setTabOrder(self.browser_advanced_toggle, self.browser_promote_button)
+        QWidget.setTabOrder(self.browser_promote_button, self.browser_inspect_button)
+        QWidget.setTabOrder(self.browser_inspect_button, self.browser_launch_button)
 
         self.browser_advanced_toggle.toggled.connect(
             lambda expanded: set_disclosure_state(
@@ -559,6 +592,7 @@ class MainWindow(QMainWindow):
             "advanced filters and tools",
             False,
         )
+        self.update_browser_selection_context()
         return widget
 
     def _build_mods_tab(self) -> QWidget:
@@ -566,14 +600,22 @@ class MainWindow(QMainWindow):
         set_ui_role(widget, "workspace")
         layout = QVBoxLayout(widget)
 
-        self.mod_summary = QLabel("Select a server to check its required mods.")
-        set_ui_role(self.mod_summary, "summary")
+        self.mod_server_title = QLabel("No server selected")
+        set_ui_role(self.mod_server_title, "summary")
+        layout.addWidget(self.mod_server_title)
+        self.mod_readiness = QLabel(
+            "Choose a server from Favourite Servers or Server Browser to inspect its mods."
+        )
+        set_ui_role(self.mod_readiness, "metadata")
+        layout.addWidget(self.mod_readiness)
+        self.mod_summary = QLabel("")
+        set_ui_role(self.mod_summary, "metadata")
         layout.addWidget(self.mod_summary)
 
         buttons = QHBoxLayout()
         check = QPushButton("Recheck selected server mods")
         check.setIcon(theme_icon("recheck"))
-        set_ui_role(check, "primary")
+        set_ui_role(check, "accent")
         check.clicked.connect(lambda _checked=False: self.check_selected_server_mods(force=True))
         native_preview = QPushButton("Native launch preview")
         native_preview.clicked.connect(self.preview_native_launch)
@@ -587,6 +629,7 @@ class MainWindow(QMainWindow):
         open_missing.clicked.connect(self.open_missing_workshop_pages)
         self.subscribe_missing_button = QPushButton("Install/update missing mods")
         self.subscribe_missing_button.clicked.connect(self.subscribe_missing_workshop_mods)
+        self.subscribe_missing_button.setEnabled(False)
         buttons.addWidget(check)
         self.mod_filter = QComboBox()
         self.mod_filter.addItems(["All mods", "Missing only", "Installed only"])
@@ -602,6 +645,14 @@ class MainWindow(QMainWindow):
         advanced_toggle_row = QHBoxLayout()
         advanced_toggle_row.addWidget(self.mods_advanced_toggle)
         advanced_toggle_row.addStretch(1)
+        self.mods_back_to_browser_button = QPushButton("Back to Server Browser ←")
+        self.mods_back_to_browser_button.clicked.connect(self.back_to_server_browser)
+        advanced_toggle_row.addWidget(self.mods_back_to_browser_button)
+        self.mods_launch_button = QPushButton("Launch selected server")
+        self.mods_launch_button.setIcon(theme_icon("launch"))
+        set_ui_role(self.mods_launch_button, "primary")
+        self.mods_launch_button.clicked.connect(self.launch_selected)
+        advanced_toggle_row.addWidget(self.mods_launch_button)
 
         self.mods_advanced_panel = QWidget()
         advanced_layout = QHBoxLayout(self.mods_advanced_panel)
@@ -628,25 +679,89 @@ class MainWindow(QMainWindow):
             False,
         )
 
-        self.mods_table = QTableWidget(0, 5)
+        self.mods_table = QTableWidget(0, 4)
         self.mods_table.setHorizontalHeaderLabels([
             "Status",
             "Name",
             "Workshop ID",
             "Size",
-            "Workshop URL",
         ])
         self.mods_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.mods_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.mods_table.setSortingEnabled(True)
+        self.mods_table.setTabKeyNavigation(False)
         configure_data_table(self.mods_table)
-        self.mods_table.horizontalHeader().setStretchLastSection(True)
-        self.mods_table.cellDoubleClicked.connect(self.handle_mod_double_clicked)
+        self.mods_table.itemActivated.connect(
+            lambda item: self.handle_mod_double_clicked(item.row(), item.column())
+        )
+        self.mods_table.itemSelectionChanged.connect(self.update_mod_detail_card)
         self.mods_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.mods_table.customContextMenuRequested.connect(self.show_mod_context_menu)
-        layout.addWidget(self.mods_table)
+        self.mod_detail_card = QFrame()
+        set_ui_role(self.mod_detail_card, "modDetail")
+        self.mod_detail_card.setProperty("modStatus", "warning")
+        self.mod_detail_base_point_size = max(8.0, QApplication.font().pointSizeF())
+        detail_layout = QVBoxLayout(self.mod_detail_card)
+        detail_layout.setContentsMargins(14, 14, 14, 14)
+        detail_layout.setSpacing(10)
+        self.mod_detail_thumbnail = QLabel("No preview")
+        self.mod_detail_thumbnail.setAlignment(Qt.AlignCenter)
+        self.mod_detail_thumbnail.setFixedSize(320, 180)
+        set_ui_role(self.mod_detail_thumbnail, "modThumbnail")
+        thumbnail_row = QHBoxLayout()
+        thumbnail_row.addStretch(1)
+        thumbnail_row.addWidget(self.mod_detail_thumbnail)
+        thumbnail_row.addStretch(1)
+        detail_layout.addLayout(thumbnail_row)
+        self.mod_detail_title = QLabel("Select a mod to see its Workshop details")
+        set_ui_role(self.mod_detail_title, "cardTitle")
+        self.mod_detail_description = QLabel(
+            "Descriptions and preview images are supplied by the mod's Workshop page."
+        )
+        self.mod_detail_description.setWordWrap(True)
+        set_ui_role(self.mod_detail_description, "metadata")
+        self.mod_detail_metadata = QLabel("")
+        set_ui_role(self.mod_detail_metadata, "metadata")
+        detail_layout.addWidget(self.mod_detail_title)
+        detail_layout.addWidget(self.mod_detail_description)
+        detail_layout.addWidget(self.mod_detail_metadata)
+        detail_layout.addStretch(1)
+        self.mod_detail_open_button = QPushButton("Open Workshop page")
+        self.mod_detail_open_button.setEnabled(False)
+        self.mod_detail_open_button.clicked.connect(self.open_selected_workshop_page)
+        open_row = QHBoxLayout()
+        open_row.addStretch(1)
+        open_row.addWidget(self.mod_detail_open_button)
+        detail_layout.addLayout(open_row)
+
+        self.mods_splitter = QSplitter(Qt.Horizontal)
+        self.mods_splitter.setObjectName("modsSplitter")
+        self.mods_splitter.setHandleWidth(10)
+        self.mods_splitter.setChildrenCollapsible(False)
+        self.mods_splitter.addWidget(self.mods_table)
+        self.mods_splitter.addWidget(self.mod_detail_card)
+        self.mods_splitter.setStretchFactor(0, 2)
+        self.mods_splitter.setStretchFactor(1, 1)
+        self.mods_splitter.setSizes([850, 450])
+        self.mods_splitter.splitterMoved.connect(
+            lambda _position, _index: self.resize_mod_detail_card()
+        )
+        layout.addWidget(self.mods_splitter, 1)
+        self.mod_thumbnail_manager = QNetworkAccessManager(self)
+        self.mod_thumbnail_manager.finished.connect(self.finish_mod_thumbnail_load)
+        self.mod_thumbnail_url = ""
+        self.resize_mod_detail_card()
         layout.addLayout(advanced_toggle_row)
         layout.addWidget(self.mods_advanced_panel)
+        QWidget.setTabOrder(check, self.subscribe_missing_button)
+        QWidget.setTabOrder(self.subscribe_missing_button, self.mod_filter)
+        QWidget.setTabOrder(self.mod_filter, self.mods_table)
+        QWidget.setTabOrder(self.mods_table, self.mods_advanced_toggle)
+        QWidget.setTabOrder(
+            self.mods_advanced_toggle, self.mods_back_to_browser_button
+        )
+        QWidget.setTabOrder(self.mods_back_to_browser_button, self.mods_launch_button)
+        self.update_launch_button_text()
         return widget
 
     def _build_settings_tab(self) -> QWidget:
@@ -688,7 +803,19 @@ class MainWindow(QMainWindow):
         configure_data_table(self.health_table)
         self.health_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.health_table.customContextMenuRequested.connect(self.show_health_context_menu)
-        layout.addWidget(self.health_table)
+        self.health_group_badges = {}
+        self.health_group_rows = {}
+        health_overview = QGridLayout()
+        health_overview.setSpacing(10)
+        for index, (key, title, names) in enumerate(GROUP_SPECS):
+            card = self._build_settings_health_group(key, title, names)
+            if index < 2:
+                health_overview.addWidget(card, 0, index)
+            else:
+                health_overview.addWidget(card, 1, 0, 1, 2)
+        health_overview.setColumnStretch(0, 1)
+        health_overview.setColumnStretch(1, 1)
+        layout.addLayout(health_overview)
 
         self.settings_advanced_toggle = QPushButton()
         self.settings_advanced_toggle.setCheckable(True)
@@ -696,6 +823,7 @@ class MainWindow(QMainWindow):
         self.settings_advanced_panel = QWidget()
         advanced_layout = QVBoxLayout(self.settings_advanced_panel)
         advanced_layout.setContentsMargins(0, 0, 0, 0)
+        self.health_table.hide()
 
         discovery_settings = QFormLayout()
 
@@ -747,6 +875,8 @@ class MainWindow(QMainWindow):
         support_tools = QHBoxLayout()
         copy_health = QPushButton("Copy health")
         copy_health.clicked.connect(self.copy_settings_health)
+        view_health = QPushButton("View full health")
+        view_health.clicked.connect(self.show_full_health_details)
         copy_diagnostics = QPushButton("Copy diagnostics")
         copy_diagnostics.clicked.connect(self.copy_diagnostics_report)
         copy_last_launch = QPushButton("Copy last launch")
@@ -754,6 +884,7 @@ class MainWindow(QMainWindow):
         import_file = QPushButton("Import server list")
         import_file.clicked.connect(self.import_server_cache_file)
         support_tools.addWidget(copy_health)
+        support_tools.addWidget(view_health)
         support_tools.addWidget(copy_diagnostics)
         support_tools.addWidget(copy_last_launch)
         support_tools.addWidget(import_file)
@@ -785,6 +916,7 @@ class MainWindow(QMainWindow):
         advanced_layout.addLayout(leopard_row)
         advanced_layout.addWidget(self.leopard_panel)
 
+        layout.addStretch(1)
         row = QHBoxLayout()
         health = QPushButton("Check health")
         set_ui_role(health, "accent")
@@ -814,6 +946,69 @@ class MainWindow(QMainWindow):
             False,
         )
         return widget
+
+    def _build_settings_health_group(
+        self, key: str, title: str, names: tuple[str, ...]
+    ) -> QFrame:
+        card = QFrame()
+        set_ui_role(card, "healthGroup")
+        card.setProperty("healthStatus", "OK")
+        card.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(12, 10, 12, 13)
+        card_layout.setSpacing(7)
+        header = QHBoxLayout()
+        title_label = QLabel(title)
+        set_ui_role(title_label, "cardTitle")
+        badge = QLabel("OK")
+        set_ui_role(badge, "healthBadge")
+        badge.setProperty("healthStatus", "OK")
+        header.addWidget(title_label)
+        header.addStretch(1)
+        header.addWidget(badge)
+        card_layout.addLayout(header)
+        self.health_group_badges[key] = (card, badge)
+        for name in names:
+            row = QWidget()
+            set_ui_role(row, "healthRow")
+            row_layout = QHBoxLayout(row)
+            row_layout.setContentsMargins(0, 0, 0, 0)
+            row_layout.setSpacing(10)
+            status_label = QLabel("●")
+            status_label.setFixedWidth(12)
+            name_label = QLabel(name)
+            name_label.setFixedWidth(120)
+            detail_label = QLabel("Checking…")
+            detail_label.setMinimumWidth(0)
+            detail_label.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+            detail_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            set_ui_role(detail_label, "metadata")
+            row_layout.addWidget(status_label)
+            row_layout.addWidget(name_label)
+            row_layout.addWidget(detail_label, 1)
+            card_layout.addWidget(row)
+            self.health_group_rows[name] = (status_label, detail_label)
+        return card
+
+    def update_settings_health_groups(self, rows):
+        for group in settings_health_groups(tuple(rows)):
+            card, badge = self.health_group_badges[group.key]
+            card.setProperty("healthStatus", group.status)
+            badge.setProperty("healthStatus", group.status)
+            badge.setText(
+                "READY" if group.status == "OK" else
+                "CHECK" if group.status == "WARN" else "ISSUE"
+            )
+            card.style().unpolish(card)
+            card.style().polish(card)
+            badge.style().unpolish(badge)
+            badge.style().polish(badge)
+            for name, status, detail in group.rows:
+                status_label, detail_label = self.health_group_rows[name]
+                status_label.setText("●")
+                status_label.setStyleSheet(f"color: {self._health_colour(status)};")
+                detail_label.setText(detail)
+                detail_label.setToolTip(detail)
 
     def update_external_launcher_settings_visibility(self, *_args):
         if hasattr(self, "external_launcher_settings"):
@@ -1313,6 +1508,10 @@ class MainWindow(QMainWindow):
         if self.activate_selected_discovered_server():
             self.launch_selected()
 
+    def back_to_server_browser(self):
+        self.tabs.setCurrentIndex(self.server_browser_tab_index)
+        self.browser_table.setFocus()
+
     def active_server_context(self) -> Server | None:
         if self.active_discovered_server is not None:
             return self.active_discovered_server
@@ -1545,6 +1744,21 @@ class MainWindow(QMainWindow):
             browser_summary_text(snapshot.cache_summary, len(servers), snapshot.match_count, limit)
         )
         self.browser_summary.setToolTip(browser_summary_tooltip(snapshot.cache_summary))
+        self.update_browser_selection_context()
+
+    def update_browser_selection_context(self):
+        if not hasattr(self, "browser_promote_button"):
+            return
+        selected = self.selected_discovered_server()
+        enabled = selected is not None
+        for button_name in (
+            "browser_promote_button",
+            "browser_inspect_button",
+            "browser_launch_button",
+        ):
+            button = getattr(self, button_name, None)
+            if button is not None:
+                button.setEnabled(enabled)
 
     def configure_browser_columns(self, show_details: bool | None = None):
         if not hasattr(self, "browser_table"):
@@ -2034,13 +2248,17 @@ class MainWindow(QMainWindow):
         self.save_user_settings(silent=True)
 
     def update_launch_button_text(self):
-        if not hasattr(self, "launch_button"):
-            return
         server = self.active_server_context()
-        if server:
-            self.launch_button.setText(f"Launch {server.name}")
-        else:
-            self.launch_button.setText("Launch selected server")
+        text = f"Launch {server.name}" if server else "Launch selected server"
+        if hasattr(self, "launch_button"):
+            self.launch_button.setText(text)
+        if hasattr(self, "mods_launch_button"):
+            self.mods_launch_button.setText(text)
+            self.mods_launch_button.setEnabled(server is not None)
+        if hasattr(self, "mods_back_to_browser_button"):
+            self.mods_back_to_browser_button.setVisible(
+                self.active_discovered_server is not None
+            )
 
     def check_initial_server_mods(self):
         if self.servers and self.table.currentRow() < 0:
@@ -2078,6 +2296,11 @@ class MainWindow(QMainWindow):
         if not hasattr(self, "mod_summary") or not hasattr(self, "mods_table"):
             return
         selected_key = server_key(server)
+        self.mod_server_title.setText(
+            f"Required mods for {server.name}  ·  {server.connect_target}"
+        )
+        self.mod_readiness.setText("Checking required-mod readiness…")
+        self.subscribe_missing_button.setEnabled(False)
         install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
         workshop_dir = install.workshop_dir if install else None
         cached_mod_result = usable_mod_result(server, self.last_mod_result, workshop_dir)
@@ -2171,15 +2394,24 @@ class MainWindow(QMainWindow):
         if recovery.active:
             count = len(recovery.item_ids)
             noun = "item" if count == 1 else "items"
-            self.mod_summary.setText(
-                f"{mod_summary_text(result)} Steam may still be downloading {count} required "
+            self.mod_readiness.setText(
+                f"Steam may still be downloading {count} required "
                 f"Workshop {noun} from an earlier session. Check Steam Downloads; WolfLauncher "
                 "will recheck when you use Recheck mods."
             )
 
     def display_mods_result(self, result: ModCheckResult):
         self.mods_table.setSortingEnabled(False)
+        self.mod_server_title.setText(mod_server_heading(result))
+        self.mod_readiness.setText(mod_readiness_text(result))
         self.mod_summary.setText(mod_summary_text(result))
+        self.mod_summary.setToolTip("")
+        missing_count = len(result.missing_mods) if result.ok else 0
+        self.subscribe_missing_button.setEnabled(missing_count > 0)
+        self.subscribe_missing_button.setText(
+            f"Resolve {missing_count} required mod{'s' if missing_count != 1 else ''}"
+            if missing_count else "Install/update required mods"
+        )
         if not result.ok:
             self.mods_table.setRowCount(0)
             self.mods_table.setSortingEnabled(True)
@@ -2192,7 +2424,7 @@ class MainWindow(QMainWindow):
             for column, value in enumerate(row_data.values):
                 item = QTableWidgetItem(value)
                 item.setData(Qt.UserRole, row_data.workshop_id)
-                if column in {2, 3, 4}:
+                if column in {2, 3}:
                     item.setFont(monospace_font())
                 if column in {0, 2, 3}:
                     item.setTextAlignment(Qt.AlignCenter)
@@ -2200,9 +2432,111 @@ class MainWindow(QMainWindow):
                     item.setForeground(QColor(row_data.status_colour))
                 self.mods_table.setItem(row, column, item)
         self.mods_table.resizeColumnsToContents()
+        self.mods_table.horizontalHeader().setSectionResizeMode(
+            1, QHeaderView.Stretch
+        )
         self.mods_table.setSortingEnabled(True)
         self.mods_table.sortItems(0, Qt.DescendingOrder)
         self.apply_mod_filter()
+        if self.mods_table.rowCount() > 0:
+            self.mods_table.selectRow(0)
+
+    def selected_required_mod(self):
+        result = self.last_mod_result
+        if not result or not result.ok:
+            return None
+        row = self.mods_table.currentRow()
+        workshop_id = self._mods_cell(row, 2) if row >= 0 else ""
+        return next(
+            (mod for mod in result.required_mods if mod.workshop_id == workshop_id),
+            None,
+        )
+
+    def update_mod_detail_card(self):
+        if not hasattr(self, "mod_detail_card"):
+            return
+        mod = self.selected_required_mod()
+        if mod is None:
+            self._set_mod_detail_status("warning")
+            self.mod_detail_title.setText("Select a mod to see its Workshop details")
+            self.mod_detail_description.setText(
+                "Descriptions and preview images are supplied by the mod's Workshop page."
+            )
+            self.mod_detail_metadata.setText("")
+            self.mod_detail_open_button.setEnabled(False)
+            self.mod_detail_thumbnail.setPixmap(QPixmap())
+            self.mod_detail_thumbnail.setText("No preview")
+            self.mod_thumbnail_url = ""
+            return
+        self._set_mod_detail_status(mod_detail_status(mod))
+        self.mod_detail_title.setText(mod.name or mod.installed_name or "Unknown mod")
+        self.mod_detail_description.setText(
+            mod_description_preview(mod, limit=900)
+        )
+        self.mod_detail_description.setToolTip("")
+        status = mod_row(mod).values[0].lstrip("✓✗!↻… ")
+        self.mod_detail_metadata.setText(
+            f"Workshop {mod.workshop_id}  ·  {mod_file_size(mod)}  ·  {status}"
+        )
+        self.mod_detail_open_button.setEnabled(bool(mod.workshop_url))
+        self.load_mod_thumbnail(mod.workshop_preview_url)
+
+    def _set_mod_detail_status(self, status: str):
+        self.mod_detail_card.setProperty("modStatus", status)
+        self.mod_detail_card.style().unpolish(self.mod_detail_card)
+        self.mod_detail_card.style().polish(self.mod_detail_card)
+
+    def load_mod_thumbnail(self, url: str):
+        self.mod_thumbnail_url = url
+        self.mod_detail_thumbnail.setPixmap(QPixmap())
+        if not url:
+            self.mod_detail_thumbnail.setText("No preview")
+            return
+        self.mod_detail_thumbnail.setText("Loading…")
+        self.mod_thumbnail_manager.get(QNetworkRequest(QUrl(url)))
+
+    def resize_mod_detail_card(self):
+        if not hasattr(self, "mod_detail_card"):
+            return
+        panel_width = self.mod_detail_card.width()
+        if panel_width < 100:
+            panel_width = round(self.width() * 0.34)
+        media_scale = mod_inspector_scale(self.height())
+        type_scale = mod_inspector_type_scale(self.height())
+        thumbnail_width = max(220, min(round(360 * media_scale), panel_width - 28))
+        thumbnail_height = round(thumbnail_width * 9 / 16)
+        self.mod_detail_thumbnail.setFixedSize(thumbnail_width, thumbnail_height)
+        base_size = self.mod_detail_base_point_size
+        for widget, multiplier in (
+            (self.mod_detail_title, 1.12),
+            (self.mod_detail_description, 1.0),
+            (self.mod_detail_metadata, 0.95),
+            (self.mod_detail_open_button, 1.0),
+        ):
+            font = widget.font()
+            font.setPointSizeF(base_size * type_scale * multiplier)
+            widget.setFont(font)
+
+    def finish_mod_thumbnail_load(self, reply: QNetworkReply):
+        try:
+            if reply.url().toString() != self.mod_thumbnail_url:
+                return
+            pixmap = QPixmap()
+            if reply.error() == QNetworkReply.NoError:
+                pixmap.loadFromData(bytes(reply.readAll()))
+            if pixmap.isNull():
+                self.mod_detail_thumbnail.setText("Preview unavailable")
+                return
+            self.mod_detail_thumbnail.setText("")
+            self.mod_detail_thumbnail.setPixmap(
+                pixmap.scaled(
+                    self.mod_detail_thumbnail.size(),
+                    Qt.KeepAspectRatio,
+                    Qt.SmoothTransformation,
+                )
+            )
+        finally:
+            reply.deleteLater()
 
     def mod_check_steam_context(self, install: SteamInstall | None) -> str:
         if not install:
@@ -2247,7 +2581,8 @@ class MainWindow(QMainWindow):
     def open_workshop_page_for_mod_row(self, row: int):
         if row < 0:
             return
-        url = self._mods_cell(row, 4)
+        mod = self.selected_required_mod()
+        url = mod.workshop_url if mod else ""
         if not url:
             workshop_id = self._mods_cell(row, 2)
             if workshop_id:
@@ -2265,6 +2600,44 @@ class MainWindow(QMainWindow):
         if not hasattr(self, "health_table") or self.health_table.rowCount() == 0:
             self.update_settings_health()
         self.copy_to_clipboard(self.settings_health_text(), "Settings health")
+
+    def show_full_health_details(self):
+        if self.health_table.rowCount() == 0:
+            self.update_settings_health()
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Full Settings health details")
+        dialog.resize(1000, 560)
+        dialog_layout = QVBoxLayout(dialog)
+        summary = QLabel(self.system_summary.text())
+        set_ui_role(summary, "summary")
+        dialog_layout.addWidget(summary)
+        table = QTableWidget(
+            self.health_table.rowCount(), self.health_table.columnCount()
+        )
+        table.setHorizontalHeaderLabels(["Check", "Status", "Details"])
+        table.setSelectionBehavior(QTableWidget.SelectRows)
+        table.setEditTriggers(QTableWidget.NoEditTriggers)
+        configure_data_table(table)
+        for row in range(self.health_table.rowCount()):
+            for column in range(self.health_table.columnCount()):
+                source = self.health_table.item(row, column)
+                item = QTableWidgetItem(source.text() if source else "")
+                if column == 1 and source:
+                    item.setForeground(source.foreground())
+                table.setItem(row, column, item)
+        table.resizeColumnsToContents()
+        table.horizontalHeader().setStretchLastSection(True)
+        dialog_layout.addWidget(table)
+        buttons = QHBoxLayout()
+        buttons.addStretch(1)
+        copy = QPushButton("Copy health")
+        copy.clicked.connect(self.copy_settings_health)
+        close = QPushButton("Close")
+        close.clicked.connect(dialog.accept)
+        buttons.addWidget(copy)
+        buttons.addWidget(close)
+        dialog_layout.addLayout(buttons)
+        dialog.exec()
 
     def copy_diagnostics_report(self):
         self.copy_to_clipboard(
@@ -2374,7 +2747,12 @@ class MainWindow(QMainWindow):
         open_action.triggered.connect(lambda: self.open_workshop_page_for_mod_row(row))
         copy_id_action.triggered.connect(lambda: self.copy_to_clipboard(self._mods_cell(row, 2), "Workshop ID"))
         copy_name_action.triggered.connect(lambda: self.copy_to_clipboard(self._mods_cell(row, 1), "Mod name"))
-        copy_url_action.triggered.connect(lambda: self.copy_to_clipboard(self._mods_cell(row, 4), "Workshop URL"))
+        copy_url_action.triggered.connect(
+            lambda: self.copy_to_clipboard(
+                (self.selected_required_mod().workshop_url if self.selected_required_mod() else ""),
+                "Workshop URL",
+            )
+        )
         check_update_action.triggered.connect(lambda: self.check_update_mod_row(row))
         menu.addAction(check_update_action)
         menu.addSeparator()
@@ -2973,6 +3351,7 @@ class MainWindow(QMainWindow):
             self._set_health_item(row, 1, status, self._health_colour(status))
             self._set_health_item(row, 2, details)
         self.health_table.resizeColumnsToContents()
+        self.update_settings_health_groups(rows)
 
     def _health_colour(self, status: str) -> str:
         if status == "OK":
@@ -3372,6 +3751,7 @@ class MainWindow(QMainWindow):
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.configure_browser_columns()
+        self.resize_mod_detail_card()
 
 
 def main():

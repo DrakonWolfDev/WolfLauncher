@@ -2,6 +2,36 @@
 
 ## Unreleased
 
+- Replaced the visible Settings health table with three native grouped
+  readiness cards for Launcher, Steam/DayZ and Graphics/launch state. The full
+  snapshot remains authoritative for copying and is available through an
+  explicit support-details dialog instead of competing with the common view.
+- Aligned every Settings health group to the same label/detail guide and added
+  bottom breathing room so fourth rows and longer labels remain balanced.
+- Closed the direct discovered-server journey across Server Browser and Mods:
+  Browser enables its next-step actions only for a real selection, while Mods
+  now presents stable server identity, readiness guidance, a contextual mod
+  resolution action and a primary Launch action.
+- Made the Browser and Mods keyboard path follow their visible layout and made
+  row activation with Enter match the existing mouse activation behaviour.
+- Added a contextual left-arrow **Back to Server Browser** action beside the
+  Mods launch action when mod inspection originated from a discovered row.
+- Added a resizable table/inspector Mods workspace. The dense sortable table
+  now keeps only Status, Name, Workshop ID and Size, while a selected-mod panel
+  on the right shows the asynchronously loaded thumbnail, description, size,
+  status and Workshop action. The existing bounded public Steam metadata
+  request supplies the optional descriptions and preview URLs.
+- Removed hover-only description and hidden Steam-path tooltips from Mods; the
+  selected-item card now owns visual Workshop detail, while explicit copied
+  reports retain technical Steam and filesystem context.
+- Made the right-hand mod inspector scale its thumbnail and local typography
+  from the 720p baseline on taller windows, with bounded growth, and removed
+  bare URLs from visible Workshop description copy.
+- Added a semantic selected-mod inspector edge—green for ready, red for
+  missing, amber for update/pending—and a small draggable gutter separating
+  the inspector from the dense table.
+- Reduced high-resolution inspector typography growth independently of the
+  thumbnail, reaching roughly 120% at 1080p with a 122% ceiling.
 - Added a deliberately restrained native SVG icon pass for the four primary
   tabs and only the clearest Add, Refresh, Launch and Recheck actions, retaining
   every text label and avoiding decorative table/filter iconography.

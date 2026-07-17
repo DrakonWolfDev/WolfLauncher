@@ -30,6 +30,92 @@ def window_state(worker=None):
 
 
 class ModContextChangeTests(unittest.TestCase):
+    def test_selected_mod_populates_the_detail_card(self):
+        mod = RequiredMod(
+            "111",
+            name="Example Mod",
+            installed=True,
+            workshop_url="https://example.test/111",
+            workshop_file_size=1024,
+            workshop_description="A useful description.",
+            workshop_preview_url="https://example.test/preview.jpg",
+        )
+        window = SimpleNamespace(
+            last_mod_result=ModCheckResult(
+                True,
+                Server("Example", "Tests", "dayz.test", 2302, 27016),
+                [mod],
+            ),
+            mods_table=Mock(currentRow=Mock(return_value=0)),
+            _mods_cell=Mock(return_value="111"),
+            selected_required_mod=Mock(return_value=mod),
+            mod_detail_card=object(),
+            mod_detail_title=Mock(),
+            mod_detail_description=Mock(),
+            mod_detail_metadata=Mock(),
+            mod_detail_open_button=Mock(),
+            load_mod_thumbnail=Mock(),
+            _set_mod_detail_status=Mock(),
+        )
+
+        MainWindow.update_mod_detail_card(window)
+
+        window.mod_detail_title.setText.assert_called_once_with("Example Mod")
+        window.mod_detail_description.setText.assert_called_once_with(
+            "A useful description."
+        )
+        self.assertIn("1.0 KiB", window.mod_detail_metadata.setText.call_args.args[0])
+        window.mod_detail_open_button.setEnabled.assert_called_once_with(True)
+        window._set_mod_detail_status.assert_called_once_with("ready")
+        window.load_mod_thumbnail.assert_called_once_with(
+            "https://example.test/preview.jpg"
+        )
+
+    def test_launch_actions_follow_the_active_server_context(self):
+        server = Server("Example", "Tests", "dayz.test", 2302, 27016)
+        window = SimpleNamespace(
+            active_server_context=Mock(return_value=server),
+            launch_button=Mock(),
+            mods_launch_button=Mock(),
+            mods_back_to_browser_button=Mock(),
+            active_discovered_server=server,
+        )
+
+        MainWindow.update_launch_button_text(window)
+
+        window.launch_button.setText.assert_called_once_with("Launch Example")
+        window.mods_launch_button.setText.assert_called_once_with("Launch Example")
+        window.mods_launch_button.setEnabled.assert_called_once_with(True)
+        window.mods_back_to_browser_button.setVisible.assert_called_once_with(True)
+
+    def test_mods_launch_action_is_disabled_without_a_server_context(self):
+        window = SimpleNamespace(
+            active_server_context=Mock(return_value=None),
+            mods_launch_button=Mock(),
+            mods_back_to_browser_button=Mock(),
+            active_discovered_server=None,
+        )
+
+        MainWindow.update_launch_button_text(window)
+
+        window.mods_launch_button.setText.assert_called_once_with(
+            "Launch selected server"
+        )
+        window.mods_launch_button.setEnabled.assert_called_once_with(False)
+        window.mods_back_to_browser_button.setVisible.assert_called_once_with(False)
+
+    def test_back_to_browser_restores_results_and_keyboard_focus(self):
+        window = SimpleNamespace(
+            tabs=Mock(),
+            server_browser_tab_index=1,
+            browser_table=Mock(),
+        )
+
+        MainWindow.back_to_server_browser(window)
+
+        window.tabs.setCurrentIndex.assert_called_once_with(1)
+        window.browser_table.setFocus.assert_called_once_with()
+
     def test_discovered_row_becomes_read_only_in_memory_context(self):
         discovered = DiscoveredServer(
             name="Provider name",
