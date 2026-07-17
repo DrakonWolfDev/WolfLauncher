@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Added a draggable Server Browser table/inspector workspace. The common table
+  remains dense and moves Host/port/source/version/last-seen support detail into
+  a selected-server panel with endpoint, map, players, ping, truth basis,
+  features and transient mod readiness. Its semantic edge distinguishes
+  positive, uncertain/checking and confidently offline states; Region and Game
+  Time remain explicit unavailable/unknown placeholders pending their planned
+  data plumbing.
 - Replaced normal-path **Enrich visible** sweeps with a 450 ms debounced local
   check of only the deliberately selected discovered server. Successful checks
   are reused for two minutes and failures observe a five-minute retry cooldown;

@@ -123,6 +123,7 @@ from .server_enrichment import (
     parse_connect_port,
 )
 from .server_browser_presenter import (
+    browser_inspector,
     browser_style_terms,
     browser_summary_text,
     browser_summary_tooltip,
@@ -567,7 +568,57 @@ class MainWindow(QMainWindow):
         )
         self.browser_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.browser_table.customContextMenuRequested.connect(self.show_browser_context_menu)
-        layout.addWidget(self.browser_table)
+        self.browser_detail_card = QFrame()
+        set_ui_role(self.browser_detail_card, "browserDetail")
+        self.browser_detail_card.setProperty("serverStatus", "warning")
+        detail_layout = QVBoxLayout(self.browser_detail_card)
+        detail_layout.setContentsMargins(16, 16, 16, 16)
+        detail_layout.setSpacing(10)
+        self.browser_detail_title = QLabel("Select a server to inspect its details")
+        self.browser_detail_title.setWordWrap(True)
+        set_ui_role(self.browser_detail_title, "cardTitle")
+        self.browser_detail_status = QLabel("No server selected")
+        set_ui_role(self.browser_detail_status, "metadata")
+        self.browser_detail_endpoint = QLabel("")
+        set_monospace(self.browser_detail_endpoint)
+        self.browser_detail_overview = QLabel(
+            "Selection-driven status, players, ping and mod readiness will appear here."
+        )
+        self.browser_detail_overview.setWordWrap(True)
+        set_ui_role(self.browser_detail_overview, "metadata")
+        self.browser_detail_truth = QLabel("")
+        self.browser_detail_truth.setWordWrap(True)
+        set_ui_role(self.browser_detail_truth, "metadata")
+        self.browser_detail_features = QLabel("")
+        self.browser_detail_features.setWordWrap(True)
+        self.browser_detail_mods = QLabel("")
+        self.browser_detail_mods.setWordWrap(True)
+        self.browser_detail_diagnostics = QLabel("")
+        self.browser_detail_diagnostics.setWordWrap(True)
+        set_ui_role(self.browser_detail_diagnostics, "metadata")
+        for child in (
+            self.browser_detail_title,
+            self.browser_detail_status,
+            self.browser_detail_endpoint,
+            self.browser_detail_overview,
+            self.browser_detail_truth,
+            self.browser_detail_features,
+            self.browser_detail_mods,
+        ):
+            detail_layout.addWidget(child)
+        detail_layout.addStretch(1)
+        detail_layout.addWidget(self.browser_detail_diagnostics)
+
+        self.browser_splitter = QSplitter(Qt.Horizontal)
+        self.browser_splitter.setObjectName("browserSplitter")
+        self.browser_splitter.setHandleWidth(10)
+        self.browser_splitter.setChildrenCollapsible(False)
+        self.browser_splitter.addWidget(self.browser_table)
+        self.browser_splitter.addWidget(self.browser_detail_card)
+        self.browser_splitter.setStretchFactor(0, 3)
+        self.browser_splitter.setStretchFactor(1, 1)
+        self.browser_splitter.setSizes([990, 330])
+        layout.addWidget(self.browser_splitter, 1)
 
         buttons = QHBoxLayout()
         self.refresh_database_button = QPushButton("Refresh database")
@@ -1562,6 +1613,7 @@ class MainWindow(QMainWindow):
         if status_item is not None:
             status_item.setText("CHECKING…")
             status_item.setForeground(QColor(STATUS_COLOURS["warning"]))
+        self.update_browser_detail_card(server, status_override="Checking")
         self.start_selected_discovered_enrichment(server)
 
     def start_selected_discovered_enrichment(self, server: DiscoveredServer):
@@ -1620,6 +1672,7 @@ class MainWindow(QMainWindow):
             "Comparing this server's required mods with the selected Steam Workshop installation.",
             STATUS_COLOURS["warning"],
         )
+        self.update_browser_detail_card(discovered, mod_preview="Checking local Workshop readiness…")
         worker = ModWorker(
             self.discovered_server_context(discovered),
             install.workshop_dir,
@@ -1659,6 +1712,7 @@ class MainWindow(QMainWindow):
                 result.error or "Required-mod readiness could not be checked.",
                 STATUS_COLOURS["warning"],
             )
+            self.update_browser_detail_for_key(cache_key, "Unavailable")
             return
         missing = len(result.missing_mods)
         if missing:
@@ -1669,6 +1723,7 @@ class MainWindow(QMainWindow):
                 "Launch will open pre-flight and offer to install or update the missing Workshop items.",
                 STATUS_COLOURS["negative"],
             )
+            self.update_browser_detail_for_key(cache_key, f"{missing} missing locally")
             return
         update_browser_mod_cell(
             self.browser_table,
@@ -1677,6 +1732,7 @@ class MainWindow(QMainWindow):
             "Local Workshop readiness preview. Launch pre-flight performs the final check.",
             STATUS_COLOURS["positive"],
         )
+        self.update_browser_detail_for_key(cache_key, "Ready locally")
 
     def promote_selected_discovered_server(self):
         server = self.selected_discovered_server()
@@ -2036,8 +2092,65 @@ class MainWindow(QMainWindow):
             launch_button.setText(
                 f"Launch {selected.name}" if selected else "Launch selected server"
             )
+        if hasattr(self, "update_browser_detail_card"):
+            self.update_browser_detail_card(selected)
         if hasattr(self, "schedule_selected_discovered_server_check"):
             self.schedule_selected_discovered_server_check()
+
+    def update_browser_detail_for_key(self, cache_key: str, mod_preview: str):
+        selected = self.selected_discovered_server()
+        if selected is not None and selected.cache_key == cache_key:
+            self.update_browser_detail_card(selected, mod_preview=mod_preview)
+
+    def update_browser_detail_card(
+        self,
+        selected: DiscoveredServer | None,
+        mod_preview: str = "",
+        status_override: str = "",
+    ):
+        if not hasattr(self, "browser_detail_card"):
+            return
+        if selected is None:
+            self.browser_detail_card.setProperty("serverStatus", "warning")
+            self.browser_detail_title.setText("Select a server to inspect its details")
+            self.browser_detail_status.setText("No server selected")
+            self.browser_detail_endpoint.clear()
+            self.browser_detail_overview.setText(
+                "Selection-driven status, players, ping and mod readiness will appear here."
+            )
+            for label in (
+                self.browser_detail_truth,
+                self.browser_detail_features,
+                self.browser_detail_mods,
+                self.browser_detail_diagnostics,
+            ):
+                label.clear()
+        else:
+            cached = self.browser_mod_results.get(selected.cache_key)
+            if not mod_preview and cached:
+                result = cached[1]
+                mod_preview = (
+                    "Unavailable" if not result.ok else
+                    f"{len(result.missing_mods)} missing locally" if result.missing_mods else
+                    "Ready locally"
+                )
+            detail = browser_inspector(selected, mod_preview)
+            detail_edge = detail.status_kind
+            if status_override.casefold() == "checking":
+                detail_edge = "warning"
+            elif "missing" in mod_preview.casefold() or mod_preview.casefold() == "unavailable":
+                detail_edge = "offline"
+            self.browser_detail_card.setProperty("serverStatus", detail_edge)
+            self.browser_detail_title.setText(detail.title)
+            self.browser_detail_status.setText(status_override or detail.status)
+            self.browser_detail_endpoint.setText(detail.endpoint)
+            self.browser_detail_overview.setText(detail.overview)
+            self.browser_detail_truth.setText(f"Truth basis\n{detail.truth}")
+            self.browser_detail_features.setText(f"Features\n{detail.features}")
+            self.browser_detail_mods.setText(f"Mod readiness\n{detail.mods}")
+            self.browser_detail_diagnostics.setText(detail.diagnostics)
+        self.browser_detail_card.style().unpolish(self.browser_detail_card)
+        self.browser_detail_card.style().polish(self.browser_detail_card)
 
     def configure_browser_columns(self, show_details: bool | None = None):
         if not hasattr(self, "browser_table"):
@@ -2050,9 +2163,9 @@ class MainWindow(QMainWindow):
             )
         configure_priority_columns(
             self.browser_table,
-            (0, 5, 6, 7, 8, 10, 11, 2),
+            (0, 5, 6, 7, 8, 11, 10),
             show_details=show_details,
-            stretch_columns=() if show_details else (2,),
+            stretch_columns=(),
         )
         self.browser_table.setColumnHidden(1, True)
         if not show_details:

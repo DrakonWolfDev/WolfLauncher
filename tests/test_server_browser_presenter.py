@@ -2,6 +2,7 @@ import unittest
 from datetime import datetime, timezone
 
 from wolflauncher.server_browser_presenter import (
+    browser_inspector,
     browser_row,
     browser_style_terms,
     browser_summary_text,
@@ -16,6 +17,43 @@ from wolflauncher.models import DiscoveredServer
 
 
 class ServerBrowserPresenterTests(unittest.TestCase):
+    def test_inspector_separates_operational_summary_from_diagnostics(self):
+        server = DiscoveredServer(
+            name="Namalsk Adventure",
+            host="203.0.113.10",
+            game_port=2302,
+            query_port=27016,
+            map_name="namalsk",
+            players_current=12,
+            players_max=60,
+            ping_ms=42,
+            online=True,
+            status_source="local",
+            last_checked="2026-07-17T12:00:00+00:00",
+            modded=True,
+            source="wolfapi",
+        )
+
+        detail = browser_inspector(server, "Ready locally")
+
+        self.assertEqual(detail.title, "Namalsk Adventure")
+        self.assertEqual(detail.status_kind, "ready")
+        self.assertIn("Map  Namalsk", detail.overview)
+        self.assertIn("Region  Not available", detail.overview)
+        self.assertIn("Game time  Unknown until locally checked", detail.overview)
+        self.assertEqual(detail.mods, "Ready locally")
+        self.assertIn("Query port  27016", detail.diagnostics)
+
+    def test_inspector_uses_red_edge_only_for_confident_offline_state(self):
+        unverified = DiscoveredServer("Unknown", "host", 2302, 27016)
+        offline = DiscoveredServer(
+            "Offline", "host", 2302, 27016,
+            status_source="local", online=False,
+        )
+
+        self.assertEqual(browser_inspector(unverified).status_kind, "warning")
+        self.assertEqual(browser_inspector(offline).status_kind, "offline")
+
     def test_style_terms_cover_pve_pvp_and_unfiltered_modes(self):
         self.assertIn("no kos", browser_style_terms("PvE"))
         self.assertEqual(browser_style_terms("PvP"), ["pvp", "p.v.p"])

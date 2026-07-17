@@ -90,6 +90,10 @@ QFrame[uiRole="modDetail"] {{ background-color: {c['surface']}; border: 1px soli
 QFrame[uiRole="modDetail"][modStatus="ready"] {{ border-left-color: {c['positive']}; }}
 QFrame[uiRole="modDetail"][modStatus="missing"] {{ border-left-color: {c['negative']}; }}
 QFrame[uiRole="modDetail"][modStatus="warning"] {{ border-left-color: {c['warning']}; }}
+QFrame[uiRole="browserDetail"] {{ background-color: {c['surface']}; border: 1px solid {c['border']}; border-left: 3px solid {c['warning']}; border-radius: 7px; }}
+QFrame[uiRole="browserDetail"][serverStatus="ready"] {{ border-left-color: {c['positive']}; }}
+QFrame[uiRole="browserDetail"][serverStatus="offline"] {{ border-left-color: {c['negative']}; }}
+QFrame[uiRole="browserDetail"][serverStatus="warning"] {{ border-left-color: {c['warning']}; }}
 QFrame[uiRole="healthGroup"] {{ background-color: {c['surface']}; border: 1px solid {c['border']}; border-left: 3px solid {c['positive']}; border-radius: 7px; }}
 QFrame[uiRole="healthGroup"][healthStatus="WARN"] {{ border-left-color: {c['warning']}; }}
 QFrame[uiRole="healthGroup"][healthStatus="MISSING"] {{ border-left-color: {c['negative']}; }}
@@ -101,6 +105,8 @@ QSplitter::handle {{ background-color: {c['border']}; width: 2px; }}
 QSplitter::handle:hover {{ background-color: {c['accent_pressed']}; }}
 QSplitter#modsSplitter::handle {{ background-color: transparent; }}
 QSplitter#modsSplitter::handle:hover {{ background-color: {c['surface_alt']}; }}
+QSplitter#browserSplitter::handle {{ background-color: transparent; }}
+QSplitter#browserSplitter::handle:hover {{ background-color: {c['surface_alt']}; }}
 QListWidget[uiRole="serverCards"] {{ background-color: rgba(21, 19, 15, 88); border: 0; outline: 0; }}
 QListWidget[uiRole="serverCards"]::item {{ background-color: transparent; border: 0; padding: 3px 0; }}
 QListWidget[uiRole="serverCards"]::item:selected {{ background-color: transparent; }}

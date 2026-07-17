@@ -128,6 +128,17 @@ The Server Browser wide-screen policy caps Name at 600 logical pixels, scales it
 
 The visible Browser identity is a unified **Server Name**: locally validated live names win when available, otherwise the provider/cache name is used, with the connect target as the final fallback. The separate Live Name field remains internal and hidden in both compact and detailed table modes; tooltips and copied details retain the provenance needed for diagnostics.
 
+The Server Browser styling handoff in `VISUAL_DESIGN.md` is now implemented as
+a reviewable native table/inspector split. The compact table keeps Server Name,
+Status, Map, Players, Ping, Mods and Features; its draggable inspector presents
+the selected endpoint, existing operational state, local/API truth basis,
+features, transient mod readiness and the Host/ports/source/version/last-seen
+support detail removed from the common scan. Region remains honestly
+unavailable and Game Time explicitly unknown pending their separate data work.
+The split ratio, exact columns and high-resolution density remain provisional
+until real-desktop review; Favourite Servers, Mods and Settings remain locked
+unless a concrete usability issue is found.
+
 - Use this vertical hierarchy where a tab has comparable content: information/summary, common controls, results, then a bottom action row.
 - Keep the frequent path visible. For Server Browser this means search/common filters and Promote/Reset. For Mods this means recheck, open missing pages and filter.
 - Put secondary filters, refresh/enrichment, parity, copying and specialist tools behind a compact direction-marked disclosure at the bottom.

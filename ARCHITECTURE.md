@@ -37,10 +37,14 @@ behind a compact direction-marked disclosure at the bottom. When the bottom row
 also contains persistent primary actions, advanced tools align left and primary
 actions align right.
 
-Server Browser and Mods establish the approved reference layout. Reuse
-`ui_sections.set_disclosure_state`, avoid redundant labels and verify both
-collapsed and expanded states at the default 1350x720 window size. Theme,
-typography and branding follow after structural hierarchy is settled.
+Server Browser and Mods establish the approved reference layout. Both keep a
+dense operational table on the left and use a draggable native inspector for
+the current selection on the right. The Browser inspector owns endpoint,
+truth/freshness, features, mod readiness and support diagnostics so Host and
+ports do not consume its common scanning table; detailed columns and copied
+details retain that data. Reuse `ui_sections.set_disclosure_state`, avoid
+redundant labels and verify collapsed and expanded states at the default
+1350x720 window size.
 
 ## Module Map
 

@@ -15,6 +15,19 @@ class BrowserRow:
     status_colour: str
 
 
+@dataclass(frozen=True)
+class BrowserInspector:
+    title: str
+    status: str
+    status_kind: str
+    endpoint: str
+    overview: str
+    truth: str
+    features: str
+    mods: str
+    diagnostics: str
+
+
 def browser_style_terms(style: str) -> list[str]:
     if style == "PvE":
         return ["pve", "p.v.e", "no pvp", "no kos", "no-kos", "no kill on sight"]
@@ -221,6 +234,56 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
         ],
         tooltips=tooltips,
         status_colour=status_colour,
+    )
+
+
+def browser_inspector(
+    server: DiscoveredServer,
+    mod_preview: str = "",
+) -> BrowserInspector:
+    """Build the calm selected-server summary without hiding support detail."""
+    status, colour = browser_status(server)
+    status_kind = (
+        "ready" if colour == STATUS_COLOURS["positive"] else
+        "offline" if colour == STATUS_COLOURS["negative"] else
+        "warning"
+    )
+    players = players_text(server.players_current, server.players_max) or "Unknown"
+    ping = f"{server.ping_ms} ms" if server.ping_ms is not None else "Unknown"
+    features = display_server_flags(
+        server.password,
+        server.modded,
+        quality_warning=bool(server.quality_flags),
+    )
+    freshness = api_freshness_text(server) or "Unverified"
+    truth = (
+        f"Locally validated · {server.last_checked or 'time unavailable'}"
+        if server.status_source == "local"
+        else f"Provider reported · {freshness}"
+    )
+    mods = mod_preview or display_required_mod_count(server.required_mod_count)
+    if mods == "–":
+        mods = "Unknown until checked"
+    return BrowserInspector(
+        title=display_server_name(server),
+        status=status.title(),
+        status_kind=status_kind,
+        endpoint=server.connect_target,
+        overview=(
+            f"Map  {display_map_name(server.map_name)}\n"
+            "Region  Not available\n"
+            "Game time  Unknown until locally checked\n"
+            f"Players  {players}    Ping  {ping}"
+        ),
+        truth=truth,
+        features=features,
+        mods=mods,
+        diagnostics=(
+            f"Host  {server.host}\n"
+            f"Game port  {server.game_port}    Query port  {server.query_port}\n"
+            f"Source  {server.source or 'Unknown'}    Version  {server.version or 'Unknown'}\n"
+            f"Last seen  {server.last_seen or 'Never'}"
+        ),
     )
 
 

@@ -193,6 +193,75 @@ For WolfAPI, "background" means process isolation: Python threads still share
 the GUI interpreter lock. HTTP paging, JSON normalization and cache merging must
 remain outside the Qt process, with only the final compact summary handed back.
 
+## Server Browser styling handoff
+
+This pass is implemented for desktop review; it did not reopen completed
+Favourite Servers, Mods or Settings layouts. It preserves the Browser behaviour
+established in commit `07c0263`: cached-first opening, explicit provider
+refresh, bounded selection checks, transient local mod readiness, stable
+selection/scroll and named Launch pre-flight.
+
+### Locked interaction hierarchy
+
+1. Summary and cache/result count.
+2. One fluid common-filter row: elastic Search, then Mods, Game Style, Map and
+   Online only. Dropdowns self-label through their neutral choices.
+3. Dense sortable results remain the primary scanning surface.
+4. Bottom row: advanced disclosure left; Add to Favourite Servers, secondary
+   **View mod details**, and primary **Launch [selected server]** right.
+5. Opening the tab must never refresh or locally probe automatically. Selection
+   may refine only deliberately selected endpoints and must not bounce the list.
+
+### Implemented master/detail direction
+
+Use a restrained horizontal table/inspector split related to the completed Mods
+workspace, without copying its Workshop-card contents or turning each server
+into a Favourite-style card.
+
+- Left: keep the operational table compact. Intended common columns are Server
+  Name, Status, Map, Region, Game Time, Players, Ping, Mods and Features.
+- Right: one calm selected-server inspector. It should show the full server
+  name, endpoint, map/location/time, player and ping state, local/API truth
+  basis, freshness/provenance, concise features and mod readiness.
+- Move Host, ports, Source, Version, last checked/seen, quality-warning detail
+  and other diagnostics out of the common table into the inspector or detailed
+  columns. Do not remove them from copied details or advanced support paths.
+- Give the inspector the established semantic left edge: green for locally
+  Online/API Live, amber for Recent/Stale/Checking/Unverified, and red only for
+  confidently Offline or a failed local readiness state. Amber table selection
+  remains restrained and distinct from status colour.
+- Before selection, show a quiet purposeful empty state such as “Select a
+  server to inspect its details”; do not fill the panel with decorative art.
+- Selection-driven progress belongs in the inspector and affected row only.
+  Avoid modal progress, hover expansion and full-table relayout.
+- Use a draggable gutter and responsive proportions derived from the Mods split,
+  then validate independently at 1350×720 and 1920×1080. Do not assume the Mods
+  inspector width or typography scale transfers unchanged.
+
+### Data boundary
+
+The inspector can be prototyped with existing fields, but final table balance
+should wait for the planned data work:
+
+- **Game Time** is locally measured live state already returned by `gamedig`;
+  retain it through discovered-server enrichment and the additive Launcher
+  cache migration. Unknown remains explicit until locally checked.
+- **Region** means nullable geographical `country_code` supplied with provenance
+  by WolfAPI, not the existing Steam integer region. Never infer or display a
+  country from that integer and do not silently guess from IP addresses.
+- The Mods cell is a readiness preview: Checking, Ready, `N missing` or
+  Unavailable. Launch pre-flight remains final authority and the only workflow
+  that may offer Workshop subscription/update.
+
+### Review boundary
+
+The inspector is now a visually reviewable native pass with explicit temporary
+unknown/unavailable states for Game Time and Region. Request desktop review
+before locking split ratio, exact column set, inspector density or
+high-resolution scaling.
+Region may remain absent until the shared API field is implemented; its absence
+must not block improving the existing selected-server panel.
+
 Mods deliberately remains table-first because required sets commonly contain
 dozens of items. A draggable horizontal master/detail split pairs a focused
 Status, Name, Workshop ID and Size table with one selection-driven Workshop
