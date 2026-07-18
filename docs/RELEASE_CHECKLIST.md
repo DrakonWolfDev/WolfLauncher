@@ -94,6 +94,12 @@ cannot be run.
   Steam/DayZ handoff without an unnecessary download prompt.
 - A missing/outdated Workshop flow identified required work, obtained explicit
   confirmation, completed through Steam, rechecked readiness and launched.
+- Packaged Settings Health and diagnostics copy actions passed with useful
+  native/Flatpak, DayZ, Workshop and troubleshooting state; home paths were
+  shortened and no API key or Steam userdata identifier was exposed.
+- Automatic Connect persisted a copyable launch report containing its UTC
+  timestamp, Steam argument-vector handoff output and confirmed DayZ process
+  detection. The report contained no literal home path or credential.
 - Closing during a background check passed after the non-blocking shutdown
   fix: the modal progress dialog appeared promptly and remained fluid, closing
   the dialog did not kill the active worker, a repeated exit request restored
