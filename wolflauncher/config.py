@@ -1,13 +1,15 @@
 from pathlib import Path
-import shutil
 import yaml
 
 from .models import Server
+from .persistence import atomic_write_text
+from .settings import CURATED_SERVERS_PATH
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 VENDORED_LAUNCHER_PATH = PROJECT_ROOT / "external/dayz-linux-cli-launcher/dayz-launcher.sh"
 EXAMPLE_SERVERS_PATH = PROJECT_ROOT / "example.servers.yaml"
+LEGACY_SERVERS_PATH = PROJECT_ROOT / "servers.yaml"
 
 DEFAULT_LAUNCHER_PATHS = [
     Path.home() / ".local/bin/dayz-launcher.sh",
@@ -36,13 +38,26 @@ def normalize_server_endpoint(host: str, game_port: int, query_port: int) -> tup
     return split_host, parsed_port, adjusted_query_port
 
 
-def ensure_servers_file(path: Path, example_path: Path = EXAMPLE_SERVERS_PATH) -> None:
+def ensure_servers_file(
+    path: Path = CURATED_SERVERS_PATH,
+    example_path: Path = EXAMPLE_SERVERS_PATH,
+    legacy_path: Path | None = None,
+) -> str:
     if path.exists():
-        return
-    if example_path.exists():
-        shutil.copyfile(example_path, path)
-        return
-    path.write_text("servers: []\n", encoding="utf-8")
+        return "existing"
+
+    migration_source = LEGACY_SERVERS_PATH if path == CURATED_SERVERS_PATH else None
+    if legacy_path is not None:
+        migration_source = legacy_path
+    source = migration_source if migration_source is not None and migration_source.is_file() else example_path
+    if source.is_file():
+        text = source.read_text(encoding="utf-8")
+        _validate_server_yaml_text(text)
+        atomic_write_text(path, text)
+        return "migrated" if source == migration_source else "seeded"
+
+    atomic_write_text(path, "servers: []\n")
+    return "created"
 
 
 def find_default_launcher_path() -> str:
@@ -97,8 +112,7 @@ def add_curated_server(path: Path, server: Server) -> None:
             "favourite": server.favourite,
         }
     )
-    with path.open("w", encoding="utf-8") as handle:
-        yaml.safe_dump(data, handle, sort_keys=False)
+    _write_server_yaml(path, data)
 
 
 def remove_curated_server(path: Path, server: Server) -> bool:
@@ -116,8 +130,7 @@ def remove_curated_server(path: Path, server: Server) -> bool:
             and int(item.get("query_port", 0)) == server.query_port
         ):
             del servers[index]
-            with path.open("w", encoding="utf-8") as handle:
-                yaml.safe_dump(data, handle, sort_keys=False)
+            _write_server_yaml(path, data)
             return True
 
     return False
@@ -154,8 +167,7 @@ def update_curated_server(path: Path, original: Server, updated: Server) -> bool
         "query_port": updated.query_port,
         "favourite": updated.favourite,
     }
-    with path.open("w", encoding="utf-8") as handle:
-        yaml.safe_dump(data, handle, sort_keys=False)
+    _write_server_yaml(path, data)
     return True
 
 
@@ -175,3 +187,19 @@ def _load_server_yaml(path: Path) -> dict:
     if not isinstance(data, dict):
         raise ValueError("servers.yaml must contain a mapping.")
     return data
+
+
+def _validate_server_yaml_text(text: str) -> dict:
+    data = yaml.safe_load(text) or {}
+    if not isinstance(data, dict):
+        raise ValueError("servers.yaml must contain a mapping.")
+    servers = data.get("servers", [])
+    if not isinstance(servers, list):
+        raise ValueError("servers.yaml must contain a 'servers' list.")
+    return data
+
+
+def _write_server_yaml(path: Path, data: dict) -> None:
+    serialized = yaml.safe_dump(data, sort_keys=False)
+    _validate_server_yaml_text(serialized)
+    atomic_write_text(path, serialized, backup=True)

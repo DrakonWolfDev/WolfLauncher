@@ -371,10 +371,10 @@ not merely source changes.
 - [ ] **PR-01 — Choose the production version and centralize it.** Make package,
   application, tag and documentation metadata derive from one source. Update
   the changelog only when the release candidate is cut.
-- [ ] **PR-02 — Move curated YAML into XDG config.** Seed new profiles from the
+- [x] **PR-02 — Move curated YAML into XDG config.** Seed new profiles from the
   packaged example and safely migrate an existing checkout-local file without
   overwriting either copy. Prove operation with resources mounted read-only.
-- [ ] **PR-03 — Centralize recoverable persistence.** Use atomic same-directory
+- [x] **PR-03 — Centralize recoverable persistence.** Use atomic same-directory
   writes, parent creation, appropriate permissions, validation and useful error
   reporting for curated YAML, settings and launch history. Add failure-mode and
   migration tests before changing the live location.

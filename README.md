@@ -213,9 +213,11 @@ DayZ/Workshop paths and server target.
 
 ## Server Configuration
 
-Servers are stored in local-only `servers.yaml`. The repository includes
-`example.servers.yaml` as the starting template; if `servers.yaml` is missing,
-WolfLauncher creates it from the example on startup.
+Servers are stored in local-only
+`~/.config/wolflauncher/servers.yaml` (or `$XDG_CONFIG_HOME/wolflauncher/servers.yaml`).
+The repository includes `example.servers.yaml` as the starting template. On the
+first v0.9 run, an existing checkout-local `servers.yaml` is copied into the XDG
+location without modifying the source; otherwise the example seeds the new file.
 
 Example:
 
@@ -232,13 +234,13 @@ servers:
 The `host` field may contain either a DNS hostname or an IP address.
 
 Use **Add a favourite server** on the Servers tab to add a server directly to
-`servers.yaml`. The dialog defaults to common DayZ ports, but both game and
+the curated server file. The dialog defaults to common DayZ ports, but both game and
 query ports can be edited before saving. If you paste `host:port` into the host
 field, WolfLauncher saves the host and game port separately. Newly added rows
 are checked on their own after saving. Existing Favourite Servers can be edited,
 removed or refreshed individually from the row context menu. If a live status
 refresh reports a different connect port, use **Apply live connect port** from
-the same context menu to save that game-port correction back to `servers.yaml`.
+the same context menu to save that game-port correction back to the curated file.
 
 ## Discovered Server Cache
 
@@ -260,13 +262,15 @@ Use **Import server list** in Settings to load discovered server rows from YAML 
 examples/discovered_servers.sample.yaml
 ```
 
-Imported rows stay separate from curated `servers.yaml`.
+Imported rows stay separate from curated server YAML.
 
-Select an imported/discovered row and use **Add to Favourite Servers** to add it to `servers.yaml`. Right-click a discovered row to add it or copy its connect address/details.
+Select an imported/discovered row and use **Add to Favourite Servers** to add it
+to the curated YAML. Right-click a discovered row to add it or copy its connect
+address/details.
 
 Choose a server API provider in Settings, then use **Refresh database** in the Server Browser tab. **WolfAPI v1 (staged)** uses the deployed bounded contract with strict rollout validation and is selected by default for fresh installations; existing installations retain their saved choice. **WolfAPI (legacy fallback)** preserves the `/api/servers` path. Both remain read-only and preserve cached SQLite rows on failure. BattleMetrics works without a key, Steam Web API uses the saved Steam API key, and Steam Master uses Valve's legacy UDP master server path.
 
-Full-snapshot provider refreshes sync their own cache rows rather than accumulating old entries. Bounded WolfAPI v1 refreshes fetch 100-row pages in the background up to the configured limit and merge by stable ID without deleting off-page rows. With v1 selected, Server Browser search displays SQLite matches immediately, waits briefly for typing to settle, then merges up to 100 remote matches from the full directory. An exact `host:port` search uses alias-aware resolution and checks the port as either game or query port. Failed refreshes and searches keep existing cached rows. Keep servers you care about in the Favourite Servers `servers.yaml` list.
+Full-snapshot provider refreshes sync their own cache rows rather than accumulating old entries. Bounded WolfAPI v1 refreshes fetch 100-row pages in the background up to the configured limit and merge by stable ID without deleting off-page rows. With v1 selected, Server Browser search displays SQLite matches immediately, waits briefly for typing to settle, then merges up to 100 remote matches from the full directory. An exact `host:port` search uses alias-aware resolution and checks the port as either game or query port. Failed refreshes and searches keep existing cached rows. Keep servers you care about in Favourite Servers.
 
 Hover the Server Browser **Status** cell, or copy a server's details, to inspect
 WolfAPI freshness, validation time and provider observation. These fields are

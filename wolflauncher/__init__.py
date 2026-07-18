@@ -1,1 +1,3 @@
-__version__ = "0.8.0"
+"""WolfLauncher package metadata."""
+
+__version__ = "0.9.0.dev0"

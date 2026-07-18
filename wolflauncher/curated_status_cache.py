@@ -3,16 +3,18 @@ from __future__ import annotations
 from pathlib import Path
 
 from .models import Server
+from .paths import user_data_dir
+from .persistence import ensure_private_directory
 from .settings import load_json, save_json, server_key
 from .status import ServerStatus
 
 
-DATA_DIR = Path.home() / ".local" / "share" / "wolflauncher"
+DATA_DIR = user_data_dir()
 CURATED_STATUS_CACHE_PATH = DATA_DIR / "curated_status.json"
 
 
 def ensure_data_dir(path: Path = DATA_DIR) -> None:
-    path.mkdir(parents=True, exist_ok=True)
+    ensure_private_directory(path)
 
 
 def load_status_cache(path: Path = CURATED_STATUS_CACHE_PATH) -> dict[str, ServerStatus]:

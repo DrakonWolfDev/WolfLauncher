@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Began the v0.9 production-hardening cycle and centralized the application
+  version as `0.9.0.dev0` pending the release candidate.
+- Moved the curated server path to XDG config with non-destructive migration
+  from a checkout-local `servers.yaml`, and introduced atomic, durable,
+  owner-only persistence with a last-known-good curated YAML backup.
 - Added a draggable Server Browser table/inspector workspace. The common table
   remains dense and moves Host/port/source/version/last-seen support detail into
   a selected-server panel with endpoint, map, players, ping, truth basis,

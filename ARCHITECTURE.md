@@ -101,19 +101,20 @@ The native Python launcher is the default launch engine. A copy of the MIT-licen
 Current storage:
 
 ```text
-example.servers.yaml              tracked curated server template
-servers.yaml                      local ignored curated server list
-~/.config/wolflauncher/settings.json
-~/.config/wolflauncher/favourites.json
-~/.local/share/wolflauncher/curated_status.json
-~/.local/share/wolflauncher/last_launch_report.txt
-~/.local/share/wolflauncher/server_cache.sqlite3
+example.servers.yaml              tracked, read-only curated server template
+$XDG_CONFIG_HOME/wolflauncher/servers.yaml
+                                  user-owned curated server list
+$XDG_CONFIG_HOME/wolflauncher/settings.json
+$XDG_CONFIG_HOME/wolflauncher/favourites.json
+$XDG_DATA_HOME/wolflauncher/curated_status.json
+$XDG_DATA_HOME/wolflauncher/last_launch_report.txt
+$XDG_DATA_HOME/wolflauncher/server_cache.sqlite3
 ```
 
 Recommended long-term split:
 
 ```text
-servers.yaml      local curated, personal and import/export servers
+servers.yaml      XDG-config curated, personal and import/export servers
 SQLite            discovered/scraped server browser cache
 settings.json     user preferences
 favourites.json   favourite server keys

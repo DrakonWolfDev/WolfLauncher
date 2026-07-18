@@ -30,7 +30,7 @@ vendored MIT shell launcher remains a visible compatibility fallback.
 - The Server Browser, Mods, Settings and Favourite Servers layouts have passed
   real-desktop review. Preserve their information-first hierarchy unless new
   evidence requires a change.
-- The automated suite contains 426 tests at this snapshot. The production
+- The automated suite contains 436 tests at this snapshot. The production
   review baseline passed the full suite, compilation and `git diff --check`.
 
 ## Active release boundary
@@ -40,12 +40,15 @@ authoritative remaining work is the ordered backlog in
 `PRODUCTION_READINESS_REVIEW.md`. Its P0 gates cover:
 
 1. release/version truth;
-2. XDG placement and migration of curated YAML;
-3. atomic, recoverable user-data persistence;
-4. complete worker and child-process shutdown;
-5. credential permissions, optional secret storage and report redaction;
-6. reproducible packaging and locked release dependencies;
-7. expanded CI and a packaged-artifact desktop validation matrix.
+2. complete worker and child-process shutdown;
+3. credential permissions, optional secret storage and report redaction;
+4. reproducible packaging and locked release dependencies;
+5. expanded CI and a packaged-artifact desktop validation matrix.
+
+XDG curated-data migration and recoverable persistence are implemented. The
+first run copies an existing checkout-local file without modifying it, writes
+new profiles under XDG config, and routes JSON/YAML/report writes through the
+atomic owner-only persistence boundary.
 
 `ROADMAP.md` contains milestones only. `docs/RELEASE_CHECKLIST.md` records the
 checks to run against a release candidate; neither file is a second backlog.
@@ -63,9 +66,9 @@ checks to run against a release candidate; neither file is a second backlog.
 - Prefer a resolved IP for handoff when available.
 - Mod resolution is explicit and Steam-managed. Never auto-subscribe,
   auto-download or remove content without the user's confirmation.
-- Keep settings/favourites under `~/.config/wolflauncher` and application data
-  under `~/.local/share/wolflauncher`; the production backlog moves curated YAML
-  into the same XDG model.
+- Keep settings, favourites and curated YAML under
+  `$XDG_CONFIG_HOME/wolflauncher` (default `~/.config/wolflauncher`) and
+  application data under `~/.local/share/wolflauncher`.
 - Preserve stable WolfAPI IDs separately from endpoint keys so corrected ports
   merge instead of duplicating rows.
 

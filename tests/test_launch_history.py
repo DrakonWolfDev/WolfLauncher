@@ -32,13 +32,14 @@ class LaunchHistoryTests(unittest.TestCase):
 
             self.assertEqual(launch_history.load_last_launch_report(path), "")
 
-    def test_save_last_launch_report_ignores_write_failures(self):
+    def test_save_last_launch_report_reports_write_failures(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             parent_file = Path(tmpdir) / "not-a-directory"
             parent_file.write_text("", encoding="utf-8")
             path = parent_file / "last_launch_report.txt"
 
-            launch_history.save_last_launch_report("WolfLauncher launch output", path)
+            with self.assertRaises(OSError):
+                launch_history.save_last_launch_report("WolfLauncher launch output", path)
 
             self.assertEqual(launch_history.load_last_launch_report(path), "")
 

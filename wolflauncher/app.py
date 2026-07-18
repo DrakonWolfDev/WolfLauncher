@@ -41,7 +41,9 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtGui import QColor, QDesktopServices, QIcon, QPixmap, QAction
 
+from . import __version__
 from .config import (
+    CURATED_SERVERS_PATH,
     add_curated_server,
     ensure_servers_file,
     find_default_launcher_path,
@@ -193,7 +195,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("WolfLauncher")
         self.resize(1350, 720)
 
-        self.config_path = Path(__file__).resolve().parent.parent / "servers.yaml"
+        self.config_path = CURATED_SERVERS_PATH
         ensure_servers_file(self.config_path)
         self.servers = load_servers(self.config_path)
         self.curated_status_cache = load_status_cache()
@@ -248,7 +250,7 @@ class MainWindow(QMainWindow):
             elif server.favourite:
                 self.favourites.add(key)
         if self.favourites:
-            save_favourites(self.favourites)
+            self._save_favourites_index()
 
         self.launcher_path = QLineEdit(
             str(self.settings.get("launcher_path") or find_default_launcher_path())
@@ -2022,7 +2024,7 @@ class MainWindow(QMainWindow):
             for key, value in self.settings.items()
             if key.startswith("last_") and key.endswith("_auto_refresh_at")
         }
-        self.settings = {
+        updated_settings = {
             "launcher_path": self.launcher_path.text(),
             "player_name": self.player_name.text(),
             "launch_engine": self.launch_engine_key(),
@@ -2043,12 +2045,34 @@ class MainWindow(QMainWindow):
             if hasattr(self, "steam_master_endpoints")
             else "",
         }
-        self.settings.update(auto_refresh_timestamps)
-        save_settings(self.settings)
-        save_favourites(self.favourites)
+        updated_settings.update(auto_refresh_timestamps)
+        try:
+            save_settings(updated_settings)
+        except OSError as exc:
+            message = f"WolfLauncher could not save your settings.\n\n{exc}"
+            if silent:
+                if hasattr(self, "statusBar"):
+                    self.statusBar().showMessage(message.replace("\n\n", " "), 10000)
+            else:
+                QMessageBox.warning(self, "Could not save settings", message)
+            return False
+        self.settings = updated_settings
         self.apply_refresh_timer()
         if not silent:
             QMessageBox.information(self, "Settings saved", "WolfLauncher settings were saved.")
+        return True
+
+    def _save_favourites_index(self) -> bool:
+        try:
+            save_favourites(self.favourites)
+        except OSError as exc:
+            QMessageBox.warning(
+                self,
+                "Could not save favourites",
+                f"WolfLauncher could not save the favourites index.\n\n{exc}",
+            )
+            return False
+        return True
 
     def refresh_statuses(self):
         self.refresh_status_rows(list(range(len(self.servers))), "Last updated: refreshing...")
@@ -2450,13 +2474,13 @@ class MainWindow(QMainWindow):
 
         try:
             add_curated_server(self.config_path, server)
-        except ValueError as exc:
+        except (OSError, ValueError) as exc:
             QMessageBox.warning(self, "Could not add server", str(exc))
             return
 
         if server.favourite:
             self.favourites.add(server_key(server))
-            save_favourites(self.favourites)
+            self._save_favourites_index()
         self.add_curated_server_row(server)
         row = len(self.servers) - 1
         self.table.selectRow(row)
@@ -2518,7 +2542,7 @@ class MainWindow(QMainWindow):
 
         try:
             removed = remove_curated_server(self.config_path, server)
-        except ValueError as exc:
+        except (OSError, ValueError) as exc:
             QMessageBox.warning(self, "Could not remove server", str(exc))
             return
         if not removed:
@@ -2530,7 +2554,7 @@ class MainWindow(QMainWindow):
             return
 
         self.favourites.discard(server_key(server))
-        save_favourites(self.favourites)
+        self._save_favourites_index()
         del self.servers[row]
         self.table.removeRow(row)
         self._reindex_server_rows()
@@ -2553,7 +2577,7 @@ class MainWindow(QMainWindow):
 
         try:
             changed = update_curated_server(self.config_path, original, updated)
-        except ValueError as exc:
+        except (OSError, ValueError) as exc:
             QMessageBox.warning(self, "Could not edit server", str(exc))
             return
         if not changed:
@@ -2567,7 +2591,7 @@ class MainWindow(QMainWindow):
         self.favourites.discard(server_key(original))
         if updated.favourite:
             self.favourites.add(server_key(updated))
-        save_favourites(self.favourites)
+        self._save_favourites_index()
         self.servers[row] = updated
         self.update_curated_server_row(row)
         self.update_launch_button_text()
@@ -2599,7 +2623,7 @@ class MainWindow(QMainWindow):
         )
         try:
             changed = update_curated_server(self.config_path, original, updated)
-        except ValueError as exc:
+        except (OSError, ValueError) as exc:
             QMessageBox.warning(self, "Could not update server port", str(exc))
             return
         if not changed:
@@ -2694,7 +2718,7 @@ class MainWindow(QMainWindow):
         updated = replace(server, favourite=becoming_favourite)
         try:
             changed = update_curated_server(self.config_path, server, updated)
-        except ValueError as exc:
+        except (OSError, ValueError) as exc:
             QMessageBox.warning(self, "Could not update favourite", str(exc))
             return
         if not changed:
@@ -2716,7 +2740,7 @@ class MainWindow(QMainWindow):
         if updated.favourite:
             favourite_item.setForeground(QColor(COLOURS["accent"]))
         self.table.setItem(row, 0, favourite_item)
-        save_favourites(self.favourites)
+        MainWindow._save_favourites_index(self)
         self.refresh_curated_server_cards()
 
     def handle_refresh_finished(self):
@@ -3797,7 +3821,7 @@ class MainWindow(QMainWindow):
         elif provider == "steam_master":
             try:
                 addresses = self.steam_master_addresses()
-            except ValueError as exc:
+            except (OSError, ValueError) as exc:
                 provider_status = "WARN"
                 provider_detail = str(exc)
             else:
@@ -4047,7 +4071,14 @@ class MainWindow(QMainWindow):
         handoff_label = "native launch command" if self.launch_engine_key() == "native" else "external launcher"
         dialog = LaunchDialog(self, command, f"Launching {server.name}", handoff_label)
         dialog.exec()
-        save_last_launch_report(dialog.copyable_output_text())
+        try:
+            save_last_launch_report(dialog.copyable_output_text())
+        except OSError as exc:
+            QMessageBox.warning(
+                self,
+                "Could not save launch report",
+                f"The launch completed, but WolfLauncher could not save its support report.\n\n{exc}",
+            )
 
     def build_selected_launch_command(self, server: Server, row: int | None = None) -> list[str]:
         # Launch with the resolved IP address when available. This mirrors the
@@ -4244,6 +4275,9 @@ class MainWindow(QMainWindow):
 
 def main():
     app = QApplication(sys.argv)
+    app.setApplicationName("WolfLauncher")
+    app.setApplicationVersion(__version__)
+    app.setOrganizationName("WolfLauncher")
     apply_application_theme(app)
     window = MainWindow()
     window.show()

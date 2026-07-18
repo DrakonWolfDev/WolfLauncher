@@ -10,10 +10,12 @@ from typing import Any
 import yaml
 
 from .models import DiscoveredServer
+from .paths import user_data_dir
+from .persistence import ensure_private_directory
 
 
 SCHEMA_VERSION = 7
-DATA_DIR = Path.home() / ".local" / "share" / "wolflauncher"
+DATA_DIR = user_data_dir()
 SERVER_CACHE_PATH = DATA_DIR / "server_cache.sqlite3"
 
 SORT_COLUMNS = {
@@ -34,7 +36,7 @@ FILTER_COLUMNS = {
 
 
 def ensure_data_dir(path: Path = DATA_DIR) -> None:
-    path.mkdir(parents=True, exist_ok=True)
+    ensure_private_directory(path)
 
 
 def connect(path: Path = SERVER_CACHE_PATH) -> sqlite3.Connection:

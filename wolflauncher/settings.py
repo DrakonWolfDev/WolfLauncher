@@ -2,14 +2,19 @@ import json
 from pathlib import Path
 from typing import Any
 
-APP_DIR = Path.home() / ".config" / "wolflauncher"
+from .persistence import atomic_write_text, ensure_private_directory
+from .paths import user_config_dir
+
+
+APP_DIR = user_config_dir()
 SETTINGS_PATH = APP_DIR / "settings.json"
 FAVOURITES_PATH = APP_DIR / "favourites.json"
+CURATED_SERVERS_PATH = APP_DIR / "servers.yaml"
 DEFAULT_DISCOVERY_PROVIDER = "wolfapi_v1"
 
 
 def ensure_app_dir() -> None:
-    APP_DIR.mkdir(parents=True, exist_ok=True)
+    ensure_private_directory(APP_DIR)
 
 
 def load_json(path: Path, default: Any) -> Any:
@@ -23,11 +28,10 @@ def load_json(path: Path, default: Any) -> Any:
 
 
 def save_json(path: Path, data: Any) -> None:
-    ensure_app_dir()
-    tmp = path.with_suffix(path.suffix + ".tmp")
-    with tmp.open("w", encoding="utf-8") as handle:
-        json.dump(data, handle, indent=2)
-    tmp.replace(path)
+    serialized = json.dumps(data, indent=2) + "\n"
+    # Validate the complete representation before replacing the live file.
+    json.loads(serialized)
+    atomic_write_text(path, serialized)
 
 
 def load_settings() -> dict[str, Any]:

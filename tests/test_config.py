@@ -134,6 +134,50 @@ servers:
 
             self.assertEqual(path.read_text(encoding="utf-8"), example.read_text(encoding="utf-8"))
 
+    def test_ensure_servers_file_migrates_legacy_without_changing_source(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            path = root / "config" / "servers.yaml"
+            legacy = root / "checkout" / "servers.yaml"
+            example = root / "example.servers.yaml"
+            legacy.parent.mkdir()
+            legacy.write_text("servers: []\n# personal\n", encoding="utf-8")
+            example.write_text("servers: []\n# example\n", encoding="utf-8")
+
+            result = config.ensure_servers_file(path, example, legacy)
+
+            self.assertEqual(result, "migrated")
+            self.assertEqual(path.read_text(encoding="utf-8"), "servers: []\n# personal\n")
+            self.assertEqual(legacy.read_text(encoding="utf-8"), "servers: []\n# personal\n")
+
+    def test_ensure_servers_file_does_not_overwrite_existing_target_with_legacy(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            path = root / "config" / "servers.yaml"
+            legacy = root / "checkout" / "servers.yaml"
+            path.parent.mkdir()
+            legacy.parent.mkdir()
+            path.write_text("servers: []\n# target\n", encoding="utf-8")
+            legacy.write_text("servers: []\n# legacy\n", encoding="utf-8")
+
+            result = config.ensure_servers_file(path, legacy_path=legacy)
+
+            self.assertEqual(result, "existing")
+            self.assertEqual(path.read_text(encoding="utf-8"), "servers: []\n# target\n")
+            self.assertEqual(legacy.read_text(encoding="utf-8"), "servers: []\n# legacy\n")
+
+    def test_ensure_servers_file_rejects_invalid_legacy_without_creating_target(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            path = root / "config" / "servers.yaml"
+            legacy = root / "servers.yaml"
+            legacy.write_text("servers: not-a-list\n", encoding="utf-8")
+
+            with self.assertRaisesRegex(ValueError, "servers.*list"):
+                config.ensure_servers_file(path, legacy_path=legacy)
+
+            self.assertFalse(path.exists())
+
     def test_ensure_servers_file_preserves_existing_file(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "servers.yaml"
@@ -201,6 +245,7 @@ servers:
                     ),
                 ],
             )
+            self.assertTrue(path.with_suffix(".yaml.bak").is_file())
 
     def test_add_curated_server_rejects_duplicate_host_and_ports(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -227,6 +272,21 @@ servers:
                         query_port=27016,
                     ),
                 )
+
+    def test_add_curated_server_keeps_original_when_atomic_replace_fails(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "servers.yaml"
+            original = "servers: []\n"
+            path.write_text(original, encoding="utf-8")
+
+            with patch("wolflauncher.config.atomic_write_text", side_effect=OSError("disk full")):
+                with self.assertRaisesRegex(OSError, "disk full"):
+                    config.add_curated_server(
+                        path,
+                        Server("Example", "Community", "dayz.test", 2302, 27016),
+                    )
+
+            self.assertEqual(path.read_text(encoding="utf-8"), original)
 
 
 class RemoveCuratedServerTests(unittest.TestCase):
