@@ -94,6 +94,8 @@ cannot be run.
   Steam/DayZ handoff without an unnecessary download prompt.
 - A missing/outdated Workshop flow identified required work, obtained explicit
   confirmation, completed through Steam, rechecked readiness and launched.
-- Closing during a background check remained safe but its status-bar-only wait
-  appeared frozen. The subsequent fix replaces that feedback with a visible
-  modal progress dialog; packaged desktop retest remains pending.
+- Closing during a background check passed after the non-blocking shutdown
+  fix: the modal progress dialog appeared promptly and remained fluid, closing
+  the dialog did not kill the active worker, a repeated exit request restored
+  the feedback, and the application closed automatically when the check
+  finished.
