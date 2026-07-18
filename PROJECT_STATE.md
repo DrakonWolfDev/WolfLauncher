@@ -59,14 +59,17 @@ redaction boundary for known secrets, credential-shaped values, home paths and
 Steam userdata identifiers.
 
 The active hardening version is `0.9.0.dev0` and package/application metadata
-derive from `wolflauncher.__version__`. A wheel, source archive and local `.deb`
-now build with desktop resources, locked Python dependencies and an npm-locked
-GameDig 5.3.3 runtime; release-environment portability remains part of PR-06.
+derive from `wolflauncher.__version__`. Wheel, source archive and versioned
+`.deb` artifacts build with desktop resources, locked Python dependencies and
+an npm-locked GameDig 5.3.3 runtime. GitHub Actions run `29640723322` passed
+build, extraction, import, checksum and artifact-upload checks on Ubuntu
+22.04/Python 3.10 and Ubuntu 24.04/Python 3.12.
 
-PR-07 automation is implemented locally: repository-wide Ruff checks, scoped
-strict typing, dependency audit, compilation/whitespace checks and dual Ubuntu
-package smoke jobs use immutable action revisions. It remains open until the
-committed workflow passes remotely.
+PR-07 automation is active remotely: Ruff checks, scoped strict typing,
+dependency audit, compilation/whitespace checks and the supported Python test
+matrix pass alongside the dual-Ubuntu package jobs, with immutable action
+revisions. PR-08 packaged-artifact desktop validation is now the active release
+gate.
 
 `ROADMAP.md` contains milestones only. `docs/RELEASE_CHECKLIST.md` records the
 checks to run against a release candidate; neither file is a second backlog.

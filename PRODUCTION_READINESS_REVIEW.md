@@ -384,12 +384,12 @@ not merely source changes.
 - [x] **PR-05 — Establish credential and support-report policy.** Add owner-only
   permissions, optional desktop keyring storage with a documented fallback,
   centralized redaction and tests covering every copyable report.
-- [ ] **PR-06 — Create the reproducible application artifact.** Add
+- [x] **PR-06 — Create the reproducible application artifact.** Add
   `pyproject.toml`, package data, a console entry point, locked release
   dependencies and a versioned `gamedig`; build one first-class Linux package
   with desktop entry, icon, checksums, provenance and documented
   install/upgrade/uninstall behavior.
-- [ ] **PR-07 — Expand automated release gates.** Add lint/format, incremental
+- [x] **PR-07 — Expand automated release gates.** Add lint/format, incremental
   typing, dependency audit, immutable CI action pins, build/install/import and
   offscreen startup smoke checks while retaining the supported Python test
   matrix.
@@ -441,3 +441,13 @@ Completed successfully
 
 These checks establish a clean offline code baseline. They do not substitute
 for the packaged, real-Steam release matrix described above.
+
+Remote release-gate evidence on 2026-07-18:
+
+- GitHub Actions run `29640723322` passed the Python 3.10, 3.11 and 3.12 unit
+  matrices plus formatting, lint, scoped typing, dependency audit, compilation
+  and whitespace checks.
+- The same run built, extracted, imported, checksum-verified and uploaded
+  versioned `.deb` artifacts on Ubuntu 22.04/Python 3.10 and Ubuntu
+  24.04/Python 3.12. Clean desktop installation, upgrade and uninstall remain
+  PR-08 real-system evidence rather than CI claims.
