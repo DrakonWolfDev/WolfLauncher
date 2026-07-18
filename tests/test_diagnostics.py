@@ -45,7 +45,7 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertIn("WolfLauncher launch output", report)
         self.assertIn("Generated at: 2026-06-21T15:53:45+00:00", report)
         self.assertIn(
-            "Command: bash /home/andi/dayz-launcher.sh -s 81.152.152.55:3302 -p 3303 -n Andi --launch",
+            "Command: bash ~/dayz-launcher.sh -s 81.152.152.55:3302 -p 3303 -n Andi --launch",
             report,
         )
         self.assertIn("Output:\nStarting launcher...", report)

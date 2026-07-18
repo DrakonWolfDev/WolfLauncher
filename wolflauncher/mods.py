@@ -10,6 +10,7 @@ from typing import Any
 
 from .models import Server
 from .status import resolve_host
+from .redaction import redact_support_text
 
 DAYZSA_QUERY_URL = "https://dayzsalauncher.com/api/v1/query/{address}/{port}"
 WORKSHOP_URL = "https://steamcommunity.com/sharedfiles/filedetails/?id={mod_id}"
@@ -313,7 +314,7 @@ def format_mod_check_report(
 
     if not result.ok:
         lines.extend(["", f"Error: {result.error or 'mod check failed'}"])
-        return "\n".join(lines).strip()
+        return redact_support_text("\n".join(lines).strip())
 
     required = result.required_mods
     missing = result.missing_mods
@@ -342,7 +343,7 @@ def format_mod_check_report(
     if missing:
         lines.extend(["", "Missing Workshop IDs:"])
         lines.extend(f"- {mod.workshop_id}" for mod in missing)
-    return "\n".join(lines).strip()
+    return redact_support_text("\n".join(lines).strip())
 
 
 def format_missing_workshop_links(result: ModCheckResult) -> str:

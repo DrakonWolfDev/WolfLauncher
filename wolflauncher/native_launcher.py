@@ -19,6 +19,7 @@ from .platform_detection import (
     steam_mode_label,
 )
 from .status import resolve_host
+from .redaction import redact_support_text
 
 
 class NativeLaunchError(RuntimeError):
@@ -383,7 +384,7 @@ def format_native_launch_parity_report(
             "Native Steam command:",
             report.native_command_text,
         ])
-    return "\n".join(lines)
+    return redact_support_text("\n".join(lines))
 
 
 def format_native_launch_unavailable_context(
@@ -393,7 +394,7 @@ def format_native_launch_unavailable_context(
     selected_steam_mode: str,
 ) -> str:
     """Return copyable context when a full native parity report cannot be built."""
-    return "\n".join([
+    return redact_support_text("\n".join([
         "Selected native launch context:",
         f"- Steam install setting: {steam_mode_label(selected_steam_mode)}",
         f"- Detected Steam install: {install_label(install)}",
@@ -405,7 +406,7 @@ def format_native_launch_unavailable_context(
         f"- Connect target: {server.host}:{server.game_port}",
         f"- Query port: {server.query_port}",
         f"- Player name: {player_name}",
-    ])
+    ]))
 
 
 def native_launch_failure_details(

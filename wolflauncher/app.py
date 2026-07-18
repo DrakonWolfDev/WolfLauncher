@@ -143,6 +143,12 @@ from .server_browser_table import (
     update_browser_table_row,
 )
 from .server_map_atmosphere import ServerMapAtmosphereFrame
+from .redaction import redact_support_text
+from .secret_store import (
+    SecretStore,
+    load_steam_api_key,
+    settings_with_stored_steam_api_key,
+)
 from .settings import (
     DEFAULT_DISCOVERY_PROVIDER,
     load_favourites,
@@ -203,6 +209,8 @@ class MainWindow(QMainWindow):
         self.servers = load_servers(self.config_path)
         self.curated_status_cache = load_status_cache()
         self.settings = load_settings()
+        self.secret_store = SecretStore()
+        self.steam_api_key = load_steam_api_key(self.settings, self.secret_store)
         self.favourites = load_favourites()
         self.detected_steam_installs = []
         self.worker = None
@@ -1014,7 +1022,7 @@ class MainWindow(QMainWindow):
         discovery_settings.addRow("Automatic refresh", self.discovery_auto_refresh)
 
         self.steam_web_api_key = QLineEdit(
-            str(self.settings.get("steam_web_api_key") or "")
+            self.steam_api_key
             or os.environ.get("WOLFLAUNCHER_STEAM_WEB_API_KEY")
             or os.environ.get("STEAM_WEB_API_KEY")
             or ""
@@ -1022,7 +1030,8 @@ class MainWindow(QMainWindow):
         self.steam_web_api_key.setEchoMode(QLineEdit.Password)
         self.steam_web_api_key.setPlaceholderText("Steam Web API key")
         self.steam_web_api_key.editingFinished.connect(self.handle_settings_changed)
-        discovery_settings.addRow("Steam API key", self.steam_web_api_key)
+        key_storage = "desktop keyring" if self.secret_store.available() else "protected local file"
+        discovery_settings.addRow(f"Steam API key ({key_storage})", self.steam_web_api_key)
 
         self.steam_master_endpoints = QLineEdit(str(self.settings.get("steam_master_endpoints") or ""))
         self.steam_master_endpoints.setPlaceholderText("Comma separated host[:port]")
@@ -2041,13 +2050,18 @@ class MainWindow(QMainWindow):
             "discovery_auto_refresh": self.discovery_auto_refresh.isChecked()
             if hasattr(self, "discovery_auto_refresh")
             else bool(self.settings.get("discovery_auto_refresh", False)),
-            "steam_web_api_key": self.steam_web_api_key.text().strip()
-            if hasattr(self, "steam_web_api_key")
-            else str(self.settings.get("steam_web_api_key") or ""),
             "steam_master_endpoints": self.steam_master_endpoints.text().strip()
             if hasattr(self, "steam_master_endpoints")
             else "",
         }
+        api_key = (
+            self.steam_web_api_key.text().strip()
+            if hasattr(self, "steam_web_api_key")
+            else self.steam_api_key
+        )
+        updated_settings = settings_with_stored_steam_api_key(
+            updated_settings, api_key, self.secret_store
+        )
         updated_settings.update(auto_refresh_timestamps)
         try:
             save_settings(updated_settings)
@@ -2060,6 +2074,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.warning(self, "Could not save settings", message)
             return False
         self.settings = updated_settings
+        self.steam_api_key = api_key
         self.apply_refresh_timer()
         if not silent:
             QMessageBox.information(self, "Settings saved", "WolfLauncher settings were saved.")
@@ -3102,7 +3117,10 @@ class MainWindow(QMainWindow):
         QDesktopServices.openUrl(QUrl(url))
 
     def copy_to_clipboard(self, text: str, label: str = "Text"):
-        QApplication.clipboard().setText(text)
+        secrets = []
+        if hasattr(self, "steam_web_api_key"):
+            secrets.append(self.steam_web_api_key.text().strip())
+        QApplication.clipboard().setText(redact_support_text(text, secrets))
         self.statusBar().showMessage(f"{label} copied to clipboard", 3000)
 
     def copy_settings_health(self):

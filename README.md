@@ -346,6 +346,13 @@ User configuration:
 ~/.config/wolflauncher
 ```
 
+Settings and curated YAML are written atomically with owner-only permissions.
+WolfLauncher prefers the desktop Secret Service for the optional Steam Web API
+key when a usable keyring backend is available. Minimal/headless environments
+fall back to the owner-only settings file and label that behavior as a local
+fallback. Copyable support reports redact the home directory, Steam userdata
+identifiers, credential-shaped fields and known API-key environment values.
+
 User data cache:
 
 ```text

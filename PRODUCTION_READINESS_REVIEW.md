@@ -381,7 +381,7 @@ not merely source changes.
 - [x] **PR-04 — Make shutdown lifecycle complete.** Inventory every thread,
   timer and helper process; add coordinated cancellation/late-result handling;
   close SQLite last; test repeated closure during every asynchronous workflow.
-- [ ] **PR-05 — Establish credential and support-report policy.** Add owner-only
+- [x] **PR-05 — Establish credential and support-report policy.** Add owner-only
   permissions, optional desktop keyring storage with a documented fallback,
   centralized redaction and tests covering every copyable report.
 - [ ] **PR-06 — Create the reproducible application artifact.** Add

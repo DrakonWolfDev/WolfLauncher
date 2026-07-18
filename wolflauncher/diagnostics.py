@@ -22,6 +22,7 @@ from .platform_detection import (
     yes_no,
 )
 from .status import resolve_host
+from .redaction import redact_support_text
 
 
 PRIME_ENV_VARS = (
@@ -181,7 +182,7 @@ def format_settings_health_report(
     lines.append("")
     for row in rows:
         lines.append(" | ".join(value.strip() for value in row))
-    return "\n".join(lines).strip()
+    return redact_support_text("\n".join(lines).strip())
 
 
 def format_launch_output_report(
@@ -192,7 +193,7 @@ def format_launch_output_report(
     timestamp = generated_at or datetime.now(timezone.utc)
     if timestamp.tzinfo is None:
         timestamp = timestamp.replace(tzinfo=timezone.utc)
-    return "\n".join(
+    return redact_support_text("\n".join(
         [
             "WolfLauncher launch output",
             f"Generated at: {timestamp.astimezone(timezone.utc).replace(microsecond=0).isoformat()}",
@@ -202,7 +203,7 @@ def format_launch_output_report(
             "Output:",
             output_text.strip(),
         ]
-    ).strip()
+    ).strip())
 
 
 def launch_troubleshooting_report(
@@ -372,7 +373,7 @@ def run_diagnostics(
         except OSError as exc:
             lines.append(f"  {server.name}: {server.host} -> DNS failed: {exc}")
 
-    return "\n".join(lines)
+    return redact_support_text("\n".join(lines))
 
 
 def launch_engine_label(value: str) -> str:

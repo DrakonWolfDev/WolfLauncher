@@ -11,6 +11,9 @@
   pools and the WolfAPI refresh child process. SQLite now closes only after
   background ownership has ended; an overlong operation defers window closure
   and retries safely.
+- Added optional desktop-keyring storage for the Steam Web API key with an
+  owner-only local fallback, plus centralized support-report redaction for
+  credentials, home paths and Steam userdata identifiers.
 - Added a draggable Server Browser table/inspector workspace. The common table
   remains dense and moves Host/port/source/version/last-seen support detail into
   a selected-server panel with endpoint, map, players, ping, truth basis,
