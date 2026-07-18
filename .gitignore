@@ -8,6 +8,9 @@ venv/
 .pytest_cache/
 .coverage
 htmlcov/
+build/
+dist/
+*.egg-info/
 
 # Local curated server list. The tracked example.servers.yaml is the template.
 servers.yaml

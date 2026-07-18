@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools==80.10.2", "wheel==0.46.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wolflauncher"
+dynamic = ["version"]
+description = "Linux-first DayZ launcher with native Steam and Workshop integration"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "MIT"
+authors = [{name = "WolfLauncher contributors"}]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: X11 Applications :: Qt",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+]
+dependencies = [
+  "PySide6>=6.6",
+  "PyYAML>=6.0",
+  "keyring>=25.0",
+]
+
+[project.scripts]
+wolflauncher = "wolflauncher.app:main"
+
+[project.urls]
+Repository = "https://github.com/DrakonWolfDev/WolfLauncher"
+
+[tool.setuptools.dynamic]
+version = {attr = "wolflauncher.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["wolflauncher*"]
+
+[tool.setuptools.package-data]
+wolflauncher = ["assets/*.svg", "assets/*.png"]
+
+[tool.setuptools.data-files]
+"share/applications" = ["packaging/linux/wolflauncher.desktop"]
+"share/icons/hicolor/scalable/apps" = ["packaging/linux/wolflauncher.svg"]
+"share/wolflauncher" = ["example.servers.yaml"]
+"share/wolflauncher/external" = ["external/dayz-linux-cli-launcher/dayz-launcher.sh"]
+"share/doc/wolflauncher" = ["LICENSE", "THIRD_PARTY_NOTICES.md"]

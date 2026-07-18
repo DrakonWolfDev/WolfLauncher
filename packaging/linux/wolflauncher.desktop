@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=WolfLauncher
+Comment=Launch DayZ servers on Linux
+Exec=wolflauncher
+Icon=wolflauncher
+Terminal=false
+Categories=Game;
+StartupNotify=true

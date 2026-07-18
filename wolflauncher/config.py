@@ -1,4 +1,6 @@
 from pathlib import Path
+import os
+import sys
 import yaml
 
 from .models import Server
@@ -7,8 +9,23 @@ from .settings import CURATED_SERVERS_PATH
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
-VENDORED_LAUNCHER_PATH = PROJECT_ROOT / "external/dayz-linux-cli-launcher/dayz-launcher.sh"
-EXAMPLE_SERVERS_PATH = PROJECT_ROOT / "example.servers.yaml"
+INSTALL_SHARE_ROOT = Path(
+    os.environ.get("WOLFLAUNCHER_SHARE_ROOT", Path(sys.prefix) / "share" / "wolflauncher")
+)
+
+
+def _source_or_installed(source_path: Path, installed_path: Path) -> Path:
+    return source_path if source_path.is_file() else installed_path
+
+
+VENDORED_LAUNCHER_PATH = _source_or_installed(
+    PROJECT_ROOT / "external/dayz-linux-cli-launcher/dayz-launcher.sh",
+    INSTALL_SHARE_ROOT / "external/dayz-launcher.sh",
+)
+EXAMPLE_SERVERS_PATH = _source_or_installed(
+    PROJECT_ROOT / "example.servers.yaml",
+    INSTALL_SHARE_ROOT / "example.servers.yaml",
+)
 LEGACY_SERVERS_PATH = PROJECT_ROOT / "servers.yaml"
 
 DEFAULT_LAUNCHER_PATHS = [

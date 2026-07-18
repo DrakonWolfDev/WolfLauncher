@@ -30,7 +30,7 @@ vendored MIT shell launcher remains a visible compatibility fallback.
 - The Server Browser, Mods, Settings and Favourite Servers layouts have passed
   real-desktop review. Preserve their information-first hierarchy unless new
   evidence requires a change.
-- The automated suite contains 436 tests at this snapshot. The production
+- The automated suite contains 454 tests at this snapshot. The production
   review baseline passed the full suite, compilation and `git diff --check`.
 
 ## Active release boundary
@@ -39,9 +39,8 @@ The application is a strong beta, not yet a general production release. The
 authoritative remaining work is the ordered backlog in
 `PRODUCTION_READINESS_REVIEW.md`. Its P0 gates cover:
 
-1. release/version truth;
-2. reproducible packaging and locked release dependencies;
-3. expanded CI and a packaged-artifact desktop validation matrix.
+1. reproducible release-environment packaging validation;
+2. expanded CI and a packaged-artifact desktop validation matrix.
 
 XDG curated-data migration and recoverable persistence are implemented. The
 first run copies an existing checkout-local file without modifying it, writes
@@ -58,6 +57,11 @@ Credential storage now prefers an available desktop keyring and falls back to
 the owner-only atomic settings file. Copyable support text passes through one
 redaction boundary for known secrets, credential-shaped values, home paths and
 Steam userdata identifiers.
+
+The active hardening version is `0.9.0.dev0` and package/application metadata
+derive from `wolflauncher.__version__`. A wheel, source archive and local `.deb`
+now build with desktop resources, locked Python dependencies and an npm-locked
+GameDig 5.3.3 runtime; release-environment portability remains part of PR-06.
 
 `ROADMAP.md` contains milestones only. `docs/RELEASE_CHECKLIST.md` records the
 checks to run against a release candidate; neither file is a second backlog.

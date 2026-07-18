@@ -123,6 +123,28 @@ source .venv/bin/activate
 python main.py
 ```
 
+### Build artifacts
+
+Install the pinned build tools and build the wheel/source archive:
+
+```bash
+.venv/bin/pip install -r requirements-dev.txt
+.venv/bin/python -m build
+```
+
+Build the current-architecture Debian staging artifact with:
+
+```bash
+./scripts/build-deb.sh
+```
+
+The script bundles the exact Python dependency set from
+`requirements-release.txt`, the npm-lock-pinned GameDig runtime, desktop entry,
+icon, curated template, legacy fallback and license notices. It writes the
+`.deb` and SHA-256 file under ignored `dist/`. Release artifacts must be built
+and smoke-tested in the release CI environment; a developer-machine build is a
+local validation artifact, not evidence for every supported distro.
+
 ### Manual Linux Mint / Ubuntu Setup
 
 Install system dependencies:

@@ -14,6 +14,9 @@
 - Added optional desktop-keyring storage for the Steam Web API key with an
   owner-only local fallback, plus centralized support-report redaction for
   credentials, home paths and Steam userdata identifiers.
+- Added centralized package metadata, wheel/source builds, Linux desktop
+  integration and a `.deb` staging build that bundles the locked Python runtime
+  and GameDig 5.3.3 dependency tree with artifact checksums.
 - Added a draggable Server Browser table/inspector workspace. The common table
   remains dense and moves Host/port/source/version/last-seen support detail into
   a selected-server panel with endpoint, map, players, ping, truth basis,

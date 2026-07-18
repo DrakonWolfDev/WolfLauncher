@@ -1,0 +1,9 @@
+{
+  "name": "wolflauncher-node-runtime",
+  "version": "0.9.0-dev",
+  "private": true,
+  "description": "Pinned GameDig runtime bundled with WolfLauncher",
+  "dependencies": {
+    "gamedig": "5.3.3"
+  }
+}

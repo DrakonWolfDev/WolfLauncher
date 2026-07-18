@@ -368,7 +368,7 @@ not merely source changes.
   as the single backlog; reduce `PROJECT_STATE.md` and `ROADMAP.md` to their
   distinct roles; update stale architecture, README and release-checklist
   claims; remove superseded design mockups.
-- [ ] **PR-01 — Choose the production version and centralize it.** Make package,
+- [x] **PR-01 — Choose the production version and centralize it.** Make package,
   application, tag and documentation metadata derive from one source. Update
   the changelog only when the release candidate is cut.
 - [x] **PR-02 — Move curated YAML into XDG config.** Seed new profiles from the
