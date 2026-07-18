@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import Any
 
 from .paths import user_config_dir
-from .persistence import atomic_write_text, ensure_private_directory
+from .persistence import atomic_write_text, ensure_private_directory, ensure_private_file
 
 APP_DIR = user_config_dir()
 SETTINGS_PATH = APP_DIR / "settings.json"
@@ -19,6 +19,7 @@ def ensure_app_dir() -> None:
 def load_json(path: Path, default: Any) -> Any:
     try:
         if path.exists():
+            ensure_private_file(path)
             with path.open("r", encoding="utf-8") as handle:
                 return json.load(handle)
     except (OSError, json.JSONDecodeError):

@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 
 from .models import Server
-from .persistence import atomic_write_text
+from .persistence import atomic_write_text, ensure_private_file
 from .settings import CURATED_SERVERS_PATH
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -61,6 +61,7 @@ def ensure_servers_file(
     legacy_path: Path | None = None,
 ) -> str:
     if path.exists():
+        ensure_private_file(path)
         return "existing"
 
     migration_source = LEGACY_SERVERS_PATH if path == CURATED_SERVERS_PATH else None

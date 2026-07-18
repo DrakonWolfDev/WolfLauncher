@@ -5,11 +5,21 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from wolflauncher.persistence import atomic_write_text
+from wolflauncher.persistence import atomic_write_text, ensure_private_file
 from wolflauncher.settings import save_json
 
 
 class AtomicPersistenceTests(unittest.TestCase):
+    def test_existing_private_file_permissions_are_tightened(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "settings.json"
+            path.write_text("{}\n", encoding="utf-8")
+            path.chmod(0o664)
+
+            ensure_private_file(path)
+
+            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
+
     def test_atomic_write_creates_private_file_and_parent(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "nested" / "value.txt"

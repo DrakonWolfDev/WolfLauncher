@@ -18,6 +18,15 @@ def ensure_private_directory(path: Path) -> None:
         pass
 
 
+def ensure_private_file(path: Path) -> None:
+    if not path.is_file():
+        return
+    try:
+        path.chmod(PRIVATE_FILE_MODE)
+    except OSError:
+        pass
+
+
 def atomic_write_text(
     path: Path,
     text: str,
