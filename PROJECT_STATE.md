@@ -92,6 +92,30 @@ waiver before PR-08 closes.
 `ROADMAP.md` contains milestones only. `docs/RELEASE_CHECKLIST.md` records the
 checks to run against a release candidate; neither file is a second backlog.
 
+## Coordinated completion strategy
+
+Run the remaining product work as three coordinated lanes rather than making
+one platform block all progress:
+
+1. **WolfAPI security and production hardening is the primary engineering
+   lane.** Work through the P0/P1 findings in WolfAPI's
+   `PRODUCTION_READINESS_REVIEW.md` and authoritative
+   `API_COMPLETION_CHECKLIST.md` in small independently tested changes.
+2. **Native Steam is the validation lane.** Preserve the validated launch path
+   and use available systems to collect helper-lifecycle, secondary-library and
+   exact-release-artifact evidence. A second machine running the same Mint
+   version adds installation diversity but does not replace other-distribution
+   evidence or explicit waivers.
+3. **Flatpak Steam is an experimental lane behind its safe fallback.** Keep
+   automatic Workshop helpers disabled until their lifecycle is proven; retain
+   manual Steam Workshop actions plus **Recheck mods**, and merge only changes
+   that cannot regress native Steam.
+
+At each stable checkpoint, run the affected repository's complete checks,
+commit and push each repository independently, test native/Flatpak behavior
+when relevant, synchronize shared truth documents and remove merged experiment
+branches. Windows remains outside the current implementation scope.
+
 ## Stable product decisions
 
 - Curated YAML is the user-owned server source; SQLite is a disposable
