@@ -9,6 +9,10 @@ ROOT = Path(__file__).resolve().parent.parent
 
 
 class PackagingMetadataTests(unittest.TestCase):
+    def test_debian_package_declares_qt_egl_runtime(self):
+        script = (ROOT / "scripts/build-deb.sh").read_text(encoding="utf-8")
+        self.assertIn(", libegl1", script)
+
     def test_pyproject_derives_version_from_package(self):
         text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
         self.assertIn('version = {attr = "wolflauncher.__version__"}', text)

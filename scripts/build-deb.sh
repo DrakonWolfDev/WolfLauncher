@@ -108,7 +108,7 @@ Version: $debian_version
 Section: games
 Priority: optional
 Architecture: $architecture
-Depends: python3 (>= $python_version), python3 (<< $python_next_minor)
+Depends: python3 (>= $python_version), python3 (<< $python_next_minor), libegl1
 Installed-Size: $installed_size
 Maintainer: WolfLauncher contributors
 Homepage: https://github.com/DrakonWolfDev/WolfLauncher

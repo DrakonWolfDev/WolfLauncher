@@ -100,6 +100,11 @@ jobs:
           WOLFLAUNCHER_ARTIFACT_LABEL: ${{ matrix.label }}
         run: ./scripts/build-deb.sh
 
+      - name: Install declared GUI runtime dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libegl1
+
       - name: Inspect and smoke-test extracted package
         env:
           QT_QPA_PLATFORM: offscreen
