@@ -122,3 +122,14 @@ cannot be run.
   the dialog did not kill the active worker, a repeated exit request restored
   the feedback, and the application closed automatically when the check
   finished.
+
+### Next-machine handoff
+
+- Use the second Linux Mint 22 machine for an independent clean install and
+  Flatpak Steam/DayZ validation.
+- Re-run startup, settings/curated migration, status refresh, native Connect,
+  ready/missing Workshop flows, shutdown during work and report redaction with
+  Flatpak explicitly selected.
+- Mint 21 and Ubuntu 22.04/24.04 real-desktop rows still require machines or
+  explicit release-scope waivers. CI package build/startup evidence alone is
+  not recorded as desktop certification.

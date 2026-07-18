@@ -6,6 +6,7 @@ from unittest.mock import patch
 
 from wolflauncher.platform_detection import (
     SteamInstall,
+    _flatpak_steam_installed,
     best_install,
     best_install_from,
     dayz_process_check,
@@ -50,6 +51,22 @@ def make_install(
 
 
 class PlatformDetectionTests(unittest.TestCase):
+    def test_flatpak_steam_requires_installed_application(self):
+        with patch("wolflauncher.platform_detection.shutil.which", return_value="/usr/bin/flatpak"):
+            with patch(
+                "wolflauncher.platform_detection.subprocess.run",
+                return_value=subprocess.CompletedProcess([], 1),
+            ):
+                self.assertFalse(_flatpak_steam_installed())
+
+    def test_flatpak_steam_detects_installed_application(self):
+        with patch("wolflauncher.platform_detection.shutil.which", return_value="/usr/bin/flatpak"):
+            with patch(
+                "wolflauncher.platform_detection.subprocess.run",
+                return_value=subprocess.CompletedProcess([], 0),
+            ):
+                self.assertTrue(_flatpak_steam_installed())
+
     def test_install_label_names_supported_steam_modes(self):
         self.assertEqual(install_label(make_install("native")), "Native Steam")
         self.assertEqual(install_label(make_install("flatpak")), "Flatpak Steam")

@@ -30,7 +30,7 @@ vendored MIT shell launcher remains a visible compatibility fallback.
 - The Server Browser, Mods, Settings and Favourite Servers layouts have passed
   real-desktop review. Preserve their information-first hierarchy unless new
   evidence requires a change.
-- The automated suite contains 454 tests at this snapshot. The production
+- The automated suite contains 460 tests at this snapshot. The production
   review baseline passed the full suite, compilation and `git diff --check`.
 
 ## Active release boundary
@@ -70,6 +70,15 @@ dependency audit, compilation/whitespace checks and the supported Python test
 matrix pass alongside the dual-Ubuntu package jobs, with immutable action
 revisions. PR-08 packaged-artifact desktop validation is now the active release
 gate.
+
+PR-08 has a dated packaged-artifact pass on Linux Mint 22.3 with native Steam:
+clean install, XDG migration, settings/cache preservation, native and external
+handoffs, Steam stopped/running, ready and missing Workshop flows, DNS/raw-IP
+targets, offline cache, redacted reports, responsive shutdown, uninstall and
+reinstall all passed. The next available test machine is also Mint 22 but has
+Flatpak Steam; use it for an independent clean install and the Flatpak row.
+Mint 21 and Ubuntu desktop rows remain unavailable and need evidence or an
+explicit release-scope waiver before PR-08 closes.
 
 `ROADMAP.md` contains milestones only. `docs/RELEASE_CHECKLIST.md` records the
 checks to run against a release candidate; neither file is a second backlog.

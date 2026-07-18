@@ -62,6 +62,21 @@ def _is_running(process_name: str) -> bool:
 def _flatpak_steam_running() -> bool:
     if not shutil.which("flatpak"):
         return False
+
+
+def _flatpak_steam_installed() -> bool:
+    if not shutil.which("flatpak"):
+        return False
+    try:
+        result = subprocess.run(
+            ["flatpak", "info", FLATPAK_STEAM_ID],
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
     try:
         result = subprocess.run(["flatpak", "ps"], capture_output=True, text=True, timeout=3)
         return FLATPAK_STEAM_ID in result.stdout
@@ -224,14 +239,15 @@ def detect_steam() -> list[SteamInstall]:
         )
     )
 
+    flatpak_installed = _flatpak_steam_installed()
     flatpak_root = FLATPAK_STEAM_ROOT if FLATPAK_STEAM_ROOT.exists() else None
     flatpak_libraries = _library_steamapps_from_root(flatpak_root)
     flatpak_steamapps = _select_visible_steamapps(flatpak_libraries)
     installs.append(
         SteamInstall(
             mode="flatpak",
-            executable=FLATPAK_STEAM_ID if shutil.which("flatpak") else "",
-            running=_flatpak_steam_running(),
+            executable=FLATPAK_STEAM_ID if flatpak_installed else "",
+            running=_flatpak_steam_running() if flatpak_installed else False,
             root=flatpak_root,
             steamapps=flatpak_steamapps,
             dayz_dir=_dayz_from_libraries(flatpak_libraries),
