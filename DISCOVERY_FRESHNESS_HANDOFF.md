@@ -291,6 +291,12 @@ until a deliberate later removal.
 
 ## Known follow-up dependencies
 
+- Direct DayZ `A2S_RULES` mod-manifest research is paused and handed off in
+  `../WolfAPI/DIRECT_DAYZ_MOD_QUERY_HANDOFF.md`. Six isolated New Dawn samples
+  matched DZSA Workshop IDs exactly across 5--64 required mods, but Launcher
+  behavior must not change until strict decoding fixtures, broader evidence and
+  a bounded API worker canary pass.
+
 - WolfAPI has a transactional port-correction operation, but automatic use
   still needs trustworthy corrected-port evidence; A2S reachability alone does
   not provide it.
