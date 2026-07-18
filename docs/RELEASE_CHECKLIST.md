@@ -7,6 +7,7 @@ behavior that CI cannot reproduce.
 ## Automated checks
 
 - [ ] `PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest discover`
+- [ ] `.venv/bin/python -m compileall -q main.py wolflauncher scripts`
 - [ ] `git diff --check`
 - [ ] GitHub Actions passes on every supported Python version.
 - [ ] `wolflauncher.__version__`, `CHANGELOG.md`, `README.md`, `ROADMAP.md` and
@@ -29,15 +30,43 @@ diagnostics report, mod report and launch report for any failure.
 - [ ] An existing saved external-launcher selection is preserved.
 - [ ] Unmodded server reaches Steam/DayZ handoff.
 - [ ] Fully installed mod set reaches Steam/DayZ handoff.
-- [ ] Partially missing mod set is blocked and lists the missing Workshop pages.
+- [ ] Missing mod set requests confirmed Steam subscriptions/downloads, waits
+      for helper exit, rechecks readiness and then reaches handoff.
+- [ ] Installed-but-outdated item is updated and rechecked before handoff.
+- [ ] Helper stall or incomplete Steam state exits with an actionable result and
+      continues to block launch.
+- [ ] Hiding and reopening the Workshop monitor preserves one helper session.
+- [ ] Closing WolfLauncher during Workshop work leaves no orphan helper.
 - [ ] Steam already running reaches handoff.
 - [ ] Steam initially stopped can be started by the handoff.
+- [ ] Steam stopping during Workshop work fails safely.
+- [ ] Secondary Steam library is detected and used.
 - [ ] DNS-hosted server uses the resolved connect target.
+- [ ] Raw-IP server uses the expected connect target.
+- [ ] Offline startup preserves and displays the existing discovered cache.
 - [ ] External launcher remains selectable and can perform a fallback handoff.
 
-Automatic Workshop subscription and downloading are not release requirements.
-Mod management remains read-only and requires the user to approve subscriptions
-through Steam.
+Workshop changes always require explicit confirmation and are performed by the
+signed-in Steam client. WolfLauncher must not download bytes itself or remove
+subscriptions.
+
+## Packaged artifact checks
+
+Record the OS, package version, Steam client, Proton and `gamedig` versions for
+each run. Required release rows are Mint 21/22 and Ubuntu 22.04/24.04, covering
+native and Flatpak Steam where supported; record an explicit waiver when a row
+cannot be run.
+
+- [ ] Clean install works without a repository checkout or global unversioned
+      npm mutation.
+- [ ] Application starts with its code/resources mounted read-only.
+- [ ] First run seeds curated YAML under XDG config.
+- [ ] Existing checkout-local curated YAML migrates without data loss or
+      overwriting either source.
+- [ ] Upgrade from the prior release preserves settings, favourites, curated
+      YAML and SQLite schema data.
+- [ ] Uninstall removes packaged files without removing user data.
+- [ ] Release artifact checksum and provenance are published.
 
 ## Release
 

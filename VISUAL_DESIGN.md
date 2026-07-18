@@ -7,7 +7,7 @@ a terminal-oriented utility. It remains Linux-first, but the visual system and
 interaction model must translate cleanly to a later Windows version without
 teaching users a different workflow on each platform.
 
-The HTML files under `Theme ideas/` are visual references, not an
+Historical HTML mockups were visual references, not an
 implementation specification. Their warm charcoal surfaces, restrained amber
 accent, muted technical detail and clear status treatment are the intended
 direction. WolfLauncher should reproduce that visual language with native

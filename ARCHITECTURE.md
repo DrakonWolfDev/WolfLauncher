@@ -1,6 +1,8 @@
 # Architecture
 
-WolfLauncher is a Python + PySide6 Linux-first DayZ launcher. At the end of v0.5.2 it is a working GUI wrapper around a proven external shell launcher, with pre-launch checks moved into the application.
+WolfLauncher is a Python + PySide6 Linux-first DayZ launcher. Its validated
+native Python engine is the default, with a vendored external shell launcher
+retained as a compatibility fallback during production hardening.
 
 ## Runtime Shape
 
@@ -170,7 +172,20 @@ Selected server
   -> display installed/missing mods and Workshop links
 ```
 
-The normal mod-manager path remains read-only and advisory. When experimental Steam integration is enabled and Steam is running, its local-directory result is augmented by an isolated batch `ISteamUGC::GetItemState` query so installed-but-outdated, pending and downloading items do not count as launch-ready. An explicitly confirmed resolution path can pass those unready IDs to the signed-in Steam client. `workshop_subscription.py` runs every Steamworks session in a spawned helper process, dynamically loads the existing official `libsteam_api.so`, monitors Steam state and treats both Steam state and Workshop directories as readiness evidence. The helper exits before launch is re-enabled so Steam cannot retain WolfLauncher's long-lived GUI process as the DayZ app-ID owner. On restart, numeric folders in Steam's `workshop/downloads/221100` staging area provide a conservative recovery signal only when they match the selected server's still-unready required IDs; WolfLauncher reports possible Steam activity and requires a fresh mod check rather than treating the Workshop catalogue as a reliable live queue. WolfLauncher does not download bytes itself, silently unsubscribe, or remove content; manual Workshop pages remain the fallback.
+The ordinary mod check is read-only and advisory. When Steam is running, its
+local-directory result is augmented by an isolated batch
+`ISteamUGC::GetItemState` query so installed-but-outdated, pending and
+downloading items do not count as launch-ready. After explicit confirmation, a
+resolution path can pass those unready IDs to the signed-in Steam client.
+`workshop_subscription.py` runs every Steamworks session in a spawned helper
+process, dynamically loads the existing official `libsteam_api.so`, monitors
+Steam state and treats both Steam state and Workshop directories as readiness
+evidence. The helper exits before launch is re-enabled so Steam cannot retain
+WolfLauncher's long-lived GUI process as the DayZ app-ID owner. On restart,
+numeric folders in Steam's `workshop/downloads/221100` staging area provide a
+conservative recovery signal only when they match the selected server's still-
+unready required IDs. WolfLauncher does not download bytes itself, silently
+unsubscribe or remove content; manual Workshop pages remain the fallback.
 The Mods tab can copy a timestamped mod-check report with server target, required
 mod counts, installed/missing state, Workshop URLs and missing Workshop IDs for
 native parity testing and support. It can also copy only the missing Workshop
@@ -178,7 +193,8 @@ links for manual Steam subscription.
 
 ## Launching
 
-WolfLauncher v0.5.2 calls the external launcher script through a guarded launch workflow:
+WolfLauncher uses a guarded native launch workflow by default. The external
+fallback preserves this command contract:
 
 ```text
 bash dayz-launcher.sh -s resolved_ip:game_port -p query_port -n player_name --launch
@@ -189,7 +205,10 @@ Before launch, the GUI checks that:
 - DayZ is detected.
 - The DayZ Workshop folder is detected.
 - Steam is running, or the user explicitly chooses to launch anyway.
-- The latest mod check for the selected server has no missing required mods, or the user explicitly chooses to launch anyway.
+- The latest mod check belongs to the selected server and its selected Steam
+  install context. The native path requires every required Workshop directory
+  and a fresh Steam item-state check before handoff; the external fallback
+  retains its explicit warning boundary.
 
 The launch dialog shows the generated command and captures launcher output. Exit code 0 means the command was successfully handed off to Steam; it does not prove that Proton or DayZ reached the main menu.
 
@@ -209,7 +228,7 @@ This behavior is the reference contract for any future native Python launcher en
 The native Python engine lives behind `wolflauncher.native_launcher`.
 It currently prepares the shell launcher's shortened `@base64modid` symlinks,
 checks installed Workshop mod directories and metadata, resolves the server host,
-and generates the native or Flatpak Steam `-applaunch 221100` command line. The
+and generates the native or Flatpak Steam `-applaunch 221100` command line.
 The GUI uses the native engine by default. Real-world native Steam and Flatpak
 Steam handoffs have reached DayZ process detection with Steam running and stopped,
 including unmodded, fully modded and partially missing-mod server cases. The

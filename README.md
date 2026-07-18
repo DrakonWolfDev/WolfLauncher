@@ -360,16 +360,14 @@ or via a native `.deb` package.
 
 ## Roadmap
 
-Next active target: v0.9 native launcher engine hardening.
+Next active target: v0.9 production hardening.
 
-Planned future work includes:
-
-- Continued Server Browser polish.
-- Continued hybrid-GPU/NVIDIA PRIME investigation after reproducible data is available.
-- Improved Steam/Proton handoff diagnostics from real-world failures.
-- Continued native and Flatpak Steam regression testing as real-world failures are reported.
-- Native packaging and installation.
-- Eventual internal launcher engine replacement once parity is proven.
+The authoritative ordered work list is in
+`PRODUCTION_READINESS_REVIEW.md`; `ROADMAP.md` records release milestones.
+Current gates cover XDG user-data placement, recoverable persistence, shutdown
+lifecycle, credential/report security, reproducible packaging, expanded CI and
+packaged-artifact desktop validation. NVIDIA PRIME investigation remains
+evidence-driven.
 
 ## License
 
