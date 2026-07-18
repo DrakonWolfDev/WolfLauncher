@@ -57,6 +57,8 @@ def _status_to_dict(status: ServerStatus) -> dict[str, object]:
         "map_name": status.map_name,
         "players": status.players,
         "time": status.time,
+        "day_acceleration": status.day_acceleration,
+        "night_acceleration": status.night_acceleration,
         "version": status.version,
         "ping": status.ping,
         "password": status.password,
@@ -74,6 +76,8 @@ def _status_from_dict(data: dict) -> ServerStatus:
         map_name=str(data.get("map_name") or ""),
         players=str(data.get("players") or ""),
         time=str(data.get("time") or ""),
+        day_acceleration=_optional_float(data.get("day_acceleration")),
+        night_acceleration=_optional_float(data.get("night_acceleration")),
         version=str(data.get("version") or ""),
         ping=str(data.get("ping") or ""),
         password=bool(data.get("password", False)),
@@ -81,3 +85,11 @@ def _status_from_dict(data: dict) -> ServerStatus:
         connect=str(data.get("connect") or ""),
         error=str(data.get("error") or ""),
     )
+
+
+def _optional_float(value) -> float | None:
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed > 0 else None

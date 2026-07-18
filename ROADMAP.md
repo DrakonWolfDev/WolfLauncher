@@ -173,20 +173,22 @@ Visual-polish review note:
 - Completed/final — Favourite Servers passed final real-desktop review. Preserve
   its card-only hierarchy and interactions; remaining visual work belongs to
   Server Browser or shared cross-tab flow rather than another Servers redesign.
-- The shared QSS/theme-token foundation from `VISUAL_DESIGN.md` is complete, including the Qt fallback palette, transient dialogs, technical typography and semantic action roles. The user confirmed the foundation at different resolutions. The perimeter atmosphere, wolf identity mark and restrained tab/action icon set are implemented. Preserve this hierarchy and finish the current real-desktop Browser/Mods interaction review before considering grouped Settings health sections.
-- In progress — Server Browser gates its direct actions to a real row and now
+- The shared QSS/theme-token foundation from `VISUAL_DESIGN.md` is complete, including the Qt fallback palette, transient dialogs, technical typography and semantic action roles. The user confirmed the foundation at different resolutions. The perimeter atmosphere, wolf identity mark and restrained tab/action icon set are implemented. Preserve the completed Browser/Mods hierarchy.
+- Completed/final-for-now — Server Browser gates its direct actions to a real row and
   pairs its dense scanning table with a draggable selected-server inspector.
   The inspector presents semantic status, endpoint, existing map/player/ping
   data, truth basis, features, mod readiness and support diagnostics without
-  duplicating the selection in a footer. Region remains unavailable and Game
-  Time explicitly unknown until their planned data fields are implemented.
+  duplicating the selection in a footer. Region now uses trusted API country
+  metadata, while locally enriched Game Time includes a 24-hour sun/moon cue
+  and the effective DayZ time multiplier.
   Mods separates server identity,
   readiness guidance and technical check detail, enables mod resolution only
   when needed, and retains a primary Launch action. Discovered-server
   inspection also has a contextual Back to Server Browser action. Explicit tab
-  order and keyboard row activation cover the principal path. Complete the
-  real-desktop review of Browser split ratio/table density and the
-  inspect/resolve/launch handoff.
+  order and keyboard row activation cover the principal path. Real-desktop
+  review approved the split ratio, table density, dynamic column sizing,
+  status/mod pills and inspect/resolve/launch handoff as the current best fit.
+  Reopen it only for evidence-driven tweaks or new requirements.
 - Completed — Mods now uses a draggable table/inspector split. The dense table
   keeps only Status, Name, Workshop ID and Size; selection drives a right-hand
   panel with an optional asynchronous thumbnail, fuller description, size,

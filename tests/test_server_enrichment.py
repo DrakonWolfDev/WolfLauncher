@@ -45,6 +45,8 @@ class ServerEnrichmentTests(unittest.TestCase):
                 modded=True,
                 connect="203.0.113.10:2302",
                 time="14:30",
+                day_acceleration=6,
+                night_acceleration=4,
             ),
             "2026-06-20T14:00:00+00:00",
         )
@@ -54,6 +56,9 @@ class ServerEnrichmentTests(unittest.TestCase):
         self.assertEqual(enriched.game_port, 2302)
         self.assertEqual(enriched.query_port, 27016)
         self.assertEqual(enriched.map_name, "namalsk")
+        self.assertEqual(enriched.game_time, "14:30")
+        self.assertEqual(enriched.day_acceleration, 6)
+        self.assertEqual(enriched.night_acceleration, 4)
         self.assertEqual(enriched.players_current, 12)
         self.assertEqual(enriched.players_max, 60)
         self.assertEqual(enriched.ping_ms, 42)

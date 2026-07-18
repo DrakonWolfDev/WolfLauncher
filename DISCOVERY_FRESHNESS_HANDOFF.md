@@ -30,7 +30,7 @@ Current shared baseline:
 
 - WolfAPI migration `20260713_0007` is deployed with its bounded metadata job
   persistently enabled in the production host's ignored `.env`;
-- WolfLauncher SQLite schema v6 persists count/status/timestamps/error/hash,
+- WolfLauncher SQLite schema v7 persists count/status/timestamps/error/hash,
   advisory quality flags and nullable country provenance. API metadata remains browsing evidence; direct
   **Inspect mods** and launch-time lookup remain final truth. The advanced,
   opt-in quality hide control filters cached rows and remote v1 list/name-search
@@ -67,7 +67,7 @@ the current directory. Samples coherently showed impossible `bots=255`
 telemetry and dense same-host populations, while some names could still be
 legitimate communities with bad provider data. WolfLauncher therefore adds an
 explicit advanced **Hide quality warnings** filter, off by default. SQLite
-schema v6 persists the advisory flags so cached/offline filtering agrees with
+schema v7 persists the advisory flags so cached/offline filtering agrees with
 v1 list and name-search requests. Exact resolution remains available, but the
 local visibility filter still applies. Visible flagged rows say the warning is
 advisory, not proof that a server is unsafe.
@@ -140,7 +140,7 @@ Legacy `/api/servers` remains compatibility-only and endpoint-keyed.
 
 Foundation implemented locally on 2026-07-13:
 
-- SQLite schema v6 migrates earlier layouts in place and
+- SQLite schema v7 migrates earlier layouts in place and
   combines Workshop metadata with stable IDs, aliases, freshness and
   validation state, while retaining WolfAPI mod-metadata provenance;
 - WolfAPI rows are merged by stable ID so corrected ports move one row;
@@ -203,18 +203,18 @@ servers only, v1 automatic refresh is HTTP-only and discovered-row live probing
 remains the explicit **Enrich visible** action. No probing removal is required;
 curated, selected-server and launch-time checks remain intentionally local.
 
-## Planned Server Browser location and game-time fields
+## Implemented Server Browser location and game-time fields
 
-The next Server Browser data pass should keep stable discovery metadata separate
+The completed Server Browser data pass keeps stable discovery metadata separate
 from rapidly changing live server state:
 
-- **Game Time** is Launcher-owned live state. `gamedig` already returns it as
-  `ServerStatus.time`; discovered-server enrichment currently discards it. Add a
-  nullable `game_time` field to `DiscoveredServer`, persist it through an
-  additive SQLite schema migration, populate it only from explicit local
-  enrichment and show an honest unknown value until measured. Do not initially
-  publish game time through WolfAPI because a cached directory value would age
-  quickly and could look live when it is not.
+- **Game Time** is Launcher-owned live state. SQLite schema v7 now retains
+  `ServerStatus.time` plus GameDig's DayZ day/night acceleration values through
+  explicit local enrichment. The compact table uses a 24-hour value, broad
+  sun/moon cue and effective multiplier, while unknown remains explicit until
+  measured. Provider merges preserve the local observation. Do not publish
+  game time through WolfAPI because a cached directory value would age quickly
+  and could look live when it is not.
 - **Region** in the user interface means a trustworthy geographical country,
   not WolfAPI's existing integer `region` field. That existing value is the
   Steam master-server region code and is frequently `-1`; preserve it for
@@ -240,7 +240,7 @@ are implemented.
 
 ### Country implementation record — 2026-07-18
 
-The Server Browser visual pass remains the stable presentation target. The
+The Server Browser visual pass is approved as the stable presentation target. The
 selected-server inspector uses a dense table/master-detail split, grouped
 selectable metadata and an original map-family atmosphere in otherwise-unused
 lower space. Do not reopen that hierarchy when adding the fields; populate the
@@ -258,13 +258,14 @@ Country work is complete across both repositories:
    and resolve rows. Null remains unknown; the existing integer `region` stays
    a separate Steam compatibility field. Measure coverage before considering
    any IP-geolocation fallback.
-4. WolfLauncher has the matching nullable model and SQLite schema-v6 fields,
+4. WolfLauncher has the matching nullable model and SQLite schema-v7 fields,
    parse all v1 response shapes, preserve country across stable-ID merges and
    local enrichment, and populate the inspector's existing Region value.
-5. Remaining separate work is to retain locally measured `ServerStatus.time` as nullable
-   `game_time` through discovered-server enrichment and Launcher SQLite, then
-   populate the existing Game Time value. Do not publish this rapidly changing
-   state through WolfAPI initially.
+5. WolfLauncher now retains locally measured game time and GameDig's published
+   day/night acceleration values through enrichment and SQLite, and populates
+   the existing Game Time value. The sun/moon cue uses 06:00/18:00 display
+   boundaries; night acceleration is the documented day multiplier times night
+   factor. This rapidly changing state remains Launcher-only.
 
 Test and commit WolfAPI and WolfLauncher separately. Deployment and migration
 readiness remain distinct from source completion; keep the legacy API fallback

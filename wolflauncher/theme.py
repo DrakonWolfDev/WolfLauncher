@@ -33,6 +33,11 @@ def theme_icon(name: str) -> QIcon:
     return QIcon(str(ASSETS_DIR / f"icon-{name}.svg"))
 
 
+def time_icon(is_day: bool) -> QIcon:
+    """Return the scalable DayZ game-time phase icon."""
+    return QIcon(str(ASSETS_DIR / ("time-sun.svg" if is_day else "time-moon.svg")))
+
+
 def _build_stylesheet() -> str:
     c, s = COLOURS, SPACING
     check_icon = (Path(__file__).resolve().parent / "assets" / "check.svg").as_posix()
@@ -133,6 +138,21 @@ QTableView::item {{ padding: {s['table_vertical']}px {s['table_horizontal']}px; 
 QTableView::item:hover {{ background-color: {c['surface_alt']}; }}
 QTableView::item:focus {{ border: 1px solid {c['accent_hover']}; }}
 QTableView:focus {{ border-color: {c['accent']}; }}
+QTableView[uiRole="browserTable"] {{
+    background-color: rgba(28, 25, 18, 238);
+    alternate-background-color: rgba(32, 28, 21, 245);
+    border: 1px solid {c['border_strong']};
+    border-radius: {s['radius']}px;
+}}
+QTableView[uiRole="browserTable"]::item {{ border-bottom: 1px solid rgba(58, 51, 38, 120); }}
+QTableView[uiRole="browserTable"]::item:selected {{ background-color: {c['table_selection']}; }}
+QTableView[uiRole="browserTable"] QHeaderView::section {{
+    background-color: {c['surface_alt']};
+    color: {c['accent_hover']};
+    border-bottom: 2px solid {c['accent_pressed']};
+    padding-top: 7px;
+    padding-bottom: 7px;
+}}
 QHeaderView::section {{ background-color: {c['surface_alt']}; color: {c['text_muted']}; border: 0; border-right: 1px solid {c['border']}; border-bottom: 1px solid {c['border']}; padding: {s['table_vertical']}px {s['table_horizontal']}px; font-weight: 600; }}
 QTableCornerButton::section {{ background-color: {c['surface_alt']}; border: 0; border-right: 1px solid {c['border']}; border-bottom: 1px solid {c['border']}; }}
 QCheckBox {{ spacing: 7px; background-color: transparent; }}

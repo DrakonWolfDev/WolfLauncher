@@ -5,14 +5,15 @@ from unittest.mock import Mock, patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QCheckBox, QPushButton, QTableWidget
+from PySide6.QtCore import QItemSelectionModel, QSize, Qt
+from PySide6.QtWidgets import QApplication, QCheckBox, QHeaderView, QPushButton, QTableWidget
 
 from wolflauncher.app import MainWindow
 from wolflauncher.models import DiscoveredServer
 from wolflauncher.server_browser_table import (
-    browser_name_column_width,
+    BROWSER_COLUMN_COUNT,
     populate_browser_table,
+    selected_browser_cache_key,
     update_browser_mod_cell,
     update_browser_table_row,
 )
@@ -26,7 +27,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def test_population_preserves_display_sort_key_tooltip_and_status_colour(self):
-        table = QTableWidget(0, 15)
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
         server = DiscoveredServer(
             name="Cached Name",
             server_name="Live Name",
@@ -38,6 +39,8 @@ class ServerBrowserTableTests(unittest.TestCase):
             ping_ms=42,
             online=True,
             status_source="local",
+            country_code="DE",
+            country_source="battlemetrics",
         )
 
         populate_browser_table(table, [server])
@@ -47,6 +50,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertEqual(table.item(0, 7).text(), "12/60")
         self.assertIsInstance(table.item(0, 7), SortableTableWidgetItem)
         self.assertEqual(table.item(0, 7).sort_value, 12)
+        self.assertEqual(table.item(0, 15).text(), "DE")
         self.assertEqual(table.item(0, 0).data(Qt.UserRole), server.cache_key)
         self.assertIn("Locally validated live name", table.item(0, 0).toolTip())
         self.assertEqual(
@@ -55,10 +59,33 @@ class ServerBrowserTableTests(unittest.TestCase):
         )
         self.assertTrue(table.isSortingEnabled())
 
-    def test_name_width_is_responsive_but_bounded_on_wide_displays(self):
-        self.assertEqual(browser_name_column_width(800), 300)
-        self.assertEqual(browser_name_column_width(1388), 416)
-        self.assertEqual(browser_name_column_width(1920), 576)
+    def test_game_time_uses_a_large_scalable_phase_icon(self):
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        server = DiscoveredServer(
+            "Timed", "host", 2302, 27016,
+            game_time="17:07", day_acceleration=3,
+        )
+
+        populate_browser_table(table, [server])
+
+        self.assertEqual(table.iconSize(), QSize(20, 20))
+        self.assertFalse(table.item(0, 16).icon().isNull())
+        self.assertEqual(table.item(0, 16).text(), "17:07 · 3×")
+
+    def test_visible_selection_wins_over_a_stale_current_row(self):
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        first = DiscoveredServer("First", "one", 2302, 27016)
+        second = DiscoveredServer("Second", "two", 2302, 27016)
+        populate_browser_table(table, [first, second])
+        first_row = next(
+            row for row in range(table.rowCount())
+            if table.item(row, 0).data(Qt.UserRole) == first.cache_key
+        )
+        second_row = 1 - first_row
+        table.selectRow(first_row)
+        table.setCurrentCell(second_row, 0, QItemSelectionModel.NoUpdate)
+
+        self.assertEqual(selected_browser_cache_key(table), first.cache_key)
 
     def test_browser_next_actions_require_a_selected_server(self):
         buttons = [QPushButton(), QPushButton(), QPushButton()]
@@ -93,6 +120,72 @@ class ServerBrowserTableTests(unittest.TestCase):
 
         self.assertTrue(all(button.isEnabled() for button in buttons))
         self.assertEqual(buttons[2].text(), "Launch Namalsk Adventure")
+
+    def test_browser_primary_action_uses_the_same_locally_validated_name_as_the_row(self):
+        button = QPushButton()
+        selected = DiscoveredServer(
+            name="Provider Name",
+            server_name="Locally Validated Name",
+            host="203.0.113.10",
+            game_port=2302,
+            query_port=27016,
+            status_source="local",
+        )
+        window = SimpleNamespace(
+            browser_promote_button=QPushButton(),
+            browser_inspect_button=QPushButton(),
+            browser_launch_button=button,
+            selected_discovered_server=lambda: selected,
+        )
+
+        MainWindow.update_browser_selection_context(window)
+
+        self.assertEqual(button.text(), "Launch Locally Validated Name")
+
+    def test_missing_mods_do_not_turn_online_status_pill_red(self):
+        server = DiscoveredServer(
+            name="Online but missing mods",
+            host="203.0.113.10",
+            game_port=2302,
+            query_port=27016,
+            online=True,
+            status_source="local",
+        )
+        labels = [Mock() for _ in range(10)]
+        card = Mock()
+        card.style.return_value = Mock()
+        status = labels[1]
+        status.style.return_value = Mock()
+        mod_status = Mock()
+        mod_status.style.return_value = Mock()
+        window = SimpleNamespace(
+            selected_discovered_server=lambda: server,
+            browser_mod_results={},
+            browser_detail_card=card,
+            browser_detail_eyebrow=labels[0],
+            browser_detail_status=status,
+            browser_detail_mod_status=mod_status,
+            browser_detail_title=labels[2],
+            browser_detail_endpoint=labels[3],
+            browser_detail_atmosphere=Mock(),
+            browser_detail_map=labels[4],
+            browser_detail_players=labels[5],
+            browser_detail_ping=labels[6],
+            browser_detail_context=labels[7],
+            browser_detail_truth=labels[8],
+            browser_detail_features=labels[9],
+            browser_detail_mods=Mock(),
+            browser_detail_diagnostics=Mock(),
+        )
+
+        MainWindow.update_browser_detail_card(window, server, "3 missing locally")
+
+        card.setProperty.assert_any_call("serverStatus", "offline")
+        status.setText.assert_called_once_with("ONLINE")
+        status.setProperty.assert_any_call("serverStatus", "ready")
+        mod_status.setText.assert_called_once_with("3 MODS MISSING")
+        mod_status.setProperty.assert_any_call("serverStatus", "offline")
+        mod_status.setVisible.assert_called_once_with(True)
 
     @patch("wolflauncher.app.local_enrichment_due", return_value=True)
     def test_selected_server_check_is_debounced_when_local_data_is_due(self, _due):
@@ -155,7 +248,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         window.refresh_server_browser.assert_called_once_with()
 
     def test_required_mods_sort_handles_known_and_unknown_counts(self):
-        table = QTableWidget(0, 15)
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
         unknown = DiscoveredServer(
             name="Unknown mods", host="203.0.113.11", game_port=2302, query_port=27016
         )
@@ -174,7 +267,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertEqual(table.item(1, 11).text(), "–")
 
     def test_detailed_view_keeps_internal_live_name_hidden(self):
-        table = QTableWidget(0, 15)
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
         checkbox = QCheckBox()
         checkbox.setChecked(True)
         window = SimpleNamespace(
@@ -187,8 +280,25 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertTrue(table.isColumnHidden(1))
         self.assertFalse(table.isColumnHidden(3))
 
+    def test_compact_columns_follow_the_requested_scan_order(self):
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        checkbox = QCheckBox()
+        window = SimpleNamespace(
+            browser_table=table,
+            browser_detailed_columns=checkbox,
+        )
+
+        MainWindow.configure_browser_columns(window, False)
+
+        header = table.horizontalHeader()
+        self.assertEqual(header.sectionResizeMode(0), QHeaderView.Stretch)
+        self.assertEqual(
+            [header.logicalIndex(index) for index in range(9)],
+            [0, 5, 6, 16, 7, 15, 8, 10, 11],
+        )
+
     def test_population_replaces_existing_rows_and_keeps_missing_ping_guidance(self):
-        table = QTableWidget(3, 15)
+        table = QTableWidget(3, BROWSER_COLUMN_COUNT)
         server = DiscoveredServer(
             name="Offline Server",
             host="203.0.113.11",
@@ -207,7 +317,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         )
 
     def test_single_enrichment_updates_only_the_selected_table_row(self):
-        table = QTableWidget(0, 15)
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
         original = DiscoveredServer(
             name="Selected", host="203.0.113.11", game_port=2302, query_port=27016
         )
@@ -241,7 +351,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertEqual(table.item(selected_row, 8).text(), "42ms")
 
     def test_local_mod_preview_replaces_only_the_matching_mods_cell(self):
-        table = QTableWidget(0, 15)
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
         selected = DiscoveredServer(
             name="Selected", host="203.0.113.11", game_port=2302, query_port=27016
         )
@@ -260,8 +370,61 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertEqual(table.item(0, 11).text(), "3 MISSING")
         self.assertIn("pre-flight", table.item(0, 11).toolTip())
 
+    def test_background_mod_preview_does_not_steal_visible_selection(self):
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        selected = DiscoveredServer("Selected", "one", 2302, 27016)
+        background = DiscoveredServer("Background", "two", 2302, 27016)
+        populate_browser_table(table, [selected, background])
+        selected_row = next(
+            row for row in range(table.rowCount())
+            if table.item(row, 0).data(Qt.UserRole) == selected.cache_key
+        )
+        table.selectRow(selected_row)
+
+        update_browser_mod_cell(
+            table,
+            background.cache_key,
+            "3 MISSING",
+            "Background preview.",
+            STATUS_COLOURS["negative"],
+        )
+
+        current = table.item(table.currentRow(), 0)
+        self.assertEqual(current.data(Qt.UserRole), selected.cache_key)
+
+    def test_dynamic_mod_text_yields_name_width_without_horizontal_overflow(self):
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        table.resize(1200, 300)
+        table.setHorizontalHeaderLabels([
+            "Server Name", "Live Name", "Host", "Game Port", "Query Port",
+            "Status", "Map", "Players", "Ping", "Version", "Features",
+            "Mods", "Last Checked", "Last Seen", "Source", "Region", "Game Time",
+        ])
+        server = DiscoveredServer(
+            "A deliberately long server name that should flex",
+            "one", 2302, 27016,
+            map_name="chernarusplus", players_current=12, players_max=60,
+            ping_ms=42, modded=True, game_time="13:26",
+        )
+        populate_browser_table(table, [server])
+        window = SimpleNamespace(
+            browser_table=table,
+            browser_detailed_columns=QCheckBox(),
+        )
+        MainWindow.configure_browser_columns(window, False)
+        table.show()
+        self.app.processEvents()
+
+        update_browser_mod_cell(
+            table, server.cache_key, "31 MISSING", "Missing mods.",
+            STATUS_COLOURS["negative"],
+        )
+        self.app.processEvents()
+
+        self.assertEqual(table.horizontalScrollBar().maximum(), 0)
+
     def test_ping_colours_follow_dayz_warning_thresholds(self):
-        table = QTableWidget(0, 15)
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
         servers = [
             DiscoveredServer(
                 name="Warning", host="one", game_port=2302, query_port=27016, ping_ms=200

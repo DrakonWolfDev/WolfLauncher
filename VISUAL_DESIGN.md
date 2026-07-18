@@ -144,7 +144,7 @@ Settings restructuring.
 The shared palette, QSS, typography, action roles, application/window mark,
 tab-bar lockup, restrained SVG tab/action icons and low-contrast perimeter
 atmosphere are implemented. Favourite Servers uses the approved native card
-layout. The current review is intentionally narrower: Server Browser gates its
+layout. The completed review established that Server Browser gates its
 direct actions to a real selection without repeating the selected row, and
 Mods separates server identity, readiness guidance and technical detail while
 preserving the server through inspection, Workshop resolution and a persistent
@@ -167,7 +167,7 @@ from directory metadata to a short local readiness state: Checking, Ready,
 `N missing` or Unavailable. This is preview feedback, not launch authority and
 never initiates a Workshop change. Keep **View mod details** secondary; the
 primary action names the selected server and deliberately enters pre-flight.
-Treat this hierarchy as provisional until the next desktop design review.
+This hierarchy passed desktop design review and is final for now.
 Keep both **Mods** and **Game Style** in the common scanning controls. Use the
 order Search, Mods, Game Style, Map and bound Search so it does not crowd out
 the categorical dropdowns. Keep the group contiguous by making Search the
@@ -218,8 +218,14 @@ Use a restrained horizontal table/inspector split related to the completed Mods
 workspace, without copying its Workshop-card contents or turning each server
 into a Favourite-style card.
 
-- Left: keep the operational table compact. Intended common columns are Server
-  Name, Status, Map, Region, Game Time, Players, Ping, Mods and Features.
+- Left: keep the operational table compact. Common columns are Server Name,
+  Status, Map, Game Time, Players, Region, Ping, Features and Mods.
+  Region now displays the trusted API country code with an unknown fallback;
+  its tooltip retains provider provenance. The table has a dedicated native
+  surface treatment for its frame, header accent, selection and row rhythm.
+  Server Name flexes into unused scan width and yields to dynamic Mods readiness
+  text without horizontal overflow. Inspector connectivity remains independent
+  from a conditional actionable mod-status pill.
 - Right: one calm selected-server inspector. It should show the full server
   name, endpoint, map/location/time, player and ping state, local/API truth
   basis, freshness/provenance, concise features and mod readiness.
@@ -243,9 +249,10 @@ into a Favourite-style card.
 The inspector can be prototyped with existing fields, but final table balance
 should wait for the planned data work:
 
-- **Game Time** is locally measured live state already returned by `gamedig`;
-  retain it through discovered-server enrichment and the additive Launcher
-  cache migration. Unknown remains explicit until locally checked.
+- **Game Time** is locally measured live state returned by `gamedig` and retained
+  through discovered-server enrichment and schema v7. Show 24-hour time with a
+  broad sun/moon cue and effective day/night multiplier. Unknown remains
+  explicit until locally checked.
 - **Region** means nullable geographical `country_code` supplied with provenance
   by WolfAPI, not the existing Steam integer region. Never infer or display a
   country from that integer and do not silently guess from IP addresses.
@@ -255,10 +262,10 @@ should wait for the planned data work:
 
 ### Review boundary
 
-The inspector is now a visually reviewable native pass with explicit temporary
-unknown/unavailable states for Game Time and Region. Request desktop review
-before locking split ratio, exact column set, inspector density or
-high-resolution scaling.
+The inspector and compact table passed real-desktop review with honest unknown
+states, locally measured Game Time and trusted Region metadata. The split ratio,
+column set, inspector density and high-resolution behavior are locked as the
+current best fit; revisit only when later usage exposes a concrete issue.
 Region may remain absent until the shared API field is implemented; its absence
 must not block improving the existing selected-server panel.
 

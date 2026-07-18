@@ -30,6 +30,7 @@ class ThemeTests(unittest.TestCase):
         self.assertIn(COLOURS["background"], APPLICATION_STYLESHEET)
         self.assertIn(COLOURS["accent"], APPLICATION_STYLESHEET)
         self.assertIn("check.svg", APPLICATION_STYLESHEET)
+        self.assertIn('QTableView[uiRole="browserTable"]', APPLICATION_STYLESHEET)
         self.assertTrue(
             (Path(__file__).resolve().parents[1] / "wolflauncher" / "assets" / "check.svg").is_file()
         )
@@ -62,6 +63,8 @@ class ThemeTests(unittest.TestCase):
             "servers", "browser", "mods", "settings", "add", "refresh", "launch", "recheck"
         ):
             self.assertTrue((assets / f"icon-{name}.svg").is_file())
+        for name in ("time-sun.svg", "time-moon.svg"):
+            self.assertTrue((assets / name).is_file())
         self.assertEqual(
             self.app.palette().color(QPalette.Window).name(),
             COLOURS["background"],

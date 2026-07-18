@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, timezone
+import re
 from typing import Any
 
 from .models import DiscoveredServer
@@ -48,6 +49,76 @@ def players_text(current: int | None, maximum: int | None) -> str:
     if current is None:
         return f"?/{maximum}"
     return f"{current}/{maximum}"
+
+
+def game_time_text(server: DiscoveredServer, include_symbol: bool = True) -> str:
+    """Format locally measured DayZ time with a broad day/night cue."""
+    parsed = _game_time_parts(server.game_time)
+    if parsed is None:
+        return "—"
+    hour, minute = parsed
+    is_day = 6 <= hour < 18
+    multiplier = server.day_acceleration
+    if not is_day and multiplier is not None and server.night_acceleration is not None:
+        multiplier *= server.night_acceleration
+    suffix = f" · {_number_text(multiplier)}×" if multiplier is not None else ""
+    symbol = f"{'☀' if is_day else '☾'} " if include_symbol else ""
+    return f"{symbol}{hour:02d}:{minute:02d}{suffix}"
+
+
+def game_time_is_day(server: DiscoveredServer) -> bool | None:
+    parsed = _game_time_parts(server.game_time)
+    return 6 <= parsed[0] < 18 if parsed is not None else None
+
+
+def browser_mod_pill(mod_preview: str) -> tuple[str, str]:
+    """Return conditional actionable mod status text and its semantic kind."""
+    normalized = (mod_preview or "").strip().casefold()
+    missing = re.search(r"(\d+)\s+missing", normalized)
+    if missing:
+        return f"{missing.group(1)} MODS MISSING", "offline"
+    if normalized == "unavailable":
+        return "MOD CHECK FAILED", "warning"
+    if normalized.startswith("checking"):
+        return "MODS CHECKING", "warning"
+    return "", "warning"
+
+
+def game_time_tooltip(server: DiscoveredServer) -> str:
+    if _game_time_parts(server.game_time) is None:
+        return "Game time is measured locally when you select this server."
+    measured = f" at {server.last_checked}" if server.last_checked else ""
+    parts = [
+        "Locally measured in-game time"
+        f"{measured}; the sun/moon cue uses 06:00 and 18:00 boundaries."
+    ]
+    if server.day_acceleration is not None:
+        parts.append(f"Day acceleration: x{_number_text(server.day_acceleration)}.")
+    if server.night_acceleration is not None:
+        effective = (
+            server.day_acceleration * server.night_acceleration
+            if server.day_acceleration is not None
+            else None
+        )
+        text = f"Night factor: x{_number_text(server.night_acceleration)}"
+        if effective is not None:
+            text += f" (effective night acceleration x{_number_text(effective)})"
+        parts.append(text + ".")
+    return " ".join(parts)
+
+
+def _game_time_parts(value: str) -> tuple[int, int] | None:
+    match = re.search(r"(?<!\d)([01]?\d|2[0-3]):([0-5]\d)(?!\d)", value or "")
+    return (int(match.group(1)), int(match.group(2))) if match else None
+
+
+def _game_time_sort_value(value: str) -> int | None:
+    parsed = _game_time_parts(value)
+    return parsed[0] * 60 + parsed[1] if parsed else None
+
+
+def _number_text(value: float) -> str:
+    return f"{value:g}"
 
 
 def live_name_text(server: DiscoveredServer) -> str:
@@ -200,6 +271,14 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
             + ", ".join(flag.replace("_", " ") for flag in server.quality_flags)
             + ". This is advisory provider-data screening, not proof the server is unsafe."
         )
+    if server.country_code:
+        tooltips[15] = (
+            f"Country reported by {server.country_source or 'the discovery provider'}; "
+            "this is provider metadata, not an IP-based guess."
+        )
+    else:
+        tooltips[15] = "Country is not available from a trusted discovery source."
+    tooltips[16] = game_time_tooltip(server)
 
     return BrowserRow(
         values=[
@@ -218,6 +297,8 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
             server.last_checked,
             server.last_seen,
             server.source,
+            server.country_code or "—",
+            game_time_text(server, include_symbol=False),
         ],
         sort_values=[
             display_server_name(server),
@@ -235,6 +316,8 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
             server.last_checked,
             server.last_seen,
             server.source,
+            server.country_code or None,
+            _game_time_sort_value(server.game_time),
         ],
         tooltips=tooltips,
         status_colour=status_colour,
@@ -275,7 +358,11 @@ def browser_inspector(
         endpoint=server.connect_target,
         map_name=display_map_name(server.map_name),
         region=server.country_code or "Not available",
-        game_time="Unknown until locally checked",
+        game_time=(
+            game_time_text(server)
+            if game_time_text(server) != "—"
+            else "Unknown until locally checked"
+        ),
         players=players,
         ping=ping,
         truth=truth,
@@ -303,6 +390,7 @@ def discovered_server_details(server: DiscoveredServer) -> str:
         server.connect_target,
         f"Query port: {server.query_port}",
         f"Map: {display_map_name(server.map_name)}",
+        f"Game time: {game_time_text(server)}",
         f"Players: {players_text(server.players_current, server.players_max)}",
         f"Version: {server.version}",
         f"Features: {flags_text}",

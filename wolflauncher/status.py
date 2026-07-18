@@ -16,6 +16,8 @@ class ServerStatus:
     map_name: str = ""
     players: str = ""
     time: str = ""
+    day_acceleration: float | None = None
+    night_acceleration: float | None = None
     version: str = ""
     ping: str = ""
     password: bool = False
@@ -91,6 +93,8 @@ def check_server(server: Server) -> ServerStatus:
     max_players = data.get("maxplayers", "?")
     map_name = data.get("map") or raw.get("map") or "Unknown"
     server_time = raw.get("time") or data.get("time") or "N/A"
+    day_acceleration = _optional_float(raw.get("dayAcceleration"))
+    night_acceleration = _optional_float(raw.get("nightAcceleration"))
     version = data.get("version") or raw.get("version") or ""
     ping = data.get("ping", "")
     connect = data.get("connect") or f"{ip}:{server.game_port}"
@@ -103,9 +107,19 @@ def check_server(server: Server) -> ServerStatus:
         map_name=str(map_name),
         players=f"{num_players}/{max_players}",
         time=str(server_time),
+        day_acceleration=day_acceleration,
+        night_acceleration=night_acceleration,
         version=str(version),
         ping=str(ping) if ping != "" else "",
         password=bool(data.get("password", False)),
         modded=modded,
         connect=str(connect),
     )
+
+
+def _optional_float(value: Any) -> float | None:
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed > 0 else None

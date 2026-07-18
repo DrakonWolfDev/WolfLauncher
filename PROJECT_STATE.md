@@ -115,29 +115,34 @@ check for import/startup changes.
 
 ## v0.9 GUI consistency handoff
 
-The native visual theme is implemented with shared tokens, a complete Qt palette and application-level QSS for the existing widgets and dialogs. It uses restrained charcoal surfaces, amber action hierarchy, semantic status colours, portable technical fonts and visible keyboard focus without changing the approved tab structure. The user confirmed the foundation at different resolutions. The original perimeter atmosphere, wolf identity mark and restrained tab/action icon set are also implemented; the current review pass is concentrating on Server Browser and Mods interaction flow.
+The native visual theme is implemented with shared tokens, a complete Qt palette and application-level QSS for the existing widgets and dialogs. It uses restrained charcoal surfaces, amber action hierarchy, semantic status colours, portable technical fonts and visible keyboard focus without changing the approved tab structure. The user confirmed the foundation at different resolutions. The original perimeter atmosphere, wolf identity mark and restrained tab/action icon set are also implemented. Server Browser and Mods have completed their current real-desktop interaction and visual review.
 
-Server Browser and curated Servers now apply their HTML redesign references as native Qt layouts. Server Browser uses bounded common filters, a concise summary and balanced Name/Host allocation while retaining every operational field through **Show detailed columns**. Favourite Servers is card-only after desktop approval, with status edges, two-line metadata, player/ping blocks, favourite controls and per-row Connect actions. Its hidden table-backed state remains an internal implementation detail for status and launch context, not a user-facing alternate view.
+Server Browser and curated Servers now apply their HTML redesign references as native Qt layouts. Server Browser uses bounded common filters, a concise summary and a flexible Server Name scan column while retaining every operational field through **Show detailed columns**. Favourite Servers is card-only after desktop approval, with status edges, two-line metadata, player/ping blocks, favourite controls and per-row Connect actions. Its hidden table-backed state remains an internal implementation detail for status and launch context, not a user-facing alternate view.
 
 Real-desktop review now considers Favourite Servers final alongside Settings.
 Preserve its card-only hierarchy, status edge, metadata/stats balance,
 favourite control and per-row Connect action; do not reopen its structure or
 spacing without a concrete usability issue.
 
-The Server Browser wide-screen policy caps Name at 600 logical pixels, scales it to 30% of the viewport with a 300-pixel floor and assigns remaining table width to Host. Common filters remain contiguous instead of spreading across 1920×1080, and checkboxes use an explicit theme indicator rather than relying on an invisible dark desktop-style box.
+The Server Browser wide-screen policy lets Name continuously absorb the remaining compact-table width and yield to dynamic readiness fields without horizontal overflow. Its compact scan columns include trusted API country code as Region, with an explicit unknown fallback and provenance tooltip. The table uses a Browser-specific framed surface, accent header treatment and slightly calmer row spacing while retaining the shared native table behaviour. Common filters remain contiguous instead of spreading across 1920×1080, and checkboxes use an explicit theme indicator rather than relying on an invisible dark desktop-style box.
 
-The visible Browser identity is a unified **Server Name**: locally validated live names win when available, otherwise the provider/cache name is used, with the connect target as the final fallback. The separate Live Name field remains internal and hidden in both compact and detailed table modes; tooltips and copied details retain the provenance needed for diagnostics.
+The visible Browser identity is a unified **Server Name**: locally validated live names win when available, otherwise the provider/cache name is used, with the connect target as the final fallback. The separate Live Name field remains internal and hidden in both compact and detailed table modes; tooltips and copied details retain the provenance needed for diagnostics. Server Name continuously absorbs the compact table's remaining width and yields when dynamic readiness text makes Mods wider, avoiding startup-width races and horizontal overflow. Background mod previews preserve the visible selection by cache key, so inspector and Launch action context cannot drift during cell updates or sorting.
 
-The Server Browser styling handoff in `VISUAL_DESIGN.md` is now implemented as
-a reviewable native table/inspector split. The compact table keeps Server Name,
+The Server Browser styling handoff in `VISUAL_DESIGN.md` is approved as the
+best-fit native table/inspector split for the current release. The compact table keeps Server Name,
 Status, Map, Players, Ping, Mods and Features; its draggable inspector presents
 the selected endpoint, existing operational state, local/API truth basis,
 features, transient mod readiness and the Host/ports/source/version/last-seen
-support detail removed from the common scan. Region remains honestly
-unavailable and Game Time explicitly unknown pending their separate data work.
-The split ratio, exact columns and high-resolution density remain provisional
-until real-desktop review; Favourite Servers, Mods and Settings remain locked
-unless a concrete usability issue is found.
+support detail removed from the common scan. Region uses trusted API country
+metadata when available. Game Time is populated by explicit local enrichment
+as a 24-hour sun/moon value with the effective DayZ acceleration multiplier.
+The inspector keeps connectivity and mod readiness semantically separate: the
+Online pill remains green while a conditional second pill reports missing mods,
+mod-check failure or checking state.
+The split ratio, exact columns and high-resolution density passed real-desktop
+review. Treat the Server Browser as final for now; make later tweaks only for a
+concrete usability issue or new data requirement. Favourite Servers, Mods and
+Settings remain similarly locked unless evidence warrants a change.
 The inspector's follow-up identity treatment uses a distinct header, semantic
 status badge, highlighted endpoint and compact Map/Players/Ping facts strip;
 the lower truth/readiness/support content intentionally remains subdued.
@@ -228,7 +233,7 @@ Working:
 - Server Browser map and version filters populated from cached/enriched values.
 - Server Browser source/style filtering, result-limit controls, reset controls and cache summary counts.
 - Server Browser advanced filtering includes an off-by-default **Hide quality
-  warnings** option. WolfAPI advisory flags persist in SQLite schema v6, remain
+  warnings** option. WolfAPI advisory flags persist in SQLite schema v7, remain
   visible with explanatory detail by default, and filter cached plus remote v1
   list/search results consistently when selected.
 - Server Browser data-aware sorting for cached rows, including numeric player/ping values and checked/seen timestamps.
@@ -294,7 +299,7 @@ Planned WolfAPI follow-up:
 - `DISCOVERY_FRESHNESS_HANDOFF.md` records the cross-repository contract and
   rollout state; `ROADMAP.md` tracks the launcher adoption work.
 - The current launcher working tree contains the additive adoption foundation:
-  SQLite schema v6 preserves earlier layouts while combining stable IDs,
+  SQLite schema v7 preserves earlier layouts while combining stable IDs,
   endpoint aliases, freshness/validation fields and API required-mod metadata;
   WolfAPI rows merge port corrections
   by stable ID; opt-in v1 list/search/resolve clients enforce rollout metadata.
@@ -340,7 +345,7 @@ Planned WolfAPI follow-up:
   fields, stable UUID server IDs and endpoint aliases. The hosted deployment
   passed the documented rollout gates and v1 is now the fresh-install default;
   saved choices and the legacy fallback remain available.
-- SQLite schema v6 preserves earlier layouts, storing Workshop metadata,
+- SQLite schema v7 preserves earlier layouts, storing Workshop metadata,
   stable server IDs, endpoint aliases and API mod-metadata provenance;
   corrected endpoints merge
   into one cached row without weakening offline behavior or curated YAML
@@ -442,10 +447,9 @@ Current handling:
 
 Use v0.9 native-launch hardening as the next active development target:
 
-- The approved Server Browser visual pass is paused with explicit Region and
-  Game Time unknowns. Resume their coordinated WolfAPI/Launcher implementation
-  from `DISCOVERY_FRESHNESS_HANDOFF.md`; do not reopen the inspector hierarchy
-  or infer either value from an untrusted source.
+- The approved Server Browser visual pass now receives trusted API country
+  metadata and Launcher-owned locally measured Game Time. Keep rapidly ageing
+  game time out of WolfAPI and preserve the reviewed inspector hierarchy.
 
 - Keep native launch as the default and retain the external launcher as a fallback.
 - Preserve the completed launch-dialog, Settings-health, worker, curated-dialog and Server Browser query/presentation boundaries while continuing small `app.py` extractions.

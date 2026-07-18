@@ -1,24 +1,35 @@
 from collections.abc import Sequence
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QSignalBlocker, QSize, Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QTableWidget
 
 from .models import DiscoveredServer
-from .server_browser_presenter import browser_row
+from .server_browser_presenter import browser_row, game_time_is_day
 from .server_display import ping_severity
 from .table_items import SortableTableWidgetItem
-from .theme import STATUS_COLOURS, monospace_font
+from .theme import STATUS_COLOURS, monospace_font, time_icon
 
 
-def browser_name_column_width(viewport_width: int) -> int:
-    """Keep Name useful without allowing it to consume a wide display."""
-    return max(300, min(600, int(max(1, viewport_width) * 0.30)))
+BROWSER_COLUMN_COUNT = 17
+BROWSER_REGION_COLUMN = 15
+BROWSER_GAME_TIME_COLUMN = 16
+
+
+def selected_browser_cache_key(table: QTableWidget) -> str:
+    """Return identity from the visibly selected row, never a stale current index."""
+    selection_model = table.selectionModel()
+    selected_rows = selection_model.selectedRows(0) if selection_model else []
+    if not selected_rows:
+        return ""
+    item = table.item(selected_rows[0].row(), 0)
+    return str(item.data(Qt.UserRole) or "") if item else ""
 
 
 def populate_browser_table(table: QTableWidget, servers: Sequence[DiscoveredServer]) -> None:
     """Replace the discovered-server table rows while preserving sortable metadata."""
     table.setSortingEnabled(False)
+    table.setIconSize(QSize(20, 20))
     table.setRowCount(len(servers))
     for row, server in enumerate(servers):
         _set_browser_table_row(table, row, server)
@@ -36,12 +47,14 @@ def update_browser_table_row(
     for row in range(table.rowCount()):
         item = table.item(row, 0)
         if item and item.data(Qt.UserRole) == old_cache_key:
+            selected_key = _selected_cache_key(table)
             sorting = table.isSortingEnabled()
             scroll_value = table.verticalScrollBar().value()
-            table.setSortingEnabled(False)
-            _set_browser_table_row(table, row, server)
-            table.selectRow(row)
-            table.setSortingEnabled(sorting)
+            with QSignalBlocker(table):
+                table.setSortingEnabled(False)
+                _set_browser_table_row(table, row, server)
+                table.setSortingEnabled(sorting)
+                _restore_selection(table, selected_key or server.cache_key)
             table.verticalScrollBar().setValue(scroll_value)
             return True
     return False
@@ -59,18 +72,20 @@ def update_browser_mod_cell(
         name_item = table.item(row, 0)
         if not name_item or name_item.data(Qt.UserRole) != cache_key:
             continue
+        selected_key = _selected_cache_key(table)
         sorting = table.isSortingEnabled()
         scroll_value = table.verticalScrollBar().value()
-        table.setSortingEnabled(False)
-        item = SortableTableWidgetItem(text, text)
-        item.setData(Qt.UserRole, cache_key)
-        item.setToolTip(tooltip)
-        item.setFont(monospace_font())
-        if colour:
-            item.setForeground(QColor(colour))
-        table.setItem(row, 11, item)
-        table.selectRow(row)
-        table.setSortingEnabled(sorting)
+        with QSignalBlocker(table):
+            table.setSortingEnabled(False)
+            item = SortableTableWidgetItem(text, text)
+            item.setData(Qt.UserRole, cache_key)
+            item.setToolTip(tooltip)
+            item.setFont(monospace_font())
+            if colour:
+                item.setForeground(QColor(colour))
+            table.setItem(row, 11, item)
+            table.setSortingEnabled(sorting)
+            _restore_selection(table, selected_key)
         table.verticalScrollBar().setValue(scroll_value)
         return True
     return False
@@ -97,6 +112,27 @@ def _set_browser_table_row(
                 item.setForeground(QColor(STATUS_COLOURS["negative"]))
         if column in {7, 8}:
             item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        if column in {2, 3, 4, 8, 9, 11}:
+        if column in {
+            2, 3, 4, 8, 9, 11, BROWSER_REGION_COLUMN, BROWSER_GAME_TIME_COLUMN
+        }:
             item.setFont(monospace_font())
+        if column == BROWSER_GAME_TIME_COLUMN:
+            is_day = game_time_is_day(server)
+            if is_day is not None:
+                item.setIcon(time_icon(is_day))
         table.setItem(row, column, item)
+
+
+def _selected_cache_key(table: QTableWidget) -> str:
+    return selected_browser_cache_key(table)
+
+
+def _restore_selection(table: QTableWidget, cache_key: str) -> None:
+    if not cache_key:
+        table.clearSelection()
+        return
+    for row in range(table.rowCount()):
+        item = table.item(row, 0)
+        if item and item.data(Qt.UserRole) == cache_key:
+            table.selectRow(row)
+            return

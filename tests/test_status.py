@@ -46,6 +46,8 @@ class CheckServerTests(unittest.TestCase):
                     "raw": {
                         "tags": ["battleye", "mod"],
                         "time": "10:30",
+                        "dayAcceleration": 6,
+                        "nightAcceleration": 4,
                         "version": "1.26",
                     },
                 }
@@ -64,6 +66,8 @@ class CheckServerTests(unittest.TestCase):
                 map_name="chernarusplus",
                 players="12/60",
                 time="10:30",
+                day_acceleration=6,
+                night_acceleration=4,
                 version="1.26",
                 ping="42",
                 password=True,

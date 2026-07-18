@@ -38,6 +38,30 @@ class ServerCacheTests(unittest.TestCase):
         self.assertIn("quality_flags", columns)
         self.assertIn("country_code", columns)
         self.assertIn("country_source", columns)
+        self.assertIn("game_time", columns)
+        self.assertIn("day_acceleration", columns)
+        self.assertIn("night_acceleration", columns)
+
+    def test_schema_v6_migrates_local_game_time_additively(self):
+        connection = server_cache.sqlite3.connect(":memory:")
+        self.addCleanup(connection.close)
+        connection.execute(
+            "CREATE TABLE discovered_servers (cache_key TEXT PRIMARY KEY)"
+        )
+        connection.execute("PRAGMA user_version = 6")
+
+        server_cache.initialize(connection)
+
+        columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")
+        }
+        self.assertEqual(
+            connection.execute("PRAGMA user_version").fetchone()[0],
+            server_cache.SCHEMA_VERSION,
+        )
+        self.assertIn("game_time", columns)
+        self.assertIn("day_acceleration", columns)
+        self.assertIn("night_acceleration", columns)
 
     def test_schema_v5_migrates_country_metadata_additively(self):
         connection = server_cache.sqlite3.connect(":memory:")
@@ -238,11 +262,45 @@ class ServerCacheTests(unittest.TestCase):
             mod_manifest_hash="sha256:example",
             country_code="US",
             country_source="battlemetrics",
+            game_time="15:04",
+            day_acceleration=6,
+            night_acceleration=4,
         )
 
         server_cache.upsert_server(connection, server)
 
         self.assertEqual(server_cache.get_server(connection, server.cache_key), server)
+
+    def test_provider_merge_preserves_locally_measured_game_time(self):
+        connection = self.open_cache()
+        local = DiscoveredServer(
+            name="Timed",
+            source="wolfapi",
+            host="203.0.113.10",
+            game_port=2302,
+            query_port=27016,
+            stable_server_id="11111111-1111-1111-1111-111111111111",
+            status_source="local",
+            game_time="23:10",
+            day_acceleration=6,
+            night_acceleration=4,
+        )
+        provider = DiscoveredServer(
+            name="Timed Updated",
+            source="wolfapi",
+            host="203.0.113.10",
+            game_port=2402,
+            query_port=28016,
+            stable_server_id=local.stable_server_id,
+        )
+        server_cache.upsert_server(connection, local)
+
+        server_cache.upsert_server(connection, provider)
+
+        cached = server_cache.get_server(connection, provider.cache_key)
+        self.assertEqual(cached.game_time, "23:10")
+        self.assertEqual(cached.day_acceleration, 6)
+        self.assertEqual(cached.night_acceleration, 4)
 
     def test_stable_wolfapi_id_moves_corrected_endpoint_without_duplicate(self):
         connection = self.open_cache()

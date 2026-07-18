@@ -28,6 +28,8 @@ class CuratedStatusCacheTests(unittest.TestCase):
                 map_name="Chernarus",
                 players="4/60",
                 time="12:00",
+                day_acceleration=6,
+                night_acceleration=4,
                 version="1.26",
                 ping="42",
                 password=True,

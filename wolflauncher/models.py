@@ -53,6 +53,9 @@ class DiscoveredServer:
     quality_flags: tuple[str, ...] = ()
     country_code: str = ""
     country_source: str = ""
+    game_time: str = ""
+    day_acceleration: float | None = None
+    night_acceleration: float | None = None
 
     @property
     def cache_key(self) -> str:

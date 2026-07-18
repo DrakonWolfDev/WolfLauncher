@@ -3,10 +3,12 @@ from datetime import datetime, timezone
 
 from wolflauncher.server_browser_presenter import (
     browser_inspector,
+    browser_mod_pill,
     browser_row,
     browser_style_terms,
     browser_summary_text,
     browser_summary_tooltip,
+    game_time_text,
     api_freshness_text,
     display_server_name,
     discovered_server_details,
@@ -57,6 +59,12 @@ class ServerBrowserPresenterTests(unittest.TestCase):
 
         self.assertEqual(browser_inspector(unverified).status_kind, "warning")
         self.assertEqual(browser_inspector(offline).status_kind, "offline")
+
+    def test_mod_pill_only_surfaces_actionable_states(self):
+        self.assertEqual(browser_mod_pill("3 missing locally"), ("3 MODS MISSING", "offline"))
+        self.assertEqual(browser_mod_pill("Unavailable"), ("MOD CHECK FAILED", "warning"))
+        self.assertEqual(browser_mod_pill("Checking local Workshop readiness…"), ("MODS CHECKING", "warning"))
+        self.assertEqual(browser_mod_pill("Ready locally"), ("", "warning"))
 
     def test_style_terms_cover_pve_pvp_and_unfiltered_modes(self):
         self.assertIn("no kos", browser_style_terms("PvE"))
@@ -112,11 +120,44 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertEqual(row.values[1], "Live Name")
         self.assertEqual(row.values[7], "12/60")
         self.assertEqual(row.values[10], "Password, Modded")
+        self.assertEqual(row.values[15], "—")
+        self.assertEqual(row.values[16], "—")
         self.assertEqual(row.sort_values[7], 12)
         self.assertIn("Locally validated live name", row.tooltips[0])
         self.assertIn("Provider/cache name: Cached Name", row.tooltips[0])
         self.assertIn(12, row.tooltips)
         self.assertEqual(row.status_colour, STATUS_COLOURS["positive"])
+
+    def test_browser_row_presents_trusted_country_as_compact_region(self):
+        server = DiscoveredServer(
+            name="German Server",
+            host="203.0.113.10",
+            game_port=2302,
+            query_port=27016,
+            country_code="DE",
+            country_source="battlemetrics",
+        )
+
+        row = browser_row(server)
+
+        self.assertEqual(row.values[15], "DE")
+        self.assertEqual(row.sort_values[15], "DE")
+        self.assertIn("Battlemetrics", row.tooltips[15].title())
+
+    def test_game_time_uses_24_hour_day_night_cues_and_effective_multiplier(self):
+        day = DiscoveredServer(
+            "Day", "host", 2302, 27016,
+            game_time="15:04", day_acceleration=6, night_acceleration=4,
+        )
+        night = DiscoveredServer(
+            "Night", "host", 2302, 27016,
+            game_time="23:10", day_acceleration=6, night_acceleration=4,
+        )
+
+        self.assertEqual(game_time_text(day), "☀ 15:04 · 6×")
+        self.assertEqual(game_time_text(night), "☾ 23:10 · 24×")
+        self.assertEqual(browser_row(day).values[16], "15:04 · 6×")
+        self.assertIn("effective night acceleration x24", browser_row(night).tooltips[16])
 
     def test_unified_name_uses_provider_name_until_live_name_is_local(self):
         server = DiscoveredServer(

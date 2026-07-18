@@ -12,7 +12,7 @@ import yaml
 from .models import DiscoveredServer
 
 
-SCHEMA_VERSION = 6
+SCHEMA_VERSION = 7
 DATA_DIR = Path.home() / ".local" / "share" / "wolflauncher"
 SERVER_CACHE_PATH = DATA_DIR / "server_cache.sqlite3"
 
@@ -102,6 +102,9 @@ def _initialize_schema_v1(connection: sqlite3.Connection) -> None:
             quality_flags TEXT NOT NULL DEFAULT '[]',
             country_code TEXT NOT NULL DEFAULT '',
             country_source TEXT NOT NULL DEFAULT '',
+            game_time TEXT NOT NULL DEFAULT '',
+            day_acceleration REAL,
+            night_acceleration REAL,
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
@@ -208,6 +211,17 @@ def _migrate(connection: sqlite3.Connection, current_version: int, target_versio
         )
         connection.execute("PRAGMA user_version = 6")
         current_version = 6
+    if current_version == 6 and target_version >= 7:
+        for definition in (
+            "game_time TEXT NOT NULL DEFAULT ''",
+            "day_acceleration REAL",
+            "night_acceleration REAL",
+        ):
+            connection.execute(
+                f"ALTER TABLE discovered_servers ADD COLUMN {definition}"
+            )
+        connection.execute("PRAGMA user_version = 7")
+        current_version = 7
     if current_version != target_version:
         raise RuntimeError(
             f"Unsupported server cache migration from version {current_version} to {target_version}."
@@ -234,9 +248,17 @@ def replace_server_key(
 def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> None:
     if server.stable_server_id:
         existing = connection.execute(
-            "SELECT cache_key FROM discovered_servers WHERE stable_server_id = ?",
+            "SELECT cache_key, game_time, day_acceleration, night_acceleration "
+            "FROM discovered_servers WHERE stable_server_id = ?",
             (server.stable_server_id,),
         ).fetchone()
+        if existing and server.status_source != "local":
+            server = replace(
+                server,
+                game_time=str(existing["game_time"]),
+                day_acceleration=_optional_float(existing["day_acceleration"]),
+                night_acceleration=_optional_float(existing["night_acceleration"]),
+            )
         if existing and existing["cache_key"] != server.cache_key:
             conflict = connection.execute(
                 "SELECT stable_server_id FROM discovered_servers WHERE cache_key = ?",
@@ -260,7 +282,8 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             endpoint_aliases, freshness, freshness_expires_at, validation_status,
             validation_checked_at, validation_seen_at, validation_error_code,
             provider_last_checked, provider_last_seen, quality_flags,
-            country_code, country_source
+            country_code, country_source, game_time,
+            day_acceleration, night_acceleration
         )
         VALUES (
             :cache_key, :source, :display_name, :server_name, :host, :game_port, :query_port,
@@ -272,7 +295,8 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             :endpoint_aliases, :freshness, :freshness_expires_at, :validation_status,
             :validation_checked_at, :validation_seen_at, :validation_error_code,
             :provider_last_checked, :provider_last_seen, :quality_flags,
-            :country_code, :country_source
+            :country_code, :country_source, :game_time,
+            :day_acceleration, :night_acceleration
         )
         ON CONFLICT(cache_key) DO UPDATE SET
             source = excluded.source,
@@ -311,6 +335,12 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             quality_flags = excluded.quality_flags,
             country_code = excluded.country_code,
             country_source = excluded.country_source,
+            game_time = CASE WHEN excluded.status_source = 'local'
+                THEN excluded.game_time ELSE discovered_servers.game_time END,
+            day_acceleration = CASE WHEN excluded.status_source = 'local'
+                THEN excluded.day_acceleration ELSE discovered_servers.day_acceleration END,
+            night_acceleration = CASE WHEN excluded.status_source = 'local'
+                THEN excluded.night_acceleration ELSE discovered_servers.night_acceleration END,
             updated_at = CURRENT_TIMESTAMP
         """,
         _server_params(server),
@@ -687,6 +717,9 @@ def _server_params(server: DiscoveredServer) -> dict[str, Any]:
         "quality_flags": json.dumps(list(server.quality_flags)),
         "country_code": server.country_code,
         "country_source": server.country_source,
+        "game_time": server.game_time,
+        "day_acceleration": server.day_acceleration,
+        "night_acceleration": server.night_acceleration,
     }
 
 
@@ -753,6 +786,9 @@ def _server_from_import_item(item: Any, index: int) -> DiscoveredServer:
         quality_flags=_quality_flags(item.get("quality_flags")),
         country_code=country_code,
         country_source=country_source,
+        game_time=str(item.get("game_time") or ""),
+        day_acceleration=_optional_float(item.get("day_acceleration")),
+        night_acceleration=_optional_float(item.get("night_acceleration")),
     )
 
 
@@ -848,12 +884,23 @@ def _row_to_server(row: sqlite3.Row) -> DiscoveredServer:
         quality_flags=_quality_flags(row["quality_flags"]),
         country_code=_country_code(row["country_code"]),
         country_source=str(row["country_source"]),
+        game_time=str(row["game_time"]),
+        day_acceleration=_optional_float(row["day_acceleration"]),
+        night_acceleration=_optional_float(row["night_acceleration"]),
     )
 
 
 def _country_code(value: Any) -> str:
     code = str(value or "").strip().upper()
     return code if len(code) == 2 and code.isalpha() else ""
+
+
+def _optional_float(value: Any) -> float | None:
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed > 0 else None
 
 
 def _escape_like(value: str) -> str:

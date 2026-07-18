@@ -124,15 +124,18 @@ from .server_enrichment import (
 )
 from .server_browser_presenter import (
     browser_inspector,
+    browser_mod_pill,
     browser_style_terms,
     browser_summary_text,
     browser_summary_tooltip,
+    display_server_name,
     discovered_server_details,
 )
 from .server_browser_controller import BrowserQuery, browser_filter_options, load_browser_snapshot
 from .server_browser_table import (
-    browser_name_column_width,
+    BROWSER_COLUMN_COUNT,
     populate_browser_table,
+    selected_browser_cache_key,
     update_browser_mod_cell,
     update_browser_table_row,
 )
@@ -436,6 +439,7 @@ class MainWindow(QMainWindow):
         filters = QHBoxLayout()
         self.browser_search = QLineEdit()
         self.browser_search.setPlaceholderText("Search discovered servers")
+        self.browser_search.setClearButtonEnabled(True)
         self.browser_search.setMinimumWidth(280)
         self.browser_search.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         self.browser_search.textChanged.connect(self.refresh_server_browser)
@@ -533,7 +537,7 @@ class MainWindow(QMainWindow):
         advanced_filters.addStretch(1)
         advanced_layout.addLayout(advanced_filters)
 
-        self.browser_table = QTableWidget(0, 15)
+        self.browser_table = QTableWidget(0, BROWSER_COLUMN_COUNT)
         self.browser_table.setHorizontalHeaderLabels([
             "Server Name",
             "Live Name",
@@ -550,16 +554,21 @@ class MainWindow(QMainWindow):
             "Last Checked",
             "Last Seen",
             "Source",
+            "Region",
+            "Game Time",
         ])
         for column in (7, 8):
             self.browser_table.horizontalHeaderItem(column).setTextAlignment(
                 Qt.AlignRight | Qt.AlignVCenter
             )
         self.browser_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.browser_table.setSelectionMode(QTableWidget.SingleSelection)
         self.browser_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.browser_table.setSortingEnabled(True)
         self.browser_table.setTabKeyNavigation(False)
         configure_data_table(self.browser_table)
+        set_ui_role(self.browser_table, "browserTable")
+        self.browser_table.verticalHeader().setDefaultSectionSize(34)
         self.configure_browser_columns(False)
         self.browser_table.itemActivated.connect(
             lambda item: self.handle_browser_double_clicked(item.row(), item.column())
@@ -586,9 +595,14 @@ class MainWindow(QMainWindow):
         self.browser_detail_status = QLabel("NO SELECTION")
         set_ui_role(self.browser_detail_status, "browserStatus")
         self.browser_detail_status.setProperty("serverStatus", "warning")
+        self.browser_detail_mod_status = QLabel()
+        set_ui_role(self.browser_detail_mod_status, "browserStatus")
+        self.browser_detail_mod_status.setProperty("serverStatus", "warning")
+        self.browser_detail_mod_status.hide()
         header_top.addWidget(self.browser_detail_eyebrow)
         header_top.addStretch(1)
         header_top.addWidget(self.browser_detail_status)
+        header_top.addWidget(self.browser_detail_mod_status)
         header_layout.addLayout(header_top)
         self.browser_detail_title = QLabel("Select a server to inspect its details")
         self.browser_detail_title.setWordWrap(True)
@@ -666,6 +680,9 @@ class MainWindow(QMainWindow):
         self.browser_splitter.setStretchFactor(0, 3)
         self.browser_splitter.setStretchFactor(1, 1)
         self.browser_splitter.setSizes([990, 330])
+        self.browser_splitter.splitterMoved.connect(
+            lambda _position, _index: self.configure_browser_columns()
+        )
         layout.addWidget(self.browser_splitter, 1)
 
         buttons = QHBoxLayout()
@@ -1683,6 +1700,7 @@ class MainWindow(QMainWindow):
         old_cache_key, server = payload
         server_cache.replace_server_key(self.server_cache, old_cache_key, server)
         update_browser_table_row(self.browser_table, old_cache_key, server)
+        self.update_browser_selection_context()
         if server.online:
             self.start_selected_server_mod_preview(server)
 
@@ -1818,11 +1836,7 @@ class MainWindow(QMainWindow):
         )
 
     def selected_discovered_server(self):
-        row = self.browser_table.currentRow()
-        if row < 0:
-            return None
-        item = self.browser_table.item(row, 0)
-        cache_key = item.data(Qt.UserRole) if item else None
+        cache_key = selected_browser_cache_key(self.browser_table)
         if not cache_key:
             return None
         return server_cache.get_server(self.server_cache, str(cache_key))
@@ -2138,7 +2152,8 @@ class MainWindow(QMainWindow):
         launch_button = getattr(self, "browser_launch_button", None)
         if launch_button is not None:
             launch_button.setText(
-                f"Launch {selected.name}" if selected else "Launch selected server"
+                f"Launch {display_server_name(selected)}"
+                if selected else "Launch selected server"
             )
         if hasattr(self, "update_browser_detail_card"):
             self.update_browser_detail_card(selected)
@@ -2163,6 +2178,7 @@ class MainWindow(QMainWindow):
             self.browser_detail_title.setText("Select a server to inspect its details")
             self.browser_detail_status.setText("NO SELECTION")
             self.browser_detail_status.setProperty("serverStatus", "warning")
+            self.browser_detail_mod_status.hide()
             self.browser_detail_endpoint.clear()
             self.browser_detail_atmosphere.set_map_name("")
             self.browser_detail_map.setText("—")
@@ -2193,10 +2209,19 @@ class MainWindow(QMainWindow):
                 detail_edge = "warning"
             elif "missing" in mod_preview.casefold() or mod_preview.casefold() == "unavailable":
                 detail_edge = "offline"
+            status_pill = (
+                "warning"
+                if status_override.casefold() == "checking"
+                else detail.status_kind
+            )
             self.browser_detail_card.setProperty("serverStatus", detail_edge)
             self.browser_detail_title.setText(detail.title)
             self.browser_detail_status.setText((status_override or detail.status).upper())
-            self.browser_detail_status.setProperty("serverStatus", detail_edge)
+            self.browser_detail_status.setProperty("serverStatus", status_pill)
+            mod_pill_text, mod_pill_kind = browser_mod_pill(mod_preview)
+            self.browser_detail_mod_status.setText(mod_pill_text)
+            self.browser_detail_mod_status.setProperty("serverStatus", mod_pill_kind)
+            self.browser_detail_mod_status.setVisible(bool(mod_pill_text))
             self.browser_detail_endpoint.setText(detail.endpoint)
             self.browser_detail_atmosphere.set_map_name(detail.map_name)
             self.browser_detail_map.setText(detail.map_name)
@@ -2213,6 +2238,8 @@ class MainWindow(QMainWindow):
         self.browser_detail_card.style().polish(self.browser_detail_card)
         self.browser_detail_status.style().unpolish(self.browser_detail_status)
         self.browser_detail_status.style().polish(self.browser_detail_status)
+        self.browser_detail_mod_status.style().unpolish(self.browser_detail_mod_status)
+        self.browser_detail_mod_status.style().polish(self.browser_detail_mod_status)
 
     def configure_browser_columns(self, show_details: bool | None = None):
         if not hasattr(self, "browser_table"):
@@ -2225,16 +2252,17 @@ class MainWindow(QMainWindow):
             )
         configure_priority_columns(
             self.browser_table,
-            (0, 5, 6, 7, 8, 11, 10),
+            (0, 5, 6, 16, 7, 15, 8, 10, 11),
             show_details=show_details,
             stretch_columns=(),
         )
         self.browser_table.setColumnHidden(1, True)
         if not show_details:
-            name_width = browser_name_column_width(self.browser_table.viewport().width())
             header = self.browser_table.horizontalHeader()
-            header.setSectionResizeMode(0, QHeaderView.Interactive)
-            header.resizeSection(0, name_width)
+            # Name flexes with the live viewport and yields when readiness text
+            # makes Mods wider. This avoids stale startup widths and horizontal
+            # overflow after background mod previews complete.
+            header.setSectionResizeMode(0, QHeaderView.Stretch)
 
     def _refresh_browser_filter_options(self):
         options = browser_filter_options(self.server_cache)
@@ -4207,6 +4235,11 @@ class MainWindow(QMainWindow):
         super().resizeEvent(event)
         self.configure_browser_columns()
         self.resize_mod_detail_card()
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        # Window managers can apply maximized geometry after construction.
+        QTimer.singleShot(0, self.configure_browser_columns)
 
 
 def main():
