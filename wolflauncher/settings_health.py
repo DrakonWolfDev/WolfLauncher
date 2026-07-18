@@ -21,7 +21,6 @@ from .platform_detection import (
     steam_selection_report,
 )
 
-
 REQUIRED_TOOLS = ("python3", "gamedig", "node", "npm", "dig", "curl", "jq", "gawk")
 HealthRow = tuple[str, str, str]
 
@@ -49,7 +48,9 @@ def build_settings_health_snapshot(
     auto_steam_report = steam_selection_report("auto", installs)
     steam_report = steam_selection_report(selected_steam_mode, installs)
     missing_tools = [command for command in REQUIRED_TOOLS if not command_lookup(command)]
-    existing_launcher_candidates = [str(candidate) for candidate in launcher_candidates if candidate.exists()]
+    existing_launcher_candidates = [
+        str(candidate) for candidate in launcher_candidates if candidate.exists()
+    ]
     prime_report = prime_environment_report()
     prime_helpers = prime_helper_report()
     launch_options = steam_launch_options_report()
@@ -88,7 +89,9 @@ def build_settings_health_snapshot(
         (
             "DayZ",
             "OK" if selected_install and selected_install.dayz_dir else "MISSING",
-            str(selected_install.dayz_dir) if selected_install and selected_install.dayz_dir else "Not detected",
+            str(selected_install.dayz_dir)
+            if selected_install and selected_install.dayz_dir
+            else "Not detected",
         ),
         (
             "Workshop",

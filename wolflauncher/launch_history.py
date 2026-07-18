@@ -5,7 +5,6 @@ from pathlib import Path
 from .curated_status_cache import DATA_DIR, ensure_data_dir
 from .persistence import atomic_write_text
 
-
 LAST_LAUNCH_REPORT_PATH = DATA_DIR / "last_launch_report.txt"
 
 

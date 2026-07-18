@@ -8,7 +8,6 @@ from .persistence import ensure_private_directory
 from .settings import load_json, save_json, server_key
 from .status import ServerStatus
 
-
 DATA_DIR = user_data_dir()
 CURATED_STATUS_CACHE_PATH = DATA_DIR / "curated_status.json"
 
@@ -29,7 +28,9 @@ def load_status_cache(path: Path = CURATED_STATUS_CACHE_PATH) -> dict[str, Serve
     return cache
 
 
-def save_status_cache(cache: dict[str, ServerStatus], path: Path = CURATED_STATUS_CACHE_PATH) -> None:
+def save_status_cache(
+    cache: dict[str, ServerStatus], path: Path = CURATED_STATUS_CACHE_PATH
+) -> None:
     ensure_data_dir(path.parent)
     save_json(path, {key: _status_to_dict(status) for key, status in cache.items()})
 

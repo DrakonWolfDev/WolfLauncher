@@ -1,6 +1,6 @@
+import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import re
 from typing import Any
 
 from .models import DiscoveredServer
@@ -167,10 +167,7 @@ def api_status_tooltip(server: DiscoveredServer) -> str:
     if freshness:
         lines.append(f"WolfAPI freshness: {freshness}")
     if server.validation_status:
-        lines.append(
-            "WolfAPI validation: "
-            + server.validation_status.replace("_", " ").title()
-        )
+        lines.append("WolfAPI validation: " + server.validation_status.replace("_", " ").title())
     if server.validation_checked_at:
         lines.append(f"Validated at: {server.validation_checked_at}")
     if server.provider_last_seen:
@@ -215,9 +212,8 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
     live_name = live_name_text(server)
     tooltips = {}
     if server.status_source == "local" and live_name:
-        tooltips[0] = (
-            "Locally validated live name."
-            + (f" Provider/cache name: {server.name}" if server.name else "")
+        tooltips[0] = "Locally validated live name." + (
+            f" Provider/cache name: {server.name}" if server.name else ""
         )
     else:
         tooltips[0] = "Provider/cache name; local enrichment can supply a fresher live name."
@@ -245,8 +241,7 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
             )
         else:
             tooltips[11] = (
-                "Required-mod count is unknown. "
-                "Use Inspect mods to query this server directly."
+                "Required-mod count is unknown. Use Inspect mods to query this server directly."
             )
     elif server.mod_metadata_status == "stale":
         tooltips[11] = (
@@ -262,9 +257,7 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
     status_tooltip = api_status_tooltip(server)
     if status_tooltip:
         existing_status = tooltips.get(5, "")
-        tooltips[5] = "\n".join(
-            part for part in (existing_status, status_tooltip) if part
-        )
+        tooltips[5] = "\n".join(part for part in (existing_status, status_tooltip) if part)
     if server.quality_flags:
         tooltips[10] = (
             "WolfAPI quality warning: "
@@ -331,9 +324,11 @@ def browser_inspector(
     """Build the calm selected-server summary without hiding support detail."""
     status, colour = browser_status(server)
     status_kind = (
-        "ready" if colour == STATUS_COLOURS["positive"] else
-        "offline" if colour == STATUS_COLOURS["negative"] else
-        "warning"
+        "ready"
+        if colour == STATUS_COLOURS["positive"]
+        else "offline"
+        if colour == STATUS_COLOURS["negative"]
+        else "warning"
     )
     players = players_text(server.players_current, server.players_max) or "Unknown"
     ping = f"{server.ping_ms} ms" if server.ping_ms is not None else "Unknown"
@@ -386,24 +381,23 @@ def discovered_server_details(server: DiscoveredServer) -> str:
     lines = [server.name]
     if live_name_text(server):
         lines.append(f"Live name: {server.server_name}")
-    lines.extend([
-        server.connect_target,
-        f"Query port: {server.query_port}",
-        f"Map: {display_map_name(server.map_name)}",
-        f"Game time: {game_time_text(server)}",
-        f"Players: {players_text(server.players_current, server.players_max)}",
-        f"Version: {server.version}",
-        f"Features: {flags_text}",
-        f"Mods: {display_required_mod_count(server.required_mod_count)}",
-        f"Status basis: {'Locally validated' if server.status_source == 'local' else 'Provider reported'}",
-        f"Last checked: {server.last_checked or 'Never'}",
-        f"Last seen: {server.last_seen or 'Never'}",
-    ])
+    lines.extend(
+        [
+            server.connect_target,
+            f"Query port: {server.query_port}",
+            f"Map: {display_map_name(server.map_name)}",
+            f"Game time: {game_time_text(server)}",
+            f"Players: {players_text(server.players_current, server.players_max)}",
+            f"Version: {server.version}",
+            f"Features: {flags_text}",
+            f"Mods: {display_required_mod_count(server.required_mod_count)}",
+            f"Status basis: {'Locally validated' if server.status_source == 'local' else 'Provider reported'}",
+            f"Last checked: {server.last_checked or 'Never'}",
+            f"Last seen: {server.last_seen or 'Never'}",
+        ]
+    )
     if server.mod_metadata_status:
-        lines.append(
-            "API mod metadata: "
-            + server.mod_metadata_status.replace("_", " ").title()
-        )
+        lines.append("API mod metadata: " + server.mod_metadata_status.replace("_", " ").title())
     if server.quality_flags:
         lines.append(
             "API quality warnings: "
@@ -421,10 +415,7 @@ def discovered_server_details(server: DiscoveredServer) -> str:
     if server.freshness_expires_at:
         lines.append(f"Freshness expires: {server.freshness_expires_at}")
     if server.validation_status:
-        lines.append(
-            "API validation: "
-            + server.validation_status.replace("_", " ").title()
-        )
+        lines.append("API validation: " + server.validation_status.replace("_", " ").title())
     if server.validation_checked_at:
         lines.append(f"Validation checked: {server.validation_checked_at}")
     if server.provider_last_checked:

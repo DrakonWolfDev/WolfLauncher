@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 import re
 from collections.abc import Iterable
-
+from pathlib import Path
 
 _KEY_VALUE_PATTERN = re.compile(
     r"(?i)(?P<label>(?:steam[_ -]?web[_ -]?api[_ -]?key|api[_ -]?key|token|secret)\s*[:=]\s*)(?P<value>[^\s&]+)"

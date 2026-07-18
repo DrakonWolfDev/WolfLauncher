@@ -63,6 +63,11 @@ derive from `wolflauncher.__version__`. A wheel, source archive and local `.deb`
 now build with desktop resources, locked Python dependencies and an npm-locked
 GameDig 5.3.3 runtime; release-environment portability remains part of PR-06.
 
+PR-07 automation is implemented locally: repository-wide Ruff checks, scoped
+strict typing, dependency audit, compilation/whitespace checks and dual Ubuntu
+package smoke jobs use immutable action revisions. It remains open until the
+committed workflow passes remotely.
+
 `ROADMAP.md` contains milestones only. `docs/RELEASE_CHECKLIST.md` records the
 checks to run against a release candidate; neither file is a second backlog.
 

@@ -2,8 +2,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from wolflauncher.models import DiscoveredServer
 from wolflauncher import server_cache
+from wolflauncher.models import DiscoveredServer
 
 
 class ServerCacheTests(unittest.TestCase):
@@ -27,8 +27,7 @@ class ServerCacheTests(unittest.TestCase):
         self.assertIn("discovered_servers", {row["name"] for row in tables})
         self.assertIn("discovered_server_aliases", {row["name"] for row in tables})
         columns = {
-            row["name"]
-            for row in connection.execute("PRAGMA table_info(discovered_servers)")
+            row["name"] for row in connection.execute("PRAGMA table_info(discovered_servers)")
         }
         self.assertIn("stable_server_id", columns)
         self.assertIn("endpoint_aliases", columns)
@@ -45,16 +44,12 @@ class ServerCacheTests(unittest.TestCase):
     def test_schema_v6_migrates_local_game_time_additively(self):
         connection = server_cache.sqlite3.connect(":memory:")
         self.addCleanup(connection.close)
-        connection.execute(
-            "CREATE TABLE discovered_servers (cache_key TEXT PRIMARY KEY)"
-        )
+        connection.execute("CREATE TABLE discovered_servers (cache_key TEXT PRIMARY KEY)")
         connection.execute("PRAGMA user_version = 6")
 
         server_cache.initialize(connection)
 
-        columns = {
-            row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")
-        }
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")}
         self.assertEqual(
             connection.execute("PRAGMA user_version").fetchone()[0],
             server_cache.SCHEMA_VERSION,
@@ -66,16 +61,12 @@ class ServerCacheTests(unittest.TestCase):
     def test_schema_v5_migrates_country_metadata_additively(self):
         connection = server_cache.sqlite3.connect(":memory:")
         self.addCleanup(connection.close)
-        connection.execute(
-            "CREATE TABLE discovered_servers (cache_key TEXT PRIMARY KEY)"
-        )
+        connection.execute("CREATE TABLE discovered_servers (cache_key TEXT PRIMARY KEY)")
         connection.execute("PRAGMA user_version = 5")
 
         server_cache.initialize(connection)
 
-        columns = {
-            row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")
-        }
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")}
         self.assertEqual(
             connection.execute("PRAGMA user_version").fetchone()[0],
             server_cache.SCHEMA_VERSION,
@@ -86,16 +77,12 @@ class ServerCacheTests(unittest.TestCase):
     def test_schema_v4_migrates_quality_flags_additively(self):
         connection = server_cache.sqlite3.connect(":memory:")
         self.addCleanup(connection.close)
-        connection.execute(
-            "CREATE TABLE discovered_servers (cache_key TEXT PRIMARY KEY)"
-        )
+        connection.execute("CREATE TABLE discovered_servers (cache_key TEXT PRIMARY KEY)")
         connection.execute("PRAGMA user_version = 4")
 
         server_cache.initialize(connection)
 
-        columns = {
-            row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")
-        }
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")}
         self.assertEqual(
             connection.execute("PRAGMA user_version").fetchone()[0],
             server_cache.SCHEMA_VERSION,
@@ -173,9 +160,7 @@ class ServerCacheTests(unittest.TestCase):
 
         server_cache.initialize(connection)
 
-        columns = {
-            row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")
-        }
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")}
         self.assertEqual(
             connection.execute("PRAGMA user_version").fetchone()[0],
             server_cache.SCHEMA_VERSION,
@@ -199,9 +184,7 @@ class ServerCacheTests(unittest.TestCase):
 
         server_cache.initialize(connection)
 
-        columns = {
-            row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")
-        }
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")}
         self.assertEqual(
             connection.execute("PRAGMA user_version").fetchone()[0],
             server_cache.SCHEMA_VERSION,
@@ -225,9 +208,7 @@ class ServerCacheTests(unittest.TestCase):
 
         server_cache.initialize(connection)
 
-        columns = {
-            row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")
-        }
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")}
         self.assertEqual(
             connection.execute("PRAGMA user_version").fetchone()[0],
             server_cache.SCHEMA_VERSION,
@@ -380,9 +361,7 @@ class ServerCacheTests(unittest.TestCase):
         )
         server_cache.sync_source_servers(connection, "wolfapi", [first, second])
 
-        merged = server_cache.merge_source_servers(
-            connection, "wolfapi", [updated_first]
-        )
+        merged = server_cache.merge_source_servers(connection, "wolfapi", [updated_first])
 
         self.assertEqual(merged, 1)
         self.assertEqual(len(server_cache.search_servers(connection)), 2)
@@ -442,17 +421,13 @@ class ServerCacheTests(unittest.TestCase):
     def test_replace_server_key_removes_obsolete_provider_row(self):
         connection = self.open_cache()
         original = DiscoveredServer("Example", "203.0.113.10", 27018, 27018)
-        corrected = DiscoveredServer(
-            "Example", "203.0.113.10", 37017, 27018, status_source="local"
-        )
+        corrected = DiscoveredServer("Example", "203.0.113.10", 37017, 27018, status_source="local")
         server_cache.upsert_server(connection, original)
 
         server_cache.replace_server_key(connection, original.cache_key, corrected)
 
         self.assertIsNone(server_cache.get_server(connection, original.cache_key))
-        self.assertEqual(
-            server_cache.get_server(connection, corrected.cache_key), corrected
-        )
+        self.assertEqual(server_cache.get_server(connection, corrected.cache_key), corrected)
 
     def test_upsert_servers_returns_inserted_count(self):
         connection = self.open_cache()
@@ -764,19 +739,13 @@ class ServerCacheTests(unittest.TestCase):
         )
 
         all_rows = server_cache.search_servers(connection)
-        filtered = server_cache.search_servers(
-            connection, hide_quality_flagged=True
-        )
-        filtered_count = server_cache.count_search_servers(
-            connection, hide_quality_flagged=True
-        )
+        filtered = server_cache.search_servers(connection, hide_quality_flagged=True)
+        filtered_count = server_cache.count_search_servers(connection, hide_quality_flagged=True)
 
         self.assertEqual(len(all_rows), 2)
         self.assertEqual([server.name for server in filtered], ["Ordinary Server"])
         self.assertEqual(filtered_count, 1)
-        cached = server_cache.get_server(
-            connection, "203.0.113.20:2302:27016"
-        )
+        cached = server_cache.get_server(connection, "203.0.113.20:2302:27016")
         self.assertEqual(
             cached.quality_flags,
             ("suspicious_bots", "high_population_cluster"),

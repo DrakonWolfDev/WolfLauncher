@@ -8,15 +8,15 @@ from wolflauncher.mod_presenter import (
     mod_file_size,
     mod_inspector_scale,
     mod_inspector_type_scale,
+    mod_readiness_text,
     mod_result_context,
     mod_row,
-    mod_readiness_text,
     mod_server_heading,
     mod_summary_text,
 )
-from wolflauncher.theme import STATUS_COLOURS
 from wolflauncher.models import Server
 from wolflauncher.mods import ModCheckResult, RequiredMod
+from wolflauncher.theme import STATUS_COLOURS
 from wolflauncher.workshop_subscription import (
     ITEM_STATE_DOWNLOADING,
     ITEM_STATE_INSTALLED,
@@ -70,11 +70,13 @@ class ModPresenterTests(unittest.TestCase):
 
     def test_rows_distinguish_update_and_download_states(self):
         update = RequiredMod(
-            "111", installed=True,
+            "111",
+            installed=True,
             workshop_state=ITEM_STATE_INSTALLED | ITEM_STATE_NEEDS_UPDATE,
         )
         downloading = RequiredMod(
-            "222", installed=True,
+            "222",
+            installed=True,
             workshop_state=ITEM_STATE_DOWNLOADING | ITEM_STATE_NEEDS_UPDATE,
             workshop_downloaded=25,
             workshop_total=100,
@@ -176,9 +178,15 @@ class ModPresenterTests(unittest.TestCase):
         )
         missing = mod_row(RequiredMod("222"))
 
-        self.assertEqual(installed.values, [
-            "✓ Installed", "Required Name", "111", "Unavailable",
-        ])
+        self.assertEqual(
+            installed.values,
+            [
+                "✓ Installed",
+                "Required Name",
+                "111",
+                "Unavailable",
+            ],
+        )
         self.assertEqual(installed.workshop_id, "111")
         self.assertEqual(installed.status_colour, STATUS_COLOURS["positive"])
         self.assertEqual(missing.values[0:4], ["✗ Missing", "Unknown", "222", "Unavailable"])
@@ -188,8 +196,7 @@ class ModPresenterTests(unittest.TestCase):
         mod = RequiredMod(
             "111",
             workshop_description=(
-                "[h1]Features[/h1]\nhttps://img.example.test/preview.png "
-                + "Useful text " * 20
+                "[h1]Features[/h1]\nhttps://img.example.test/preview.png " + "Useful text " * 20
             ),
         )
 

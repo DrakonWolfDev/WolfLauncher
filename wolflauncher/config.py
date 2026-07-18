@@ -1,12 +1,12 @@
-from pathlib import Path
 import os
 import sys
+from pathlib import Path
+
 import yaml
 
 from .models import Server
 from .persistence import atomic_write_text
 from .settings import CURATED_SERVERS_PATH
-
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 INSTALL_SHARE_ROOT = Path(
@@ -66,7 +66,11 @@ def ensure_servers_file(
     migration_source = LEGACY_SERVERS_PATH if path == CURATED_SERVERS_PATH else None
     if legacy_path is not None:
         migration_source = legacy_path
-    source = migration_source if migration_source is not None and migration_source.is_file() else example_path
+    source = (
+        migration_source
+        if migration_source is not None and migration_source.is_file()
+        else example_path
+    )
     if source.is_file():
         text = source.read_text(encoding="utf-8")
         _validate_server_yaml_text(text)
@@ -174,7 +178,9 @@ def update_curated_server(path: Path, original: Server, updated: Server) -> bool
         if index == match_index or not isinstance(item, dict):
             continue
         if _same_server_entry(item, updated):
-            raise ValueError("Another favourite server already uses that host and port combination.")
+            raise ValueError(
+                "Another favourite server already uses that host and port combination."
+            )
 
     servers[match_index] = {
         "name": updated.name,

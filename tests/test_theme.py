@@ -1,6 +1,6 @@
 import os
-from pathlib import Path
 import unittest
+from pathlib import Path
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -32,7 +32,9 @@ class ThemeTests(unittest.TestCase):
         self.assertIn("check.svg", APPLICATION_STYLESHEET)
         self.assertIn('QTableView[uiRole="browserTable"]', APPLICATION_STYLESHEET)
         self.assertTrue(
-            (Path(__file__).resolve().parents[1] / "wolflauncher" / "assets" / "check.svg").is_file()
+            (
+                Path(__file__).resolve().parents[1] / "wolflauncher" / "assets" / "check.svg"
+            ).is_file()
         )
 
     def test_atmosphere_asset_is_packaged_with_theme(self):
@@ -48,19 +50,21 @@ class ThemeTests(unittest.TestCase):
         self.assertIn("QTabWidget#mainTabs::pane", APPLICATION_STYLESHEET)
 
     def test_wolf_mark_is_packaged_with_theme(self):
-        mark = (
-            Path(__file__).resolve().parents[1]
-            / "wolflauncher"
-            / "assets"
-            / "wolf-mark.svg"
-        )
+        mark = Path(__file__).resolve().parents[1] / "wolflauncher" / "assets" / "wolf-mark.svg"
         self.assertTrue(mark.is_file())
         self.assertIn("#e8a33d", mark.read_text())
 
     def test_restrained_icon_set_is_packaged_as_native_svg(self):
         assets = Path(__file__).resolve().parents[1] / "wolflauncher" / "assets"
         for name in (
-            "servers", "browser", "mods", "settings", "add", "refresh", "launch", "recheck"
+            "servers",
+            "browser",
+            "mods",
+            "settings",
+            "add",
+            "refresh",
+            "launch",
+            "recheck",
         ):
             self.assertTrue((assets / f"icon-{name}.svg").is_file())
         for name in ("time-sun.svg", "time-moon.svg"):
@@ -73,9 +77,7 @@ class ThemeTests(unittest.TestCase):
     def test_palette_covers_selection_placeholder_and_disabled_text(self):
         palette = build_palette()
         self.assertEqual(palette.color(QPalette.Highlight).name(), COLOURS["accent"])
-        self.assertEqual(
-            palette.color(QPalette.PlaceholderText).name(), COLOURS["text_muted"]
-        )
+        self.assertEqual(palette.color(QPalette.PlaceholderText).name(), COLOURS["text_muted"])
         self.assertEqual(
             palette.color(QPalette.Disabled, QPalette.Text).name(),
             COLOURS["text_muted"],

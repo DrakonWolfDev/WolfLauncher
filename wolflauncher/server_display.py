@@ -1,6 +1,5 @@
 """Shared, presentation-only labels for server data."""
 
-
 PING_WARNING_MS = 200
 PING_CRITICAL_MS = 250
 

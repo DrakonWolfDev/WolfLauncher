@@ -20,21 +20,15 @@ def refresh_cache(
     connection = None
     try:
         if use_v1:
-            servers = discover_wolfapi_v1_pages(
-                limit, unflagged_only=unflagged_only
-            )
+            servers = discover_wolfapi_v1_pages(limit, unflagged_only=unflagged_only)
         else:
             servers = discover_dayz_servers_wolfapi(limit=limit)
         connection = server_cache.connect(cache_path)
         if use_v1:
-            inserted = server_cache.merge_source_servers(
-                connection, "wolfapi", servers
-            )
+            inserted = server_cache.merge_source_servers(connection, "wolfapi", servers)
             removed = 0
         else:
-            inserted, removed = server_cache.sync_source_servers(
-                connection, "wolfapi", servers
-            )
+            inserted, removed = server_cache.sync_source_servers(connection, "wolfapi", servers)
         return {"inserted": inserted, "removed": removed, "error": ""}
     except Exception as exc:
         return {"inserted": 0, "removed": 0, "error": str(exc)}

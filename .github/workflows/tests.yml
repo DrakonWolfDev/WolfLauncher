@@ -17,10 +17,10 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
@@ -35,3 +35,93 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: "1"
         run: python -m unittest discover -v
+
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install quality toolchain
+        run: python -m pip install -r requirements.txt -r requirements-quality.txt
+
+      - name: Check formatting
+        run: ruff format --check wolflauncher tests main.py
+
+      - name: Lint
+        run: ruff check wolflauncher tests main.py
+
+      - name: Type-check hardened core boundaries
+        run: mypy wolflauncher/paths.py wolflauncher/persistence.py wolflauncher/redaction.py wolflauncher/secret_store.py
+
+      - name: Audit locked release dependencies
+        run: pip-audit -r requirements-release.txt
+
+      - name: Compile and check whitespace
+        run: |
+          python -m compileall -q main.py wolflauncher scripts
+          git diff --check
+
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            python: "3.10"
+            label: ubuntu22
+          - os: ubuntu-24.04
+            python: "3.12"
+            label: ubuntu24
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+
+      - name: Install build inputs
+        run: |
+          python -m pip install -r requirements-release.txt -r requirements-dev.txt
+
+      - name: Build wheel and Debian package
+        env:
+          PYTHON: python
+          WOLFLAUNCHER_ARTIFACT_LABEL: ${{ matrix.label }}
+        run: ./scripts/build-deb.sh
+
+      - name: Inspect and smoke-test extracted package
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          package_path=$(find dist -maxdepth 1 -name 'wolflauncher_*.deb' -print -quit)
+          test -n "$package_path"
+          dpkg-deb --info "$package_path"
+          mkdir package-root
+          dpkg-deb --extract "$package_path" package-root
+          export WOLFLAUNCHER_SHARE_ROOT="$PWD/package-root/usr/share/wolflauncher"
+          export PYTHONPATH="$PWD/package-root/usr/lib/wolflauncher/python"
+          export PATH="$PWD/package-root/usr/lib/wolflauncher/node-runtime/bin:$PWD/package-root/usr/lib/wolflauncher/node/node_modules/.bin:$PATH"
+          python -c "import wolflauncher; from wolflauncher import config; assert config.EXAMPLE_SERVERS_PATH.is_file(); assert config.VENDORED_LAUNCHER_PATH.is_file()"
+          node -e "const p=require('./package-root/usr/lib/wolflauncher/node/node_modules/gamedig/package.json'); if(p.version !== '5.3.3') process.exit(1)"
+          sha256sum --check dist/*.deb.sha256
+
+      - name: Upload release-candidate artifacts
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
+        with:
+          name: wolflauncher-debian-${{ matrix.label }}-${{ github.sha }}
+          path: |
+            dist/*.deb
+            dist/*.deb.sha256
+            dist/*.whl
+          if-no-files-found: error

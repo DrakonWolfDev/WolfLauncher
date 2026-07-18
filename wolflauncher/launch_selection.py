@@ -1,5 +1,5 @@
 from dataclasses import replace
-from ipaddress import IPv4Address, AddressValueError
+from ipaddress import AddressValueError, IPv4Address
 
 from .models import Server
 

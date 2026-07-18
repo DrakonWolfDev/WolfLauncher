@@ -1,15 +1,15 @@
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
-import threading
 from pathlib import Path
 
 from PySide6.QtCore import QThread, Signal
 
-from .models import Server
 from . import server_cache
+from .models import Server
 from .mods import (
-    apply_workshop_metadata,
     apply_workshop_item_states,
+    apply_workshop_metadata,
     check_server_mods,
     fetch_workshop_metadata,
 )
@@ -30,7 +30,6 @@ from .workshop_subscription import (
     query_workshop_item_states_isolated,
     subscribe_workshop_items_isolated,
 )
-
 
 MAX_STATUS_WORKERS = 8
 MAX_ENRICHMENT_WORKERS = 8
@@ -129,9 +128,7 @@ class WorkshopSubscriptionWorker(QThread):
                 cancelled=self._cancelled,
             )
         except Exception as exc:
-            result = WorkshopSubscriptionResult(
-                (), tuple(self.workshop_ids), error=str(exc)
-            )
+            result = WorkshopSubscriptionResult((), tuple(self.workshop_ids), error=str(exc))
         self.subscription_ready.emit(result)
 
 
@@ -144,9 +141,7 @@ class WorkshopStateWorker(QThread):
         self.install = install
 
     def run(self):
-        self.state_ready.emit(
-            query_workshop_item_states_isolated(self.workshop_ids, self.install)
-        )
+        self.state_ready.emit(query_workshop_item_states_isolated(self.workshop_ids, self.install))
 
 
 class SteamDiscoveryWorker(QThread):
@@ -197,7 +192,9 @@ class BattleMetricsDiscoveryWorker(QThread):
 
     def run(self):
         try:
-            servers = discover_dayz_servers_battlemetrics(limit=self.limit, page_delay=self.page_delay)
+            servers = discover_dayz_servers_battlemetrics(
+                limit=self.limit, page_delay=self.page_delay
+            )
         except Exception as exc:
             self.discovery_ready.emit([], str(exc))
         else:
@@ -228,9 +225,7 @@ class WolfApiDiscoveryWorker(QThread):
         try:
             if self.use_v1:
                 if self.unflagged_only:
-                    servers = discover_wolfapi_v1_pages(
-                        self.limit, unflagged_only=True
-                    )
+                    servers = discover_wolfapi_v1_pages(self.limit, unflagged_only=True)
                 else:
                     servers = discover_wolfapi_v1_pages(self.limit)
             else:
@@ -255,9 +250,7 @@ class WolfApiCacheMergeWorker(QThread):
         try:
             connection = server_cache.connect(self.cache_path)
             if self.bounded_v1:
-                inserted = server_cache.merge_source_servers(
-                    connection, "wolfapi", self.servers
-                )
+                inserted = server_cache.merge_source_servers(connection, "wolfapi", self.servers)
                 removed = 0
             else:
                 inserted, removed = server_cache.sync_source_servers(
@@ -370,7 +363,5 @@ class ServerEnrichmentWorker(QThread):
                 zip(self.servers, executor.map(enrich_one, self.servers)), 1
             ):
                 enriched.append(server)
-                self.enrichment_progress.emit(
-                    (original.cache_key, server), completed, total
-                )
+                self.enrichment_progress.emit((original.cache_key, server), completed, total)
         self.enrichment_ready.emit(enriched, "")

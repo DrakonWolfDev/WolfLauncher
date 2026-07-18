@@ -6,9 +6,7 @@ _DEFAULT_SORT_VALUE = object()
 class SortableTableWidgetItem(QTableWidgetItem):
     def __init__(self, text: str, sort_value=_DEFAULT_SORT_VALUE):
         super().__init__(text)
-        self.sort_value = (
-            text.casefold() if sort_value is _DEFAULT_SORT_VALUE else sort_value
-        )
+        self.sort_value = text.casefold() if sort_value is _DEFAULT_SORT_VALUE else sort_value
 
     def __lt__(self, other):
         if isinstance(other, SortableTableWidgetItem):

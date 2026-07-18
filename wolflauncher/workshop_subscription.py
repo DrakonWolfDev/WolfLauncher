@@ -20,7 +20,6 @@ from typing import Callable, Iterable
 
 from .platform_detection import STEAM_APP_ID_DAYZ, SteamInstall
 
-
 ITEM_STATE_SUBSCRIBED = 1
 ITEM_STATE_INSTALLED = 4
 ITEM_STATE_NEEDS_UPDATE = 8
@@ -79,8 +78,7 @@ def current_workshop_item(
     if downloading:
         return max(downloading, key=lambda item: item.downloaded)
     measurable = [
-        item for item in incomplete
-        if item.percent is not None and 0 < item.downloaded < item.total
+        item for item in incomplete if item.percent is not None and 0 < item.downloaded < item.total
     ]
     if measurable:
         return max(measurable, key=lambda item: item.downloaded)
@@ -133,9 +131,7 @@ def workshop_recovery_state(
     """
     if not install:
         return WorkshopRecoveryState()
-    wanted = {
-        str(item).strip() for item in relevant_ids if str(item).strip().isdigit()
-    }
+    wanted = {str(item).strip() for item in relevant_ids if str(item).strip().isdigit()}
     if not wanted:
         return WorkshopRecoveryState()
     steamapps_candidates = list(install.library_steamapps)
@@ -148,8 +144,7 @@ def workshop_recovery_state(
         staging = steamapps / "workshop" / "downloads" / str(STEAM_APP_ID_DAYZ)
         try:
             item_ids = {
-                child.name for child in staging.iterdir()
-                if child.is_dir() and child.name.isdigit()
+                child.name for child in staging.iterdir() if child.is_dir() and child.name.isdigit()
             }
         except OSError:
             continue
@@ -172,8 +167,7 @@ def steam_api_library_candidates(install: SteamInstall | None) -> list[Path]:
         [
             Path.home() / ".local/share/Steam/steamrt64/libsteam_api.so",
             Path.home() / ".steam/steam/steamrt64/libsteam_api.so",
-            Path.home()
-            / ".var/app/com.valvesoftware.Steam/data/Steam/steamrt64/libsteam_api.so",
+            Path.home() / ".var/app/com.valvesoftware.Steam/data/Steam/steamrt64/libsteam_api.so",
             Path.home()
             / ".var/app/com.valvesoftware.Steam/.local/share/Steam/steamrt64/libsteam_api.so",
         ]
@@ -212,7 +206,9 @@ class SteamWorkshopClient:
                 )
             self._ugc = self._ugc_accessor()
             if not self._ugc:
-                raise WorkshopSubscriptionError("Steamworks did not provide the Workshop interface.")
+                raise WorkshopSubscriptionError(
+                    "Steamworks did not provide the Workshop interface."
+                )
             return self
         except Exception:
             self.close()
@@ -359,8 +355,7 @@ def subscribe_workshop_items(
             installed = tuple(
                 item.workshop_id
                 for item in snapshots
-                if item.installed
-                and (install.workshop_dir / item.workshop_id).is_dir()
+                if item.installed and (install.workshop_dir / item.workshop_id).is_dir()
             )
             if len(installed) == len(ids):
                 return WorkshopSubscriptionResult(installed, ())
@@ -443,9 +438,7 @@ def query_workshop_item_states(
         return WorkshopStateResult(error=str(exc))
 
 
-def _state_process_main(
-    workshop_ids: tuple[str, ...], install: SteamInstall, messages
-) -> None:
+def _state_process_main(workshop_ids: tuple[str, ...], install: SteamInstall, messages) -> None:
     signal.signal(signal.SIGINT, signal.SIG_IGN)
     silence_helper_output()
     messages.put(query_workshop_item_states(workshop_ids, install))
@@ -507,9 +500,7 @@ def _subscription_process_main(
             poll_seconds=poll_seconds,
         )
     except Exception as exc:
-        result = WorkshopSubscriptionResult(
-            (), workshop_ids, error=str(exc)
-        )
+        result = WorkshopSubscriptionResult((), workshop_ids, error=str(exc))
     messages.put(("result", result))
 
 

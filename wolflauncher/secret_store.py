@@ -3,7 +3,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
-
 SERVICE_NAME = "WolfLauncher"
 STEAM_API_KEY_ACCOUNT = "steam-web-api-key"
 SETTINGS_KEY = "steam_web_api_key"
@@ -16,11 +15,12 @@ class SecretStore:
     def __post_init__(self) -> None:
         if self.keyring_module is not None:
             return
+        module: Any
         try:
-            import keyring
+            import keyring as module
         except ImportError:
-            keyring = None
-        self.keyring_module = keyring
+            module = None
+        self.keyring_module = module
 
     def available(self) -> bool:
         if self.keyring_module is None:
@@ -34,9 +34,7 @@ class SecretStore:
         if not self.available():
             return ""
         try:
-            return str(
-                self.keyring_module.get_password(SERVICE_NAME, STEAM_API_KEY_ACCOUNT) or ""
-            )
+            return str(self.keyring_module.get_password(SERVICE_NAME, STEAM_API_KEY_ACCOUNT) or "")
         except Exception:
             return ""
 

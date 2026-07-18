@@ -18,7 +18,6 @@ from .diagnostics import format_launch_output_report, post_handoff_launch_option
 from .platform_detection import dayz_process_check
 from .theme import set_monospace, set_ui_role
 
-
 POST_HANDOFF_PROCESS_CHECK_INTERVAL_MS = 5000
 POST_HANDOFF_PROCESS_CHECK_ATTEMPTS = 9
 
@@ -47,7 +46,9 @@ class PostHandoffProcessCheckMixin:
             return
 
         if self.post_handoff_check_attempt < POST_HANDOFF_PROCESS_CHECK_ATTEMPTS:
-            QTimer.singleShot(POST_HANDOFF_PROCESS_CHECK_INTERVAL_MS, self.append_dayz_process_check)
+            QTimer.singleShot(
+                POST_HANDOFF_PROCESS_CHECK_INTERVAL_MS, self.append_dayz_process_check
+            )
             return
 
         self.output.append(
@@ -59,7 +60,9 @@ class PostHandoffProcessCheckMixin:
 
 
 class LaunchDialog(PostHandoffProcessCheckMixin, QDialog):
-    def __init__(self, parent, command: list[str], title: str, handoff_label: str = "launch command"):
+    def __init__(
+        self, parent, command: list[str], title: str, handoff_label: str = "launch command"
+    ):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.resize(820, 460)

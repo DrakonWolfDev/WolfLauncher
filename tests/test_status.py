@@ -122,7 +122,9 @@ class CheckServerTests(unittest.TestCase):
 
     @patch("wolflauncher.status.resolve_host", return_value="203.0.113.10")
     @patch("wolflauncher.status.shutil.which", return_value="/usr/bin/gamedig")
-    @patch("wolflauncher.status.subprocess.run", side_effect=subprocess.TimeoutExpired("gamedig", 5))
+    @patch(
+        "wolflauncher.status.subprocess.run", side_effect=subprocess.TimeoutExpired("gamedig", 5)
+    )
     def test_gamedig_timeout_returns_offline_status(self, run, which, resolve_host_mock):
         status = check_server(self.make_server())
 

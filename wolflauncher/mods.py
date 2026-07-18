@@ -1,16 +1,16 @@
 import json
 import re
 import urllib.error
-import urllib.request
 import urllib.parse
+import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from .models import Server
-from .status import resolve_host
 from .redaction import redact_support_text
+from .status import resolve_host
 
 DAYZSA_QUERY_URL = "https://dayzsalauncher.com/api/v1/query/{address}/{port}"
 WORKSHOP_URL = "https://steamcommunity.com/sharedfiles/filedetails/?id={mod_id}"
@@ -40,10 +40,11 @@ class RequiredMod:
         if self.workshop_state is None:
             return True
         from .workshop_subscription import (
-            ITEM_STATE_DOWNLOADING,
             ITEM_STATE_DOWNLOAD_PENDING,
+            ITEM_STATE_DOWNLOADING,
             ITEM_STATE_NEEDS_UPDATE,
         )
+
         blocked = ITEM_STATE_NEEDS_UPDATE | ITEM_STATE_DOWNLOADING | ITEM_STATE_DOWNLOAD_PENDING
         return not bool(self.workshop_state & blocked)
 

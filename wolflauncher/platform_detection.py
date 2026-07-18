@@ -51,7 +51,9 @@ FLATPAK_STEAM_ROOT = Path.home() / ".var/app" / FLATPAK_STEAM_ID / "data" / "Ste
 
 def _is_running(process_name: str) -> bool:
     try:
-        result = subprocess.run(["pgrep", "-x", process_name], capture_output=True, text=True, timeout=2)
+        result = subprocess.run(
+            ["pgrep", "-x", process_name], capture_output=True, text=True, timeout=2
+        )
         return result.returncode == 0
     except Exception:
         return False
@@ -69,7 +71,9 @@ def _flatpak_steam_running() -> bool:
 
 def _matching_process_lines(patterns: tuple[str, ...]) -> list[str]:
     try:
-        result = subprocess.run(["pgrep", "-afi", "|".join(patterns)], capture_output=True, text=True, timeout=2)
+        result = subprocess.run(
+            ["pgrep", "-afi", "|".join(patterns)], capture_output=True, text=True, timeout=2
+        )
     except Exception:
         return []
     if result.returncode != 0:
@@ -283,7 +287,9 @@ def steam_mode_label(mode: str) -> str:
     return labels.get(mode, "Auto")
 
 
-def select_steam_install(mode: str, installs: list[SteamInstall] | None = None) -> SteamInstall | None:
+def select_steam_install(
+    mode: str, installs: list[SteamInstall] | None = None
+) -> SteamInstall | None:
     detected = installs if installs is not None else detect_steam()
     if mode == "auto":
         return best_install_from(detected)
@@ -337,24 +343,43 @@ def selected_install_summary(install: SteamInstall | None) -> str:
     return f"Selected {install_label(install)} | {state} | command: {steam_command_detail(install)}"
 
 
-def steam_selection_readiness(mode: str, installs: list[SteamInstall] | None = None) -> tuple[str, str]:
+def steam_selection_readiness(
+    mode: str, installs: list[SteamInstall] | None = None
+) -> tuple[str, str]:
     report = steam_selection_report(mode, installs)
     return report.status, report.detail
 
 
-def steam_selection_report(mode: str, installs: list[SteamInstall] | None = None) -> SteamSelectionReport:
+def steam_selection_report(
+    mode: str, installs: list[SteamInstall] | None = None
+) -> SteamSelectionReport:
     detected = installs if installs is not None else detect_steam()
     install = select_steam_install(mode, detected)
-    candidates = [steam_install_summary(candidate) for candidate in detected if candidate.root or candidate.executable]
+    candidates = [
+        steam_install_summary(candidate)
+        for candidate in detected
+        if candidate.root or candidate.executable
+    ]
     if mode == "auto":
         if not install:
-            return SteamSelectionReport("MISSING", "Auto selection found no Steam install", "None", candidates)
+            return SteamSelectionReport(
+                "MISSING", "Auto selection found no Steam install", "None", candidates
+            )
         status, _detail = install_readiness(install)
-        return SteamSelectionReport(status, f"Auto selected {steam_install_summary(install)}", install_label(install), candidates)
+        return SteamSelectionReport(
+            status,
+            f"Auto selected {steam_install_summary(install)}",
+            install_label(install),
+            candidates,
+        )
     if not install:
-        return SteamSelectionReport("MISSING", f"{steam_mode_label(mode)} not detected", "None", candidates)
+        return SteamSelectionReport(
+            "MISSING", f"{steam_mode_label(mode)} not detected", "None", candidates
+        )
     status, _detail = install_readiness(install)
-    return SteamSelectionReport(status, steam_install_summary(install), install_label(install), candidates)
+    return SteamSelectionReport(
+        status, steam_install_summary(install), install_label(install), candidates
+    )
 
 
 def steam_selection_candidates_detail(report: SteamSelectionReport) -> str:

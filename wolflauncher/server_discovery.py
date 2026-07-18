@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import os
 import json
+import os
 import socket
 import time
 import urllib.error
@@ -11,7 +11,6 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from .models import DiscoveredServer
-
 
 DAYZ_APP_ID = 221100
 STEAM_WEB_API_SERVER_LIST_URL = "https://api.steampowered.com/IGameServersService/GetServerList/v1/"
@@ -73,7 +72,14 @@ def build_master_server_request(
     extra_filter: str = "",
 ) -> bytes:
     filters = f"\\appid\\{app_id}{extra_filter}"
-    return b"1" + bytes([region]) + start_address.encode("ascii") + b"\0" + filters.encode("ascii") + b"\0"
+    return (
+        b"1"
+        + bytes([region])
+        + start_address.encode("ascii")
+        + b"\0"
+        + filters.encode("ascii")
+        + b"\0"
+    )
 
 
 def parse_master_server_response(packet: bytes) -> tuple[list[MasterServerEndpoint], bool]:
@@ -138,7 +144,9 @@ def discover_dayz_servers(
         except OSError as exc:
             errors.append(f"{address.address} -> {exc}")
 
-    raise SteamMasterServerError("Steam master discovery failed for all configured hosts: " + "; ".join(errors))
+    raise SteamMasterServerError(
+        "Steam master discovery failed for all configured hosts: " + "; ".join(errors)
+    )
 
 
 def parse_master_address(value: str, default_port: int = MASTER_SERVER_PORT) -> MasterServerAddress:
@@ -170,7 +178,9 @@ def _configured_master_addresses(
 
     endpoints = os.environ.get("WOLFLAUNCHER_STEAM_MASTER_ENDPOINTS", "")
     if endpoints:
-        return [parse_master_address(item, master_port) for item in endpoints.split(",") if item.strip()]
+        return [
+            parse_master_address(item, master_port) for item in endpoints.split(",") if item.strip()
+        ]
 
     configured_host = master_host or os.environ.get("WOLFLAUNCHER_STEAM_MASTER_HOST", "")
     configured_port = int(os.environ.get("WOLFLAUNCHER_STEAM_MASTER_PORT", master_port))
@@ -216,7 +226,9 @@ def _discover_dayz_servers_from_master(
     return servers
 
 
-def discovered_server_from_endpoint(endpoint: MasterServerEndpoint, timestamp: str = "") -> DiscoveredServer:
+def discovered_server_from_endpoint(
+    endpoint: MasterServerEndpoint, timestamp: str = ""
+) -> DiscoveredServer:
     return DiscoveredServer(
         name=endpoint.address,
         source="steam_master",
@@ -242,7 +254,11 @@ def discover_dayz_servers_web_api(
     timeout: float = 15.0,
     filter_text: str = "",
 ) -> list[DiscoveredServer]:
-    api_key = api_key or os.environ.get("WOLFLAUNCHER_STEAM_WEB_API_KEY", "") or os.environ.get("STEAM_WEB_API_KEY", "")
+    api_key = (
+        api_key
+        or os.environ.get("WOLFLAUNCHER_STEAM_WEB_API_KEY", "")
+        or os.environ.get("STEAM_WEB_API_KEY", "")
+    )
     if not api_key:
         raise SteamWebApiError("Steam Web API key is required.")
 
@@ -369,7 +385,9 @@ def discover_dayz_servers_wolfapi(
     timeout: float = 15.0,
     url: str = "",
 ) -> list[DiscoveredServer]:
-    endpoint = url or os.environ.get("WOLFLAUNCHER_WOLFAPI_SERVER_LIST_URL", "") or WOLFAPI_SERVER_LIST_URL
+    endpoint = (
+        url or os.environ.get("WOLFLAUNCHER_WOLFAPI_SERVER_LIST_URL", "") or WOLFAPI_SERVER_LIST_URL
+    )
     return _fetch_wolfapi_servers(endpoint, limit=limit, timeout=timeout)
 
 
@@ -380,7 +398,11 @@ def discover_dayz_servers_wolfapi_v1(
     url: str = "",
     unflagged_only: bool = False,
 ) -> list[DiscoveredServer]:
-    endpoint = url or os.environ.get("WOLFLAUNCHER_WOLFAPI_V1_SERVER_LIST_URL", "") or WOLFAPI_V1_SERVER_LIST_URL
+    endpoint = (
+        url
+        or os.environ.get("WOLFLAUNCHER_WOLFAPI_V1_SERVER_LIST_URL", "")
+        or WOLFAPI_V1_SERVER_LIST_URL
+    )
     endpoint = _url_with_query(
         endpoint,
         {
@@ -416,7 +438,9 @@ def search_dayz_servers_wolfapi_v1(
         params["version"] = version.strip()
     if unflagged_only:
         params["quality"] = "unflagged"
-    endpoint = url or os.environ.get("WOLFLAUNCHER_WOLFAPI_V1_SEARCH_URL", "") or WOLFAPI_V1_SEARCH_URL
+    endpoint = (
+        url or os.environ.get("WOLFLAUNCHER_WOLFAPI_V1_SEARCH_URL", "") or WOLFAPI_V1_SEARCH_URL
+    )
     return _fetch_wolfapi_servers(
         _url_with_query(endpoint, params),
         limit=limit,
@@ -442,7 +466,9 @@ def resolve_dayz_server_wolfapi_v1(
         params["game_port"] = int(game_port)
     if query_port is not None:
         params["query_port"] = int(query_port)
-    endpoint = url or os.environ.get("WOLFLAUNCHER_WOLFAPI_V1_RESOLVE_URL", "") or WOLFAPI_V1_RESOLVE_URL
+    endpoint = (
+        url or os.environ.get("WOLFLAUNCHER_WOLFAPI_V1_RESOLVE_URL", "") or WOLFAPI_V1_RESOLVE_URL
+    )
     return _fetch_wolfapi_servers(
         _url_with_query(endpoint, params),
         limit=500,
@@ -512,9 +538,7 @@ def parse_wolfapi_v1_servers(data, limit: int = 500) -> list[DiscoveredServer]:
     required = ("generated_at", "validation_policy", "coverage", "validation_queue")
     missing = [field for field in required if not data.get(field)]
     if missing:
-        raise WolfApiError(
-            "WolfAPI v1 response is missing rollout metadata: " + ", ".join(missing)
-        )
+        raise WolfApiError("WolfAPI v1 response is missing rollout metadata: " + ", ".join(missing))
     return parse_wolfapi_servers(data, limit=limit)
 
 
@@ -615,9 +639,10 @@ def discovered_server_from_wolfapi_row(row: dict, timestamp: str = "") -> Discov
         ),
         stable_server_id=str(row.get("server_id") or ""),
         endpoint_aliases=tuple(
-            str(alias) for alias in row.get("endpoint_aliases", [])
-            if str(alias).strip()
-        ) if isinstance(row.get("endpoint_aliases", []), list) else (),
+            str(alias) for alias in row.get("endpoint_aliases", []) if str(alias).strip()
+        )
+        if isinstance(row.get("endpoint_aliases", []), list)
+        else (),
         freshness=str(row.get("freshness") or ""),
         freshness_expires_at=str(row.get("freshness_expires_at") or ""),
         validation_status=str(row.get("validation_status") or ""),
@@ -692,7 +717,9 @@ def parse_battlemetrics_servers(data: dict) -> list[DiscoveredServer]:
     return servers
 
 
-def discovered_server_from_battlemetrics_row(row: dict, timestamp: str = "") -> DiscoveredServer | None:
+def discovered_server_from_battlemetrics_row(
+    row: dict, timestamp: str = ""
+) -> DiscoveredServer | None:
     if not isinstance(row, dict):
         return None
     attributes = row.get("attributes", {})

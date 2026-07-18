@@ -17,8 +17,8 @@ from wolflauncher.server_browser_table import (
     update_browser_mod_cell,
     update_browser_table_row,
 )
-from wolflauncher.theme import STATUS_COLOURS
 from wolflauncher.table_items import SortableTableWidgetItem
+from wolflauncher.theme import STATUS_COLOURS
 
 
 class ServerBrowserTableTests(unittest.TestCase):
@@ -62,8 +62,12 @@ class ServerBrowserTableTests(unittest.TestCase):
     def test_game_time_uses_a_large_scalable_phase_icon(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)
         server = DiscoveredServer(
-            "Timed", "host", 2302, 27016,
-            game_time="17:07", day_acceleration=3,
+            "Timed",
+            "host",
+            2302,
+            27016,
+            game_time="17:07",
+            day_acceleration=3,
         )
 
         populate_browser_table(table, [server])
@@ -78,7 +82,8 @@ class ServerBrowserTableTests(unittest.TestCase):
         second = DiscoveredServer("Second", "two", 2302, 27016)
         populate_browser_table(table, [first, second])
         first_row = next(
-            row for row in range(table.rowCount())
+            row
+            for row in range(table.rowCount())
             if table.item(row, 0).data(Qt.UserRole) == first.cache_key
         )
         second_row = 1 - first_row
@@ -325,7 +330,9 @@ class ServerBrowserTableTests(unittest.TestCase):
             name="Neighbour", host="203.0.113.12", game_port=2302, query_port=27016
         )
         populate_browser_table(table, [original, neighbour])
-        neighbour_item = table.item(0, 0) if table.item(0, 0).text() == "Neighbour" else table.item(1, 0)
+        neighbour_item = (
+            table.item(0, 0) if table.item(0, 0).text() == "Neighbour" else table.item(1, 0)
+        )
         enriched = DiscoveredServer(
             name="Selected",
             host="203.0.113.11",
@@ -376,7 +383,8 @@ class ServerBrowserTableTests(unittest.TestCase):
         background = DiscoveredServer("Background", "two", 2302, 27016)
         populate_browser_table(table, [selected, background])
         selected_row = next(
-            row for row in range(table.rowCount())
+            row
+            for row in range(table.rowCount())
             if table.item(row, 0).data(Qt.UserRole) == selected.cache_key
         )
         table.selectRow(selected_row)
@@ -395,16 +403,38 @@ class ServerBrowserTableTests(unittest.TestCase):
     def test_dynamic_mod_text_yields_name_width_without_horizontal_overflow(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)
         table.resize(1200, 300)
-        table.setHorizontalHeaderLabels([
-            "Server Name", "Live Name", "Host", "Game Port", "Query Port",
-            "Status", "Map", "Players", "Ping", "Version", "Features",
-            "Mods", "Last Checked", "Last Seen", "Source", "Region", "Game Time",
-        ])
+        table.setHorizontalHeaderLabels(
+            [
+                "Server Name",
+                "Live Name",
+                "Host",
+                "Game Port",
+                "Query Port",
+                "Status",
+                "Map",
+                "Players",
+                "Ping",
+                "Version",
+                "Features",
+                "Mods",
+                "Last Checked",
+                "Last Seen",
+                "Source",
+                "Region",
+                "Game Time",
+            ]
+        )
         server = DiscoveredServer(
             "A deliberately long server name that should flex",
-            "one", 2302, 27016,
-            map_name="chernarusplus", players_current=12, players_max=60,
-            ping_ms=42, modded=True, game_time="13:26",
+            "one",
+            2302,
+            27016,
+            map_name="chernarusplus",
+            players_current=12,
+            players_max=60,
+            ping_ms=42,
+            modded=True,
+            game_time="13:26",
         )
         populate_browser_table(table, [server])
         window = SimpleNamespace(
@@ -416,7 +446,10 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.app.processEvents()
 
         update_browser_mod_cell(
-            table, server.cache_key, "31 MISSING", "Missing mods.",
+            table,
+            server.cache_key,
+            "31 MISSING",
+            "Missing mods.",
             STATUS_COLOURS["negative"],
         )
         self.app.processEvents()

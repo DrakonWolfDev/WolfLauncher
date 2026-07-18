@@ -13,7 +13,6 @@ from .models import DiscoveredServer
 from .paths import user_data_dir
 from .persistence import ensure_private_directory
 
-
 SCHEMA_VERSION = 7
 DATA_DIR = user_data_dir()
 SERVER_CACHE_PATH = DATA_DIR / "server_cache.sqlite3"
@@ -121,8 +120,7 @@ def _initialize_schema_v1(connection: sqlite3.Connection) -> None:
         "ON discovered_servers(map_name COLLATE NOCASE)"
     )
     connection.execute(
-        "CREATE INDEX IF NOT EXISTS idx_discovered_servers_online "
-        "ON discovered_servers(online)"
+        "CREATE INDEX IF NOT EXISTS idx_discovered_servers_online ON discovered_servers(online)"
     )
     connection.execute(
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_discovered_servers_stable_server_id "
@@ -166,15 +164,12 @@ def _migrate(connection: sqlite3.Connection, current_version: int, target_versio
             "provider_last_seen TEXT NOT NULL DEFAULT ''",
         )
         existing_columns = {
-            row[1]
-            for row in connection.execute("PRAGMA table_info(discovered_servers)")
+            row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")
         }
         for definition in definitions:
             column_name = definition.split(" ", 1)[0]
             if column_name not in existing_columns:
-                connection.execute(
-                    f"ALTER TABLE discovered_servers ADD COLUMN {definition}"
-                )
+                connection.execute(f"ALTER TABLE discovered_servers ADD COLUMN {definition}")
         connection.execute(
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_discovered_servers_stable_server_id "
             "ON discovered_servers(stable_server_id) WHERE stable_server_id != ''"
@@ -190,26 +185,21 @@ def _migrate(connection: sqlite3.Connection, current_version: int, target_versio
             "mod_metadata_error_code TEXT NOT NULL DEFAULT ''",
             "mod_manifest_hash TEXT NOT NULL DEFAULT ''",
         ):
-            connection.execute(
-                f"ALTER TABLE discovered_servers ADD COLUMN {definition}"
-            )
+            connection.execute(f"ALTER TABLE discovered_servers ADD COLUMN {definition}")
         connection.execute("PRAGMA user_version = 4")
         current_version = 4
     if current_version == 4 and target_version >= 5:
         connection.execute(
-            "ALTER TABLE discovered_servers "
-            "ADD COLUMN quality_flags TEXT NOT NULL DEFAULT '[]'"
+            "ALTER TABLE discovered_servers ADD COLUMN quality_flags TEXT NOT NULL DEFAULT '[]'"
         )
         connection.execute("PRAGMA user_version = 5")
         current_version = 5
     if current_version == 5 and target_version >= 6:
         connection.execute(
-            "ALTER TABLE discovered_servers "
-            "ADD COLUMN country_code TEXT NOT NULL DEFAULT ''"
+            "ALTER TABLE discovered_servers ADD COLUMN country_code TEXT NOT NULL DEFAULT ''"
         )
         connection.execute(
-            "ALTER TABLE discovered_servers "
-            "ADD COLUMN country_source TEXT NOT NULL DEFAULT ''"
+            "ALTER TABLE discovered_servers ADD COLUMN country_source TEXT NOT NULL DEFAULT ''"
         )
         connection.execute("PRAGMA user_version = 6")
         current_version = 6
@@ -219,9 +209,7 @@ def _migrate(connection: sqlite3.Connection, current_version: int, target_versio
             "day_acceleration REAL",
             "night_acceleration REAL",
         ):
-            connection.execute(
-                f"ALTER TABLE discovered_servers ADD COLUMN {definition}"
-            )
+            connection.execute(f"ALTER TABLE discovered_servers ADD COLUMN {definition}")
         connection.execute("PRAGMA user_version = 7")
         current_version = 7
     if current_version != target_version:
@@ -241,9 +229,7 @@ def replace_server_key(
     """Upsert an enriched row and remove its obsolete pre-correction key."""
     _upsert_server(connection, server)
     if old_cache_key and old_cache_key != server.cache_key:
-        connection.execute(
-            "DELETE FROM discovered_servers WHERE cache_key = ?", (old_cache_key,)
-        )
+        connection.execute("DELETE FROM discovered_servers WHERE cache_key = ?", (old_cache_key,))
     connection.commit()
 
 
@@ -411,7 +397,9 @@ def sync_source_servers(
         if server.stable_server_id:
             _upsert_server(connection, server)
 
-    connection.execute("CREATE TEMP TABLE IF NOT EXISTS current_source_keys (cache_key TEXT PRIMARY KEY)")
+    connection.execute(
+        "CREATE TEMP TABLE IF NOT EXISTS current_source_keys (cache_key TEXT PRIMARY KEY)"
+    )
     connection.execute("DELETE FROM current_source_keys")
     if keys:
         connection.executemany(
@@ -774,9 +762,9 @@ def _server_from_import_item(item: Any, index: int) -> DiscoveredServer:
         mod_manifest_hash=str(item.get("mod_manifest_hash") or ""),
         status_source=str(item.get("status_source") or "provider"),
         stable_server_id=str(item.get("stable_server_id") or item.get("server_id") or ""),
-        endpoint_aliases=tuple(
-            str(alias) for alias in item.get("endpoint_aliases", [])
-        ) if isinstance(item.get("endpoint_aliases", []), list) else (),
+        endpoint_aliases=tuple(str(alias) for alias in item.get("endpoint_aliases", []))
+        if isinstance(item.get("endpoint_aliases", []), list)
+        else (),
         freshness=str(item.get("freshness") or ""),
         freshness_expires_at=str(item.get("freshness_expires_at") or ""),
         validation_status=str(item.get("validation_status") or ""),

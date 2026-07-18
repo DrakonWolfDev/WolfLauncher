@@ -126,12 +126,8 @@ class ServerBrowserControllerTests(unittest.TestCase):
         self.assertEqual(options["source"], ["battlemetrics", "wolfapi"])
 
     def test_canonical_map_filter_matches_all_cached_casing_and_aliases(self):
-        bitterroot = load_browser_snapshot(
-            self.connection, BrowserQuery(map_name="Bitterroot")
-        )
-        livonia = load_browser_snapshot(
-            self.connection, BrowserQuery(map_name="Livonia")
-        )
+        bitterroot = load_browser_snapshot(self.connection, BrowserQuery(map_name="Bitterroot"))
+        livonia = load_browser_snapshot(self.connection, BrowserQuery(map_name="Livonia"))
 
         self.assertEqual(bitterroot.match_count, 2)
         self.assertEqual(livonia.match_count, 1)

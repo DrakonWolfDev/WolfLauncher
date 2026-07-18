@@ -18,8 +18,8 @@ from .platform_detection import (
     steam_command_detail,
     steam_mode_label,
 )
-from .status import resolve_host
 from .redaction import redact_support_text
+from .status import resolve_host
 
 
 class NativeLaunchError(RuntimeError):
@@ -206,7 +206,8 @@ def prepare_native_launch(
 
     if mod_setup.missing_mod_ids:
         raise NativeLaunchError(
-            "Missing mod directories for: " + ", ".join(_missing_mod_labels(mods, mod_setup.missing_mod_ids)),
+            "Missing mod directories for: "
+            + ", ".join(_missing_mod_labels(mods, mod_setup.missing_mod_ids)),
             stage="mod setup",
             guidance=(
                 "Open the missing Workshop pages from the Mods tab, let Steam finish downloading them, "
@@ -215,7 +216,9 @@ def prepare_native_launch(
         )
 
     return PreparedNativeLaunch(
-        command=build_steam_launch_command(install, launch_server, player_name, mod_setup.mod_links, extra_params),
+        command=build_steam_launch_command(
+            install, launch_server, player_name, mod_setup.mod_links, extra_params
+        ),
         mod_links=mod_setup.mod_links,
         missing_mod_ids=mod_setup.missing_mod_ids,
         prepared_mods=mod_setup.prepared_mods,
@@ -236,7 +239,9 @@ def prepare_native_launch_preview(
     mod_setup = prepare_mod_links(dayz_dir, workshop_dir, required_mods)
     command = []
     if not mod_setup.missing_mod_ids:
-        command = build_steam_launch_command(install, launch_server, player_name, mod_setup.mod_links, extra_params)
+        command = build_steam_launch_command(
+            install, launch_server, player_name, mod_setup.mod_links, extra_params
+        )
     return NativeLaunchPreview(server=launch_server, command=command, mod_setup=mod_setup)
 
 
@@ -329,26 +334,32 @@ def format_native_launch_parity_report(
     ]
 
     if report.external_command:
-        lines.extend([
-            "- Ready: yes",
-            f"- Command: {report.external_command_text}",
-            f"- Server argument: {report.resolved_connect}",
-            f"- Query port: {preview.server.query_port}",
-        ])
+        lines.extend(
+            [
+                "- Ready: yes",
+                f"- Command: {report.external_command_text}",
+                f"- Server argument: {report.resolved_connect}",
+                f"- Query port: {preview.server.query_port}",
+            ]
+        )
     else:
-        lines.extend([
-            "- Ready: no",
-            "- Command: not available",
-            f"- Reason: {report.external_error or 'external launcher command could not be built'}",
-        ])
+        lines.extend(
+            [
+                "- Ready: no",
+                "- Command: not available",
+                f"- Reason: {report.external_error or 'external launcher command could not be built'}",
+            ]
+        )
 
-    lines.extend([
-        "",
-        "Native launcher candidate:",
-        f"- Ready: {'yes' if preview.ready else 'no'}",
-        f"- Connect argument: {report.resolved_connect}",
-        "",
-    ])
+    lines.extend(
+        [
+            "",
+            "Native launcher candidate:",
+            f"- Ready: {'yes' if preview.ready else 'no'}",
+            f"- Connect argument: {report.resolved_connect}",
+            "",
+        ]
+    )
 
     if report.required_mod_ids:
         lines.append("Required Workshop mods:")
@@ -362,8 +373,7 @@ def format_native_launch_parity_report(
         for prepared in preview.mod_setup.prepared_mods:
             state = "created" if prepared.created else "already existed"
             lines.append(
-                f"- {prepared.name} ({prepared.workshop_id}) -> "
-                f"{prepared.link_name} [{state}]"
+                f"- {prepared.name} ({prepared.workshop_id}) -> {prepared.link_name} [{state}]"
             )
             lines.append(f"  source: {prepared.source_path}")
             lines.append(f"  link: {prepared.link_path}")
@@ -371,19 +381,23 @@ def format_native_launch_parity_report(
         lines.append("Native prepared mod links: none")
 
     if preview.mod_setup.missing_mod_ids:
-        lines.extend([
-            "",
-            "Missing Workshop mod directories:",
-            *[f"- {label}" for label in report.missing_mod_labels],
-            "",
-            "Native Steam command: not ready until all required mods are installed.",
-        ])
+        lines.extend(
+            [
+                "",
+                "Missing Workshop mod directories:",
+                *[f"- {label}" for label in report.missing_mod_labels],
+                "",
+                "Native Steam command: not ready until all required mods are installed.",
+            ]
+        )
     else:
-        lines.extend([
-            "",
-            "Native Steam command:",
-            report.native_command_text,
-        ])
+        lines.extend(
+            [
+                "",
+                "Native Steam command:",
+                report.native_command_text,
+            ]
+        )
     return redact_support_text("\n".join(lines))
 
 
@@ -394,19 +408,23 @@ def format_native_launch_unavailable_context(
     selected_steam_mode: str,
 ) -> str:
     """Return copyable context when a full native parity report cannot be built."""
-    return redact_support_text("\n".join([
-        "Selected native launch context:",
-        f"- Steam install setting: {steam_mode_label(selected_steam_mode)}",
-        f"- Detected Steam install: {install_label(install)}",
-        f"- Steam command: {steam_command_detail(install)}",
-        f"- Steam running: {'yes' if install.running else 'no'}",
-        f"- DayZ path: {_path_text(install.dayz_dir)}",
-        f"- Workshop path: {_path_text(install.workshop_dir)}",
-        f"- Server: {server.name}",
-        f"- Connect target: {server.host}:{server.game_port}",
-        f"- Query port: {server.query_port}",
-        f"- Player name: {player_name}",
-    ]))
+    return redact_support_text(
+        "\n".join(
+            [
+                "Selected native launch context:",
+                f"- Steam install setting: {steam_mode_label(selected_steam_mode)}",
+                f"- Detected Steam install: {install_label(install)}",
+                f"- Steam command: {steam_command_detail(install)}",
+                f"- Steam running: {'yes' if install.running else 'no'}",
+                f"- DayZ path: {_path_text(install.dayz_dir)}",
+                f"- Workshop path: {_path_text(install.workshop_dir)}",
+                f"- Server: {server.name}",
+                f"- Connect target: {server.host}:{server.game_port}",
+                f"- Query port: {server.query_port}",
+                f"- Player name: {player_name}",
+            ]
+        )
+    )
 
 
 def native_launch_failure_details(
@@ -445,7 +463,9 @@ def native_launch_failure_details(
     return format_native_launch_parity_report(report)
 
 
-def prepare_mod_links(dayz_dir: Path, workshop_dir: Path, required_mods: list[RequiredMod]) -> NativeModSetup:
+def prepare_mod_links(
+    dayz_dir: Path, workshop_dir: Path, required_mods: list[RequiredMod]
+) -> NativeModSetup:
     """Prepare the legacy-compatible DayZ @mod symlinks for installed mods."""
     setup = NativeModSetup()
 
@@ -523,7 +543,9 @@ def _steam_command_prefix(install: SteamInstall) -> list[str]:
 def _require_dir(path: Path | None, label: str) -> Path:
     if not path or not path.is_dir():
         if label == "DayZ install":
-            guidance = "Check Settings health and confirm DayZ is installed in the selected Steam library."
+            guidance = (
+                "Check Settings health and confirm DayZ is installed in the selected Steam library."
+            )
         elif label == "DayZ Workshop":
             guidance = (
                 "Check Settings health and confirm the DayZ Workshop folder is visible for the selected Steam library. "
@@ -531,7 +553,9 @@ def _require_dir(path: Path | None, label: str) -> Path:
                 "and let Steam finish downloading it."
             )
         else:
-            guidance = "Check Settings health and confirm the selected Steam library paths are detected."
+            guidance = (
+                "Check Settings health and confirm the selected Steam library paths are detected."
+            )
         raise NativeLaunchError(
             f"{label} directory not detected",
             stage="Steam library detection",
@@ -618,7 +642,9 @@ def _mod_labels(required_mods: list[RequiredMod]) -> list[str]:
 
 
 def _mod_names_by_id(required_mods: list[RequiredMod]) -> dict[str, str]:
-    return {str(mod.workshop_id).strip(): mod.name.strip() for mod in required_mods if mod.name.strip()}
+    return {
+        str(mod.workshop_id).strip(): mod.name.strip() for mod in required_mods if mod.name.strip()
+    }
 
 
 def _resolved_server(server: Server) -> Server:
@@ -667,14 +693,16 @@ def _ensure_relative_symlink(target: Path, link_path: Path) -> bool:
             guidance=(
                 "Remove the stale @mod symlink from the DayZ install directory, then prepare the native launch again."
             ),
-            details="\n".join([
-                "Stale @mod symlink conflict:",
-                f"- Link: {link_path}",
-                f"- Expected target: {expected_target_text}",
-                f"- Actual target: {actual_target_text}",
-                f"- Expected resolved path: {expected_resolved}",
-                f"- Actual resolved path: {actual_resolved}",
-            ]),
+            details="\n".join(
+                [
+                    "Stale @mod symlink conflict:",
+                    f"- Link: {link_path}",
+                    f"- Expected target: {expected_target_text}",
+                    f"- Actual target: {actual_target_text}",
+                    f"- Expected resolved path: {expected_resolved}",
+                    f"- Actual resolved path: {actual_resolved}",
+                ]
+            ),
         )
     if link_path.exists():
         raise NativeLaunchError(

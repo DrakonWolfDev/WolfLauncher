@@ -22,7 +22,9 @@ class CuratedServerPresenterTests(unittest.TestCase):
         self.assertEqual(len(row), 16)
         self.assertEqual(row[:3], ["★", "Community", "Configured Name"])
         self.assertEqual(row[3], "Configured Name")
-        self.assertEqual(row[4:9], ["dayz.example.test", "Checking...", "2302", "27016", "Checking..."])
+        self.assertEqual(
+            row[4:9], ["dayz.example.test", "Checking...", "2302", "27016", "Checking..."]
+        )
 
     def test_online_row_includes_live_values_and_flags(self):
         status = ServerStatus(

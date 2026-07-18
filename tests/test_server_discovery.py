@@ -4,8 +4,8 @@ from unittest.mock import patch
 
 from wolflauncher.models import DiscoveredServer
 from wolflauncher.server_discovery import (
-    BattleMetricsError,
     DAYZ_APP_ID,
+    BattleMetricsError,
     MasterServerAddress,
     MasterServerEndpoint,
     SteamMasterServerError,
@@ -17,18 +17,17 @@ from wolflauncher.server_discovery import (
     discover_dayz_servers_battlemetrics,
     discover_dayz_servers_wolfapi,
     discover_dayz_servers_wolfapi_v1,
-    discovered_server_from_endpoint,
     discovered_server_from_battlemetrics_row,
+    discovered_server_from_endpoint,
     discovered_server_from_web_api_row,
     discovered_server_from_wolfapi_row,
-    fetch_battlemetrics_page,
     parse_battlemetrics_servers,
+    parse_exact_server_endpoint,
     parse_master_address,
     parse_master_server_response,
     parse_steam_web_api_servers,
     parse_wolfapi_servers,
     parse_wolfapi_v1_servers,
-    parse_exact_server_endpoint,
     resolve_dayz_server_wolfapi_v1,
     search_dayz_servers_wolfapi_v1,
 )
@@ -105,7 +104,9 @@ class SteamMasterServerProtocolTests(unittest.TestCase):
         )
 
     @patch("wolflauncher.server_discovery.query_master_server_batch")
-    def test_discover_dayz_servers_from_master_pages_until_complete_and_deduplicates(self, query_batch):
+    def test_discover_dayz_servers_from_master_pages_until_complete_and_deduplicates(
+        self, query_batch
+    ):
         query_batch.side_effect = [
             (
                 [
@@ -125,11 +126,14 @@ class SteamMasterServerProtocolTests(unittest.TestCase):
 
         servers = _discover_dayz_servers_from_master(max_batches=5)
 
-        self.assertEqual([server.host for server in servers], [
-            "203.0.113.10",
-            "203.0.113.20",
-            "203.0.113.30",
-        ])
+        self.assertEqual(
+            [server.host for server in servers],
+            [
+                "203.0.113.10",
+                "203.0.113.20",
+                "203.0.113.30",
+            ],
+        )
         self.assertEqual(query_batch.call_count, 2)
 
     @patch("wolflauncher.server_discovery._discover_dayz_servers_from_master")
@@ -158,7 +162,10 @@ class SteamMasterServerProtocolTests(unittest.TestCase):
         with self.assertRaisesRegex(SteamMasterServerError, "all configured hosts"):
             discover_dayz_servers()
 
-    @patch.dict("wolflauncher.server_discovery.os.environ", {"WOLFLAUNCHER_STEAM_MASTER_HOST": "203.0.113.10"})
+    @patch.dict(
+        "wolflauncher.server_discovery.os.environ",
+        {"WOLFLAUNCHER_STEAM_MASTER_HOST": "203.0.113.10"},
+    )
     @patch("wolflauncher.server_discovery._discover_dayz_servers_from_master")
     def test_discover_dayz_servers_uses_environment_host_override(self, discover_from_master):
         discover_from_master.return_value = []
@@ -182,9 +189,13 @@ class SteamMasterServerProtocolTests(unittest.TestCase):
         discover_dayz_servers()
 
         self.assertEqual(discover_from_master.call_count, 2)
-        self.assertEqual(discover_from_master.call_args_list[0].kwargs["master_host"], "203.0.113.10")
+        self.assertEqual(
+            discover_from_master.call_args_list[0].kwargs["master_host"], "203.0.113.10"
+        )
         self.assertEqual(discover_from_master.call_args_list[0].kwargs["master_port"], 27011)
-        self.assertEqual(discover_from_master.call_args_list[1].kwargs["master_host"], "203.0.113.20")
+        self.assertEqual(
+            discover_from_master.call_args_list[1].kwargs["master_host"], "203.0.113.20"
+        )
         self.assertEqual(discover_from_master.call_args_list[1].kwargs["master_port"], 27015)
 
     @patch("wolflauncher.server_discovery._discover_dayz_servers_from_master")
@@ -622,13 +633,15 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         self.assertEqual(servers[0].last_checked, "2026-06-21T19:30:00+00:00")
 
     def test_parse_wolfapi_response_accepts_raw_list(self):
-        servers = parse_wolfapi_servers([
-            {
-                "addr": "203.0.113.10:27016",
-                "game_port": 2302,
-                "name": "Raw List",
-            }
-        ])
+        servers = parse_wolfapi_servers(
+            [
+                {
+                    "addr": "203.0.113.10:27016",
+                    "game_port": 2302,
+                    "name": "Raw List",
+                }
+            ]
+        )
 
         self.assertEqual(len(servers), 1)
         self.assertEqual(servers[0].source, "wolfapi")
@@ -690,8 +703,11 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         urlopen.return_value = self.fake_wolfapi_response()
 
         search_dayz_servers_wolfapi_v1(
-            "  Alpha   Server ", limit=25, offset=50,
-            map_name="chernarusplus", version="1.29",
+            "  Alpha   Server ",
+            limit=25,
+            offset=50,
+            map_name="chernarusplus",
+            version="1.29",
         )
 
         request = urlopen.call_args.args[0]
@@ -700,8 +716,11 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         self.assertEqual(
             urllib.parse.parse_qs(parsed.query),
             {
-                "q": ["Alpha Server"], "limit": ["25"], "offset": ["50"],
-                "map": ["chernarusplus"], "version": ["1.29"],
+                "q": ["Alpha Server"],
+                "limit": ["25"],
+                "offset": ["50"],
+                "map": ["chernarusplus"],
+                "version": ["1.29"],
             },
         )
 
@@ -724,7 +743,9 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         urlopen.return_value = self.fake_wolfapi_response()
 
         resolve_dayz_server_wolfapi_v1(
-            "203.0.113.10", game_port=2302, query_port=27016,
+            "203.0.113.10",
+            game_port=2302,
+            query_port=27016,
         )
 
         request = urlopen.call_args.args[0]

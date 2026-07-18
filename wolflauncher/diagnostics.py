@@ -21,9 +21,8 @@ from .platform_detection import (
     steam_selection_report,
     yes_no,
 )
-from .status import resolve_host
 from .redaction import redact_support_text
-
+from .status import resolve_host
 
 PRIME_ENV_VARS = (
     "__NV_PRIME_RENDER_OFFLOAD",
@@ -163,7 +162,9 @@ def post_handoff_launch_option_guidance(environ=None) -> str:
             "Check Steam's DayZ launch options and remove the known bad "
             "__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command% option while testing this issue."
         )
-    return "Check Steam's DayZ launch options in Steam if Proton or DayZ does not start after handoff."
+    return (
+        "Check Steam's DayZ launch options in Steam if Proton or DayZ does not start after handoff."
+    )
 
 
 def format_settings_health_report(
@@ -175,7 +176,9 @@ def format_settings_health_report(
     timestamp = generated_at or datetime.now(timezone.utc)
     if timestamp.tzinfo is None:
         timestamp = timestamp.replace(tzinfo=timezone.utc)
-    lines.append(f"Generated at: {timestamp.astimezone(timezone.utc).replace(microsecond=0).isoformat()}")
+    lines.append(
+        f"Generated at: {timestamp.astimezone(timezone.utc).replace(microsecond=0).isoformat()}"
+    )
     clean_summary = summary.strip()
     if clean_summary:
         lines.extend(["", f"Summary: {clean_summary}"])
@@ -193,17 +196,19 @@ def format_launch_output_report(
     timestamp = generated_at or datetime.now(timezone.utc)
     if timestamp.tzinfo is None:
         timestamp = timestamp.replace(tzinfo=timezone.utc)
-    return redact_support_text("\n".join(
-        [
-            "WolfLauncher launch output",
-            f"Generated at: {timestamp.astimezone(timezone.utc).replace(microsecond=0).isoformat()}",
-            "",
-            f"Command: {command_text.strip()}",
-            "",
-            "Output:",
-            output_text.strip(),
-        ]
-    ).strip())
+    return redact_support_text(
+        "\n".join(
+            [
+                "WolfLauncher launch output",
+                f"Generated at: {timestamp.astimezone(timezone.utc).replace(microsecond=0).isoformat()}",
+                "",
+                f"Command: {command_text.strip()}",
+                "",
+                "Output:",
+                output_text.strip(),
+            ]
+        ).strip()
+    )
 
 
 def launch_troubleshooting_report(
@@ -244,18 +249,30 @@ def launch_troubleshooting_report(
 
     next_steps: list[str] = []
     if selection.status == "MISSING":
-        next_steps.append("Open Settings health and choose a Steam install mode that detects native Steam, Flatpak Steam or STEAM_ROOT.")
+        next_steps.append(
+            "Open Settings health and choose a Steam install mode that detects native Steam, Flatpak Steam or STEAM_ROOT."
+        )
     elif selection.status == "WARN":
-        next_steps.append("Fix the selected Steam install warning before launch, especially missing DayZ or Workshop paths.")
+        next_steps.append(
+            "Fix the selected Steam install warning before launch, especially missing DayZ or Workshop paths."
+        )
     if install and install.dayz_dir and install.workshop_dir and not process.running:
-        next_steps.append("If this was captured after a successful handoff, allow Steam/Proton time to start DayZ, then check Steam downloads, Proton prompts and BattlEye prompts.")
+        next_steps.append(
+            "If this was captured after a successful handoff, allow Steam/Proton time to start DayZ, then check Steam downloads, Proton prompts and BattlEye prompts."
+        )
         next_steps.append(post_handoff_launch_option_guidance(environ))
     if install and install.dayz_dir and install.workshop_dir and not install.compatdata_dir:
-        next_steps.append("If DayZ has not been launched through this Steam install yet, start it once directly from Steam so Proton can create compatdata and show first-run prompts.")
+        next_steps.append(
+            "If DayZ has not been launched through this Steam install yet, start it once directly from Steam so Proton can create compatdata and show first-run prompts."
+        )
     if prime.status == "WARN":
-        next_steps.append("Remove the known bad NVIDIA PRIME Steam launch option and test DayZ directly from Steam without WolfLauncher.")
+        next_steps.append(
+            "Remove the known bad NVIDIA PRIME Steam launch option and test DayZ directly from Steam without WolfLauncher."
+        )
     if not next_steps:
-        next_steps.append("If DayZ still does not start, compare native versus Flatpak Steam and test DayZ directly from Steam with the same Proton version.")
+        next_steps.append(
+            "If DayZ still does not start, compare native versus Flatpak Steam and test DayZ directly from Steam with the same Proton version."
+        )
 
     return LaunchTroubleshootingReport(
         status=status,
@@ -280,7 +297,9 @@ def run_diagnostics(
     timestamp = generated_at or datetime.now(timezone.utc)
     if timestamp.tzinfo is None:
         timestamp = timestamp.replace(tzinfo=timezone.utc)
-    lines.append(f"Generated at: {timestamp.astimezone(timezone.utc).replace(microsecond=0).isoformat()}")
+    lines.append(
+        f"Generated at: {timestamp.astimezone(timezone.utc).replace(microsecond=0).isoformat()}"
+    )
     if launch_engine:
         lines.append(f"Launch engine: {launch_engine_label(launch_engine)}")
     lines.append("")
@@ -304,7 +323,9 @@ def run_diagnostics(
     lines.append(f"  Auto selection: {selection.status} - {selection.detail}")
     lines.append(f"  Auto candidates: {steam_selection_candidates_detail(selection)}")
     lines.append(f"  Selected Steam mode: {steam_mode_label(selected_steam_mode)}")
-    lines.append(f"  Selected Steam install: {selected_selection.status} - {selected_selection.detail}")
+    lines.append(
+        f"  Selected Steam install: {selected_selection.status} - {selected_selection.detail}"
+    )
     for install in installs:
         has_install = bool(install.executable or install.root or install.steamapps)
         label = install_label(install)
@@ -325,7 +346,9 @@ def run_diagnostics(
             for library in install.library_steamapps:
                 lines.append(f"      {library}")
         lines.append(f"    DayZ: {ok_missing(bool(install.dayz_dir))} {install.dayz_dir or ''}")
-        lines.append(f"    Workshop: {ok_missing(bool(install.workshop_dir))} {install.workshop_dir or ''}")
+        lines.append(
+            f"    Workshop: {ok_missing(bool(install.workshop_dir))} {install.workshop_dir or ''}"
+        )
     lines.append("")
 
     lines.append("Launch option environment:")
@@ -350,7 +373,9 @@ def run_diagnostics(
     lines.append(f"  {process_check.detail}")
     lines.append("")
 
-    launch_report = launch_troubleshooting_report(selected_steam_mode, installs, process_check, environment)
+    launch_report = launch_troubleshooting_report(
+        selected_steam_mode, installs, process_check, environment
+    )
     lines.append("Launch troubleshooting:")
     lines.append(f"  Status: {launch_report.status}")
     lines.append(f"  Summary: {launch_report.summary}")

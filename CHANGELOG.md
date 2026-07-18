@@ -17,6 +17,10 @@
 - Added centralized package metadata, wheel/source builds, Linux desktop
   integration and a `.deb` staging build that bundles the locked Python runtime
   and GameDig 5.3.3 dependency tree with artifact checksums.
+- Added repository-wide Ruff formatting/lint enforcement, scoped strict typing,
+  locked dependency auditing, immutable GitHub Action pins and Ubuntu 22.04/24.04
+  package-build/smoke jobs. Debian artifacts now bundle checksum-verified Node
+  20.20.2 and declare their exact compatible system-Python minor line.
 - Added a draggable Server Browser table/inspector workspace. The common table
   remains dense and moves Host/port/source/version/last-seen support detail into
   a selected-server panel with endpoint, map, players, ping, truth basis,

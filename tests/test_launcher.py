@@ -19,7 +19,9 @@ class BuildLaunchCommandTests(unittest.TestCase):
 
     def test_builds_external_launcher_command_with_resolved_ip(self):
         with tempfile.NamedTemporaryFile() as launcher:
-            with patch("wolflauncher.launcher.resolve_host", return_value="203.0.113.10") as resolve_host:
+            with patch(
+                "wolflauncher.launcher.resolve_host", return_value="203.0.113.10"
+            ) as resolve_host:
                 command = build_launch_command(launcher.name, "PlayerOne", self.make_server())
 
         self.assertEqual(
@@ -78,7 +80,9 @@ class BuildLaunchCommandTests(unittest.TestCase):
 
             with patch.dict("os.environ", {"HOME": home}):
                 with patch("wolflauncher.launcher.resolve_host", return_value="203.0.113.10"):
-                    command = build_launch_command("~/dayz-launcher.sh", "PlayerOne", self.make_server())
+                    command = build_launch_command(
+                        "~/dayz-launcher.sh", "PlayerOne", self.make_server()
+                    )
 
         self.assertEqual(command[1], str(launcher_path))
 

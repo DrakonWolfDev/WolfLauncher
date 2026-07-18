@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta, timezone
 
-
 AUTO_REFRESH_INTERVAL = timedelta(hours=24)
 
 

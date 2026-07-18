@@ -46,7 +46,5 @@ def settings_health_groups(rows: tuple[HealthRow, ...]) -> tuple[HealthGroup, ..
     groups = []
     for key, title, names in GROUP_SPECS:
         group_rows = tuple(by_name[name] for name in names if name in by_name)
-        groups.append(
-            HealthGroup(key, title, aggregate_health_status(group_rows), group_rows)
-        )
+        groups.append(HealthGroup(key, title, aggregate_health_status(group_rows), group_rows))
     return tuple(groups)

@@ -61,15 +61,11 @@ class ModContextChangeTests(unittest.TestCase):
         MainWindow.update_mod_detail_card(window)
 
         window.mod_detail_title.setText.assert_called_once_with("Example Mod")
-        window.mod_detail_description.setText.assert_called_once_with(
-            "A useful description."
-        )
+        window.mod_detail_description.setText.assert_called_once_with("A useful description.")
         self.assertIn("1.0 KiB", window.mod_detail_metadata.setText.call_args.args[0])
         window.mod_detail_open_button.setEnabled.assert_called_once_with(True)
         window._set_mod_detail_status.assert_called_once_with("ready")
-        window.load_mod_thumbnail.assert_called_once_with(
-            "https://example.test/preview.jpg"
-        )
+        window.load_mod_thumbnail.assert_called_once_with("https://example.test/preview.jpg")
 
     def test_launch_actions_follow_the_active_server_context(self):
         server = Server("Example", "Tests", "dayz.test", 2302, 27016)
@@ -98,9 +94,7 @@ class ModContextChangeTests(unittest.TestCase):
 
         MainWindow.update_launch_button_text(window)
 
-        window.mods_launch_button.setText.assert_called_once_with(
-            "Launch selected server"
-        )
+        window.mods_launch_button.setText.assert_called_once_with("Launch selected server")
         window.mods_launch_button.setEnabled.assert_called_once_with(False)
         window.mods_back_to_browser_button.setVisible.assert_called_once_with(False)
 
@@ -177,9 +171,7 @@ class ModContextChangeTests(unittest.TestCase):
 
         self.assertIsNone(window.last_mod_result)
         window.mods_table.setRowCount.assert_called_once_with(0)
-        window.check_server_mods_for_row.assert_called_once_with(
-            0, silent=True, force=True
-        )
+        window.check_server_mods_for_row.assert_called_once_with(0, silent=True, force=True)
         window._check_pending_server_mods.assert_not_called()
 
     def test_steam_mode_change_queues_recheck_behind_running_worker(self):
@@ -202,9 +194,7 @@ class ModContextChangeTests(unittest.TestCase):
         window.mod_summary.setText.assert_called_once_with(
             "Launch engine changed. Rechecking selected server mods..."
         )
-        window.check_server_mods_for_row.assert_called_once_with(
-            0, silent=True, force=True
-        )
+        window.check_server_mods_for_row.assert_called_once_with(0, silent=True, force=True)
 
 
 class WorkshopLaunchReadinessTests(unittest.TestCase):

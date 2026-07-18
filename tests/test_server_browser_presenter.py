@@ -1,21 +1,21 @@
 import unittest
 from datetime import datetime, timezone
 
+from wolflauncher.models import DiscoveredServer
 from wolflauncher.server_browser_presenter import (
+    api_freshness_text,
     browser_inspector,
     browser_mod_pill,
     browser_row,
     browser_style_terms,
     browser_summary_text,
     browser_summary_tooltip,
-    game_time_text,
-    api_freshness_text,
-    display_server_name,
     discovered_server_details,
+    display_server_name,
+    game_time_text,
     players_text,
 )
 from wolflauncher.theme import STATUS_COLOURS
-from wolflauncher.models import DiscoveredServer
 
 
 class ServerBrowserPresenterTests(unittest.TestCase):
@@ -53,8 +53,12 @@ class ServerBrowserPresenterTests(unittest.TestCase):
     def test_inspector_uses_red_edge_only_for_confident_offline_state(self):
         unverified = DiscoveredServer("Unknown", "host", 2302, 27016)
         offline = DiscoveredServer(
-            "Offline", "host", 2302, 27016,
-            status_source="local", online=False,
+            "Offline",
+            "host",
+            2302,
+            27016,
+            status_source="local",
+            online=False,
         )
 
         self.assertEqual(browser_inspector(unverified).status_kind, "warning")
@@ -63,7 +67,9 @@ class ServerBrowserPresenterTests(unittest.TestCase):
     def test_mod_pill_only_surfaces_actionable_states(self):
         self.assertEqual(browser_mod_pill("3 missing locally"), ("3 MODS MISSING", "offline"))
         self.assertEqual(browser_mod_pill("Unavailable"), ("MOD CHECK FAILED", "warning"))
-        self.assertEqual(browser_mod_pill("Checking local Workshop readiness…"), ("MODS CHECKING", "warning"))
+        self.assertEqual(
+            browser_mod_pill("Checking local Workshop readiness…"), ("MODS CHECKING", "warning")
+        )
         self.assertEqual(browser_mod_pill("Ready locally"), ("", "warning"))
 
     def test_style_terms_cover_pve_pvp_and_unfiltered_modes(self):
@@ -146,12 +152,22 @@ class ServerBrowserPresenterTests(unittest.TestCase):
 
     def test_game_time_uses_24_hour_day_night_cues_and_effective_multiplier(self):
         day = DiscoveredServer(
-            "Day", "host", 2302, 27016,
-            game_time="15:04", day_acceleration=6, night_acceleration=4,
+            "Day",
+            "host",
+            2302,
+            27016,
+            game_time="15:04",
+            day_acceleration=6,
+            night_acceleration=4,
         )
         night = DiscoveredServer(
-            "Night", "host", 2302, 27016,
-            game_time="23:10", day_acceleration=6, night_acceleration=4,
+            "Night",
+            "host",
+            2302,
+            27016,
+            game_time="23:10",
+            day_acceleration=6,
+            night_acceleration=4,
         )
 
         self.assertEqual(game_time_text(day), "☀ 15:04 · 6×")

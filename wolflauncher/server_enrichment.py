@@ -6,7 +6,6 @@ from datetime import datetime, timezone
 from .models import DiscoveredServer, Server
 from .status import ServerStatus
 
-
 COMMON_DAYZ_QUERY_PORT = 27016
 COMMON_GAME_TO_QUERY_OFFSET = COMMON_DAYZ_QUERY_PORT - 2302
 LOCAL_ONLINE_TTL_SECONDS = 120
@@ -92,15 +91,19 @@ def candidate_query_ports(server: DiscoveredServer) -> list[int]:
     ]
 
     if server.query_port == server.game_port:
-        candidates.extend([
-            server.game_port + 1,
-            server.game_port + 10,
-        ])
+        candidates.extend(
+            [
+                server.game_port + 1,
+                server.game_port + 10,
+            ]
+        )
         if server.game_port < COMMON_DAYZ_QUERY_PORT:
-            candidates.extend([
-                server.game_port + COMMON_GAME_TO_QUERY_OFFSET,
-                COMMON_DAYZ_QUERY_PORT,
-            ])
+            candidates.extend(
+                [
+                    server.game_port + COMMON_GAME_TO_QUERY_OFFSET,
+                    COMMON_DAYZ_QUERY_PORT,
+                ]
+            )
 
     return _unique_valid_ports(candidates)
 

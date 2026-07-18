@@ -5,7 +5,6 @@ from pathlib import Path
 import wolflauncher
 import wolflauncher.config as config
 
-
 ROOT = Path(__file__).resolve().parent.parent
 
 

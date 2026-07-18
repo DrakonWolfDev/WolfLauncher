@@ -10,11 +10,11 @@ from wolflauncher.models import Server
 from wolflauncher.mods import (
     ModCheckResult,
     RequiredMod,
+    apply_workshop_metadata,
     check_server_mods,
+    fetch_required_mods,
     fetch_workshop_file_sizes,
     fetch_workshop_metadata,
-    apply_workshop_metadata,
-    fetch_required_mods,
     format_missing_workshop_links,
     format_mod_check_report,
     scan_installed_mods,
@@ -39,13 +39,15 @@ class WorkshopFileSizeTests(unittest.TestCase):
     def test_fetches_public_display_metadata_in_one_batch(self):
         payload = {
             "response": {
-                "publishedfiledetails": [{
-                    "publishedfileid": "111",
-                    "result": 1,
-                    "file_size": "1048576",
-                    "description": "A useful mod",
-                    "preview_url": "https://cdn.example.test/preview.jpg",
-                }]
+                "publishedfiledetails": [
+                    {
+                        "publishedfileid": "111",
+                        "result": 1,
+                        "file_size": "1048576",
+                        "description": "A useful mod",
+                        "preview_url": "https://cdn.example.test/preview.jpg",
+                    }
+                ]
             }
         }
         with patch(
@@ -165,7 +167,9 @@ class FetchRequiredModsTests(unittest.TestCase):
         )
         resolve_host.assert_called_once_with("dayz.example.test")
         request = urlopen.call_args.args[0]
-        self.assertEqual(request.full_url, "https://dayzsalauncher.com/api/v1/query/203.0.113.10/27016")
+        self.assertEqual(
+            request.full_url, "https://dayzsalauncher.com/api/v1/query/203.0.113.10/27016"
+        )
         self.assertEqual(request.headers["User-agent"], "WolfLauncher/0.4")
 
     @patch("wolflauncher.mods.resolve_host", return_value="203.0.113.10")

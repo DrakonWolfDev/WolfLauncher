@@ -9,11 +9,11 @@ from wolflauncher.workers import (
     ServerEnrichmentWorker,
     StatusWorker,
     SteamDiscoveryWorker,
-    WolfApiDiscoveryWorker,
     WolfApiCacheMergeWorker,
+    WolfApiDiscoveryWorker,
     WolfApiSearchWorker,
-    discover_wolfapi_v1_pages,
     _checked_server_status,
+    discover_wolfapi_v1_pages,
 )
 
 
@@ -31,9 +31,7 @@ class WorkerTests(unittest.TestCase):
             path = Path(directory) / "servers.sqlite3"
             worker = WolfApiCacheMergeWorker(path, [server], bounded_v1=True)
             worker.merge_ready.connect(
-                lambda inserted, removed, error: results.append(
-                    (inserted, removed, error)
-                )
+                lambda inserted, removed, error: results.append((inserted, removed, error))
             )
 
             worker.run()
@@ -119,9 +117,7 @@ class WorkerTests(unittest.TestCase):
 
         discover_wolfapi_v1_pages(100, unflagged_only=True)
 
-        discover.assert_called_once_with(
-            limit=100, offset=0, unflagged_only=True
-        )
+        discover.assert_called_once_with(limit=100, offset=0, unflagged_only=True)
 
     @patch("wolflauncher.workers.search_dayz_servers_wolfapi_v1")
     def test_v1_search_worker_preserves_query_and_filters(self, search):
@@ -154,9 +150,7 @@ class WorkerTests(unittest.TestCase):
 
     @patch("wolflauncher.workers.resolve_dayz_server_wolfapi_v1")
     @patch("wolflauncher.workers.search_dayz_servers_wolfapi_v1")
-    def test_v1_search_worker_uses_alias_aware_resolution_for_endpoint(
-        self, search, resolve
-    ):
+    def test_v1_search_worker_uses_alias_aware_resolution_for_endpoint(self, search, resolve):
         server = unittest.mock.Mock(
             stable_server_id="stable-1", cache_key="203.0.113.10:2302:27016"
         )
@@ -200,9 +194,7 @@ class WorkerTests(unittest.TestCase):
                 (payload[0], payload[1].name, count, total)
             )
         )
-        worker.enrichment_ready.connect(
-            lambda enriched, error: completed.append((enriched, error))
-        )
+        worker.enrichment_ready.connect(lambda enriched, error: completed.append((enriched, error)))
 
         worker.run()
 

@@ -2,9 +2,8 @@ import json
 from pathlib import Path
 from typing import Any
 
-from .persistence import atomic_write_text, ensure_private_directory
 from .paths import user_config_dir
-
+from .persistence import atomic_write_text, ensure_private_directory
 
 APP_DIR = user_config_dir()
 SETTINGS_PATH = APP_DIR / "settings.json"

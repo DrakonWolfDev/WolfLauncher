@@ -1,19 +1,22 @@
-import os
 import json
-from dataclasses import replace
-from pathlib import Path
-from datetime import datetime
+import os
 import sys
 import time
+from dataclasses import replace
+from datetime import datetime
+from pathlib import Path
 
-from PySide6.QtCore import QPoint, QProcess, QSize, QTimer, QUrl, Qt
-from PySide6.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
+from PySide6.QtCore import QPoint, QProcess, QSize, Qt, QTimer, QUrl
+from PySide6.QtGui import QAction, QColor, QDesktopServices, QIcon, QPixmap
+from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
+    QComboBox,
+    QDialog,
     QFileDialog,
-    QFrame,
     QFormLayout,
+    QFrame,
     QGridLayout,
     QHBoxLayout,
     QHeaderView,
@@ -22,26 +25,22 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QMainWindow,
-    QMessageBox,
-    QDialog,
-    QComboBox,
     QMenu,
-    QPushButton,
-    QProgressDialog,
+    QMessageBox,
     QProgressBar,
+    QProgressDialog,
+    QPushButton,
     QSizePolicy,
     QSpinBox,
     QSplitter,
-    QTabWidget,
     QTableWidget,
     QTableWidgetItem,
-    QTextEdit,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
-from PySide6.QtGui import QColor, QDesktopServices, QIcon, QPixmap, QAction
 
-from . import __version__
+from . import __version__, server_cache
 from .config import (
     CURATED_SERVERS_PATH,
     add_curated_server,
@@ -54,6 +53,11 @@ from .config import (
 from .curated_dialogs import EditCuratedServerDialog, PromoteServerDialog
 from .curated_server_cards import CuratedServerCard
 from .curated_server_presenter import curated_server_row
+from .curated_status_cache import (
+    cached_status_for_server,
+    load_status_cache,
+    update_status_cache,
+)
 from .diagnostics import (
     format_settings_health_report,
     run_diagnostics,
@@ -62,15 +66,8 @@ from .discovery_refresh import (
     auto_refresh_due,
     auto_refresh_timestamp,
 )
-from .curated_status_cache import (
-    cached_status_for_server,
-    load_status_cache,
-    update_status_cache,
-)
-from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
-from .lifecycle import stop_runtime
-from .launch_history import load_last_launch_report, save_last_launch_report
 from .launch_dialogs import LaunchDialog, NativeLaunchPreviewDialog, PreflightLaunchDialog
+from .launch_history import load_last_launch_report, save_last_launch_report
 from .launch_preflight import (
     LaunchPreflightAction,
     build_launch_preflight_state,
@@ -79,32 +76,8 @@ from .launch_preflight import (
     usable_mod_result,
 )
 from .launch_selection import server_with_resolved_ipv4
-from .models import DiscoveredServer, Server
-from .native_launcher import (
-    NativeLaunchError,
-    format_native_launch_parity_report,
-    native_launch_failure_details,
-    prepare_native_launch,
-    prepare_native_launch_parity_report,
-)
-from .platform_detection import (
-    SteamInstall,
-    best_install,
-    best_install_from,
-    build_steam_start_command,
-    dayz_process_check,
-    detect_steam,
-    select_steam_install,
-    steam_mode_label,
-    install_label,
-)
-from .mods import (
-    ModCheckResult,
-    apply_workshop_item_states,
-    check_server_mods,
-    format_missing_workshop_links,
-    format_mod_check_report,
-)
+from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
+from .lifecycle import stop_runtime
 from .mod_presenter import (
     combined_download_estimate,
     mod_description_preview,
@@ -118,23 +91,46 @@ from .mod_presenter import (
     mod_server_heading,
     mod_summary_text,
 )
-from . import server_cache
-from .server_discovery import parse_master_address
-from .server_display import display_map_name, display_server_flags, ping_severity
-from .server_enrichment import (
-    local_enrichment_due,
-    parse_connect_port,
+from .models import DiscoveredServer, Server
+from .mods import (
+    ModCheckResult,
+    apply_workshop_item_states,
+    format_missing_workshop_links,
+    format_mod_check_report,
 )
+from .native_launcher import (
+    NativeLaunchError,
+    format_native_launch_parity_report,
+    native_launch_failure_details,
+    prepare_native_launch,
+    prepare_native_launch_parity_report,
+)
+from .platform_detection import (
+    SteamInstall,
+    best_install,
+    best_install_from,
+    build_steam_start_command,
+    detect_steam,
+    install_label,
+    select_steam_install,
+    steam_mode_label,
+)
+from .redaction import redact_support_text
+from .secret_store import (
+    SecretStore,
+    load_steam_api_key,
+    settings_with_stored_steam_api_key,
+)
+from .server_browser_controller import BrowserQuery, browser_filter_options, load_browser_snapshot
 from .server_browser_presenter import (
     browser_inspector,
     browser_mod_pill,
     browser_style_terms,
     browser_summary_text,
     browser_summary_tooltip,
-    display_server_name,
     discovered_server_details,
+    display_server_name,
 )
-from .server_browser_controller import BrowserQuery, browser_filter_options, load_browser_snapshot
 from .server_browser_table import (
     BROWSER_COLUMN_COUNT,
     populate_browser_table,
@@ -142,13 +138,13 @@ from .server_browser_table import (
     update_browser_mod_cell,
     update_browser_table_row,
 )
-from .server_map_atmosphere import ServerMapAtmosphereFrame
-from .redaction import redact_support_text
-from .secret_store import (
-    SecretStore,
-    load_steam_api_key,
-    settings_with_stored_steam_api_key,
+from .server_discovery import parse_master_address
+from .server_display import display_map_name, display_server_flags, ping_severity
+from .server_enrichment import (
+    local_enrichment_due,
+    parse_connect_port,
 )
+from .server_map_atmosphere import ServerMapAtmosphereFrame
 from .settings import (
     DEFAULT_DISCOVERY_PROVIDER,
     load_favourites,
@@ -159,11 +155,11 @@ from .settings import (
 )
 from .settings_health import build_settings_health_snapshot
 from .settings_health_presenter import GROUP_SPECS, settings_health_groups
-from .status import ServerStatus, check_server
-from .ui_sections import set_disclosure_state
+from .status import ServerStatus
 from .theme import (
     COLOURS,
     STATUS_COLOURS,
+    WOLF_MARK_PATH,
     apply_application_theme,
     configure_data_table,
     configure_priority_columns,
@@ -171,8 +167,8 @@ from .theme import (
     set_monospace,
     set_ui_role,
     theme_icon,
-    WOLF_MARK_PATH,
 )
+from .ui_sections import set_disclosure_state
 from .workers import (
     BattleMetricsDiscoveryWorker,
     ModWorker,
@@ -180,18 +176,15 @@ from .workers import (
     StatusWorker,
     SteamDiscoveryWorker,
     SteamWebApiDiscoveryWorker,
-    WolfApiDiscoveryWorker,
     WolfApiCacheMergeWorker,
     WolfApiSearchWorker,
     WorkshopSubscriptionWorker,
-    WorkshopStateWorker,
 )
 from .workshop_subscription import (
     ITEM_STATE_DOWNLOADING,
     current_workshop_item,
     workshop_recovery_state,
 )
-
 
 MAX_SELECTED_BROWSER_RUNNERS = 3
 
@@ -277,7 +270,9 @@ class MainWindow(QMainWindow):
         )
         self.launch_engine.currentTextChanged.connect(self.handle_launch_engine_changed)
         self.native_steam_mode = QComboBox()
-        self.native_steam_mode.addItems(["Auto", "Native Steam", "Flatpak Steam", "STEAM_ROOT Steam library"])
+        self.native_steam_mode.addItems(
+            ["Auto", "Native Steam", "Flatpak Steam", "STEAM_ROOT Steam library"]
+        )
         self.native_steam_mode.setCurrentText(
             self._native_steam_mode_label(str(self.settings.get("native_steam_mode") or "auto"))
         )
@@ -300,9 +295,7 @@ class MainWindow(QMainWindow):
         self.browser_selection_timer = QTimer(self)
         self.browser_selection_timer.setSingleShot(True)
         self.browser_selection_timer.setInterval(450)
-        self.browser_selection_timer.timeout.connect(
-            self.check_selected_discovered_server_status
-        )
+        self.browser_selection_timer.timeout.connect(self.check_selected_discovered_server_status)
 
         self.tabs = QTabWidget()
         self.tabs.setObjectName("mainTabs")
@@ -311,9 +304,7 @@ class MainWindow(QMainWindow):
         self.server_browser_tab_index = self.tabs.addTab(
             self._build_server_browser_tab(), theme_icon("browser"), "Server Browser"
         )
-        self.mods_tab_index = self.tabs.addTab(
-            self._build_mods_tab(), theme_icon("mods"), "Mods"
-        )
+        self.mods_tab_index = self.tabs.addTab(self._build_mods_tab(), theme_icon("mods"), "Mods")
         self.tabs.addTab(self._build_settings_tab(), theme_icon("settings"), "Settings")
         self.setCentralWidget(self.tabs)
 
@@ -368,26 +359,30 @@ class MainWindow(QMainWindow):
         layout.addLayout(common_settings)
 
         self.table = QTableWidget(len(self.servers), 16)
-        self.table.setHorizontalHeaderLabels([
-            "Fav",
-            "Group",
-            "Config Name",
-            "Server Name",
-            "Host",
-            "Resolved IP",
-            "Game Port",
-            "Query Port",
-            "Status",
-            "Map",
-            "Players",
-            "Time",
-            "Ping",
-            "Version",
-            "Flags",
-            "Connect",
-        ])
+        self.table.setHorizontalHeaderLabels(
+            [
+                "Fav",
+                "Group",
+                "Config Name",
+                "Server Name",
+                "Host",
+                "Resolved IP",
+                "Game Port",
+                "Query Port",
+                "Status",
+                "Map",
+                "Players",
+                "Time",
+                "Ping",
+                "Version",
+                "Flags",
+                "Connect",
+            ]
+        )
         for column in (10, 12):
-            self.table.horizontalHeaderItem(column).setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            self.table.horizontalHeaderItem(column).setTextAlignment(
+                Qt.AlignRight | Qt.AlignVCenter
+            )
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setEditTriggers(QTableWidget.NoEditTriggers)
         configure_data_table(self.table)
@@ -500,7 +495,9 @@ class MainWindow(QMainWindow):
         self.browser_source.currentTextChanged.connect(self.refresh_server_browser)
 
         self.browser_sort = QComboBox()
-        self.browser_sort.addItems(["Name", "Players", "Ping", "Map", "Version", "Last checked", "Last seen"])
+        self.browser_sort.addItems(
+            ["Name", "Players", "Ping", "Map", "Version", "Last checked", "Last seen"]
+        )
         self.browser_sort.currentTextChanged.connect(self.refresh_server_browser)
 
         self.browser_descending = QCheckBox("Desc")
@@ -531,45 +528,41 @@ class MainWindow(QMainWindow):
             "Hide rows WolfAPI flags for suspicious provider telemetry or dense "
             "same-host populations. Off by default; exact/local data is retained."
         )
+        self.browser_hide_quality_flagged.stateChanged.connect(self.refresh_server_browser)
         self.browser_hide_quality_flagged.stateChanged.connect(
-            self.refresh_server_browser
-        )
-        self.browser_hide_quality_flagged.stateChanged.connect(
-            lambda _state: self.schedule_remote_wolfapi_search(
-                self.browser_search.text()
-            )
+            lambda _state: self.schedule_remote_wolfapi_search(self.browser_search.text())
         )
         advanced_filters.addWidget(self.browser_hide_quality_flagged)
         advanced_filters.addWidget(QLabel("Limit"))
         advanced_filters.addWidget(self.browser_limit)
         self.browser_detailed_columns = QCheckBox("Show detailed columns")
-        self.browser_detailed_columns.toggled.connect(
-            self.configure_browser_columns
-        )
+        self.browser_detailed_columns.toggled.connect(self.configure_browser_columns)
         advanced_filters.addWidget(self.browser_detailed_columns)
         advanced_filters.addStretch(1)
         advanced_layout.addLayout(advanced_filters)
 
         self.browser_table = QTableWidget(0, BROWSER_COLUMN_COUNT)
-        self.browser_table.setHorizontalHeaderLabels([
-            "Server Name",
-            "Live Name",
-            "Host",
-            "Game Port",
-            "Query Port",
-            "Status",
-            "Map",
-            "Players",
-            "Ping",
-            "Version",
-            "Features",
-            "Mods",
-            "Last Checked",
-            "Last Seen",
-            "Source",
-            "Region",
-            "Game Time",
-        ])
+        self.browser_table.setHorizontalHeaderLabels(
+            [
+                "Server Name",
+                "Live Name",
+                "Host",
+                "Game Port",
+                "Query Port",
+                "Status",
+                "Map",
+                "Players",
+                "Ping",
+                "Version",
+                "Features",
+                "Mods",
+                "Last Checked",
+                "Last Seen",
+                "Source",
+                "Region",
+                "Game Time",
+            ]
+        )
         for column in (7, 8):
             self.browser_table.horizontalHeaderItem(column).setTextAlignment(
                 Qt.AlignRight | Qt.AlignVCenter
@@ -586,9 +579,7 @@ class MainWindow(QMainWindow):
         self.browser_table.itemActivated.connect(
             lambda item: self.handle_browser_double_clicked(item.row(), item.column())
         )
-        self.browser_table.itemSelectionChanged.connect(
-            self.update_browser_selection_context
-        )
+        self.browser_table.itemSelectionChanged.connect(self.update_browser_selection_context)
         self.browser_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.browser_table.customContextMenuRequested.connect(self.show_browser_context_menu)
         self.browser_detail_card = QFrame()
@@ -636,11 +627,13 @@ class MainWindow(QMainWindow):
         self.browser_detail_map = QLabel("—")
         self.browser_detail_players = QLabel("—")
         self.browser_detail_ping = QLabel("—")
-        for column, (heading, value) in enumerate((
-            ("MAP", self.browser_detail_map),
-            ("PLAYERS", self.browser_detail_players),
-            ("PING", self.browser_detail_ping),
-        )):
+        for column, (heading, value) in enumerate(
+            (
+                ("MAP", self.browser_detail_map),
+                ("PLAYERS", self.browser_detail_players),
+                ("PING", self.browser_detail_ping),
+            )
+        ):
             label = QLabel(heading)
             set_ui_role(label, "inspectorLabel")
             set_ui_role(value, "inspectorValue")
@@ -679,9 +672,7 @@ class MainWindow(QMainWindow):
         detail_layout.addWidget(detail_body)
         self.browser_detail_atmosphere = ServerMapAtmosphereFrame()
         set_ui_role(self.browser_detail_atmosphere, "browserAtmosphere")
-        self.browser_detail_atmosphere.setSizePolicy(
-            QSizePolicy.Expanding, QSizePolicy.Expanding
-        )
+        self.browser_detail_atmosphere.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         detail_layout.addWidget(self.browser_detail_atmosphere, 1)
 
         self.browser_splitter = QSplitter(Qt.Horizontal)
@@ -846,12 +837,14 @@ class MainWindow(QMainWindow):
         )
 
         self.mods_table = QTableWidget(0, 4)
-        self.mods_table.setHorizontalHeaderLabels([
-            "Status",
-            "Name",
-            "Workshop ID",
-            "Size",
-        ])
+        self.mods_table.setHorizontalHeaderLabels(
+            [
+                "Status",
+                "Name",
+                "Workshop ID",
+                "Size",
+            ]
+        )
         self.mods_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.mods_table.setEditTriggers(QTableWidget.NoEditTriggers)
         self.mods_table.setSortingEnabled(True)
@@ -923,9 +916,7 @@ class MainWindow(QMainWindow):
         QWidget.setTabOrder(self.subscribe_missing_button, self.mod_filter)
         QWidget.setTabOrder(self.mod_filter, self.mods_table)
         QWidget.setTabOrder(self.mods_table, self.mods_advanced_toggle)
-        QWidget.setTabOrder(
-            self.mods_advanced_toggle, self.mods_back_to_browser_button
-        )
+        QWidget.setTabOrder(self.mods_advanced_toggle, self.mods_back_to_browser_button)
         QWidget.setTabOrder(self.mods_back_to_browser_button, self.mods_launch_button)
         self.update_launch_button_text()
         return widget
@@ -994,14 +985,16 @@ class MainWindow(QMainWindow):
         discovery_settings = QFormLayout()
 
         self.discovery_provider = QComboBox()
-        self.discovery_provider.addItems([
-            "WolfAPI v1 (staged)",
-            "WolfAPI (legacy fallback)",
-            "BattleMetrics",
-            "Steam Web API",
-            "Steam Master",
-            "Disabled",
-        ])
+        self.discovery_provider.addItems(
+            [
+                "WolfAPI v1 (staged)",
+                "WolfAPI (legacy fallback)",
+                "BattleMetrics",
+                "Steam Web API",
+                "Steam Master",
+                "Disabled",
+            ]
+        )
         self.discovery_provider.setCurrentText(
             self._provider_label(
                 str(self.settings.get("discovery_provider") or DEFAULT_DISCOVERY_PROVIDER)
@@ -1017,7 +1010,9 @@ class MainWindow(QMainWindow):
         discovery_settings.addRow("Refresh limit", self.discovery_limit)
 
         self.discovery_auto_refresh = QCheckBox("Refresh selected provider quietly after startup")
-        self.discovery_auto_refresh.setChecked(bool(self.settings.get("discovery_auto_refresh", False)))
+        self.discovery_auto_refresh.setChecked(
+            bool(self.settings.get("discovery_auto_refresh", False))
+        )
         self.discovery_auto_refresh.stateChanged.connect(self.handle_settings_changed)
         discovery_settings.addRow("Automatic refresh", self.discovery_auto_refresh)
 
@@ -1033,7 +1028,9 @@ class MainWindow(QMainWindow):
         key_storage = "desktop keyring" if self.secret_store.available() else "protected local file"
         discovery_settings.addRow(f"Steam API key ({key_storage})", self.steam_web_api_key)
 
-        self.steam_master_endpoints = QLineEdit(str(self.settings.get("steam_master_endpoints") or ""))
+        self.steam_master_endpoints = QLineEdit(
+            str(self.settings.get("steam_master_endpoints") or "")
+        )
         self.steam_master_endpoints.setPlaceholderText("Comma separated host[:port]")
         self.steam_master_endpoints.editingFinished.connect(self.handle_settings_changed)
         discovery_settings.addRow("Steam masters", self.steam_master_endpoints)
@@ -1072,9 +1069,7 @@ class MainWindow(QMainWindow):
         self.leopard_toggle.toggled.connect(
             lambda expanded: (
                 self.leopard_panel.setVisible(expanded),
-                self.leopard_toggle.setText(
-                    f"{'▾' if expanded else '▸'} Beware of the leopard"
-                ),
+                self.leopard_toggle.setText(f"{'▾' if expanded else '▸'} Beware of the leopard"),
             )
         )
         leopard_row = QHBoxLayout()
@@ -1114,9 +1109,7 @@ class MainWindow(QMainWindow):
         )
         return widget
 
-    def _build_settings_health_group(
-        self, key: str, title: str, names: tuple[str, ...]
-    ) -> QFrame:
+    def _build_settings_health_group(self, key: str, title: str, names: tuple[str, ...]) -> QFrame:
         card = QFrame()
         set_ui_role(card, "healthGroup")
         card.setProperty("healthStatus", "OK")
@@ -1163,8 +1156,7 @@ class MainWindow(QMainWindow):
             card.setProperty("healthStatus", group.status)
             badge.setProperty("healthStatus", group.status)
             badge.setText(
-                "READY" if group.status == "OK" else
-                "CHECK" if group.status == "WARN" else "ISSUE"
+                "READY" if group.status == "OK" else "CHECK" if group.status == "WARN" else "ISSUE"
             )
             card.style().unpolish(card)
             card.style().polish(card)
@@ -1245,7 +1237,9 @@ class MainWindow(QMainWindow):
             self._set_database_refresh_enabled(True)
             QMessageBox.warning(self, "Invalid Steam master endpoints", str(exc))
             return
-        self.discovery_worker = SteamDiscoveryWorker(max_batches=1, master_addresses=master_addresses)
+        self.discovery_worker = SteamDiscoveryWorker(
+            max_batches=1, master_addresses=master_addresses
+        )
         self.discovery_worker.discovery_ready.connect(self.handle_steam_discovery_ready)
         self.discovery_worker.start()
 
@@ -1265,7 +1259,9 @@ class MainWindow(QMainWindow):
                 f"{error}\n\nExisting cached Steam master rows were kept. Check DNS/network access to the Steam master server, or use a YAML/JSON import file.",
             )
             return
-        inserted, removed = server_cache.sync_source_servers(self.server_cache, "steam_master", servers)
+        inserted, removed = server_cache.sync_source_servers(
+            self.server_cache, "steam_master", servers
+        )
         self.refresh_server_browser()
         self.statusBar().showMessage(
             f"Steam discovery complete: added {inserted} candidate(s), removed {removed} stale row(s).",
@@ -1277,11 +1273,15 @@ class MainWindow(QMainWindow):
             return
         api_key = self.steam_web_api_key.text().strip()
         if not api_key:
-            QMessageBox.warning(self, "Steam Web API key required", "Enter a Steam Web API key first.")
+            QMessageBox.warning(
+                self, "Steam Web API key required", "Enter a Steam Web API key first."
+            )
             return
         self.browser_summary.setText("Cached discovered servers: querying Steam Web API...")
         self._set_database_refresh_enabled(False)
-        self.web_api_worker = SteamWebApiDiscoveryWorker(api_key=api_key, limit=self.discovery_limit.value())
+        self.web_api_worker = SteamWebApiDiscoveryWorker(
+            api_key=api_key, limit=self.discovery_limit.value()
+        )
         self.web_api_worker.discovery_ready.connect(self.handle_steam_web_api_ready)
         self.web_api_worker.start()
 
@@ -1295,7 +1295,9 @@ class MainWindow(QMainWindow):
                 f"{error}\n\nExisting cached Steam Web API rows were kept.",
             )
             return
-        inserted, removed = server_cache.sync_source_servers(self.server_cache, "steam_web_api", servers)
+        inserted, removed = server_cache.sync_source_servers(
+            self.server_cache, "steam_web_api", servers
+        )
         self.refresh_server_browser()
         self.statusBar().showMessage(
             f"Steam Web API discovery complete: added {inserted} row(s), removed {removed} stale row(s).",
@@ -1312,7 +1314,10 @@ class MainWindow(QMainWindow):
         self.battlemetrics_worker.start()
 
     def refresh_from_wolfapi(self):
-        if self.wolfapi_refresh_process and self.wolfapi_refresh_process.state() != QProcess.NotRunning:
+        if (
+            self.wolfapi_refresh_process
+            and self.wolfapi_refresh_process.state() != QProcess.NotRunning
+        ):
             return
         use_v1 = self.discovery_provider_key() == "wolfapi_v1"
         self.start_wolfapi_refresh_process(automatic=False, use_v1=use_v1)
@@ -1366,7 +1371,10 @@ class MainWindow(QMainWindow):
         self.handle_wolfapi_cache_ready(inserted, removed, error)
 
     def maybe_auto_refresh_configured_provider(self):
-        if not hasattr(self, "discovery_auto_refresh") or not self.discovery_auto_refresh.isChecked():
+        if (
+            not hasattr(self, "discovery_auto_refresh")
+            or not self.discovery_auto_refresh.isChecked()
+        ):
             return
         provider = self.discovery_provider_key()
         if provider == "disabled":
@@ -1379,18 +1387,21 @@ class MainWindow(QMainWindow):
             return
         if self.wolfapi_worker and self.wolfapi_worker.isRunning():
             return
-        if self.wolfapi_refresh_process and self.wolfapi_refresh_process.state() != QProcess.NotRunning:
+        if (
+            self.wolfapi_refresh_process
+            and self.wolfapi_refresh_process.state() != QProcess.NotRunning
+        ):
             return
         if self.wolfapi_cache_worker and self.wolfapi_cache_worker.isRunning():
             return
         if not self.should_auto_refresh_provider(provider):
             return
-        self.browser_summary.setText("Cached discovered servers: quietly refreshing configured provider...")
+        self.browser_summary.setText(
+            "Cached discovered servers: quietly refreshing configured provider..."
+        )
         self._set_database_refresh_enabled(False)
         if provider in ("wolfapi", "wolfapi_v1"):
-            self.start_wolfapi_refresh_process(
-                automatic=True, use_v1=provider == "wolfapi_v1"
-            )
+            self.start_wolfapi_refresh_process(automatic=True, use_v1=provider == "wolfapi_v1")
         elif provider == "battlemetrics":
             self.battlemetrics_worker = BattleMetricsDiscoveryWorker(
                 limit=self.discovery_limit.value(),
@@ -1417,7 +1428,9 @@ class MainWindow(QMainWindow):
                 self._set_database_refresh_enabled(True)
                 self.statusBar().showMessage(f"Steam master auto-refresh skipped: {exc}", 7000)
                 return
-            self.discovery_worker = SteamDiscoveryWorker(max_batches=1, master_addresses=master_addresses)
+            self.discovery_worker = SteamDiscoveryWorker(
+                max_batches=1, master_addresses=master_addresses
+            )
             self.discovery_worker.discovery_ready.connect(self.handle_auto_steam_discovery_ready)
             self.discovery_worker.start()
 
@@ -1438,7 +1451,9 @@ class MainWindow(QMainWindow):
                 7000,
             )
             return
-        inserted, removed = server_cache.sync_source_servers(self.server_cache, "steam_master", servers)
+        inserted, removed = server_cache.sync_source_servers(
+            self.server_cache, "steam_master", servers
+        )
         self.refresh_server_browser()
         self.statusBar().showMessage(
             f"Steam master auto-refresh added {inserted} row(s), removed {removed}.",
@@ -1455,7 +1470,9 @@ class MainWindow(QMainWindow):
                 7000,
             )
             return
-        inserted, removed = server_cache.sync_source_servers(self.server_cache, "steam_web_api", servers)
+        inserted, removed = server_cache.sync_source_servers(
+            self.server_cache, "steam_web_api", servers
+        )
         self.refresh_server_browser()
         self.statusBar().showMessage(
             f"Steam Web API auto-refresh added {inserted} row(s), removed {removed}.",
@@ -1481,7 +1498,9 @@ class MainWindow(QMainWindow):
                 f"{error}\n\nExisting cached BattleMetrics rows were kept.",
             )
             return
-        inserted, removed = server_cache.sync_source_servers(self.server_cache, "battlemetrics", servers)
+        inserted, removed = server_cache.sync_source_servers(
+            self.server_cache, "battlemetrics", servers
+        )
         self.refresh_server_browser()
         if automatic:
             self.statusBar().showMessage(
@@ -1515,18 +1534,14 @@ class MainWindow(QMainWindow):
                 f"{error}\n\nExisting cached WolfAPI rows were kept.",
             )
             return
-        self.browser_summary.setText(
-            f"Cached discovered servers: updating {label} results…"
-        )
+        self.browser_summary.setText(f"Cached discovered servers: updating {label} results…")
         self.wolfapi_cache_context = (automatic, label, provider)
         self.wolfapi_cache_worker = WolfApiCacheMergeWorker(
             server_cache.SERVER_CACHE_PATH,
             servers,
             bounded_v1=provider == "wolfapi_v1",
         )
-        self.wolfapi_cache_worker.merge_ready.connect(
-            self.handle_wolfapi_cache_ready
-        )
+        self.wolfapi_cache_worker.merge_ready.connect(self.handle_wolfapi_cache_ready)
         self.wolfapi_cache_worker.start()
 
     def handle_wolfapi_cache_ready(self, inserted: int, removed: int, error: str):
@@ -1618,29 +1633,24 @@ class MainWindow(QMainWindow):
             return
         servers = list(self.browser_servers)
         if not servers:
-            QMessageBox.warning(self, "No visible servers", "No discovered servers are visible to enrich.")
+            QMessageBox.warning(
+                self, "No visible servers", "No discovered servers are visible to enrich."
+            )
             return
         self.start_discovered_enrichment(servers, mode="bulk")
 
     def start_discovered_enrichment(self, servers, mode: str = "bulk"):
         self.enrichment_mode = mode
         if mode == "bulk":
-            self.browser_summary.setText(
-                f"Checking {len(servers)} visible server(s) locally..."
-            )
+            self.browser_summary.setText(f"Checking {len(servers)} visible server(s) locally...")
         self.enrich_visible_button.setEnabled(False)
         self.enrichment_worker = ServerEnrichmentWorker(servers)
-        self.enrichment_worker.enrichment_progress.connect(
-            self.handle_enrichment_progress
-        )
+        self.enrichment_worker.enrichment_progress.connect(self.handle_enrichment_progress)
         self.enrichment_worker.enrichment_ready.connect(self.handle_enrichment_ready)
         self.enrichment_worker.start()
 
     def handle_enrichment_progress(self, payload, completed: int, total: int):
-        if (
-            self.enrichment_mode == "bulk"
-            and (completed == total or completed % 5 == 0)
-        ):
+        if self.enrichment_mode == "bulk" and (completed == total or completed % 5 == 0):
             self.browser_summary.setText(
                 f"Checked {completed} of {total} visible server(s) locally..."
             )
@@ -1705,9 +1715,7 @@ class MainWindow(QMainWindow):
         worker = ServerEnrichmentWorker([server])
         self.selection_enrichment_workers[cache_key] = worker
         worker.enrichment_progress.connect(self.handle_selected_enrichment_progress)
-        worker.finished.connect(
-            lambda key=cache_key: self.handle_selected_enrichment_finished(key)
-        )
+        worker.finished.connect(lambda key=cache_key: self.handle_selected_enrichment_finished(key))
         worker.start()
 
     def handle_selected_enrichment_progress(self, payload, _completed: int, _total: int):
@@ -1752,7 +1760,9 @@ class MainWindow(QMainWindow):
             "Comparing this server's required mods with the selected Steam Workshop installation.",
             STATUS_COLOURS["warning"],
         )
-        self.update_browser_detail_card(discovered, mod_preview="Checking local Workshop readiness…")
+        self.update_browser_detail_card(
+            discovered, mod_preview="Checking local Workshop readiness…"
+        )
         worker = ModWorker(
             self.discovered_server_context(discovered),
             install.workshop_dir,
@@ -1764,9 +1774,7 @@ class MainWindow(QMainWindow):
         worker.mods_ready.connect(
             lambda result, key=cache_key: self.finish_browser_mod_preview(key, result)
         )
-        worker.finished.connect(
-            lambda key=cache_key: self.handle_browser_mod_preview_finished(key)
-        )
+        worker.finished.connect(lambda key=cache_key: self.handle_browser_mod_preview_finished(key))
         worker.start()
 
     def finish_browser_mod_preview(self, cache_key: str, result: ModCheckResult):
@@ -1817,7 +1825,9 @@ class MainWindow(QMainWindow):
     def promote_selected_discovered_server(self):
         server = self.selected_discovered_server()
         if not server:
-            QMessageBox.warning(self, "No discovered server selected", "Select a discovered server first.")
+            QMessageBox.warning(
+                self, "No discovered server selected", "Select a discovered server first."
+            )
             return
 
         dialog = PromoteServerDialog(self, server.name)
@@ -1870,7 +1880,9 @@ class MainWindow(QMainWindow):
     def activate_selected_discovered_server(self) -> Server | None:
         discovered = self.selected_discovered_server()
         if not discovered:
-            QMessageBox.warning(self, "No discovered server selected", "Select a discovered server first.")
+            QMessageBox.warning(
+                self, "No discovered server selected", "Select a discovered server first."
+            )
             return None
         self.active_discovered_server = self.discovered_server_context(discovered)
         self.active_discovered_cache_key = discovered.cache_key
@@ -1920,9 +1932,7 @@ class MainWindow(QMainWindow):
 
     def discovery_provider_key(self) -> str:
         if not hasattr(self, "discovery_provider"):
-            return str(
-                self.settings.get("discovery_provider") or DEFAULT_DISCOVERY_PROVIDER
-            )
+            return str(self.settings.get("discovery_provider") or DEFAULT_DISCOVERY_PROVIDER)
         keys = {
             "WolfAPI v1 (staged)": "wolfapi_v1",
             "WolfAPI (legacy fallback)": "wolfapi",
@@ -1995,14 +2005,12 @@ class MainWindow(QMainWindow):
 
     def handle_launch_engine_changed(self, *_args):
         MainWindow._recheck_after_mod_context_change(
-            self,
-            "Launch engine changed. Rechecking selected server mods..."
+            self, "Launch engine changed. Rechecking selected server mods..."
         )
 
     def handle_native_steam_mode_changed(self, *_args):
         MainWindow._recheck_after_mod_context_change(
-            self,
-            "Steam install changed. Rechecking selected server mods..."
+            self, "Steam install changed. Rechecking selected server mods..."
         )
 
     def _recheck_after_mod_context_change(self, message: str):
@@ -2028,7 +2036,9 @@ class MainWindow(QMainWindow):
         if not self.player_name.text().strip():
             self.player_name.setText(DEFAULT_PLAYER_NAME)
         self.save_user_settings(silent=True)
-        self.statusBar().showMessage(f"Player name saved as {self.player_name.text().strip()}.", 5000)
+        self.statusBar().showMessage(
+            f"Player name saved as {self.player_name.text().strip()}.", 5000
+        )
 
     def save_user_settings(self, silent: bool = False):
         auto_refresh_timestamps = {
@@ -2167,9 +2177,7 @@ class MainWindow(QMainWindow):
         self.browser_table.verticalScrollBar().setValue(scroll_value)
         for server in servers:
             cached = self.browser_mod_results.get(server.cache_key)
-            if cached and time.monotonic() - cached[0] < (
-                900 if cached[1].ok else 300
-            ):
+            if cached and time.monotonic() - cached[0] < (900 if cached[1].ok else 300):
                 self.apply_browser_mod_preview(server.cache_key, cached[1])
         self.configure_browser_columns()
         self.browser_summary.setText(
@@ -2194,8 +2202,7 @@ class MainWindow(QMainWindow):
         launch_button = getattr(self, "browser_launch_button", None)
         if launch_button is not None:
             launch_button.setText(
-                f"Launch {display_server_name(selected)}"
-                if selected else "Launch selected server"
+                f"Launch {display_server_name(selected)}" if selected else "Launch selected server"
             )
         if hasattr(self, "update_browser_detail_card"):
             self.update_browser_detail_card(selected)
@@ -2241,9 +2248,11 @@ class MainWindow(QMainWindow):
             if not mod_preview and cached:
                 result = cached[1]
                 mod_preview = (
-                    "Unavailable" if not result.ok else
-                    f"{len(result.missing_mods)} missing locally" if result.missing_mods else
-                    "Ready locally"
+                    "Unavailable"
+                    if not result.ok
+                    else f"{len(result.missing_mods)} missing locally"
+                    if result.missing_mods
+                    else "Ready locally"
                 )
             detail = browser_inspector(selected, mod_preview)
             detail_edge = detail.status_kind
@@ -2252,9 +2261,7 @@ class MainWindow(QMainWindow):
             elif "missing" in mod_preview.casefold() or mod_preview.casefold() == "unavailable":
                 detail_edge = "offline"
             status_pill = (
-                "warning"
-                if status_override.casefold() == "checking"
-                else detail.status_kind
+                "warning" if status_override.casefold() == "checking" else detail.status_kind
             )
             self.browser_detail_card.setProperty("serverStatus", detail_edge)
             self.browser_detail_title.setText(detail.title)
@@ -2628,7 +2635,9 @@ class MainWindow(QMainWindow):
 
         original = self.servers[row]
         if live_port == original.game_port:
-            self.statusBar().showMessage("Favourite server already uses the live connect port.", 7000)
+            self.statusBar().showMessage(
+                "Favourite server already uses the live connect port.", 7000
+            )
             return
 
         updated = Server(
@@ -2780,9 +2789,7 @@ class MainWindow(QMainWindow):
             self.mods_launch_button.setText(text)
             self.mods_launch_button.setEnabled(server is not None)
         if hasattr(self, "mods_back_to_browser_button"):
-            self.mods_back_to_browser_button.setVisible(
-                self.active_discovered_server is not None
-            )
+            self.mods_back_to_browser_button.setVisible(self.active_discovered_server is not None)
 
     def check_initial_server_mods(self):
         if self.servers and self.table.currentRow() < 0:
@@ -2825,7 +2832,11 @@ class MainWindow(QMainWindow):
         )
         self.mod_readiness.setText("Checking required-mod readiness…")
         self.subscribe_missing_button.setEnabled(False)
-        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        install = (
+            self.selected_steam_install()
+            if self.launch_engine_key() == "native"
+            else best_install()
+        )
         workshop_dir = install.workshop_dir if install else None
         cached_mod_result = usable_mod_result(server, self.last_mod_result, workshop_dir)
         if not force and cached_mod_result:
@@ -2876,7 +2887,11 @@ class MainWindow(QMainWindow):
     def update_mods_table(self, result: ModCheckResult):
         self.active_mod_server_key = ""
         current_server = self.active_server_context()
-        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        install = (
+            self.selected_steam_install()
+            if self.launch_engine_key() == "native"
+            else best_install()
+        )
         workshop_dir = install.workshop_dir if install else None
         if not current_server:
             return
@@ -2901,9 +2916,7 @@ class MainWindow(QMainWindow):
         count = len(result.required_mods)
         if discovered.required_mod_count == count:
             return
-        server_cache.upsert_server(
-            self.server_cache, replace(discovered, required_mod_count=count)
-        )
+        server_cache.upsert_server(self.server_cache, replace(discovered, required_mod_count=count))
         self.refresh_server_browser()
 
     def handle_mod_worker_finished(self):
@@ -2934,7 +2947,8 @@ class MainWindow(QMainWindow):
         self.subscribe_missing_button.setEnabled(missing_count > 0)
         self.subscribe_missing_button.setText(
             f"Resolve {missing_count} required mod{'s' if missing_count != 1 else ''}"
-            if missing_count else "Install/update required mods"
+            if missing_count
+            else "Install/update required mods"
         )
         if not result.ok:
             self.mods_table.setRowCount(0)
@@ -2956,9 +2970,7 @@ class MainWindow(QMainWindow):
                     item.setForeground(QColor(row_data.status_colour))
                 self.mods_table.setItem(row, column, item)
         self.mods_table.resizeColumnsToContents()
-        self.mods_table.horizontalHeader().setSectionResizeMode(
-            1, QHeaderView.Stretch
-        )
+        self.mods_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         self.mods_table.setSortingEnabled(True)
         self.mods_table.sortItems(0, Qt.DescendingOrder)
         self.apply_mod_filter()
@@ -2994,9 +3006,7 @@ class MainWindow(QMainWindow):
             return
         self._set_mod_detail_status(mod_detail_status(mod))
         self.mod_detail_title.setText(mod.name or mod.installed_name or "Unknown mod")
-        self.mod_detail_description.setText(
-            mod_description_preview(mod, limit=900)
-        )
+        self.mod_detail_description.setText(mod_description_preview(mod, limit=900))
         self.mod_detail_description.setToolTip("")
         status = mod_row(mod).values[0].lstrip("✓✗!↻… ")
         self.mod_detail_metadata.setText(
@@ -3112,7 +3122,9 @@ class MainWindow(QMainWindow):
             if workshop_id:
                 url = f"https://steamcommunity.com/sharedfiles/filedetails/?id={workshop_id}"
         if not url:
-            QMessageBox.warning(self, "No Workshop URL", "This mod row does not have a Workshop URL.")
+            QMessageBox.warning(
+                self, "No Workshop URL", "This mod row does not have a Workshop URL."
+            )
             return
         QDesktopServices.openUrl(QUrl(url))
 
@@ -3138,9 +3150,7 @@ class MainWindow(QMainWindow):
         summary = QLabel(self.system_summary.text())
         set_ui_role(summary, "summary")
         dialog_layout.addWidget(summary)
-        table = QTableWidget(
-            self.health_table.rowCount(), self.health_table.columnCount()
-        )
+        table = QTableWidget(self.health_table.rowCount(), self.health_table.columnCount())
         table.setHorizontalHeaderLabels(["Check", "Status", "Details"])
         table.setSelectionBehavior(QTableWidget.SelectRows)
         table.setEditTriggers(QTableWidget.NoEditTriggers)
@@ -3272,8 +3282,12 @@ class MainWindow(QMainWindow):
         copy_url_action = QAction("Copy Workshop URL", self)
         check_update_action = QAction("Check/update this mod", self)
         open_action.triggered.connect(lambda: self.open_workshop_page_for_mod_row(row))
-        copy_id_action.triggered.connect(lambda: self.copy_to_clipboard(self._mods_cell(row, 2), "Workshop ID"))
-        copy_name_action.triggered.connect(lambda: self.copy_to_clipboard(self._mods_cell(row, 1), "Mod name"))
+        copy_id_action.triggered.connect(
+            lambda: self.copy_to_clipboard(self._mods_cell(row, 2), "Workshop ID")
+        )
+        copy_name_action.triggered.connect(
+            lambda: self.copy_to_clipboard(self._mods_cell(row, 1), "Mod name")
+        )
         copy_url_action.triggered.connect(
             lambda: self.copy_to_clipboard(
                 (self.selected_required_mod().workshop_url if self.selected_required_mod() else ""),
@@ -3363,8 +3377,12 @@ class MainWindow(QMainWindow):
         apply_live_port_action.triggered.connect(
             lambda: self.apply_live_connect_port_to_curated_server(row)
         )
-        copy_connect_action.triggered.connect(lambda: self.copy_to_clipboard(self._server_cell(row, 15), "Connect address"))
-        copy_details_action.triggered.connect(lambda: self.copy_to_clipboard(self.server_details_text(row), "Server details"))
+        copy_connect_action.triggered.connect(
+            lambda: self.copy_to_clipboard(self._server_cell(row, 15), "Connect address")
+        )
+        copy_details_action.triggered.connect(
+            lambda: self.copy_to_clipboard(self.server_details_text(row), "Server details")
+        )
         edit_action.triggered.connect(lambda: self.edit_curated_server_row(row))
         toggle_fav_action.triggered.connect(lambda: self.toggle_favourite(row))
         remove_action.triggered.connect(lambda: self.remove_curated_server_row(row))
@@ -3391,13 +3409,15 @@ class MainWindow(QMainWindow):
         return parse_connect_port(self._server_cell(row, 15))
 
     def server_details_text(self, row: int) -> str:
-        return "\n".join([
-            self._server_cell(row, 3) or self._server_cell(row, 2),
-            self._server_cell(row, 15),
-            f"Map: {self._server_cell(row, 9)}",
-            f"Players: {self._server_cell(row, 10)}",
-            f"Version: {self._server_cell(row, 13)}",
-        ]).strip()
+        return "\n".join(
+            [
+                self._server_cell(row, 3) or self._server_cell(row, 2),
+                self._server_cell(row, 15),
+                f"Map: {self._server_cell(row, 9)}",
+                f"Players: {self._server_cell(row, 10)}",
+                f"Version: {self._server_cell(row, 13)}",
+            ]
+        ).strip()
 
     def open_selected_workshop_page(self):
         row = self.mods_table.currentRow()
@@ -3441,7 +3461,9 @@ class MainWindow(QMainWindow):
             return
         missing = result.missing_mods
         if not missing:
-            QMessageBox.information(self, "No missing mods", "All required mods appear to be installed.")
+            QMessageBox.information(
+                self, "No missing mods", "All required mods appear to be installed."
+            )
             return
         if self.workshop_subscription_worker and self.workshop_subscription_worker.isRunning():
             if self.workshop_subscription_dialog:
@@ -3455,7 +3477,9 @@ class MainWindow(QMainWindow):
             )
             return
         recovery = workshop_recovery_state(
-            self.selected_steam_install() if self.launch_engine_key() == "native" else best_install(),
+            self.selected_steam_install()
+            if self.launch_engine_key() == "native"
+            else best_install(),
             (mod.workshop_id for mod in missing),
         )
         if recovery.active:
@@ -3468,7 +3492,11 @@ class MainWindow(QMainWindow):
             )
             return
 
-        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        install = (
+            self.selected_steam_install()
+            if self.launch_engine_key() == "native"
+            else best_install()
+        )
         if not install or not install.workshop_dir:
             QMessageBox.warning(
                 self,
@@ -3485,8 +3513,7 @@ class MainWindow(QMainWindow):
             )
             return
         names = "\n".join(
-            f"- {mod.name or mod.workshop_id} — {mod_download_size(mod)}"
-            for mod in missing[:12]
+            f"- {mod.name or mod.workshop_id} — {mod_download_size(mod)}" for mod in missing[:12]
         )
         if len(missing) > 12:
             names += f"\n- ...and {len(missing) - 12} more"
@@ -3511,24 +3538,36 @@ class MainWindow(QMainWindow):
     def check_update_mod_row(self, row: int):
         result = self._selected_mod_result(successful=True)
         workshop_id = self._mods_cell(row, 2)
-        mod = next(
-            (item for item in result.required_mods if item.workshop_id == workshop_id),
-            None,
-        ) if result else None
+        mod = (
+            next(
+                (item for item in result.required_mods if item.workshop_id == workshop_id),
+                None,
+            )
+            if result
+            else None
+        )
         if mod is None:
             QMessageBox.warning(
-                self, "Mod check unavailable", "Recheck the selected server before updating this mod."
+                self,
+                "Mod check unavailable",
+                "Recheck the selected server before updating this mod.",
             )
             return
         if mod.ready:
             QMessageBox.information(
-                self, "Mod already ready", f"{mod.name or mod.workshop_id} is already reported ready."
+                self,
+                "Mod already ready",
+                f"{mod.name or mod.workshop_id} is already reported ready.",
             )
             return
         if self.workshop_subscription_worker and self.workshop_subscription_worker.isRunning():
             self.subscribe_missing_workshop_mods()
             return
-        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        install = (
+            self.selected_steam_install()
+            if self.launch_engine_key() == "native"
+            else best_install()
+        )
         if not install or not install.workshop_dir or not install.running:
             QMessageBox.warning(
                 self,
@@ -3571,9 +3610,7 @@ class MainWindow(QMainWindow):
         self.workshop_subscription_worker.subscription_ready.connect(
             self.finish_workshop_subscription
         )
-        self.workshop_subscription_worker.finished.connect(
-            self.clear_workshop_subscription_worker
-        )
+        self.workshop_subscription_worker.finished.connect(self.clear_workshop_subscription_worker)
         self.workshop_subscription_dialog.canceled.connect(
             self.stop_workshop_subscription_monitoring
         )
@@ -3602,9 +3639,7 @@ class MainWindow(QMainWindow):
         active = current_workshop_item(snapshots)
         detail = ""
         if active:
-            item_name = self.workshop_subscription_names.get(
-                active.workshop_id, active.workshop_id
-            )
+            item_name = self.workshop_subscription_names.get(active.workshop_id, active.workshop_id)
             detail = f" Current item: {item_name}"
             if active.percent is not None:
                 detail += f" ({active.percent}%)"
@@ -3669,11 +3704,9 @@ class MainWindow(QMainWindow):
             box.setIcon(QMessageBox.Information)
             box.setWindowTitle("Mod download complete")
             box.setText(f"{installed_count} required {noun} downloaded successfully.")
-            launch_button = box.addButton(
-                "Launch server", QMessageBox.ButtonRole.AcceptRole
-            )
+            launch_button = box.addButton("Launch server", QMessageBox.ButtonRole.AcceptRole)
             set_ui_role(launch_button, "primary")
-            close_button = box.addButton("Close", QMessageBox.ButtonRole.RejectRole)
+            box.addButton("Close", QMessageBox.ButtonRole.RejectRole)
             box.setDefaultButton(launch_button)
             box.exec()
             self.launch_after_workshop_download = box.clickedButton() == launch_button
@@ -3694,9 +3727,7 @@ class MainWindow(QMainWindow):
     def clear_workshop_subscription_worker(self):
         self.workshop_subscription_worker = None
         self.launch_button.setEnabled(True)
-        self.statusBar().showMessage(
-            "Steam Workshop helper finished; launch is available.", 5000
-        )
+        self.statusBar().showMessage("Steam Workshop helper finished; launch is available.", 5000)
         self.maybe_launch_after_workshop_download()
 
     def maybe_launch_after_workshop_download(self):
@@ -3726,7 +3757,11 @@ class MainWindow(QMainWindow):
             )
             return
 
-        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        install = (
+            self.selected_steam_install()
+            if self.launch_engine_key() == "native"
+            else best_install()
+        )
         workshop_dir = install.workshop_dir if install else None
         result = usable_mod_result(server, self.last_mod_result, workshop_dir)
         if not result or not result.ok or result.missing_mods:
@@ -3771,7 +3806,11 @@ class MainWindow(QMainWindow):
         server = self.active_server_context()
         if not server:
             return None
-        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        install = (
+            self.selected_steam_install()
+            if self.launch_engine_key() == "native"
+            else best_install()
+        )
         workshop_dir = install.workshop_dir if install else None
         result = matching_mod_result(server, self.last_mod_result, workshop_dir)
         if successful and result and not result.ok:
@@ -3838,7 +3877,11 @@ class MainWindow(QMainWindow):
         provider_detail = self.discovery_provider.currentText()
         if provider == "steam_web_api":
             provider_status = "OK" if self.steam_web_api_key.text().strip() else "MISSING"
-            provider_detail = "Steam Web API key saved" if provider_status == "OK" else "Steam Web API key required"
+            provider_detail = (
+                "Steam Web API key saved"
+                if provider_status == "OK"
+                else "Steam Web API key required"
+            )
         elif provider == "steam_master":
             try:
                 addresses = self.steam_master_addresses()
@@ -3847,7 +3890,11 @@ class MainWindow(QMainWindow):
                 provider_detail = str(exc)
             else:
                 provider_status = "OK"
-                provider_detail = ", ".join(address.address for address in addresses) if addresses else "Default Steam masters"
+                provider_detail = (
+                    ", ".join(address.address for address in addresses)
+                    if addresses
+                    else "Default Steam masters"
+                )
         elif provider == "wolfapi_v1":
             provider_status = "OK"
             provider_detail = "WolfAPI v1 bounded discovery (staged)"
@@ -3897,9 +3944,7 @@ class MainWindow(QMainWindow):
     def launch_selected(self):
         workshop_block = self.workshop_launch_block_reason()
         if workshop_block:
-            QMessageBox.information(
-                self, "Steam Workshop in progress", workshop_block
-            )
+            QMessageBox.information(self, "Steam Workshop in progress", workshop_block)
             return
         server = self.active_server_context()
         if not server:
@@ -3933,20 +3978,33 @@ class MainWindow(QMainWindow):
         dialog = self.preflight_dialog
         if not dialog or not dialog.isVisible():
             return
-        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        install = (
+            self.selected_steam_install()
+            if self.launch_engine_key() == "native"
+            else best_install()
+        )
         if not install or not install.dayz_dir:
-            self.fail_connect_preflight("steam", "The selected Steam/DayZ installation was not detected. Check Settings health.")
+            self.fail_connect_preflight(
+                "steam",
+                "The selected Steam/DayZ installation was not detected. Check Settings health.",
+            )
             return
         if not install.workshop_dir:
-            self.fail_connect_preflight("mods", "The DayZ Workshop folder was not detected. Check Settings health.")
+            self.fail_connect_preflight(
+                "mods", "The DayZ Workshop folder was not detected. Check Settings health."
+            )
             return
         if install.running:
-            dialog.set_complete("steam", f"{install_label(install)} is running. Checking required mods…")
+            dialog.set_complete(
+                "steam", f"{install_label(install)} is running. Checking required mods…"
+            )
             self.start_preflight_mod_check(install)
             return
         command = build_steam_start_command(install)
         if not command:
-            self.fail_connect_preflight("steam", "The selected Steam client has no runnable command.")
+            self.fail_connect_preflight(
+                "steam", "The selected Steam client has no runnable command."
+            )
             return
         dialog.set_working("steam", f"Starting {install_label(install)}…")
         started, _pid = QProcess.startDetached(command[0], command[1:])
@@ -3961,13 +4019,22 @@ class MainWindow(QMainWindow):
         if not dialog or not dialog.isVisible():
             return
         self.preflight_steam_attempts += 1
-        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        install = (
+            self.selected_steam_install()
+            if self.launch_engine_key() == "native"
+            else best_install()
+        )
         if install and install.running:
-            dialog.set_complete("steam", f"{install_label(install)} is running. Checking required mods…")
+            dialog.set_complete(
+                "steam", f"{install_label(install)} is running. Checking required mods…"
+            )
             self.start_preflight_mod_check(install)
             return
         if self.preflight_steam_attempts >= 60:
-            self.fail_connect_preflight("steam", "Steam was started, but did not become ready within 60 seconds. Sign in to Steam and try again.")
+            self.fail_connect_preflight(
+                "steam",
+                "Steam was started, but did not become ready within 60 seconds. Sign in to Steam and try again.",
+            )
             return
         QTimer.singleShot(1000, self.poll_preflight_steam)
 
@@ -3998,16 +4065,29 @@ class MainWindow(QMainWindow):
         self.last_mod_result = result
         self.display_mods_result(result)
         if result.missing_mods:
-            install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+            install = (
+                self.selected_steam_install()
+                if self.launch_engine_key() == "native"
+                else best_install()
+            )
             if not install or not install.running:
-                self.fail_connect_preflight("mods", "Steam stopped before required mods could be installed.")
+                self.fail_connect_preflight(
+                    "mods", "Steam stopped before required mods could be installed."
+                )
                 return
-            dialog.set_working("mods", f"Installing or updating {len(result.missing_mods)} required Workshop item(s)…")
+            dialog.set_working(
+                "mods",
+                f"Installing or updating {len(result.missing_mods)} required Workshop item(s)…",
+            )
             self.preflight_workshop_worker = WorkshopSubscriptionWorker(
                 [mod.workshop_id for mod in result.missing_mods], install
             )
-            self.preflight_workshop_worker.progress_ready.connect(self.update_preflight_workshop_progress)
-            self.preflight_workshop_worker.subscription_ready.connect(self.finish_preflight_workshop)
+            self.preflight_workshop_worker.progress_ready.connect(
+                self.update_preflight_workshop_progress
+            )
+            self.preflight_workshop_worker.subscription_ready.connect(
+                self.finish_preflight_workshop
+            )
             self.preflight_workshop_worker.start()
             return
         dialog.set_complete("mods", f"All {len(result.required_mods)} required mod(s) are ready.")
@@ -4019,17 +4099,29 @@ class MainWindow(QMainWindow):
             return
         installed = sum(1 for item in snapshots if item.installed)
         active = current_workshop_item(snapshots)
-        suffix = f"; current item {active.percent}%" if active and active.percent is not None else ""
-        dialog.set_working("mods", f"Steam has prepared {installed} of {len(snapshots)} required item(s){suffix}.")
+        suffix = (
+            f"; current item {active.percent}%" if active and active.percent is not None else ""
+        )
+        dialog.set_working(
+            "mods", f"Steam has prepared {installed} of {len(snapshots)} required item(s){suffix}."
+        )
 
     def finish_preflight_workshop(self, result):
         self.preflight_workshop_worker = None
         if not result.ok:
-            self.fail_connect_preflight("mods", result.error or "Steam did not finish every required Workshop item.")
+            self.fail_connect_preflight(
+                "mods", result.error or "Steam did not finish every required Workshop item."
+            )
             return
-        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        install = (
+            self.selected_steam_install()
+            if self.launch_engine_key() == "native"
+            else best_install()
+        )
         if not install:
-            self.fail_connect_preflight("mods", "The selected Steam installation is no longer available.")
+            self.fail_connect_preflight(
+                "mods", "The selected Steam installation is no longer available."
+            )
             return
         self.start_preflight_mod_check(install)
 
@@ -4050,7 +4142,9 @@ class MainWindow(QMainWindow):
         current = self.active_server_context()
         if not current or server_key(current) != server_key(server):
             QMessageBox.warning(
-                self, "Server selection changed", "Launch was cancelled because the active server changed."
+                self,
+                "Server selection changed",
+                "Launch was cancelled because the active server changed.",
             )
             return
         if state_result.error:
@@ -4089,7 +4183,9 @@ class MainWindow(QMainWindow):
             QMessageBox.critical(self, "Launch failed", str(exc))
             return
 
-        handoff_label = "native launch command" if self.launch_engine_key() == "native" else "external launcher"
+        handoff_label = (
+            "native launch command" if self.launch_engine_key() == "native" else "external launcher"
+        )
         dialog = LaunchDialog(self, command, f"Launching {server.name}", handoff_label)
         dialog.exec()
         try:
@@ -4160,7 +4256,11 @@ class MainWindow(QMainWindow):
         box.exec()
 
     def confirm_launch_preflight(self, server: Server) -> bool:
-        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        install = (
+            self.selected_steam_install()
+            if self.launch_engine_key() == "native"
+            else best_install()
+        )
         state = build_launch_preflight_state(
             install,
             server,
@@ -4247,7 +4347,9 @@ class MainWindow(QMainWindow):
                 install_button = box.addButton(
                     "Install/update mods", QMessageBox.ButtonRole.ActionRole
                 )
-                launch_button = box.addButton("Launch anyway", QMessageBox.ButtonRole.DestructiveRole)
+                launch_button = box.addButton(
+                    "Launch anyway", QMessageBox.ButtonRole.DestructiveRole
+                )
                 set_ui_role(launch_button, "destructive")
                 cancel_button = box.addButton("Cancel", QMessageBox.ButtonRole.RejectRole)
                 box.setDefaultButton(cancel_button)

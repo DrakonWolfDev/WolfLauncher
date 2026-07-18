@@ -1,5 +1,4 @@
 import json
-import os
 import stat
 import tempfile
 import unittest
@@ -49,7 +48,9 @@ class AtomicPersistenceTests(unittest.TestCase):
 
             save_json(path, {"steam_web_api_key": "secret"})
 
-            self.assertEqual(json.loads(path.read_text(encoding="utf-8")), {"steam_web_api_key": "secret"})
+            self.assertEqual(
+                json.loads(path.read_text(encoding="utf-8")), {"steam_web_api_key": "secret"}
+            )
             self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
 
 

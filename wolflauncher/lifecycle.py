@@ -4,7 +4,6 @@ import time
 
 from PySide6.QtCore import QProcess
 
-
 WORKER_ATTRIBUTES = (
     "worker",
     "mod_worker",

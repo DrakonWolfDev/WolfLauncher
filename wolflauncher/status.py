@@ -84,7 +84,9 @@ def check_server(server: Server) -> ServerStatus:
     # Some restart/offline states can produce a partial response. Treat those
     # as unavailable instead of showing ONLINE with Unknown / 0/? fields.
     if not data.get("name") or data.get("maxplayers") is None:
-        return ServerStatus(False, resolved_ip=ip, error="offline, restarting, or incomplete query response")
+        return ServerStatus(
+            False, resolved_ip=ip, error="offline, restarting, or incomplete query response"
+        )
 
     raw = data.get("raw", {}) if isinstance(data.get("raw"), dict) else {}
     tags = raw.get("tags", []) if isinstance(raw.get("tags"), list) else []

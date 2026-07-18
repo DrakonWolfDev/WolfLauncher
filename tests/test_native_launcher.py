@@ -122,7 +122,9 @@ class NativeLauncherTests(unittest.TestCase):
             guidance="Open the missing Workshop pages.",
         )
 
-        detailed = error.with_details("Native launch parity report\n- Missing Workshop directories: 1")
+        detailed = error.with_details(
+            "Native launch parity report\n- Missing Workshop directories: 1"
+        )
 
         self.assertIsNot(detailed, error)
         self.assertEqual(detailed.stage, "mod setup")
@@ -241,7 +243,9 @@ class NativeLauncherTests(unittest.TestCase):
             workshop_dir=None,
         )
 
-        with self.assertRaisesRegex(NativeLaunchError, "native Steam executable not detected") as raised:
+        with self.assertRaisesRegex(
+            NativeLaunchError, "native Steam executable not detected"
+        ) as raised:
             build_steam_launch_command(install, make_server("203.0.113.10"), "PlayerOne", [])
 
         self.assertEqual(raised.exception.stage, "Steam detection")
@@ -258,7 +262,9 @@ class NativeLauncherTests(unittest.TestCase):
             workshop_dir=None,
         )
 
-        with self.assertRaisesRegex(NativeLaunchError, "Flatpak Steam command not detected") as raised:
+        with self.assertRaisesRegex(
+            NativeLaunchError, "Flatpak Steam command not detected"
+        ) as raised:
             build_steam_launch_command(install, make_server("203.0.113.10"), "PlayerOne", [])
 
         self.assertEqual(raised.exception.stage, "Steam detection")
@@ -275,7 +281,9 @@ class NativeLauncherTests(unittest.TestCase):
             workshop_dir=None,
         )
 
-        with self.assertRaisesRegex(NativeLaunchError, "STEAM_ROOT env Steam executable not detected") as raised:
+        with self.assertRaisesRegex(
+            NativeLaunchError, "STEAM_ROOT env Steam executable not detected"
+        ) as raised:
             build_steam_launch_command(install, make_server("203.0.113.10"), "PlayerOne", [])
 
         self.assertEqual(raised.exception.stage, "Steam detection")
@@ -367,7 +375,10 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertTrue(first.prepared_mods[0].created)
             self.assertFalse(second.prepared_mods[0].created)
             self.assertEqual(first.mod_links, second.mod_links)
-            self.assertEqual(Path((install.dayz_dir / "@AAE").readlink()), Path("../../workshop/content/221100/256"))
+            self.assertEqual(
+                Path((install.dayz_dir / "@AAE").readlink()),
+                Path("../../workshop/content/221100/256"),
+            )
 
     def test_prepare_mod_links_rejects_stale_mod_symlink(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -387,8 +398,12 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertIn("Remove the stale @mod symlink", raised.exception.user_message())
             self.assertIn("Stale @mod symlink conflict:", raised.exception.details)
             self.assertIn(f"- Link: {link_path}", raised.exception.details)
-            self.assertIn("- Expected target: ../../workshop/content/221100/256", raised.exception.details)
-            self.assertIn("- Actual target: ../../workshop/content/221100/999", raised.exception.details)
+            self.assertIn(
+                "- Expected target: ../../workshop/content/221100/256", raised.exception.details
+            )
+            self.assertIn(
+                "- Actual target: ../../workshop/content/221100/999", raised.exception.details
+            )
             self.assertIn(f"- Expected resolved path: {mod_dir}", raised.exception.details)
             self.assertIn(f"- Actual resolved path: {stale_dir}", raised.exception.details)
 
@@ -418,8 +433,12 @@ class NativeLauncherTests(unittest.TestCase):
                     )
 
             self.assertIn("Stale @mod symlink conflict:", raised.exception.details)
-            self.assertIn("- Expected target: ../../workshop/content/221100/256", raised.exception.details)
-            self.assertIn("- Actual target: ../../workshop/content/221100/999", raised.exception.details)
+            self.assertIn(
+                "- Expected target: ../../workshop/content/221100/256", raised.exception.details
+            )
+            self.assertIn(
+                "- Actual target: ../../workshop/content/221100/999", raised.exception.details
+            )
             self.assertIn(f"- Expected resolved path: {mod_dir}", raised.exception.details)
             self.assertIn(f"- Actual resolved path: {stale_dir}", raised.exception.details)
             self.assertIn("Native launch parity report unavailable.", raised.exception.details)
@@ -535,7 +554,9 @@ class NativeLauncherTests(unittest.TestCase):
                 workshop_dir=None,
             )
 
-            with self.assertRaisesRegex(NativeLaunchError, "DayZ Workshop directory not detected") as raised:
+            with self.assertRaisesRegex(
+                NativeLaunchError, "DayZ Workshop directory not detected"
+            ) as raised:
                 prepare_native_launch_preview(
                     install,
                     make_server("203.0.113.10"),
@@ -590,14 +611,18 @@ class NativeLauncherTests(unittest.TestCase):
             )
             self.assertIn("-connect=203.0.113.10:2302", report.preview.command)
 
-    def test_prepare_native_launch_parity_report_reuses_resolved_preview_target_for_external_command(self):
+    def test_prepare_native_launch_parity_report_reuses_resolved_preview_target_for_external_command(
+        self,
+    ):
         with tempfile.TemporaryDirectory() as tmpdir:
             install = make_install(Path(tmpdir))
             launcher = Path(tmpdir) / "dayz-launcher.sh"
             launcher.write_text("#!/bin/sh\n", encoding="utf-8")
 
             with patch("wolflauncher.native_launcher.resolve_host", return_value="203.0.113.10"):
-                with patch("wolflauncher.launcher.resolve_host", side_effect=lambda host: host) as external_resolve:
+                with patch(
+                    "wolflauncher.launcher.resolve_host", side_effect=lambda host: host
+                ) as external_resolve:
                     report = prepare_native_launch_parity_report(
                         install,
                         str(launcher),
@@ -664,7 +689,9 @@ class NativeLauncherTests(unittest.TestCase):
                 text,
             )
             self.assertIn("External launcher handoff:\n- Ready: yes", text)
-            self.assertIn("Native command is ready for 203.0.113.10:2302 with 1 prepared mod link(s).", text)
+            self.assertIn(
+                "Native command is ready for 203.0.113.10:2302 with 1 prepared mod link(s).", text
+            )
             self.assertIn("Required Workshop mods:\n- Example Mod (256)", text)
             self.assertIn("Example Mod (256) -> @AAE", text)
             self.assertIn("-connect=203.0.113.10:2302", text)
@@ -792,10 +819,16 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertEqual(report.missing_mod_labels, ["Missing Mod (111)"])
             self.assertIn("- Missing Workshop directories: 1", text)
             self.assertIn("- Native ready: no", text)
-            self.assertIn("- Native launcher: blocked; 1 required Workshop directory is missing", text)
-            self.assertIn("Native command is not ready because 1 Workshop directory is missing.", text)
+            self.assertIn(
+                "- Native launcher: blocked; 1 required Workshop directory is missing", text
+            )
+            self.assertIn(
+                "Native command is not ready because 1 Workshop directory is missing.", text
+            )
             self.assertIn("Missing Workshop mod directories:\n- Missing Mod (111)", text)
-            self.assertIn("Native Steam command: not ready until all required mods are installed.", text)
+            self.assertIn(
+                "Native Steam command: not ready until all required mods are installed.", text
+            )
 
     def test_format_native_launch_parity_report_handles_all_missing_mods(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -816,14 +849,25 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertFalse(report.preview.ready)
             self.assertEqual(report.preview.mod_setup.prepared_mods, [])
             self.assertEqual(report.preview.mod_setup.missing_mod_ids, ["111", "222"])
-            self.assertEqual(report.missing_mod_labels, ["First Missing (111)", "Second Missing (222)"])
+            self.assertEqual(
+                report.missing_mod_labels, ["First Missing (111)", "Second Missing (222)"]
+            )
             self.assertIn("- Required mod count: 2", text)
             self.assertIn("- Prepared native mod links: 0", text)
             self.assertIn("- Missing Workshop directories: 2", text)
-            self.assertIn("- Native launcher: blocked; 2 required Workshop directories are missing", text)
-            self.assertIn("Native command is not ready because 2 Workshop directories are missing.", text)
-            self.assertIn("Missing Workshop mod directories:\n- First Missing (111)\n- Second Missing (222)", text)
-            self.assertIn("Native Steam command: not ready until all required mods are installed.", text)
+            self.assertIn(
+                "- Native launcher: blocked; 2 required Workshop directories are missing", text
+            )
+            self.assertIn(
+                "Native command is not ready because 2 Workshop directories are missing.", text
+            )
+            self.assertIn(
+                "Missing Workshop mod directories:\n- First Missing (111)\n- Second Missing (222)",
+                text,
+            )
+            self.assertIn(
+                "Native Steam command: not ready until all required mods are installed.", text
+            )
 
     def test_format_native_launch_parity_report_handles_mixed_installed_and_missing_mods(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -851,11 +895,17 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertIn("- Required mod count: 2", text)
             self.assertIn("- Prepared native mod links: 1", text)
             self.assertIn("- Missing Workshop directories: 1", text)
-            self.assertIn("Native prepared mod links:\n- Installed Mod (256) -> @AAE [created]", text)
+            self.assertIn(
+                "Native prepared mod links:\n- Installed Mod (256) -> @AAE [created]", text
+            )
             self.assertIn("Missing Workshop mod directories:\n- Missing Mod (111)", text)
-            self.assertIn("Native Steam command: not ready until all required mods are installed.", text)
+            self.assertIn(
+                "Native Steam command: not ready until all required mods are installed.", text
+            )
 
-    def test_prepare_native_launch_parity_report_keeps_native_preview_when_external_path_missing(self):
+    def test_prepare_native_launch_parity_report_keeps_native_preview_when_external_path_missing(
+        self,
+    ):
         with tempfile.TemporaryDirectory() as tmpdir:
             install = make_install(Path(tmpdir))
 
@@ -872,7 +922,9 @@ class NativeLauncherTests(unittest.TestCase):
             self.assertIn("Launcher script not found", report.external_error)
 
             text = format_native_launch_parity_report(report)
-            self.assertIn("External launcher comparison is unavailable: Launcher script not found", text)
+            self.assertIn(
+                "External launcher comparison is unavailable: Launcher script not found", text
+            )
             self.assertIn("- External launcher: unavailable; Launcher script not found", text)
             self.assertIn("External launcher handoff:\n- Ready: no", text)
             self.assertIn("- Command: not available", text)
@@ -882,7 +934,9 @@ class NativeLauncherTests(unittest.TestCase):
             install = make_install(Path(tmpdir))
 
             with patch("wolflauncher.native_launcher.resolve_host", return_value="203.0.113.10"):
-                with self.assertRaisesRegex(NativeLaunchError, "Missing mod directories for: 111") as raised:
+                with self.assertRaisesRegex(
+                    NativeLaunchError, "Missing mod directories for: 111"
+                ) as raised:
                     prepare_native_launch(install, make_server(), "PlayerOne", [RequiredMod("111")])
         self.assertEqual(raised.exception.stage, "mod setup")
         self.assertIn("Open the missing Workshop pages", raised.exception.user_message())
@@ -898,7 +952,9 @@ class NativeLauncherTests(unittest.TestCase):
             workshop_dir=Path("/steam/steamapps/workshop/content/221100"),
         )
 
-        with self.assertRaisesRegex(NativeLaunchError, "DayZ install directory not detected") as raised:
+        with self.assertRaisesRegex(
+            NativeLaunchError, "DayZ install directory not detected"
+        ) as raised:
             prepare_native_launch(install, make_server(), "PlayerOne", [])
 
         self.assertEqual(raised.exception.stage, "Steam library detection")
@@ -919,12 +975,16 @@ class NativeLauncherTests(unittest.TestCase):
                 workshop_dir=None,
             )
 
-            with self.assertRaisesRegex(NativeLaunchError, "DayZ Workshop directory not detected") as raised:
+            with self.assertRaisesRegex(
+                NativeLaunchError, "DayZ Workshop directory not detected"
+            ) as raised:
                 prepare_native_launch(install, make_server(), "PlayerOne", [])
 
         self.assertEqual(raised.exception.stage, "Steam library detection")
         self.assertIn("Workshop folder is visible", raised.exception.user_message())
-        self.assertIn("subscribe to at least one DayZ Workshop item", raised.exception.user_message())
+        self.assertIn(
+            "subscribe to at least one DayZ Workshop item", raised.exception.user_message()
+        )
 
     def test_prepare_native_launch_reports_missing_mod_names_when_available(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -946,7 +1006,9 @@ class NativeLauncherTests(unittest.TestCase):
             (install.workshop_dir / "111").mkdir()
 
             with patch("wolflauncher.native_launcher.resolve_host", return_value="203.0.113.10"):
-                with self.assertRaisesRegex(NativeLaunchError, "Missing mod metadata for: 111") as raised:
+                with self.assertRaisesRegex(
+                    NativeLaunchError, "Missing mod metadata for: 111"
+                ) as raised:
                     prepare_native_launch(install, make_server(), "PlayerOne", [RequiredMod("111")])
         self.assertEqual(raised.exception.stage, "mod setup")
         self.assertIn("redownload the Workshop item", raised.exception.user_message())
@@ -967,7 +1029,9 @@ class NativeLauncherTests(unittest.TestCase):
             install = make_install(Path(tmpdir))
 
             with patch("wolflauncher.native_launcher.resolve_host", side_effect=OSError("no host")):
-                with self.assertRaisesRegex(NativeLaunchError, "Could not resolve server host") as raised:
+                with self.assertRaisesRegex(
+                    NativeLaunchError, "Could not resolve server host"
+                ) as raised:
                     prepare_native_launch(install, make_server(), "PlayerOne", [])
         self.assertEqual(raised.exception.stage, "server DNS")
         self.assertIn("network connection and DNS", raised.exception.user_message())
@@ -996,9 +1060,7 @@ class NativeLauncherTests(unittest.TestCase):
 
             with patch("wolflauncher.native_launcher.resolve_host", return_value="203.0.113.10"):
                 with patch("wolflauncher.native_launcher.fetch_required_mods") as fetch:
-                    prepared = prepare_native_launch(
-                        install, make_server(), "PlayerOne", []
-                    )
+                    prepared = prepare_native_launch(install, make_server(), "PlayerOne", [])
 
         fetch.assert_not_called()
         self.assertNotIn("-mod=", prepared.command)

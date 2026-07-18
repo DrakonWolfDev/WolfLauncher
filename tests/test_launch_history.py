@@ -10,7 +10,9 @@ class LaunchHistoryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "last_launch_report.txt"
 
-            launch_history.save_last_launch_report("WolfLauncher launch output\nCommand: steam", path)
+            launch_history.save_last_launch_report(
+                "WolfLauncher launch output\nCommand: steam", path
+            )
 
             self.assertEqual(
                 launch_history.load_last_launch_report(path),

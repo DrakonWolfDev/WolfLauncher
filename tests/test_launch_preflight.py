@@ -77,9 +77,7 @@ class LaunchPreflightTests(unittest.TestCase):
 
     def test_external_engine_can_confirm_missing_mods(self):
         self.assertEqual(
-            next_launch_preflight_action(
-                self.state(native_engine=False, missing_mod_count=2)
-            ),
+            next_launch_preflight_action(self.state(native_engine=False, missing_mod_count=2)),
             LaunchPreflightAction.CONFIRM_EXTERNAL_MISSING_MODS,
         )
 
@@ -101,9 +99,7 @@ class LaunchPreflightTests(unittest.TestCase):
             workshop_dir=Path("/steam/workshop/content/221100"),
         )
 
-        state = build_launch_preflight_state(
-            install, server, result, native_engine=True
-        )
+        state = build_launch_preflight_state(install, server, result, native_engine=True)
 
         self.assertTrue(state.mods_checked)
         self.assertEqual(state.missing_mod_count, 1)
@@ -164,20 +160,14 @@ class LaunchPreflightTests(unittest.TestCase):
         )
 
         self.assertIs(
-            matching_mod_result(
-                server, result, Path("/steam-a/workshop/content/221100")
-            ),
+            matching_mod_result(server, result, Path("/steam-a/workshop/content/221100")),
             result,
         )
         self.assertIsNone(
-            matching_mod_result(
-                server, result, Path("/steam-b/workshop/content/221100")
-            )
+            matching_mod_result(server, result, Path("/steam-b/workshop/content/221100"))
         )
         self.assertIsNone(
-            usable_mod_result(
-                server, result, Path("/steam-b/workshop/content/221100")
-            )
+            usable_mod_result(server, result, Path("/steam-b/workshop/content/221100"))
         )
 
 

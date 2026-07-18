@@ -19,10 +19,10 @@ from wolflauncher.platform_detection import (
     selected_install_summary,
     steam_command_detail,
     steam_install_summary,
-    steam_selection_candidates_detail,
-    steam_selection_report,
     steam_mode_label,
+    steam_selection_candidates_detail,
     steam_selection_readiness,
+    steam_selection_report,
 )
 
 
@@ -60,8 +60,13 @@ class PlatformDetectionTests(unittest.TestCase):
             steam_command_detail(make_install("flatpak", executable="com.valvesoftware.Steam")),
             "flatpak run com.valvesoftware.Steam",
         )
-        self.assertEqual(steam_command_detail(make_install("native", executable="/usr/bin/steam")), "/usr/bin/steam")
-        self.assertEqual(steam_command_detail(make_install("native", executable="")), "not detected")
+        self.assertEqual(
+            steam_command_detail(make_install("native", executable="/usr/bin/steam")),
+            "/usr/bin/steam",
+        )
+        self.assertEqual(
+            steam_command_detail(make_install("native", executable="")), "not detected"
+        )
 
     def test_steam_install_summary_includes_readiness_and_command_detail(self):
         install = make_install(
@@ -141,7 +146,10 @@ class PlatformDetectionTests(unittest.TestCase):
 
         self.assertEqual(
             install_readiness(install),
-            ("WARN", "Flatpak Steam executable found, but Steam data root was not detected (not running)"),
+            (
+                "WARN",
+                "Flatpak Steam executable found, but Steam data root was not detected (not running)",
+            ),
         )
 
     def test_install_readiness_warns_when_ready_library_lacks_steam_command(self):
@@ -156,7 +164,10 @@ class PlatformDetectionTests(unittest.TestCase):
 
         self.assertEqual(
             install_readiness(install),
-            ("WARN", "STEAM_ROOT Steam library ready, but Steam command is not detected (not running)"),
+            (
+                "WARN",
+                "STEAM_ROOT Steam library ready, but Steam command is not detected (not running)",
+            ),
         )
 
     def test_proton_compatdata_detail_reports_visible_prefix(self):
@@ -188,7 +199,7 @@ class PlatformDetectionTests(unittest.TestCase):
         self.assertEqual(proton_compatdata_detail(None), "not detected")
 
     def test_parse_libraryfolders_paths_reads_steam_vdf_paths(self):
-        text = r'''
+        text = r"""
         "libraryfolders"
         {
             "0"
@@ -204,7 +215,7 @@ class PlatformDetectionTests(unittest.TestCase):
                 "path" "D:\\SteamLibrary"
             }
         }
-        '''
+        """
 
         self.assertEqual(
             parse_libraryfolders_paths(text),
@@ -216,13 +227,13 @@ class PlatformDetectionTests(unittest.TestCase):
         )
 
     def test_parse_appmanifest_installdir_reads_dayz_install_folder(self):
-        text = r'''
+        text = r"""
         "AppState"
         {
             "appid"     "221100"
             "installdir"        "DayZ Experimental \"Test\""
         }
-        '''
+        """
 
         self.assertEqual(parse_appmanifest_installdir(text), 'DayZ Experimental "Test"')
 
@@ -242,10 +253,16 @@ class PlatformDetectionTests(unittest.TestCase):
             )
 
             with patch("wolflauncher.platform_detection.NATIVE_STEAM_ROOTS", [native_root]):
-                with patch("wolflauncher.platform_detection.FLATPAK_STEAM_ROOT", home / "missing-flatpak"):
+                with patch(
+                    "wolflauncher.platform_detection.FLATPAK_STEAM_ROOT", home / "missing-flatpak"
+                ):
                     with patch("wolflauncher.platform_detection.shutil.which") as which:
-                        which.side_effect = lambda command: "/usr/bin/steam" if command == "steam" else None
-                        with patch("wolflauncher.platform_detection._is_running", return_value=False):
+                        which.side_effect = lambda command: (
+                            "/usr/bin/steam" if command == "steam" else None
+                        )
+                        with patch(
+                            "wolflauncher.platform_detection._is_running", return_value=False
+                        ):
                             installs = detect_steam()
 
         self.assertEqual(installs[0].dayz_dir, dayz_dir)
@@ -260,12 +277,23 @@ class PlatformDetectionTests(unittest.TestCase):
             dayz_dir.mkdir(parents=True)
             workshop_dir.mkdir(parents=True)
 
-            with patch.dict("wolflauncher.platform_detection.os.environ", {"STEAM_ROOT": str(root)}, clear=True):
-                with patch("wolflauncher.platform_detection.NATIVE_STEAM_ROOTS", [root / "missing-native"]):
-                    with patch("wolflauncher.platform_detection.FLATPAK_STEAM_ROOT", root / "missing-flatpak"):
+            with patch.dict(
+                "wolflauncher.platform_detection.os.environ", {"STEAM_ROOT": str(root)}, clear=True
+            ):
+                with patch(
+                    "wolflauncher.platform_detection.NATIVE_STEAM_ROOTS", [root / "missing-native"]
+                ):
+                    with patch(
+                        "wolflauncher.platform_detection.FLATPAK_STEAM_ROOT",
+                        root / "missing-flatpak",
+                    ):
                         with patch("wolflauncher.platform_detection.shutil.which") as which:
-                            which.side_effect = lambda command: "/usr/bin/steam" if command == "steam" else None
-                            with patch("wolflauncher.platform_detection._is_running", return_value=True):
+                            which.side_effect = lambda command: (
+                                "/usr/bin/steam" if command == "steam" else None
+                            )
+                            with patch(
+                                "wolflauncher.platform_detection._is_running", return_value=True
+                            ):
                                 installs = detect_steam()
 
         steam_root = installs[-1]
@@ -273,7 +301,9 @@ class PlatformDetectionTests(unittest.TestCase):
         self.assertEqual(steam_root.executable, "/usr/bin/steam")
         self.assertTrue(steam_root.running)
         self.assertEqual(steam_root.dayz_dir, dayz_dir)
-        self.assertEqual(install_readiness(steam_root), ("OK", "STEAM_ROOT Steam library ready (running)"))
+        self.assertEqual(
+            install_readiness(steam_root), ("OK", "STEAM_ROOT Steam library ready (running)")
+        )
 
     def test_detect_steam_finds_dayz_in_secondary_native_library(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -295,10 +325,16 @@ class PlatformDetectionTests(unittest.TestCase):
             )
 
             with patch("wolflauncher.platform_detection.NATIVE_STEAM_ROOTS", [native_root]):
-                with patch("wolflauncher.platform_detection.FLATPAK_STEAM_ROOT", home / "missing-flatpak"):
+                with patch(
+                    "wolflauncher.platform_detection.FLATPAK_STEAM_ROOT", home / "missing-flatpak"
+                ):
                     with patch("wolflauncher.platform_detection.shutil.which") as which:
-                        which.side_effect = lambda command: "/usr/bin/steam" if command == "steam" else None
-                        with patch("wolflauncher.platform_detection._is_running", return_value=True):
+                        which.side_effect = lambda command: (
+                            "/usr/bin/steam" if command == "steam" else None
+                        )
+                        with patch(
+                            "wolflauncher.platform_detection._is_running", return_value=True
+                        ):
                             installs = detect_steam()
 
         native = installs[0]
@@ -428,7 +464,10 @@ class PlatformDetectionTests(unittest.TestCase):
         )
         self.assertIn("Native Steam library found", steam_selection_candidates_detail(report))
         self.assertIn("Flatpak Steam ready", steam_selection_candidates_detail(report))
-        self.assertIn("command: flatpak run com.valvesoftware.Steam", steam_selection_candidates_detail(report))
+        self.assertIn(
+            "command: flatpak run com.valvesoftware.Steam",
+            steam_selection_candidates_detail(report),
+        )
 
     @patch("wolflauncher.platform_detection.subprocess.run")
     def test_dayz_process_check_reports_known_dayz_processes(self, run):

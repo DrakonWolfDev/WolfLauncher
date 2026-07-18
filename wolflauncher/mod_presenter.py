@@ -1,5 +1,5 @@
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
 
 from .mods import ModCheckResult, RequiredMod
 from .theme import STATUS_COLOURS
@@ -64,16 +64,14 @@ def mod_detail_status(mod: RequiredMod) -> str:
 
 
 def combined_download_estimate(mods: list[RequiredMod]) -> str:
-    known = [
-        mod for mod in mods
-        if mod.workshop_total > 0 or mod.workshop_file_size > 0
-    ]
+    known = [mod for mod in mods if mod.workshop_total > 0 or mod.workshop_file_size > 0]
     unknown = len(mods) - len(known)
     if not known:
         return f"Download size unavailable for all {len(mods)} item(s)."
     total = sum(
         max(0, mod.workshop_total - mod.workshop_downloaded)
-        if mod.workshop_total > 0 else mod.workshop_file_size
+        if mod.workshop_total > 0
+        else mod.workshop_file_size
         for mod in known
     )
     if unknown:
@@ -131,15 +129,17 @@ def mod_readiness_text(result: ModCheckResult) -> str:
 
 def mod_row(mod: RequiredMod) -> ModRow:
     from .workshop_subscription import (
-        ITEM_STATE_DOWNLOADING,
         ITEM_STATE_DOWNLOAD_PENDING,
+        ITEM_STATE_DOWNLOADING,
         ITEM_STATE_INSTALLED,
         ITEM_STATE_NEEDS_UPDATE,
     )
+
     if mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_DOWNLOADING:
         percent = (
             f" ({int(mod.workshop_downloaded * 100 / mod.workshop_total)}%)"
-            if mod.workshop_total > 0 else ""
+            if mod.workshop_total > 0
+            else ""
         )
         status = "↻ Downloading"
         status += percent
@@ -150,7 +150,11 @@ def mod_row(mod: RequiredMod) -> ModRow:
     elif mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_NEEDS_UPDATE:
         status = "! Update required"
         colour = STATUS_COLOURS["warning"]
-    elif mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_INSTALLED and not mod.installed:
+    elif (
+        mod.workshop_state is not None
+        and mod.workshop_state & ITEM_STATE_INSTALLED
+        and not mod.installed
+    ):
         status = "… Verifying install"
         colour = STATUS_COLOURS["warning"]
     elif not mod.installed:

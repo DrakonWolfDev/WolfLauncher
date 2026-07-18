@@ -11,8 +11,8 @@ from wolflauncher.app import MainWindow
 from wolflauncher.models import Server
 from wolflauncher.mods import ModCheckResult, RequiredMod
 from wolflauncher.workshop_subscription import (
-    ITEM_STATE_DOWNLOADING,
     ITEM_STATE_DOWNLOAD_PENDING,
+    ITEM_STATE_DOWNLOADING,
     WorkshopItemProgress,
 )
 

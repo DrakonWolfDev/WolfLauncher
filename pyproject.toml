@@ -46,3 +46,16 @@ wolflauncher = ["assets/*.svg", "assets/*.png"]
 "share/wolflauncher" = ["example.servers.yaml"]
 "share/wolflauncher/external" = ["external/dayz-linux-cli-launcher/dayz-launcher.sh"]
 "share/doc/wolflauncher" = ["LICENSE", "THIRD_PARTY_NOTICES.md"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.mypy]
+python_version = "3.10"
+check_untyped_defs = true
+warn_unused_ignores = true
+no_implicit_optional = true
