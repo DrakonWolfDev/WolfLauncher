@@ -292,6 +292,7 @@ class BattleMetricsDiscoveryTests(unittest.TestCase):
                     "portQuery": 27016,
                     "players": 12,
                     "maxPlayers": 60,
+                    "country": "us",
                     "status": "online",
                     "details": {
                         "map": "chernarusplus",
@@ -320,6 +321,8 @@ class BattleMetricsDiscoveryTests(unittest.TestCase):
                 online=True,
                 last_checked="2026-06-20T16:00:00+00:00",
                 last_seen="2026-06-20T16:00:00+00:00",
+                country_code="US",
+                country_source="battlemetrics",
             ),
         )
 
@@ -566,6 +569,8 @@ class WolfApiDiscoveryTests(unittest.TestCase):
                 "mod_metadata_error_code": "",
                 "mod_manifest_hash": "sha256:example",
                 "quality_flags": "suspicious_bots,high_population_cluster",
+                "country_code": "de",
+                "country_source": "battlemetrics",
             },
             "2026-07-13T12:05:00+00:00",
         )
@@ -584,6 +589,8 @@ class WolfApiDiscoveryTests(unittest.TestCase):
             server.quality_flags,
             ("suspicious_bots", "high_population_cluster"),
         )
+        self.assertEqual(server.country_code, "DE")
+        self.assertEqual(server.country_source, "battlemetrics")
 
     def test_parse_wolfapi_response_deduplicates_and_limits_rows(self):
         servers = parse_wolfapi_servers(

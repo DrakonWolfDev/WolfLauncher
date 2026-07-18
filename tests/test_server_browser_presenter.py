@@ -32,6 +32,8 @@ class ServerBrowserPresenterTests(unittest.TestCase):
             last_checked="2026-07-17T12:00:00+00:00",
             modded=True,
             source="wolfapi",
+            country_code="DE",
+            country_source="battlemetrics",
         )
 
         detail = browser_inspector(server, "Ready locally")
@@ -39,7 +41,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertEqual(detail.title, "Namalsk Adventure")
         self.assertEqual(detail.status_kind, "ready")
         self.assertEqual(detail.map_name, "Namalsk")
-        self.assertEqual(detail.region, "Not available")
+        self.assertEqual(detail.region, "DE")
         self.assertEqual(detail.game_time, "Unknown until locally checked")
         self.assertEqual(detail.players, "12/60")
         self.assertEqual(detail.ping, "42 ms")

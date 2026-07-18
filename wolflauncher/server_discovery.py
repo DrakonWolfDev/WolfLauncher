@@ -580,6 +580,11 @@ def discovered_server_from_wolfapi_row(row: dict, timestamp: str = "") -> Discov
     if online is None:
         status = str(row.get("status") or "").lower()
         online = status != "offline" if status else True
+    country_code = _country_code(row.get("country_code"))
+    country_source = str(row.get("country_source") or "").strip().lower()
+    if country_source != "battlemetrics":
+        country_code = ""
+        country_source = ""
 
     return DiscoveredServer(
         name=name,
@@ -628,6 +633,8 @@ def discovered_server_from_wolfapi_row(row: dict, timestamp: str = "") -> Discov
         mod_metadata_error_code=str(row.get("mod_metadata_error_code") or ""),
         mod_manifest_hash=str(row.get("mod_manifest_hash") or ""),
         quality_flags=_quality_flags(row.get("quality_flags")),
+        country_code=country_code,
+        country_source=country_source,
     )
 
 
@@ -711,6 +718,7 @@ def discovered_server_from_battlemetrics_row(row: dict, timestamp: str = "") -> 
     status = str(attributes.get("status") or "").lower()
     players_current = _optional_int(attributes.get("players"))
     players_max = _optional_int(attributes.get("maxPlayers") or attributes.get("maxplayers"))
+    country_code = _country_code(attributes.get("country"))
 
     return DiscoveredServer(
         name=name,
@@ -733,7 +741,14 @@ def discovered_server_from_battlemetrics_row(row: dict, timestamp: str = "") -> 
             if _required_mod_count(details) is not None
             else _required_mod_count(attributes)
         ),
+        country_code=country_code,
+        country_source="battlemetrics" if country_code else "",
     )
+
+
+def _country_code(value) -> str:
+    code = str(value or "").strip().upper()
+    return code if len(code) == 2 and code.isalpha() else ""
 
 
 def _host_port_from_addr(value: str) -> tuple[str, int | None]:

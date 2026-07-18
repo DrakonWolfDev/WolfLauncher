@@ -51,6 +51,8 @@ class DiscoveredServer:
     provider_last_checked: str = ""
     provider_last_seen: str = ""
     quality_flags: tuple[str, ...] = ()
+    country_code: str = ""
+    country_source: str = ""
 
     @property
     def cache_key(self) -> str:

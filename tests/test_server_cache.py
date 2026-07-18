@@ -36,6 +36,28 @@ class ServerCacheTests(unittest.TestCase):
         self.assertIn("mod_metadata_status", columns)
         self.assertIn("mod_manifest_hash", columns)
         self.assertIn("quality_flags", columns)
+        self.assertIn("country_code", columns)
+        self.assertIn("country_source", columns)
+
+    def test_schema_v5_migrates_country_metadata_additively(self):
+        connection = server_cache.sqlite3.connect(":memory:")
+        self.addCleanup(connection.close)
+        connection.execute(
+            "CREATE TABLE discovered_servers (cache_key TEXT PRIMARY KEY)"
+        )
+        connection.execute("PRAGMA user_version = 5")
+
+        server_cache.initialize(connection)
+
+        columns = {
+            row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")
+        }
+        self.assertEqual(
+            connection.execute("PRAGMA user_version").fetchone()[0],
+            server_cache.SCHEMA_VERSION,
+        )
+        self.assertIn("country_code", columns)
+        self.assertIn("country_source", columns)
 
     def test_schema_v4_migrates_quality_flags_additively(self):
         connection = server_cache.sqlite3.connect(":memory:")
@@ -214,6 +236,8 @@ class ServerCacheTests(unittest.TestCase):
             mod_metadata_checked_at="2026-06-20T12:00:00Z",
             mod_metadata_expires_at="2026-06-20T18:00:00Z",
             mod_manifest_hash="sha256:example",
+            country_code="US",
+            country_source="battlemetrics",
         )
 
         server_cache.upsert_server(connection, server)

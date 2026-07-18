@@ -12,7 +12,7 @@ import yaml
 from .models import DiscoveredServer
 
 
-SCHEMA_VERSION = 5
+SCHEMA_VERSION = 6
 DATA_DIR = Path.home() / ".local" / "share" / "wolflauncher"
 SERVER_CACHE_PATH = DATA_DIR / "server_cache.sqlite3"
 
@@ -100,6 +100,8 @@ def _initialize_schema_v1(connection: sqlite3.Connection) -> None:
             provider_last_checked TEXT NOT NULL DEFAULT '',
             provider_last_seen TEXT NOT NULL DEFAULT '',
             quality_flags TEXT NOT NULL DEFAULT '[]',
+            country_code TEXT NOT NULL DEFAULT '',
+            country_source TEXT NOT NULL DEFAULT '',
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
@@ -195,6 +197,17 @@ def _migrate(connection: sqlite3.Connection, current_version: int, target_versio
         )
         connection.execute("PRAGMA user_version = 5")
         current_version = 5
+    if current_version == 5 and target_version >= 6:
+        connection.execute(
+            "ALTER TABLE discovered_servers "
+            "ADD COLUMN country_code TEXT NOT NULL DEFAULT ''"
+        )
+        connection.execute(
+            "ALTER TABLE discovered_servers "
+            "ADD COLUMN country_source TEXT NOT NULL DEFAULT ''"
+        )
+        connection.execute("PRAGMA user_version = 6")
+        current_version = 6
     if current_version != target_version:
         raise RuntimeError(
             f"Unsupported server cache migration from version {current_version} to {target_version}."
@@ -246,7 +259,8 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             status_source, stable_server_id,
             endpoint_aliases, freshness, freshness_expires_at, validation_status,
             validation_checked_at, validation_seen_at, validation_error_code,
-            provider_last_checked, provider_last_seen, quality_flags
+            provider_last_checked, provider_last_seen, quality_flags,
+            country_code, country_source
         )
         VALUES (
             :cache_key, :source, :display_name, :server_name, :host, :game_port, :query_port,
@@ -257,7 +271,8 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             :status_source, :stable_server_id,
             :endpoint_aliases, :freshness, :freshness_expires_at, :validation_status,
             :validation_checked_at, :validation_seen_at, :validation_error_code,
-            :provider_last_checked, :provider_last_seen, :quality_flags
+            :provider_last_checked, :provider_last_seen, :quality_flags,
+            :country_code, :country_source
         )
         ON CONFLICT(cache_key) DO UPDATE SET
             source = excluded.source,
@@ -294,6 +309,8 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             provider_last_checked = excluded.provider_last_checked,
             provider_last_seen = excluded.provider_last_seen,
             quality_flags = excluded.quality_flags,
+            country_code = excluded.country_code,
+            country_source = excluded.country_source,
             updated_at = CURRENT_TIMESTAMP
         """,
         _server_params(server),
@@ -668,6 +685,8 @@ def _server_params(server: DiscoveredServer) -> dict[str, Any]:
         "provider_last_checked": server.provider_last_checked,
         "provider_last_seen": server.provider_last_seen,
         "quality_flags": json.dumps(list(server.quality_flags)),
+        "country_code": server.country_code,
+        "country_source": server.country_source,
     }
 
 
@@ -689,6 +708,11 @@ def _server_from_import_item(item: Any, index: int) -> DiscoveredServer:
     game_port = _required_int(item, "game_port", index)
     query_port = _required_int(item, "query_port", index)
     name = str(item.get("name") or item.get("display_name") or host)
+    country_code = _country_code(item.get("country_code"))
+    country_source = str(item.get("country_source") or "").strip().lower()
+    if country_source != "battlemetrics":
+        country_code = ""
+        country_source = ""
 
     return DiscoveredServer(
         name=name,
@@ -727,6 +751,8 @@ def _server_from_import_item(item: Any, index: int) -> DiscoveredServer:
         provider_last_checked=str(item.get("provider_last_checked") or ""),
         provider_last_seen=str(item.get("provider_last_seen") or ""),
         quality_flags=_quality_flags(item.get("quality_flags")),
+        country_code=country_code,
+        country_source=country_source,
     )
 
 
@@ -820,7 +846,14 @@ def _row_to_server(row: sqlite3.Row) -> DiscoveredServer:
         provider_last_checked=str(row["provider_last_checked"]),
         provider_last_seen=str(row["provider_last_seen"]),
         quality_flags=_quality_flags(row["quality_flags"]),
+        country_code=_country_code(row["country_code"]),
+        country_source=str(row["country_source"]),
     )
+
+
+def _country_code(value: Any) -> str:
+    code = str(value or "").strip().upper()
+    return code if len(code) == 2 and code.isalpha() else ""
 
 
 def _escape_like(value: str) -> str:

@@ -30,8 +30,8 @@ Current shared baseline:
 
 - WolfAPI migration `20260713_0007` is deployed with its bounded metadata job
   persistently enabled in the production host's ignored `.env`;
-- WolfLauncher SQLite schema v5 persists count/status/timestamps/error/hash and
-  advisory quality flags. API metadata remains browsing evidence; direct
+- WolfLauncher SQLite schema v6 persists count/status/timestamps/error/hash,
+  advisory quality flags and nullable country provenance. API metadata remains browsing evidence; direct
   **Inspect mods** and launch-time lookup remain final truth. The advanced,
   opt-in quality hide control filters cached rows and remote v1 list/name-search
   calls without deleting data or changing the default;
@@ -67,7 +67,7 @@ the current directory. Samples coherently showed impossible `bots=255`
 telemetry and dense same-host populations, while some names could still be
 legitimate communities with bad provider data. WolfLauncher therefore adds an
 explicit advanced **Hide quality warnings** filter, off by default. SQLite
-schema v5 persists the advisory flags so cached/offline filtering agrees with
+schema v6 persists the advisory flags so cached/offline filtering agrees with
 v1 list and name-search requests. Exact resolution remains available, but the
 local visibility filter still applies. Visible flagged rows say the warning is
 advisory, not proof that a server is unsafe.
@@ -140,7 +140,7 @@ Legacy `/api/servers` remains compatibility-only and endpoint-keyed.
 
 Foundation implemented locally on 2026-07-13:
 
-- SQLite schema v5 migrates earlier layouts in place and
+- SQLite schema v6 migrates earlier layouts in place and
   combines Workshop metadata with stable IDs, aliases, freshness and
   validation state, while retaining WolfAPI mod-metadata provenance;
 - WolfAPI rows are merged by stable ID so corrected ports move one row;
@@ -238,32 +238,30 @@ repositories; finally evaluate country coverage before selecting any additional
 data source. Update this handoff and the API contract together when the fields
 are implemented.
 
-### Paused implementation handoff — 2026-07-17
+### Country implementation record — 2026-07-18
 
-The Server Browser visual pass is approved and should be treated as the stable
-presentation target while country and game time remain explicit unknowns. The
+The Server Browser visual pass remains the stable presentation target. The
 selected-server inspector uses a dense table/master-detail split, grouped
 selectable metadata and an original map-family atmosphere in otherwise-unused
 lower space. Do not reopen that hierarchy when adding the fields; populate the
 existing Region and Game Time positions.
 
-Resume the data work across both repositories in this order:
+Country work is complete across both repositories:
 
-1. Capture a sanitized real BattleMetrics response fixture that contains its
-   country/location value. Confirm its exact JSON path and value format rather
-   than coding from the web presentation or an assumed key.
-2. In WolfAPI, normalize trustworthy BattleMetrics country values to nullable
+1. A live public BattleMetrics DayZ response confirmed the exact path as
+   `data[].attributes.country`; the sanitized fixture value is `US`.
+2. WolfAPI normalizes trustworthy BattleMetrics country values to nullable
    ISO 3166-1 alpha-2 `country_code`, retain explicit provider provenance, add
    an additive Alembic migration and preserve the values through ingestion,
    canonical merging, recovery publishing and port correction.
-3. Expose `country_code` and its provenance consistently from v1 list, search
+3. `country_code` and its provenance are exposed consistently from v1 list, search
    and resolve rows. Null remains unknown; the existing integer `region` stays
    a separate Steam compatibility field. Measure coverage before considering
    any IP-geolocation fallback.
-4. In WolfLauncher, add the matching nullable model and additive SQLite fields,
+4. WolfLauncher has the matching nullable model and SQLite schema-v6 fields,
    parse all v1 response shapes, preserve country across stable-ID merges and
    local enrichment, and populate the inspector's existing Region value.
-5. Separately retain locally measured `ServerStatus.time` as nullable
+5. Remaining separate work is to retain locally measured `ServerStatus.time` as nullable
    `game_time` through discovered-server enrichment and Launcher SQLite, then
    populate the existing Game Time value. Do not publish this rapidly changing
    state through WolfAPI initially.
@@ -275,7 +273,12 @@ until a deliberate later removal.
 ## Rollout gates
 
 - Production reports `contract_version >= 1`, `generated_at`, validation
-  policy, coverage and queue-lag metadata.
+  policy, coverage and queue-lag metadata. WolfAPI now also exposes ready and
+  cooling-down candidate counts, oldest-ready age, and configured-capacity
+  estimates for ready-queue drain and full eligible-population revisit in v1
+  responses and operator health. These are scheduling projections rather than
+  promises that an A2S probe will succeed; Launcher behavior does not depend on
+  them.
 - Migration `20260713_0006` is applied and old/new endpoint resolution returns
   one stable server ID.
 - Freshness ages correctly across several production expiry cycles.

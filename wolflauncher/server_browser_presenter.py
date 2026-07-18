@@ -274,7 +274,7 @@ def browser_inspector(
         status_kind=status_kind,
         endpoint=server.connect_target,
         map_name=display_map_name(server.map_name),
-        region="Not available",
+        region=server.country_code or "Not available",
         game_time="Unknown until locally checked",
         players=players,
         ping=ping,
