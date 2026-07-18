@@ -92,6 +92,9 @@ cannot be run.
 - Curated status refresh and unmodded native-Steam/DayZ handoff passed.
 - With native Steam fully exited, Connect started Steam without manual
   intervention and completed the DayZ handoff.
+- The external compatibility engine remained selectable, resolved the existing
+  `~/dayz-launcher.sh`, and completed a Steam/DayZ fallback handoff; native mode
+  remained available for reselection afterward.
 - A fully installed mod set was recognized as ready and reached the native
   Steam/DayZ handoff without an unnecessary download prompt.
 - A missing/outdated Workshop flow identified required work, obtained explicit
