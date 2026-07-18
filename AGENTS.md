@@ -122,6 +122,17 @@ The vendored script then:
 
 ## Development Notes
 
+- Keep Linux as WolfLauncher's primary development, runtime and validation
+  target unless a task explicitly includes another platform. Do not delay
+  ordinary Linux work to build speculative cross-platform support. When new or
+  changed code touches genuinely platform-sensitive concerns—such as Steam and
+  process detection, filesystem links and permissions, user-data locations,
+  launch commands, diagnostics or packaging—keep the shared behavior separate
+  from the Linux implementation and preserve a clear platform boundary so a
+  future Windows backend can be added without duplicating the application.
+  Introduce only the abstractions justified by the current change: preserve
+  validated Linux behavior, avoid scattered platform conditionals, and do not
+  claim Windows support without implementation and validation on Windows.
 - Prefer smooth, low-noise user experience: keep background checks quiet and preserve useful previous results while new work is running. Do not hide meaningful uncertainty, failures or launch boundaries; surface them honestly in status labels, health checks, dialogs or diagnostics when they matter.
 - Preserve the approved v0.9 GUI rhythm: information/summary first, common controls next, results in the middle and secondary/advanced tools at the bottom.
 - Keep frequent actions visible and advanced discovery, diagnostics, parity, copying and fallback controls available through compact direction-marked disclosures. Do not treat simplification as permission to remove advanced features.

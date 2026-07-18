@@ -123,13 +123,18 @@ cannot be run.
   the feedback, and the application closed automatically when the check
   finished.
 
-### Next-machine handoff
+### 2026-07-18 — Linux Mint 22, Flatpak Steam
 
-- Use the second Linux Mint 22 machine for an independent clean install and
-  Flatpak Steam/DayZ validation.
-- Re-run startup, settings/curated migration, status refresh, native Connect,
-  ready/missing Workshop flows, shutdown during work and report redaction with
-  Flatpak explicitly selected.
+- Independent packaged testing did not pass the Flatpak release row. Basic
+  Steam detection worked, but the isolated Steamworks Workshop helper could
+  leave DayZ marked as running after the helper should have released it.
+- Flatpak automatic Workshop state/subscription helpers are disabled pending a
+  reliable lifecycle design. Missing or outdated items fail safe to manual
+  Steam Workshop pages, completion through Steam Downloads and **Recheck
+  mods**. Native Steam retains its validated automatic helper.
+- This is failure evidence plus a safe fallback, not Flatpak release
+  certification. Re-run the complete Flatpak row after the helper lifecycle is
+  deliberately redesigned or replaced.
 - Mint 21 and Ubuntu 22.04/24.04 real-desktop rows still require machines or
   explicit release-scope waivers. CI package build/startup evidence alone is
   not recorded as desktop certification.

@@ -187,6 +187,7 @@ from .workers import (
 from .workshop_subscription import (
     ITEM_STATE_DOWNLOADING,
     current_workshop_item,
+    workshop_automation_unavailable_reason,
     workshop_recovery_state,
 )
 
@@ -3528,6 +3529,10 @@ class MainWindow(QMainWindow):
                 "Open Steam, sign in to an account that owns DayZ, then try subscribing again.",
             )
             return
+        unavailable = workshop_automation_unavailable_reason(install)
+        if unavailable:
+            QMessageBox.information(self, "Use Steam Workshop pages", unavailable)
+            return
         names = "\n".join(
             f"- {mod.name or mod.workshop_id} — {mod_download_size(mod)}" for mod in missing[:12]
         )
@@ -4091,6 +4096,10 @@ class MainWindow(QMainWindow):
                 self.fail_connect_preflight(
                     "mods", "Steam stopped before required mods could be installed."
                 )
+                return
+            unavailable = workshop_automation_unavailable_reason(install)
+            if unavailable:
+                self.fail_connect_preflight("mods", unavailable)
                 return
             dialog.set_working(
                 "mods",

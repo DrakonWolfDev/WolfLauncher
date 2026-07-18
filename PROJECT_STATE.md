@@ -9,14 +9,18 @@ vendored MIT shell launcher remains a visible compatibility fallback.
 
 ## Current truth
 
-- Native and Flatpak Steam handoff have passed real-desktop testing with Steam
-  running and stopped, unmodded servers, complete mod sets and missing/update
-  flows.
-- Connect preflight can explicitly ask the signed-in Steam client to subscribe,
-  download or update required Workshop items. Steamworks ownership is isolated
-  in a spawned helper which must exit before launch continues. Manual Workshop
-  pages remain available; WolfLauncher does not download content itself or
-  remove subscriptions.
+- Native Steam handoff has passed real-desktop testing with Steam running and
+  stopped, unmodded servers, complete mod sets and missing/update flows.
+- Flatpak Steam packaged testing is currently a failed PR-08 row. Basic
+  detection works, but the isolated Steamworks Workshop helper could leave DayZ
+  marked as running after helper shutdown. Flatpak automatic Workshop handling
+  is therefore disabled and fails safe to manual Steam Workshop pages plus
+  **Recheck mods** until its lifecycle can be made reliable.
+- On validated native Steam, Connect preflight can explicitly ask the signed-in
+  Steam client to subscribe, download or update required Workshop items.
+  Steamworks ownership is isolated in a spawned helper which must exit before
+  launch continues. WolfLauncher does not download content itself or remove
+  subscriptions.
 - Discovered servers remain read-only and offline-first in SQLite. Curated
   servers remain user-owned YAML. A discovered row can be inspected or launched
   without promotion.
@@ -30,7 +34,11 @@ vendored MIT shell launcher remains a visible compatibility fallback.
 - The Server Browser, Mods, Settings and Favourite Servers layouts have passed
   real-desktop review. Preserve their information-first hierarchy unless new
   evidence requires a change.
-- The automated suite contains 460 tests at this snapshot. The production
+- Linux-owned storage paths, Steam command discovery and process inspection now
+  sit behind a small tested platform backend. Shared detection/readiness APIs
+  and validated Linux behavior remain unchanged; no Windows backend or Windows
+  support is claimed yet.
+- The automated suite contains 468 tests at this snapshot. The production
   review baseline passed the full suite, compilation and `git diff --check`.
 
 ## Active release boundary
@@ -75,10 +83,11 @@ PR-08 has a dated packaged-artifact pass on Linux Mint 22.3 with native Steam:
 clean install, XDG migration, settings/cache preservation, native and external
 handoffs, Steam stopped/running, ready and missing Workshop flows, DNS/raw-IP
 targets, offline cache, redacted reports, responsive shutdown, uninstall and
-reinstall all passed. The next available test machine is also Mint 22 but has
-Flatpak Steam; use it for an independent clean install and the Flatpak row.
-Mint 21 and Ubuntu desktop rows remain unavailable and need evidence or an
-explicit release-scope waiver before PR-08 closes.
+reinstall all passed. The second Mint 22 machine exposed the Flatpak Steamworks
+helper lifecycle failure described above; that row remains failed with a safe
+manual-Workshop fallback rather than release validation. Mint 21 and Ubuntu
+desktop rows remain unavailable and need evidence or an explicit release-scope
+waiver before PR-08 closes.
 
 `ROADMAP.md` contains milestones only. `docs/RELEASE_CHECKLIST.md` records the
 checks to run against a release candidate; neither file is a second backlog.

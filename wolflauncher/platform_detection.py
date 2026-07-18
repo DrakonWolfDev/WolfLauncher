@@ -1,9 +1,9 @@
 import os
 import re
-import shutil
-import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from .platforms import current_platform
 
 STEAM_APP_ID_DAYZ = 221100
 FLATPAK_STEAM_ID = "com.valvesoftware.Steam"
@@ -41,64 +41,24 @@ class SteamSelectionReport:
     candidates: list[str]
 
 
-NATIVE_STEAM_ROOTS = [
-    Path.home() / ".local/share/Steam",
-    Path.home() / ".steam/steam",
-]
-
-FLATPAK_STEAM_ROOT = Path.home() / ".var/app" / FLATPAK_STEAM_ID / "data" / "Steam"
+NATIVE_STEAM_ROOTS = list(current_platform().native_steam_roots())
+FLATPAK_STEAM_ROOT = current_platform().flatpak_steam_root()
 
 
 def _is_running(process_name: str) -> bool:
-    try:
-        result = subprocess.run(
-            ["pgrep", "-x", process_name], capture_output=True, text=True, timeout=2
-        )
-        return result.returncode == 0
-    except Exception:
-        return False
+    return current_platform().process_running(process_name)
 
 
 def _flatpak_steam_running() -> bool:
-    if not shutil.which("flatpak"):
-        return False
+    return current_platform().flatpak_steam_running()
 
 
 def _flatpak_steam_installed() -> bool:
-    if not shutil.which("flatpak"):
-        return False
-    try:
-        result = subprocess.run(
-            ["flatpak", "info", FLATPAK_STEAM_ID],
-            capture_output=True,
-            text=True,
-            timeout=3,
-        )
-        return result.returncode == 0
-    except Exception:
-        return False
-    try:
-        result = subprocess.run(["flatpak", "ps"], capture_output=True, text=True, timeout=3)
-        return FLATPAK_STEAM_ID in result.stdout
-    except Exception:
-        return False
+    return current_platform().flatpak_steam_installed()
 
 
 def _matching_process_lines(patterns: tuple[str, ...]) -> list[str]:
-    try:
-        result = subprocess.run(
-            ["pgrep", "-afi", "|".join(patterns)], capture_output=True, text=True, timeout=2
-        )
-    except Exception:
-        return []
-    if result.returncode != 0:
-        return []
-    lines = []
-    for line in result.stdout.splitlines():
-        lower_line = line.lower()
-        if any(pattern.lower() in lower_line for pattern in patterns):
-            lines.append(line)
-    return lines
+    return current_platform().matching_process_lines(patterns)
 
 
 LIBRARY_PATH_RE = re.compile(r'"path"\s+"((?:\\.|[^"\\])*)"')
@@ -221,7 +181,7 @@ def detect_steam() -> list[SteamInstall]:
     installs: list[SteamInstall] = []
 
     native_root = _first_existing(NATIVE_STEAM_ROOTS)
-    native_executable = shutil.which("steam") or ""
+    native_executable = current_platform().native_steam_executable()
     native_running = _is_running("steam")
     native_libraries = _library_steamapps_from_root(native_root)
     native_steamapps = _select_visible_steamapps(native_libraries)

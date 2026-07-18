@@ -64,7 +64,10 @@ wolflauncher/
   models.py              Shared dataclasses
   mod_presenter.py       Pure Mods-tab summary and row presentation
   mods.py                DayZSA API mod lookup and local Workshop comparison
-  platform_detection.py  Native/Flatpak Steam, Steam library, DayZ and Workshop detection
+  platform_detection.py  Shared Steam-library parsing, selection and readiness facade
+  platforms/
+    base.py              Platform capability and backend contracts
+    linux.py             Validated Linux paths, commands and process detection
   native_launcher.py     Native launch engine, parity and failure-report details
   server_discovery.py    WolfAPI, BattleMetrics, Steam Web API and legacy master server candidate discovery
   server_enrichment.py   Maps live status results onto discovered cache rows
@@ -289,6 +292,13 @@ Recommended investigation flow:
 Until the issue is reproduced, the app should avoid writing, suggesting or defaulting to the known-bad `__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%` launch option.
 
 ## Platform Support
+
+Linux remains the implementation and validation target. OS-owned concerns now
+enter through the small `platforms` backend boundary, while shared Steam
+library parsing and readiness behavior remain behind `platform_detection.py`.
+This is an extraction seam for future backends, not a claim of Windows support;
+new backends require their own implementation, tests and real-platform
+validation before selection at runtime.
 
 Primary target:
 

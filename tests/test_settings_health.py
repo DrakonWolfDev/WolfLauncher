@@ -88,3 +88,31 @@ class SettingsHealthSnapshotTests(unittest.TestCase):
         self.assertEqual(rows["Required tools"][0], "WARN")
         self.assertEqual(rows["Configured Steam installs"][0], "WARN")
         self.assertEqual(snapshot.summary, "Selected Steam/DayZ not detected")
+
+    def test_stopped_selected_steam_is_an_actionable_warning(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            install = SteamInstall(
+                mode="flatpak",
+                executable="com.valvesoftware.Steam",
+                running=False,
+                root=root,
+                steamapps=root / "steamapps",
+                dayz_dir=root / "DayZ",
+                workshop_dir=root / "workshop",
+            )
+            snapshot = build_settings_health_snapshot(
+                "",
+                "native",
+                "flatpak",
+                "OK",
+                "WolfAPI hosted cache",
+                [install],
+                command_lookup=lambda command: f"/usr/bin/{command}",
+                launcher_candidates=(),
+            )
+
+        rows = {name: (status, detail) for name, status, detail in snapshot.rows}
+        self.assertEqual(rows["Selected Steam"][0], "WARN")
+        self.assertIn("not running", rows["Selected Steam"][1])
+        self.assertIn("Connect will start Steam", rows["Selected Steam"][1])

@@ -1,14 +1,11 @@
-from __future__ import annotations
-
-import os
 from pathlib import Path
+
+from .platforms import current_platform
 
 
 def user_config_dir() -> Path:
-    base = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config"))
-    return base / "wolflauncher"
+    return current_platform().user_config_dir()
 
 
 def user_data_dir() -> Path:
-    base = Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share"))
-    return base / "wolflauncher"
+    return current_platform().user_data_dir()

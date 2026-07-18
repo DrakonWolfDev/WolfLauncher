@@ -47,6 +47,11 @@ def build_settings_health_snapshot(
     path = Path(launcher_path).expanduser()
     auto_steam_report = steam_selection_report("auto", installs)
     steam_report = steam_selection_report(selected_steam_mode, installs)
+    selected_steam_status = steam_report.status
+    selected_steam_detail = steam_report.detail
+    if selected_steam_status == "OK" and selected_install and not selected_install.running:
+        selected_steam_status = "WARN"
+        selected_steam_detail += "; Connect will start Steam"
     missing_tools = [command for command in REQUIRED_TOOLS if not command_lookup(command)]
     existing_launcher_candidates = [
         str(candidate) for candidate in launcher_candidates if candidate.exists()
@@ -77,7 +82,7 @@ def build_settings_health_snapshot(
         ("PRIME environment", prime_report.status, prime_report.summary),
         ("PRIME helpers", prime_helpers.status, prime_helpers.summary),
         ("Steam launch options", launch_options.status, launch_options.summary),
-        ("Selected Steam", steam_report.status, steam_report.detail),
+        ("Selected Steam", selected_steam_status, selected_steam_detail),
         ("Auto Steam", auto_steam_report.status, auto_steam_report.detail),
         ("Launch troubleshooting", launch_report.status, "; ".join(launch_report.next_steps)),
         (

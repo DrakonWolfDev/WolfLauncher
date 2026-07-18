@@ -4,6 +4,18 @@
 
 - Began the v0.9 production-hardening cycle and centralized the application
   version as `0.9.0.dev0` pending the release candidate.
+- Added a tested platform-backend boundary for capabilities, user-data paths,
+  Linux Steam command candidates and process inspection while preserving the
+  existing shared detection API and validated Linux behavior. This prepares a
+  clean future Windows implementation seam without claiming Windows support;
+  the extraction also restored the intended Flatpak-running check whose
+  `flatpak ps` command had become unreachable.
+- Packaged Flatpak testing found that an isolated Steamworks Workshop helper
+  could leave DayZ marked as running after helper shutdown. Flatpak automatic
+  Workshop state/subscription helpers now fail safe to explicit manual Steam
+  actions and **Recheck mods**; native Steam retains its validated automatic
+  helper. Settings health also presents a stopped but startable selected Steam
+  client as an actionable warning.
 - Moved the curated server path to XDG config with non-destructive migration
   from a checkout-local `servers.yaml`, and introduced atomic, durable,
   owner-only persistence with a last-known-good curated YAML backup.

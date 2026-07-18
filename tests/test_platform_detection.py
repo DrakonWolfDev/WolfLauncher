@@ -7,6 +7,7 @@ from unittest.mock import patch
 from wolflauncher.platform_detection import (
     SteamInstall,
     _flatpak_steam_installed,
+    _flatpak_steam_running,
     best_install,
     best_install_from,
     dayz_process_check,
@@ -52,20 +53,53 @@ def make_install(
 
 class PlatformDetectionTests(unittest.TestCase):
     def test_flatpak_steam_requires_installed_application(self):
-        with patch("wolflauncher.platform_detection.shutil.which", return_value="/usr/bin/flatpak"):
+        with patch("wolflauncher.platforms.linux.shutil.which", return_value="/usr/bin/flatpak"):
             with patch(
-                "wolflauncher.platform_detection.subprocess.run",
+                "wolflauncher.platforms.linux.subprocess.run",
                 return_value=subprocess.CompletedProcess([], 1),
             ):
                 self.assertFalse(_flatpak_steam_installed())
 
     def test_flatpak_steam_detects_installed_application(self):
-        with patch("wolflauncher.platform_detection.shutil.which", return_value="/usr/bin/flatpak"):
+        with patch("wolflauncher.platforms.linux.shutil.which", return_value="/usr/bin/flatpak"):
             with patch(
-                "wolflauncher.platform_detection.subprocess.run",
+                "wolflauncher.platforms.linux.subprocess.run",
                 return_value=subprocess.CompletedProcess([], 0),
             ):
                 self.assertTrue(_flatpak_steam_installed())
+
+    def test_flatpak_steam_detects_running_application(self):
+        with patch("wolflauncher.platforms.linux.shutil.which", return_value="/usr/bin/flatpak"):
+            with patch(
+                "wolflauncher.platforms.linux.subprocess.run",
+                return_value=subprocess.CompletedProcess(
+                    [], 0, stdout="123 com.valvesoftware.Steam\n", stderr=""
+                ),
+            ):
+                self.assertTrue(_flatpak_steam_running())
+
+    def test_flatpak_steam_running_requires_flatpak_command(self):
+        with patch("wolflauncher.platforms.linux.shutil.which", return_value=None):
+            self.assertFalse(_flatpak_steam_running())
+
+    def test_flatpak_steam_running_rejects_stopped_or_failed_process_query(self):
+        stopped = subprocess.CompletedProcess(["flatpak", "ps"], 0, stdout="")
+        failed = subprocess.CompletedProcess(
+            ["flatpak", "ps"], 1, stdout="com.valvesoftware.Steam\n"
+        )
+        with patch("wolflauncher.platforms.linux.shutil.which", return_value="/usr/bin/flatpak"):
+            with patch("wolflauncher.platforms.linux.subprocess.run", return_value=stopped):
+                self.assertFalse(_flatpak_steam_running())
+            with patch("wolflauncher.platforms.linux.subprocess.run", return_value=failed):
+                self.assertFalse(_flatpak_steam_running())
+
+    def test_flatpak_steam_running_handles_process_query_failure(self):
+        with patch("wolflauncher.platforms.linux.shutil.which", return_value="/usr/bin/flatpak"):
+            with patch(
+                "wolflauncher.platforms.linux.subprocess.run",
+                side_effect=subprocess.TimeoutExpired(["flatpak", "ps"], 3),
+            ):
+                self.assertFalse(_flatpak_steam_running())
 
     def test_install_label_names_supported_steam_modes(self):
         self.assertEqual(install_label(make_install("native")), "Native Steam")
@@ -273,7 +307,7 @@ class PlatformDetectionTests(unittest.TestCase):
                 with patch(
                     "wolflauncher.platform_detection.FLATPAK_STEAM_ROOT", home / "missing-flatpak"
                 ):
-                    with patch("wolflauncher.platform_detection.shutil.which") as which:
+                    with patch("wolflauncher.platforms.linux.shutil.which") as which:
                         which.side_effect = lambda command: (
                             "/usr/bin/steam" if command == "steam" else None
                         )
@@ -304,7 +338,7 @@ class PlatformDetectionTests(unittest.TestCase):
                         "wolflauncher.platform_detection.FLATPAK_STEAM_ROOT",
                         root / "missing-flatpak",
                     ):
-                        with patch("wolflauncher.platform_detection.shutil.which") as which:
+                        with patch("wolflauncher.platforms.linux.shutil.which") as which:
                             which.side_effect = lambda command: (
                                 "/usr/bin/steam" if command == "steam" else None
                             )
@@ -345,7 +379,7 @@ class PlatformDetectionTests(unittest.TestCase):
                 with patch(
                     "wolflauncher.platform_detection.FLATPAK_STEAM_ROOT", home / "missing-flatpak"
                 ):
-                    with patch("wolflauncher.platform_detection.shutil.which") as which:
+                    with patch("wolflauncher.platforms.linux.shutil.which") as which:
                         which.side_effect = lambda command: (
                             "/usr/bin/steam" if command == "steam" else None
                         )
@@ -486,7 +520,7 @@ class PlatformDetectionTests(unittest.TestCase):
             steam_selection_candidates_detail(report),
         )
 
-    @patch("wolflauncher.platform_detection.subprocess.run")
+    @patch("wolflauncher.platforms.linux.subprocess.run")
     def test_dayz_process_check_reports_known_dayz_processes(self, run):
         run.return_value = subprocess.CompletedProcess(
             ["pgrep"],
@@ -506,7 +540,7 @@ class PlatformDetectionTests(unittest.TestCase):
         run.assert_called_once()
         self.assertEqual(run.call_args.args[0][:2], ["pgrep", "-afi"])
 
-    @patch("wolflauncher.platform_detection.subprocess.run")
+    @patch("wolflauncher.platforms.linux.subprocess.run")
     def test_dayz_process_check_matches_process_names_case_insensitively(self, run):
         run.return_value = subprocess.CompletedProcess(
             ["pgrep"],
@@ -520,7 +554,7 @@ class PlatformDetectionTests(unittest.TestCase):
         self.assertTrue(check.running)
         self.assertIn("DayZ_x64.exe", check.detail)
 
-    @patch("wolflauncher.platform_detection.subprocess.run")
+    @patch("wolflauncher.platforms.linux.subprocess.run")
     def test_dayz_process_check_reports_no_known_processes(self, run):
         run.return_value = subprocess.CompletedProcess(["pgrep"], 1, stdout="", stderr="")
 
