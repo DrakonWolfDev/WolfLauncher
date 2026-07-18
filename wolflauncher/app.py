@@ -77,7 +77,11 @@ from .launch_preflight import (
 )
 from .launch_selection import server_with_resolved_ipv4
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
-from .lifecycle import stop_runtime
+from .lifecycle import (
+    begin_runtime_shutdown,
+    kill_runtime_process,
+    runtime_shutdown_complete,
+)
 from .mod_presenter import (
     combined_download_estimate,
     mod_description_preview,
@@ -199,6 +203,7 @@ class MainWindow(QMainWindow):
         self._shutting_down = False
         self._shutdown_started = False
         self._shutdown_dialog = None
+        self._shutdown_deadline = None
         ensure_servers_file(self.config_path)
         self.servers = load_servers(self.config_path)
         self.curated_status_cache = load_status_cache()
@@ -4381,7 +4386,9 @@ class MainWindow(QMainWindow):
         if not self._shutdown_started:
             self._shutdown_started = True
             self.save_user_settings(silent=True)
-        if not stop_runtime(self):
+            self._shutdown_deadline = time.monotonic() + 15
+            begin_runtime_shutdown(self)
+        if not runtime_shutdown_complete(self):
             event.ignore()
             if self._shutdown_dialog is None:
                 self._shutdown_dialog = QProgressDialog(
@@ -4400,13 +4407,26 @@ class MainWindow(QMainWindow):
             self._shutdown_dialog.show()
             self._shutdown_dialog.raise_()
             self._shutdown_dialog.activateWindow()
-            QTimer.singleShot(500, self.close)
+            QTimer.singleShot(100, self._poll_shutdown)
             return
         if self._shutdown_dialog is not None:
             self._shutdown_dialog.close()
             self._shutdown_dialog = None
         self.server_cache.close()
         super().closeEvent(event)
+
+    def _poll_shutdown(self):
+        if runtime_shutdown_complete(self):
+            self.close()
+            return
+        if self._shutdown_deadline is not None and time.monotonic() >= self._shutdown_deadline:
+            kill_runtime_process(self)
+            if self._shutdown_dialog is not None:
+                self._shutdown_dialog.setLabelText(
+                    "A background check is taking longer than expected. "
+                    "WolfLauncher will close as soon as it stops safely…"
+                )
+        QTimer.singleShot(100, self._poll_shutdown)
 
     def resizeEvent(self, event):
         super().resizeEvent(event)

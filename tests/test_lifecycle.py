@@ -8,6 +8,8 @@ from wolflauncher.lifecycle import (
     WORKER_ATTRIBUTES,
     WORKER_COLLECTION_ATTRIBUTES,
     active_workers,
+    begin_runtime_shutdown,
+    runtime_shutdown_complete,
     stop_runtime,
 )
 
@@ -42,6 +44,18 @@ def owner_with(**overrides):
 
 
 class LifecycleTests(unittest.TestCase):
+    def test_nonblocking_shutdown_requests_cancellation_without_waiting(self):
+        worker = Mock()
+        worker.isRunning.return_value = True
+        owner = owner_with(mod_worker=worker)
+
+        begin_runtime_shutdown(owner)
+
+        worker.cancel.assert_called_once_with()
+        worker.requestInterruption.assert_called_once_with()
+        worker.wait.assert_not_called()
+        self.assertFalse(runtime_shutdown_complete(owner))
+
     def test_every_declared_singleton_worker_is_coordinated(self):
         for attribute in WORKER_ATTRIBUTES:
             with self.subTest(attribute=attribute):
@@ -67,7 +81,7 @@ class LifecycleTests(unittest.TestCase):
 
     def test_stop_runtime_stops_timers_clears_queues_and_waits_for_workers(self):
         worker = Mock()
-        worker.isRunning.side_effect = [True, True, False]
+        worker.isRunning.side_effect = [True, True, True, False]
         worker.wait.return_value = True
         owner = owner_with(workshop_subscription_worker=worker)
 

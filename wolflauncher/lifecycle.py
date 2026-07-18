@@ -58,11 +58,10 @@ def active_workers(owner) -> list:
     return unique
 
 
-def stop_runtime(owner, timeout_ms: int = 15_000) -> bool:
-    """Stop timers, workers and the refresh helper within one total deadline."""
+def begin_runtime_shutdown(owner) -> None:
+    """Request shutdown without blocking Qt's GUI thread."""
     stop_runtime_scheduling(owner)
-    workers = active_workers(owner)
-    for worker in workers:
+    for worker in active_workers(owner):
         cancel = getattr(worker, "cancel", None)
         if callable(cancel):
             cancel()
@@ -70,10 +69,31 @@ def stop_runtime(owner, timeout_ms: int = 15_000) -> bool:
         if callable(request_interruption):
             request_interruption()
 
-    deadline = time.monotonic() + max(0, timeout_ms) / 1000
     process = getattr(owner, "wolfapi_refresh_process", None)
     if process is not None and process.state() != QProcess.NotRunning:
         process.terminate()
+
+
+def runtime_shutdown_complete(owner) -> bool:
+    process = getattr(owner, "wolfapi_refresh_process", None)
+    process_running = process is not None and process.state() != QProcess.NotRunning
+    return not process_running and not active_workers(owner)
+
+
+def kill_runtime_process(owner) -> None:
+    process = getattr(owner, "wolfapi_refresh_process", None)
+    if process is not None and process.state() != QProcess.NotRunning:
+        process.kill()
+
+
+def stop_runtime(owner, timeout_ms: int = 15_000) -> bool:
+    """Stop timers, workers and the refresh helper within one total deadline."""
+    begin_runtime_shutdown(owner)
+    workers = active_workers(owner)
+
+    deadline = time.monotonic() + max(0, timeout_ms) / 1000
+    process = getattr(owner, "wolfapi_refresh_process", None)
+    if process is not None and process.state() != QProcess.NotRunning:
         if not process.waitForFinished(_remaining_ms(deadline)):
             process.kill()
             process.waitForFinished(_remaining_ms(deadline))
