@@ -68,6 +68,7 @@ from .curated_status_cache import (
     update_status_cache,
 )
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
+from .lifecycle import stop_runtime
 from .launch_history import load_last_launch_report, save_last_launch_report
 from .launch_dialogs import LaunchDialog, NativeLaunchPreviewDialog, PreflightLaunchDialog
 from .launch_preflight import (
@@ -196,6 +197,8 @@ class MainWindow(QMainWindow):
         self.resize(1350, 720)
 
         self.config_path = CURATED_SERVERS_PATH
+        self._shutting_down = False
+        self._shutdown_started = False
         ensure_servers_file(self.config_path)
         self.servers = load_servers(self.config_path)
         self.curated_status_cache = load_status_cache()
@@ -4254,11 +4257,17 @@ class MainWindow(QMainWindow):
         return True
 
     def closeEvent(self, event):
-        worker = self.workshop_subscription_worker
-        if worker and worker.isRunning():
-            worker.cancel()
-            worker.wait(5000)
-        self.save_user_settings(silent=True)
+        if not self._shutdown_started:
+            self._shutdown_started = True
+            self.save_user_settings(silent=True)
+        if not stop_runtime(self):
+            event.ignore()
+            self.statusBar().showMessage(
+                "Waiting for background checks to finish before closing safely…",
+                10000,
+            )
+            QTimer.singleShot(500, self.close)
+            return
         self.server_cache.close()
         super().closeEvent(event)
 

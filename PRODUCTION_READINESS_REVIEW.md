@@ -378,7 +378,7 @@ not merely source changes.
   writes, parent creation, appropriate permissions, validation and useful error
   reporting for curated YAML, settings and launch history. Add failure-mode and
   migration tests before changing the live location.
-- [ ] **PR-04 — Make shutdown lifecycle complete.** Inventory every thread,
+- [x] **PR-04 — Make shutdown lifecycle complete.** Inventory every thread,
   timer and helper process; add coordinated cancellation/late-result handling;
   close SQLite last; test repeated closure during every asynchronous workflow.
 - [ ] **PR-05 — Establish credential and support-report policy.** Add owner-only

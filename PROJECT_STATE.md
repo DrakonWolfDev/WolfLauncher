@@ -40,15 +40,20 @@ authoritative remaining work is the ordered backlog in
 `PRODUCTION_READINESS_REVIEW.md`. Its P0 gates cover:
 
 1. release/version truth;
-2. complete worker and child-process shutdown;
-3. credential permissions, optional secret storage and report redaction;
-4. reproducible packaging and locked release dependencies;
-5. expanded CI and a packaged-artifact desktop validation matrix.
+2. credential permissions, optional secret storage and report redaction;
+3. reproducible packaging and locked release dependencies;
+4. expanded CI and a packaged-artifact desktop validation matrix.
 
 XDG curated-data migration and recoverable persistence are implemented. The
 first run copies an existing checkout-local file without modifying it, writes
 new profiles under XDG config, and routes JSON/YAML/report writes through the
 atomic owner-only persistence boundary.
+
+Shutdown coordination now stops all timers, clears queued work, signals every
+singleton and pooled worker, terminates the WolfAPI child process, waits against
+one bounded deadline and closes SQLite only after every background owner exits.
+An overlong external operation defers window closure instead of destroying a
+live Qt thread.
 
 `ROADMAP.md` contains milestones only. `docs/RELEASE_CHECKLIST.md` records the
 checks to run against a release candidate; neither file is a second backlog.

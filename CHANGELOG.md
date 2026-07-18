@@ -7,6 +7,10 @@
 - Moved the curated server path to XDG config with non-destructive migration
   from a checkout-local `servers.yaml`, and introduced atomic, durable,
   owner-only persistence with a last-known-good curated YAML backup.
+- Added coordinated shutdown across all timers, worker slots, bounded worker
+  pools and the WolfAPI refresh child process. SQLite now closes only after
+  background ownership has ended; an overlong operation defers window closure
+  and retries safely.
 - Added a draggable Server Browser table/inspector workspace. The common table
   remains dense and moves Host/port/source/version/last-seen support detail into
   a selected-server panel with endpoint, map, players, ping, truth basis,
