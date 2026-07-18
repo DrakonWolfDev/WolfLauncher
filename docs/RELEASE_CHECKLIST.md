@@ -75,3 +75,25 @@ cannot be run.
 - [ ] Create an annotated `vX.Y.Z` tag at the tested commit.
 - [ ] Push the branch and tag.
 - [ ] Confirm GitHub Actions passes for the tagged commit.
+
+## Validation evidence
+
+### 2026-07-18 — Linux Mint 22.3, native Steam, packaged `0.9.0~dev0`
+
+- CI artifact checksum and Debian metadata verified before installation.
+- Clean Cinnamon-menu launch passed from the installed package; curated
+  servers and saved settings loaded correctly with no visible layout or startup
+  problem.
+- Existing checkout-local curated YAML migrated byte-for-byte into XDG config;
+  the source remained unchanged and config/data permissions tightened to
+  owner-only.
+- Reinstallation of the corrected artifact preserved settings and curated
+  servers.
+- Curated status refresh and unmodded native-Steam/DayZ handoff passed.
+- A fully installed mod set was recognized as ready and reached the native
+  Steam/DayZ handoff without an unnecessary download prompt.
+- A missing/outdated Workshop flow identified required work, obtained explicit
+  confirmation, completed through Steam, rechecked readiness and launched.
+- Closing during a background check remained safe but its status-bar-only wait
+  appeared frozen. The subsequent fix replaces that feedback with a visible
+  modal progress dialog; packaged desktop retest remains pending.

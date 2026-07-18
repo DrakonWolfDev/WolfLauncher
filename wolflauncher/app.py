@@ -198,6 +198,7 @@ class MainWindow(QMainWindow):
         self.config_path = CURATED_SERVERS_PATH
         self._shutting_down = False
         self._shutdown_started = False
+        self._shutdown_dialog = None
         ensure_servers_file(self.config_path)
         self.servers = load_servers(self.config_path)
         self.curated_status_cache = load_status_cache()
@@ -4382,12 +4383,28 @@ class MainWindow(QMainWindow):
             self.save_user_settings(silent=True)
         if not stop_runtime(self):
             event.ignore()
-            self.statusBar().showMessage(
-                "Waiting for background checks to finish before closing safely…",
-                10000,
-            )
+            if self._shutdown_dialog is None:
+                self._shutdown_dialog = QProgressDialog(
+                    "Finishing background checks before closing safely…",
+                    "",
+                    0,
+                    0,
+                    self,
+                )
+                self._shutdown_dialog.setCancelButton(None)
+                self._shutdown_dialog.setWindowTitle("Closing WolfLauncher")
+                self._shutdown_dialog.setWindowModality(Qt.WindowModal)
+                self._shutdown_dialog.setMinimumDuration(0)
+                self._shutdown_dialog.setAutoClose(False)
+                self._shutdown_dialog.setMinimumWidth(420)
+            self._shutdown_dialog.show()
+            self._shutdown_dialog.raise_()
+            self._shutdown_dialog.activateWindow()
             QTimer.singleShot(500, self.close)
             return
+        if self._shutdown_dialog is not None:
+            self._shutdown_dialog.close()
+            self._shutdown_dialog = None
         self.server_cache.close()
         super().closeEvent(event)
 
