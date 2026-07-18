@@ -90,6 +90,9 @@ cannot be run.
 - Reinstallation of the corrected artifact preserved settings and curated
   servers.
 - Curated status refresh and unmodded native-Steam/DayZ handoff passed.
+- DNS-hosted launch displayed and handed off the resolved numeric connect target
+  (`95.146.83.17:3302`); a separate raw-IP server handed off its configured
+  `198.244.177.109:2302` target.
 - With native Steam fully exited, Connect started Steam without manual
   intervention and completed the DayZ handoff.
 - The external compatibility engine remained selectable, resolved the existing
