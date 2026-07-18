@@ -108,6 +108,12 @@ cannot be run.
 - Automatic Connect persisted a copyable launch report containing its UTC
   timestamp, Steam argument-vector handoff output and confirmed DayZ process
   detection. The report contained no literal home path or credential.
+- Package removal deleted the registered launcher, desktop entry, icon and
+  read-only seed while settings, favourites, curated YAML and backup, cached
+  status, launch report and SQLite cache remained byte-for-byte unchanged.
+  Reinstallation restored the menu application and preserved those data plus
+  the previously selected external-engine setting; fallback handoff and its
+  persisted launch report still passed after reinstall.
 - Closing during a background check passed after the non-blocking shutdown
   fix: the modal progress dialog appeared promptly and remained fluid, closing
   the dialog did not kill the active worker, a repeated exit request restored
