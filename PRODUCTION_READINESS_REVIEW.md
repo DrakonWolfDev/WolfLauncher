@@ -415,7 +415,10 @@ not merely source changes.
 - [ ] **PR-14 — Bound external/provider data and image decoding**, and document
   the product's IPv6 decision.
 - [ ] **PR-15 — Complete accessibility, scaling and keyboard review** and keep
-  user-facing strings localization-ready.
+  user-facing strings localization-ready. Include the observed favourite UX
+  follow-ups: filled stars for active favourites, outline stars as the Server
+  Browser promotion/favourite affordance, reversible unstar behavior, and
+  in-game server time on Favourite Servers when live status provides it.
 - [ ] **PR-16 — Add schema migrations, fuzz/property coverage and performance
   budgets** for settings, parsers, cache identity, startup and browser search.
 - [ ] **PR-17 — Define supported update and retention policies** for packages,

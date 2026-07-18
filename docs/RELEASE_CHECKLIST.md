@@ -90,6 +90,8 @@ cannot be run.
 - Reinstallation of the corrected artifact preserved settings and curated
   servers.
 - Curated status refresh and unmodded native-Steam/DayZ handoff passed.
+- With native Steam fully exited, Connect started Steam without manual
+  intervention and completed the DayZ handoff.
 - A fully installed mod set was recognized as ready and reached the native
   Steam/DayZ handoff without an unnecessary download prompt.
 - A missing/outdated Workshop flow identified required work, obtained explicit
