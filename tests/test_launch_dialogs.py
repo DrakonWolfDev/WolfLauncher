@@ -1,6 +1,7 @@
 import unittest
 
 from PySide6.QtCore import QTimer
+from PySide6.QtWidgets import QApplication
 
 from wolflauncher import app
 from wolflauncher.launch_dialogs import (
@@ -12,6 +13,10 @@ from wolflauncher.launch_dialogs import (
 
 
 class LaunchDialogModuleTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.qt_app = QApplication.instance() or QApplication([])
+
     def test_main_window_keeps_its_refresh_timer_dependency(self):
         self.assertIs(app.QTimer, QTimer)
 
@@ -33,3 +38,16 @@ class LaunchDialogModuleTests(unittest.TestCase):
             format_launch_command(command),
             "bash '/tmp/dayz launcher.sh' -n 'Wolf Player; echo nope' --launch",
         )
+
+    def test_preflight_dialog_emits_copyable_launch_report(self):
+        dialog = PreflightLaunchDialog(None, "Example")
+        dialog.command_text = "steam -applaunch 221100"
+        dialog.output.setPlainText("Steam accepted the launch handoff.")
+        reports = []
+        dialog.launch_report_ready.connect(reports.append)
+
+        dialog.emit_launch_report()
+
+        self.assertEqual(len(reports), 1)
+        self.assertIn("Command: steam -applaunch 221100", reports[0])
+        self.assertIn("Steam accepted the launch handoff.", reports[0])

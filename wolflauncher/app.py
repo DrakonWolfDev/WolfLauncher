@@ -3234,6 +3234,16 @@ class MainWindow(QMainWindow):
             return
         self.copy_to_clipboard(report, "Last launch report")
 
+    def persist_launch_report(self, report: str):
+        try:
+            save_last_launch_report(report)
+        except OSError as exc:
+            QMessageBox.warning(
+                self,
+                "Could not save launch report",
+                f"WolfLauncher could not save its support report.\n\n{exc}",
+            )
+
     def copy_selected_health_row(self):
         row = self.health_table.currentRow()
         if row < 0:
@@ -3965,6 +3975,7 @@ class MainWindow(QMainWindow):
         self.preflight_server = server
         self.preflight_dialog = PreflightLaunchDialog(self, server.name)
         self.preflight_dialog.finished.connect(self.cancel_connect_preflight)
+        self.preflight_dialog.launch_report_ready.connect(self.persist_launch_report)
         self.preflight_dialog.show()
         self.launch_button.setEnabled(False)
         self.ensure_preflight_steam()

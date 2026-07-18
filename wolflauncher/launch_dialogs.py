@@ -1,6 +1,6 @@
 import shlex
 
-from PySide6.QtCore import QProcess, QTimer
+from PySide6.QtCore import QProcess, QTimer, Signal
 from PySide6.QtGui import QTextCursor
 from PySide6.QtWidgets import (
     QApplication,
@@ -141,6 +141,8 @@ class LaunchDialog(PostHandoffProcessCheckMixin, QDialog):
 class PreflightLaunchDialog(QDialog):
     """Compact, live checklist for the automatic Connect workflow."""
 
+    launch_report_ready = Signal(str)
+
     PROCESS_CHECK_INTERVAL_MS = 2000
     PROCESS_CHECK_ATTEMPTS = 30
 
@@ -154,6 +156,7 @@ class PreflightLaunchDialog(QDialog):
         self.process.finished.connect(self.handle_finished)
         self.process.errorOccurred.connect(self.handle_process_error)
         self.process_check_attempt = 0
+        self.command_text = ""
 
         layout = QVBoxLayout(self)
         intro = QLabel(f"Preparing <b>{server_name}</b>")
@@ -204,8 +207,17 @@ class PreflightLaunchDialog(QDialog):
         self.close_button.setText("Close")
 
     def start_launch(self, command: list[str]):
+        self.command_text = format_launch_command(command)
+        self.output.append("Starting Steam launch handoff…")
         self.set_complete("launcher", "Sending the launch instructions to Steam…")
         self.process.start(command[0], command[1:])
+
+    def copyable_output_text(self) -> str:
+        return format_launch_output_report(self.command_text, self.output.toPlainText())
+
+    def emit_launch_report(self):
+        if self.command_text:
+            self.launch_report_ready.emit(self.copyable_output_text())
 
     def read_output(self):
         data = bytes(self.process.readAllStandardOutput()).decode("utf-8", errors="replace")
@@ -216,9 +228,13 @@ class PreflightLaunchDialog(QDialog):
     def handle_finished(self, exit_code: int, _exit_status):
         self.read_output()
         if exit_code != 0:
+            self.output.append(f"Steam launch handoff exited with code {exit_code}.")
             self.set_failed("launcher", f"Steam launch handoff exited with code {exit_code}.")
+            self.emit_launch_report()
             return
+        self.output.append("Steam accepted the launch handoff.")
         self.set_working("game", "Steam accepted the launch. Waiting for the DayZ process…")
+        self.emit_launch_report()
         self.process_check_attempt = 0
         QTimer.singleShot(self.PROCESS_CHECK_INTERVAL_MS, self.check_dayz_process)
 
@@ -226,8 +242,10 @@ class PreflightLaunchDialog(QDialog):
         self.process_check_attempt += 1
         check = dayz_process_check()
         if check.running:
+            self.output.append(f"DayZ process check: {check.detail}")
             self.set_complete("game", check.detail)
             self.close_button.setText("Close")
+            self.emit_launch_report()
             return
         if self.process_check_attempt < self.PROCESS_CHECK_ATTEMPTS:
             QTimer.singleShot(self.PROCESS_CHECK_INTERVAL_MS, self.check_dayz_process)
@@ -237,10 +255,14 @@ class PreflightLaunchDialog(QDialog):
             "Steam accepted the launch, but no DayZ process was detected within 60 seconds. "
             "Steam may still be preparing Proton or BattlEye.",
         )
+        self.output.append("No known DayZ process was detected within 60 seconds.")
+        self.emit_launch_report()
 
     def handle_process_error(self, error):
         if error == QProcess.ProcessError.FailedToStart:
+            self.output.append("Steam launch command could not be started.")
             self.set_failed("launcher", "The Steam launch command could not be started.")
+            self.emit_launch_report()
 
 
 class NativeLaunchPreviewDialog(PostHandoffProcessCheckMixin, QDialog):
