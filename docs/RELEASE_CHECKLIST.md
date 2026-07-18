@@ -95,6 +95,9 @@ cannot be run.
 - The external compatibility engine remained selectable, resolved the existing
   `~/dayz-launcher.sh`, and completed a Steam/DayZ fallback handoff; native mode
   remained available for reselection afterward.
+- With networking disabled, packaged startup preserved curated favourites and
+  displayed the existing discovered-server cache instead of clearing offline
+  data; networking could then be restored normally.
 - A fully installed mod set was recognized as ready and reached the native
   Steam/DayZ handoff without an unnecessary download prompt.
 - A missing/outdated Workshop flow identified required work, obtained explicit
