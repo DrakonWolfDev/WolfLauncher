@@ -36,8 +36,9 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertIn("Selected Steam | OK | Flatpak Steam ready (not running)", report)
 
     def test_format_launch_output_report_is_copyable(self):
+        launcher_path = Path.home() / "dayz-launcher.sh"
         report = format_launch_output_report(
-            "bash /home/andi/dayz-launcher.sh -s 81.152.152.55:3302 -p 3303 -n Andi --launch",
+            f"bash {launcher_path} -s 81.152.152.55:3302 -p 3303 -n Andi --launch",
             "Starting launcher...\n[dayz-launcher.sh][info] Using flatpak mode",
             generated_at=datetime(2026, 6, 21, 15, 53, 45, tzinfo=timezone.utc),
         )
