@@ -15,6 +15,12 @@ WolfLauncher remains offline-first: cached SQLite rows render immediately,
 remote discovery is read-only, curated YAML remains user-owned, and selected
 server/launch-time checks remain local truth.
 
+Production-hardening synchronization on 2026-07-19: WolfAPI v1 retains the
+required `generated_at` field, but its strong ETag now hashes the exact
+serialized response bytes (including that timestamp). A cached representation
+still returns `304`; a rebuilt byte-different representation receives a new
+validator. No Launcher parser, cache schema or UI change is required.
+
 ## Future Codex resume note — 2026-07-14
 
 Treat WolfLauncher and `../WolfAPI` as one discovery product with two separately
