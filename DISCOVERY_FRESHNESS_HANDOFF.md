@@ -21,6 +21,13 @@ serialized response bytes (including that timestamp). A cached representation
 still returns `304`; a rebuilt byte-different representation receives a new
 validator. No Launcher parser, cache schema or UI change is required.
 
+Live-validation scheduling update on 2026-07-19: WolfAPI now suppresses only
+automatic A2S re-probes for seven days after three consecutive failures since a
+server's last successful validation. A success resets that durable history.
+This does not hide provider rows, change freshness/validation fields, or alter
+Launcher behavior; local selected-server and launch-time checks remain final
+truth.
+
 ## Future Codex resume note — 2026-07-14
 
 Treat WolfLauncher and `../WolfAPI` as one discovery product with two separately
