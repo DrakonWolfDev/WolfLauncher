@@ -1,8 +1,10 @@
 import json
+import os
 import shutil
 import socket
 import subprocess
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 from .models import Server
@@ -43,19 +45,30 @@ def _get(data: dict[str, Any], *path: str, default: Any = "") -> Any:
     return current
 
 
+def gamedig_command() -> list[str] | None:
+    bundled_script = os.environ.get("WOLFLAUNCHER_GAMEDIG_SCRIPT", "").strip()
+    if bundled_script and Path(bundled_script).is_file():
+        node = shutil.which("node")
+        if node:
+            return [node, bundled_script]
+    gamedig = shutil.which("gamedig")
+    return [gamedig] if gamedig else None
+
+
 def check_server(server: Server) -> ServerStatus:
     try:
         ip = resolve_host(server.host)
     except OSError as exc:
         return ServerStatus(False, error=f"DNS failed: {exc}")
 
-    if shutil.which("gamedig") is None:
+    command = gamedig_command()
+    if command is None:
         return ServerStatus(False, resolved_ip=ip, error="gamedig not installed")
 
     try:
         result = subprocess.run(
             [
-                "gamedig",
+                *command,
                 "--type",
                 "dayz",
                 f"{ip}:{server.query_port}",

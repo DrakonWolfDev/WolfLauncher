@@ -106,6 +106,13 @@ cannot be run.
   `DayZ_x64.exe` command line contained exactly 62 absolute Workshop paths and
   `-connect=198.244.177.109:2502`.
 - No Workshop items were removed or unsubscribed during validation.
+- The portable `0.9.0.dev0` one-folder artifact built with pinned Python and npm
+  dependencies plus the official Node 24.14.0 Windows runtime. Its packaged GUI
+  started from an isolated profile, loaded the Windows Credential Manager
+  backend and exited cleanly under the automated smoke watchdog.
+- The versioned ZIP and SHA-256 sidecar were reproduced locally. The executable
+  reports product/file version `0.9.0.dev0`; the artifact remains unsigned and
+  is not yet a supported installer.
 
 ### 2026-07-18 — Linux Mint 22.3, native Steam, packaged `0.9.0~dev0`
 

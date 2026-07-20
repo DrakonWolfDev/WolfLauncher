@@ -4466,6 +4466,21 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(0, self.configure_browser_columns)
 
 
+def configure_packaged_smoke_test(app, window, environ=None) -> bool:
+    environment = os.environ if environ is None else environ
+    if environment.get("WOLFLAUNCHER_SMOKE_TEST") != "1":
+        return False
+    if (
+        environment.get("WOLFLAUNCHER_SMOKE_REQUIRE_KEYRING") == "1"
+        and not window.secret_store.available()
+    ):
+        QTimer.singleShot(0, lambda: app.exit(125))
+        return True
+    QTimer.singleShot(1000, window.close)
+    QTimer.singleShot(15000, lambda: app.exit(124))
+    return True
+
+
 def main():
     app = QApplication(sys.argv)
     app.setApplicationName("WolfLauncher")
@@ -4474,6 +4489,7 @@ def main():
     apply_application_theme(app)
     window = MainWindow()
     window.show()
+    configure_packaged_smoke_test(app, window)
     try:
         exit_code = app.exec()
     except KeyboardInterrupt:

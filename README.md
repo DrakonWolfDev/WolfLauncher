@@ -1,7 +1,7 @@
 # WolfLauncher
 
 A Linux-primary DayZ launcher designed to remove the guesswork from joining
-modded servers, with an experimental Windows source runtime.
+modded servers, with an experimental portable Windows build.
 
 DayZ runs surprisingly well on Linux. The problem is everything around it: Steam setup, Proton behaviour, Workshop content, server mod requirements, and paths that vary between native Steam and Flatpak Steam.
 
@@ -13,8 +13,10 @@ The upstream MIT-licensed shell launcher is vendored in `external/dayz-linux-cli
 
 Current baseline: v0.8 Linux native-launch parity validated, with the native
 launcher used by default and the external launcher retained as a Linux
-fallback. Windows detection, GUI startup and native launch preview are
-implemented; real DayZ handoff and Windows packaging are not yet validated.
+fallback. Windows detection, native Steam/DayZ handoff, confirmed Workshop
+resolution and portable packaging have been validated on Windows 11. The
+Windows build remains experimental until signing, installation and update gates
+are defined and exercised.
 
 The server browser, settings health checks, diagnostics, mod checks and guarded launch handoff are working. The native engine has been validated with native and Flatpak Steam, Steam running and stopped, unmodded servers, fully installed mod sets and partially missing mod sets. Connect pre-flight asks the signed-in Steam client to subscribe, download or update required items and verifies them before launch; manual Workshop pages remain available as an advanced fallback. The external launcher remains available as a fallback. The only known bug is that DayZ does not run when Steam launch options contain:
 
@@ -111,8 +113,9 @@ These instructions target Linux Mint 21/22 and Ubuntu 22.04/24.04 family systems
 Steam and DayZ should already be installed through native Steam or Flatpak Steam. WolfLauncher does not install DayZ or Proton. Workshop operations are delegated to the user's signed-in Steam client.
 
 On Windows, Steam and DayZ should already be installed through native Steam.
-The current Windows lane is for source development and validation; there is no
-supported installer yet.
+The current Windows artifact is a portable ZIP with bundled status-query
+runtime. Extract it and run `WolfLauncher.exe`; there is no supported or signed
+installer yet.
 
 At startup, WolfLauncher checks the selected Steam installation and warns once
 if Steam is stopped or unavailable. Server browsing remains available, but
@@ -175,6 +178,20 @@ icon, curated template, legacy fallback and license notices. It writes the
 `.deb` and SHA-256 file under ignored `dist/`. Release artifacts must be built
 and smoke-tested in the release CI environment; a developer-machine build is a
 local validation artifact, not evidence for every supported distro.
+
+On Windows, install the pinned release tools and build the portable ZIP from
+PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-windows-release.txt
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\build-windows.ps1 `
+  -Python .\.venv\Scripts\python.exe
+```
+
+The script installs the lockfile-pinned GameDig tree, bundles the current Node
+runtime, runs the packaged GUI and Windows Credential Manager smoke checks, and
+writes a versioned ZIP plus SHA-256 file under `dist\windows`. GitHub Actions
+repeats this build on Windows Server 2022 and publishes both files together.
 
 ### Manual Linux Mint / Ubuntu Setup
 
