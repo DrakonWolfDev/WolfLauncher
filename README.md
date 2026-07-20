@@ -113,9 +113,11 @@ These instructions target Linux Mint 21/22 and Ubuntu 22.04/24.04 family systems
 Steam and DayZ should already be installed through native Steam or Flatpak Steam. WolfLauncher does not install DayZ or Proton. Workshop operations are delegated to the user's signed-in Steam client.
 
 On Windows, Steam and DayZ should already be installed through native Steam.
-The current Windows artifact is a portable ZIP with bundled status-query
-runtime. Extract it and run `WolfLauncher.exe`; there is no supported or signed
-installer yet.
+The experimental Windows release produces both a per-user Setup executable and
+a portable ZIP, each with the bundled status-query runtime. Setup does not need
+administrator rights, creates a Start Menu shortcut and leaves settings and
+cache data in the user profile when uninstalled. The artifacts are not yet
+digitally signed.
 
 At startup, WolfLauncher checks the selected Steam installation and warns once
 if Steam is stopped or unavailable. Server browsing remains available, but
@@ -190,8 +192,23 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\build-windows.
 
 The script installs the lockfile-pinned GameDig tree, bundles the current Node
 runtime, runs the packaged GUI and Windows Credential Manager smoke checks, and
-writes a versioned ZIP plus SHA-256 file under `dist\windows`. GitHub Actions
-repeats this build on Windows Server 2022 and publishes both files together.
+writes a versioned ZIP plus SHA-256 file under `dist\windows`.
+
+Build the per-user installer from that bundle with the hash-pinned Inno Setup
+compiler:
+
+```powershell
+$iscc = powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
+  .\scripts\install-inno-setup.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
+  .\scripts\build-windows-installer.ps1 -Iscc $iscc `
+  -Python .\.venv\Scripts\python.exe
+```
+
+`scripts\test-windows-installer.ps1` performs isolated install, packaged-start,
+in-place reinstall and uninstall checks, and verifies that roaming configuration
+and local application data survive. GitHub Actions repeats the portable and
+installer builds and publishes their binaries and SHA-256 sidecars together.
 
 ### Manual Linux Mint / Ubuntu Setup
 

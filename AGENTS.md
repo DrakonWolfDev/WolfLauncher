@@ -3,8 +3,9 @@
 ## Project Orientation
 
 WolfLauncher is a Linux-primary DayZ launcher GUI built with Python and PySide6,
-with an experimental portable Windows build. The current working baseline is
-v0.8 Linux native-launch parity validated, with v0.9 native hardening in progress.
+with experimental portable and installed Windows builds. The current working
+baseline is v0.8 Linux native-launch parity validated, with v0.9 native hardening
+in progress.
 
 The app validates the local Steam/DayZ/Workshop setup, checks server status,
 compares required server mods with locally installed Workshop mods, then hands

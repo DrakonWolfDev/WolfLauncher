@@ -52,10 +52,10 @@ Completion means:
 
 The experimental Windows lane now has validated unmodded and modded DayZ
 handoffs, confirmed Steamworks query/subscription lifecycle, a reproducible
-portable ZIP and a Windows CI packaging lane. Before Windows becomes a
-supported target, add signing, supported install/uninstall and update behavior,
-then exercise the release artifact on the intended desktop matrix. These gates
-do not delay the Linux v1.0 boundary.
+portable ZIP, a per-user installer with data-preserving uninstall and a Windows
+CI packaging lane. Before Windows becomes a supported target, add signing and
+update behavior, then exercise the release artifact on the intended desktop
+matrix. These gates do not delay the Linux v1.0 boundary.
 
 ## v1.0 — supported native release
 

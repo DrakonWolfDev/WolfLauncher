@@ -84,13 +84,13 @@ try {
         $env:WOLFLAUNCHER_SMOKE_REQUIRE_KEYRING = "1"
         $process = Start-Process -FilePath (Join-Path $bundleRoot "WolfLauncher.exe") -PassThru
         try {
-            Wait-Process -Id $process.Id -Timeout 30 -ErrorAction Stop
+            Wait-Process -Id $process.Id -Timeout 45 -ErrorAction Stop
         }
         catch {
             if (-not $process.HasExited) {
                 Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
             }
-            throw "Packaged startup smoke test did not exit within 30 seconds."
+            throw "Packaged startup smoke test did not exit within 45 seconds."
         }
         $process.Refresh()
         if ($process.ExitCode -ne 0) {

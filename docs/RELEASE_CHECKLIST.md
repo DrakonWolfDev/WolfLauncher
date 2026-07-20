@@ -111,8 +111,14 @@ cannot be run.
   started from an isolated profile, loaded the Windows Credential Manager
   backend and exited cleanly under the automated smoke watchdog.
 - The versioned ZIP and SHA-256 sidecar were reproduced locally. The executable
-  reports product/file version `0.9.0.dev0`; the artifact remains unsigned and
-  is not yet a supported installer.
+  reports product/file version `0.9.0.dev0`.
+- The hash-pinned Inno Setup 6.7.3 compiler produced a per-user Setup executable
+  and SHA-256 sidecar. Two successive silent installs completed without
+  elevation; the installed application passed its packaged startup and Windows
+  Credential Manager smoke after each install.
+- Silent uninstall removed the installed executable while preserving sentinels
+  under both roaming configuration and local application-data directories. The
+  installer remains unsigned and update behavior is not yet defined.
 
 ### 2026-07-18 — Linux Mint 22.3, native Steam, packaged `0.9.0~dev0`
 

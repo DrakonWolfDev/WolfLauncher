@@ -3,7 +3,7 @@
 Updated: 2026-07-20
 
 WolfLauncher is a Linux-primary DayZ launcher GUI built with Python and PySide6,
-with an experimental portable Windows build.
+with experimental portable and installed Windows builds.
 The v0.8 native-launch baseline is validated and tagged; v0.9 production
 hardening is the active cycle. The native Python engine is the default and the
 vendored MIT shell launcher remains a visible compatibility fallback.
@@ -43,13 +43,16 @@ vendored MIT shell launcher remains a visible compatibility fallback.
   58-mod handoffs passed, and an explicitly confirmed missing-mod flow installed
   three items before a guarded 62-mod handoff. A portable one-folder ZIP now
   bundles Python, Node and lockfile-pinned GameDig; its packaged GUI and Windows
-  Credential Manager backend are smoke-tested during the build. The artifact is
-  still unsigned and has no supported installer or updater.
-- The automated suite contains 479 tests at this snapshot. The Windows run
-  passes all applicable tests (420 passed, 59 Linux-only skipped), Ruff and
-  compilation. Windows CI repeats the portable build and publishes its ZIP and
-  checksum. The established Linux CI/release matrix remains authoritative for
-  Linux behavior.
+  Credential Manager backend are smoke-tested during the build. A per-user Inno
+  Setup artifact now installs without elevation, supports in-place reinstall,
+  starts the packaged application and uninstalls program files while preserving
+  roaming configuration and local data. Both Windows artifacts remain unsigned
+  and there is no updater yet.
+- The automated suite contains 482 tests at this snapshot. The Windows run
+  passes all applicable tests (423 passed, 59 Linux-only skipped), Ruff and
+  compilation. Windows CI repeats the portable and installer lifecycle builds
+  and produces checksums for both. The established Linux CI/release matrix
+  remains authoritative for Linux behavior.
 
 ## Active release boundary
 
@@ -120,11 +123,12 @@ one platform block all progress:
    automatic Workshop helpers disabled until their lifecycle is proven; retain
    manual Steam Workshop actions plus **Recheck mods**, and merge only changes
    that cannot regress native Steam.
-4. **Windows is an experimental portable-build lane.** Preserve direct absolute
+4. **Windows is an experimental packaging lane.** Preserve direct absolute
    Workshop paths and native `steam.exe` handoff; do not introduce symlink or
    shell-launcher requirements. Handoff, confirmed Steamworks resolution and
-   portable packaging have passed. Signing, supported install/uninstall,
-   updates and release-artifact desktop coverage remain separate release gates.
+   portable packaging have passed. Per-user install, reinstall and uninstall
+   behavior now pass locally with user data preserved. Signing, updates and
+   release-artifact desktop coverage remain separate release gates.
 
 At each stable checkpoint, run the affected repository's complete checks,
 commit and push each repository independently, test native/Flatpak behavior

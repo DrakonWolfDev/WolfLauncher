@@ -14,8 +14,10 @@ class PackagedSmokeTestConfigurationTests(unittest.TestCase):
 
         self.assertTrue(enabled)
         self.assertEqual(single_shot.call_args_list[0].args, (1000, window.close))
-        self.assertEqual(single_shot.call_args_list[1].args[0], 15000)
-        single_shot.call_args_list[1].args[1]()
+        self.assertEqual(single_shot.call_args_list[1].args, (5000, window.close))
+        self.assertEqual(single_shot.call_args_list[2].args, (10000, window.close))
+        self.assertEqual(single_shot.call_args_list[3].args[0], 30000)
+        single_shot.call_args_list[3].args[1]()
         app.exit.assert_called_once_with(124)
 
     @patch("wolflauncher.app.QTimer.singleShot")
