@@ -78,6 +78,27 @@ cannot be run.
 
 ## Validation evidence
 
+### 2026-07-20 — Windows 11 Pro 24H2, native Steam, source checkout
+
+- A clean Python 3.12 virtual environment started the Qt desktop application
+  from the installed `wolflauncher.exe` console entry point.
+- Fresh settings selected the native launcher automatically. Settings Health
+  detected the running signed-in Steam client, DayZ installation and Workshop
+  directory through the Windows registry and Steam library manifests.
+- An unmodded curated server completed the Steam handoff and reached a visible
+  `DayZ_x64.exe` loading screen.
+- A read-only Steamworks check for New Dawn Cherno returned all 58 required
+  Workshop items as installed, including item names, IDs, sizes and previews.
+- The 58-mod launch used direct absolute Workshop paths, passed the guarded
+  handoff, loaded DayZ Expansion and connected to `198.244.177.109:2302`.
+  The DayZ RPT recorded live world-entity loading from the server session.
+- The first transition from the unmodded run to the BattlEye server requested
+  a game restart. Repeating the identical guarded launch after closing DayZ
+  proceeded normally; no command or path change was required.
+- No Workshop subscriptions, downloads, updates or removals were requested
+  during this validation. Those state-changing Windows flows still need a
+  separate explicitly confirmed test row.
+
 ### 2026-07-18 — Linux Mint 22.3, native Steam, packaged `0.9.0~dev0`
 
 - CI artifact checksum and Debian metadata verified before installation.
