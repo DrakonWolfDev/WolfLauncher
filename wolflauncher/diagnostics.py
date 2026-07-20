@@ -21,6 +21,7 @@ from .platform_detection import (
     steam_selection_report,
     yes_no,
 )
+from .platforms import current_platform
 from .redaction import redact_support_text
 from .status import resolve_host
 
@@ -221,13 +222,18 @@ def launch_troubleshooting_report(
     selection = steam_selection_report(selected_mode, detected)
     install = select_steam_install(selected_mode, detected)
     process = process_check if process_check is not None else dayz_process_check()
-    prime = prime_environment_report(environ)
-    launch_options = steam_launch_options_report(environ)
+    capabilities = current_platform().capabilities
+    prime = prime_environment_report(environ) if capabilities.uses_proton else None
+    launch_options = steam_launch_options_report(environ) if capabilities.uses_proton else None
 
     status = "OK"
     if selection.status == "MISSING":
         status = "MISSING"
-    elif selection.status == "WARN" or prime.status == "WARN" or launch_options.status == "WARN":
+    elif (
+        selection.status == "WARN"
+        or (prime and prime.status == "WARN")
+        or (launch_options and launch_options.status == "WARN")
+    ):
         status = "WARN"
 
     details = [
@@ -241,16 +247,21 @@ def launch_troubleshooting_report(
         f"Steam library: {(install.steamapps if install and install.steamapps else 'not detected')}",
         f"DayZ install: {(install.dayz_dir if install and install.dayz_dir else 'not detected')}",
         f"Workshop folder: {(install.workshop_dir if install and install.workshop_dir else 'not detected')}",
-        f"Proton compatdata: {proton_compatdata_detail(install)}",
         f"Known DayZ process visibility: {process.detail}",
-        f"PRIME status: {prime.status} - {prime.summary}",
-        f"Steam launch options: {launch_options.status} - {launch_options.summary}",
     ]
+    if capabilities.uses_proton and prime and launch_options:
+        details.extend(
+            [
+                f"Proton compatdata: {proton_compatdata_detail(install)}",
+                f"PRIME status: {prime.status} - {prime.summary}",
+                f"Steam launch options: {launch_options.status} - {launch_options.summary}",
+            ]
+        )
 
     next_steps: list[str] = []
     if selection.status == "MISSING":
         next_steps.append(
-            "Open Settings health and choose a Steam install mode that detects native Steam, Flatpak Steam or STEAM_ROOT."
+            "Open Settings health and choose a Steam install mode that detects Steam or STEAM_ROOT."
         )
     elif selection.status == "WARN":
         next_steps.append(
@@ -258,25 +269,36 @@ def launch_troubleshooting_report(
         )
     if install and install.dayz_dir and install.workshop_dir and not process.running:
         next_steps.append(
-            "If this was captured after a successful handoff, allow Steam/Proton time to start DayZ, then check Steam downloads, Proton prompts and BattlEye prompts."
+            "If this was captured after a successful handoff, allow Steam time to start DayZ, then check Steam downloads and BattlEye prompts."
         )
-        next_steps.append(post_handoff_launch_option_guidance(environ))
-    if install and install.dayz_dir and install.workshop_dir and not install.compatdata_dir:
+        if capabilities.uses_proton:
+            next_steps.append(post_handoff_launch_option_guidance(environ))
+    if (
+        capabilities.uses_proton
+        and install
+        and install.dayz_dir
+        and install.workshop_dir
+        and not install.compatdata_dir
+    ):
         next_steps.append(
             "If DayZ has not been launched through this Steam install yet, start it once directly from Steam so Proton can create compatdata and show first-run prompts."
         )
-    if prime.status == "WARN":
+    if prime and prime.status == "WARN":
         next_steps.append(
             "Remove the known bad NVIDIA PRIME Steam launch option and test DayZ directly from Steam without WolfLauncher."
         )
     if not next_steps:
         next_steps.append(
-            "If DayZ still does not start, compare native versus Flatpak Steam and test DayZ directly from Steam with the same Proton version."
+            "If DayZ still does not start, test it directly from the selected Steam installation with the same Workshop content."
         )
 
     return LaunchTroubleshootingReport(
         status=status,
-        summary=f"{selection.detail}; {process.detail}; {prime.summary}",
+        summary="; ".join(
+            part
+            for part in (selection.detail, process.detail, prime.summary if prime else "")
+            if part
+        ),
         details=details,
         next_steps=next_steps,
     )
@@ -304,14 +326,16 @@ def run_diagnostics(
         lines.append(f"Launch engine: {launch_engine_label(launch_engine)}")
     lines.append("")
 
-    path = Path(launcher_path).expanduser()
-    lines.append(f"Launcher script: {path}")
-    lines.append(f"  Exists: {ok_missing(path.exists())}")
-    lines.append(f"  File: {ok_missing(path.exists() and path.is_file())}")
-    lines.append("")
+    capabilities = current_platform().capabilities
+    if capabilities.supports_external_launcher:
+        path = Path(launcher_path).expanduser()
+        lines.append(f"Launcher script: {path}")
+        lines.append(f"  Exists: {ok_missing(path.exists())}")
+        lines.append(f"  File: {ok_missing(path.exists() and path.is_file())}")
+        lines.append("")
 
     lines.append("Required tools:")
-    for command in ["python3", "gamedig", "node", "npm", "dig", "curl", "jq", "gawk"]:
+    for command in capabilities.diagnostic_tools:
         found = shutil.which(command)
         lines.append(f"  {command}: {found or 'not found'}")
     lines.append("")
@@ -340,7 +364,8 @@ def run_diagnostics(
         lines.append(f"    running: {yes_no(install.running)}")
         lines.append(f"    root: {install.root or 'not found'}")
         lines.append(f"    steamapps: {install.steamapps or 'not found'}")
-        lines.append(f"    compatdata: {proton_compatdata_detail(install)}")
+        if capabilities.uses_proton:
+            lines.append(f"    compatdata: {proton_compatdata_detail(install)}")
         if install.library_steamapps:
             lines.append("    libraries:")
             for library in install.library_steamapps:
@@ -351,22 +376,23 @@ def run_diagnostics(
         )
     lines.append("")
 
-    lines.append("Launch option environment:")
-    for name in PRIME_ENV_VARS:
-        lines.append(f"  {name}: {environment.get(name) or 'not set'}")
-    prime = prime_environment_report(environment)
-    lines.append(f"  PRIME status: {prime.status} - {prime.summary}")
-    for detail in prime.details:
-        lines.append(f"  PRIME guidance: {detail}")
-    helper_report = prime_helper_report()
-    lines.append(f"  PRIME helpers: {helper_report.status} - {helper_report.summary}")
-    for detail in helper_report.details:
-        lines.append(f"  PRIME helper detail: {detail}")
-    launch_options = steam_launch_options_report(environment)
-    lines.append(f"  Steam launch options: {launch_options.status} - {launch_options.summary}")
-    for detail in launch_options.details:
-        lines.append(f"  Steam launch option guidance: {detail}")
-    lines.append("")
+    if capabilities.uses_proton:
+        lines.append("Launch option environment:")
+        for name in PRIME_ENV_VARS:
+            lines.append(f"  {name}: {environment.get(name) or 'not set'}")
+        prime = prime_environment_report(environment)
+        lines.append(f"  PRIME status: {prime.status} - {prime.summary}")
+        for detail in prime.details:
+            lines.append(f"  PRIME guidance: {detail}")
+        helper_report = prime_helper_report()
+        lines.append(f"  PRIME helpers: {helper_report.status} - {helper_report.summary}")
+        for detail in helper_report.details:
+            lines.append(f"  PRIME helper detail: {detail}")
+        launch_options = steam_launch_options_report(environment)
+        lines.append(f"  Steam launch options: {launch_options.status} - {launch_options.summary}")
+        for detail in launch_options.details:
+            lines.append(f"  Steam launch option guidance: {detail}")
+        lines.append("")
 
     process_check = dayz_process_check()
     lines.append("DayZ process check:")
@@ -385,10 +411,11 @@ def run_diagnostics(
         lines.append(f"  Next step: {step}")
     lines.append("")
 
-    lines.append("Default launcher path candidates:")
-    for candidate in DEFAULT_LAUNCHER_PATHS:
-        lines.append(f"  {candidate}: {ok_missing(candidate.exists())}")
-    lines.append("")
+    if capabilities.supports_external_launcher:
+        lines.append("Default launcher path candidates:")
+        for candidate in DEFAULT_LAUNCHER_PATHS:
+            lines.append(f"  {candidate}: {ok_missing(candidate.exists())}")
+        lines.append("")
 
     lines.append("Server DNS checks:")
     for server in servers:

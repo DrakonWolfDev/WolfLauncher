@@ -7,6 +7,7 @@ from wolflauncher.paths import user_config_dir, user_data_dir
 
 
 class XdgPathTests(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "XDG paths are Linux-only")
     def test_xdg_overrides_are_honoured(self):
         with patch.dict(
             os.environ,

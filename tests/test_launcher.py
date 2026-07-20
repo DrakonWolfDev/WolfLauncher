@@ -1,3 +1,4 @@
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -73,6 +74,7 @@ class BuildLaunchCommandTests(unittest.TestCase):
 
         self.assertEqual(command[command.index("-n") + 1], "Wolf Player; echo nope")
 
+    @unittest.skipIf(os.name == "nt", "External shell launcher is Linux-only")
     def test_launcher_path_expands_user_home(self):
         with tempfile.TemporaryDirectory() as home:
             launcher_path = Path(home) / "dayz-launcher.sh"

@@ -18,6 +18,7 @@ class LinuxPlatformBackend:
         uses_proton=True,
         supports_external_launcher=True,
         mod_link_strategy="relative_symlink",
+        diagnostic_tools=("python3", "gamedig", "node", "npm", "dig", "curl", "jq", "gawk"),
     )
 
     def user_config_dir(self) -> Path:
@@ -92,3 +93,21 @@ class LinuxPlatformBackend:
             return result.returncode == 0 and FLATPAK_STEAM_ID in result.stdout
         except Exception:
             return False
+
+    def steam_api_library_candidates(
+        self, steam_root: Path | None, _dayz_dir: Path | None
+    ) -> tuple[Path, ...]:
+        candidates: list[Path] = []
+        if steam_root:
+            candidates.append(steam_root / "steamrt64" / "libsteam_api.so")
+        candidates.extend(
+            [
+                Path.home() / ".local/share/Steam/steamrt64/libsteam_api.so",
+                Path.home() / ".steam/steam/steamrt64/libsteam_api.so",
+                Path.home()
+                / ".var/app/com.valvesoftware.Steam/data/Steam/steamrt64/libsteam_api.so",
+                Path.home()
+                / ".var/app/com.valvesoftware.Steam/.local/share/Steam/steamrt64/libsteam_api.so",
+            ]
+        )
+        return tuple(candidates)

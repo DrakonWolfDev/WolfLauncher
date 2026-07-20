@@ -2,12 +2,24 @@
 
 ## Unreleased
 
+- Added an experimental Windows runtime backend with registry-backed Steam
+  discovery, native process inspection, roaming/local application data paths,
+  direct absolute Workshop mod arguments and `steam_api64.dll` discovery. The
+  Windows GUI and non-launching native preview are validated on a real Steam +
+  DayZ installation; actual DayZ handoff and packaging remain explicit gates.
+- Made atomic persistence portable when POSIX `fchmod` and directory `fsync`
+  are unavailable, and close SQLite connections when cache initialization
+  fails so Windows does not retain a locked database handle.
+- Made launch-engine choices, Steam modes, required tools and diagnostics obey
+  platform capabilities, removing Flatpak, Proton, PRIME and shell-launcher
+  controls from the Windows interface.
 - Began the v0.9 production-hardening cycle and centralized the application
   version as `0.9.0.dev0` pending the release candidate.
 - Added a tested platform-backend boundary for capabilities, user-data paths,
   Linux Steam command candidates and process inspection while preserving the
   existing shared detection API and validated Linux behavior. This prepares a
-  clean future Windows implementation seam without claiming Windows support;
+  clean future Windows implementation seam; the later Windows backend builds
+  on this boundary without changing the validated Linux behavior;
   the extraction also restored the intended Flatpak-running check whose
   `flatpak ps` command had become unreachable.
 - Packaged Flatpak testing found that an isolated Steamworks Workshop helper

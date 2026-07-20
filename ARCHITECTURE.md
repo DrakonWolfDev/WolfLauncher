@@ -68,6 +68,7 @@ wolflauncher/
   platforms/
     base.py              Platform capability and backend contracts
     linux.py             Validated Linux paths, commands and process detection
+    windows.py           Windows paths, registry discovery and process detection
   native_launcher.py     Native launch engine, parity and failure-report details
   server_discovery.py    WolfAPI, BattleMetrics, Steam Web API and legacy master server candidate discovery
   server_enrichment.py   Maps live status results onto discovered cache rows
@@ -293,23 +294,34 @@ Until the issue is reproduced, the app should avoid writing, suggesting or defau
 
 ## Platform Support
 
-Linux remains the implementation and validation target. OS-owned concerns now
-enter through the small `platforms` backend boundary, while shared Steam
-library parsing and readiness behavior remain behind `platform_detection.py`.
-This is an extraction seam for future backends, not a claim of Windows support;
-new backends require their own implementation, tests and real-platform
-validation before selection at runtime.
+Linux remains the primary supported and release-validation target. OS-owned
+concerns enter through the small `platforms` backend boundary, while shared
+Steam library parsing and readiness behavior remain behind
+`platform_detection.py`.
+
+Windows has an experimental runtime backend. It reads Valve registry locations,
+reuses shared `libraryfolders.vdf` and app-manifest parsing, launches through
+native `steam.exe`, inspects processes through `tasklist`, and stores config and
+data under roaming and local AppData respectively. Windows passes absolute
+Workshop item directories to DayZ's `-mod=` argument instead of creating links
+inside the DayZ installation. The selected DayZ `steam_api64.dll` supplies the
+same Steamworks exports used by the isolated Workshop helper.
+
+Current Windows evidence covers detection, persistence, GUI construction,
+non-launching command preview and DLL exports on a real installation. Real
+DayZ handoff, Workshop state/subscription lifecycle and packaging remain
+validation gates, so Windows is experimental rather than a supported release.
 
 Primary target:
 
 - Linux Mint
 - Ubuntu/Debian family
 
+Experimental target:
+
+- Windows source runtime
+
 Secondary future targets:
 
 - Steam Deck
 - Other Linux distributions
-
-Possible later target:
-
-- Windows

@@ -13,6 +13,7 @@ class PlatformCapabilities:
     uses_proton: bool
     supports_external_launcher: bool
     mod_link_strategy: str
+    diagnostic_tools: tuple[str, ...]
 
 
 class PlatformBackend(Protocol):
@@ -35,3 +36,7 @@ class PlatformBackend(Protocol):
     def flatpak_steam_installed(self) -> bool: ...
 
     def flatpak_steam_running(self) -> bool: ...
+
+    def steam_api_library_candidates(
+        self, steam_root: Path | None, dayz_dir: Path | None
+    ) -> Sequence[Path]: ...

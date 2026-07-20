@@ -1,3 +1,4 @@
+import os
 import subprocess
 import tempfile
 import unittest
@@ -60,6 +61,7 @@ class PlatformDetectionTests(unittest.TestCase):
             ):
                 self.assertFalse(_flatpak_steam_installed())
 
+    @unittest.skipIf(os.name == "nt", "Flatpak backend is Linux-only")
     def test_flatpak_steam_detects_installed_application(self):
         with patch("wolflauncher.platforms.linux.shutil.which", return_value="/usr/bin/flatpak"):
             with patch(
@@ -68,6 +70,7 @@ class PlatformDetectionTests(unittest.TestCase):
             ):
                 self.assertTrue(_flatpak_steam_installed())
 
+    @unittest.skipIf(os.name == "nt", "Flatpak backend is Linux-only")
     def test_flatpak_steam_detects_running_application(self):
         with patch("wolflauncher.platforms.linux.shutil.which", return_value="/usr/bin/flatpak"):
             with patch(
@@ -228,10 +231,10 @@ class PlatformDetectionTests(unittest.TestCase):
             compatdata_dir=Path("/steam/steamapps/compatdata/221100"),
         )
 
-        self.assertEqual(
-            proton_compatdata_detail(install),
-            "/steam/steamapps/compatdata/221100",
+        expected = (
+            "not applicable on Windows" if os.name == "nt" else "/steam/steamapps/compatdata/221100"
         )
+        self.assertEqual(proton_compatdata_detail(install), expected)
 
     def test_proton_compatdata_detail_explains_missing_prefix_for_detected_install(self):
         install = make_install(
@@ -241,13 +244,16 @@ class PlatformDetectionTests(unittest.TestCase):
             workshop_dir=Path("/steam/steamapps/workshop/content/221100"),
         )
 
-        self.assertEqual(
-            proton_compatdata_detail(install),
-            "not detected yet; Steam may create it on first Proton launch",
+        expected = (
+            "not applicable on Windows"
+            if os.name == "nt"
+            else "not detected yet; Steam may create it on first Proton launch"
         )
+        self.assertEqual(proton_compatdata_detail(install), expected)
 
     def test_proton_compatdata_detail_reports_missing_without_install(self):
-        self.assertEqual(proton_compatdata_detail(None), "not detected")
+        expected = "not applicable on Windows" if os.name == "nt" else "not detected"
+        self.assertEqual(proton_compatdata_detail(None), expected)
 
     def test_parse_libraryfolders_paths_reads_steam_vdf_paths(self):
         text = r"""
@@ -349,7 +355,8 @@ class PlatformDetectionTests(unittest.TestCase):
 
         steam_root = installs[-1]
         self.assertEqual(steam_root.mode, "STEAM_ROOT env")
-        self.assertEqual(steam_root.executable, "/usr/bin/steam")
+        self.assertTrue(steam_root.executable)
+        self.assertEqual(steam_root.executable, installs[0].executable)
         self.assertTrue(steam_root.running)
         self.assertEqual(steam_root.dayz_dir, dayz_dir)
         self.assertEqual(
@@ -520,6 +527,7 @@ class PlatformDetectionTests(unittest.TestCase):
             steam_selection_candidates_detail(report),
         )
 
+    @unittest.skipIf(os.name == "nt", "Linux pgrep behavior is validated on Linux")
     @patch("wolflauncher.platforms.linux.subprocess.run")
     def test_dayz_process_check_reports_known_dayz_processes(self, run):
         run.return_value = subprocess.CompletedProcess(
@@ -540,6 +548,7 @@ class PlatformDetectionTests(unittest.TestCase):
         run.assert_called_once()
         self.assertEqual(run.call_args.args[0][:2], ["pgrep", "-afi"])
 
+    @unittest.skipIf(os.name == "nt", "Linux pgrep behavior is validated on Linux")
     @patch("wolflauncher.platforms.linux.subprocess.run")
     def test_dayz_process_check_matches_process_names_case_insensitively(self, run):
         run.return_value = subprocess.CompletedProcess(
@@ -554,6 +563,7 @@ class PlatformDetectionTests(unittest.TestCase):
         self.assertTrue(check.running)
         self.assertIn("DayZ_x64.exe", check.detail)
 
+    @unittest.skipIf(os.name == "nt", "Linux pgrep behavior is validated on Linux")
     @patch("wolflauncher.platforms.linux.subprocess.run")
     def test_dayz_process_check_reports_no_known_processes(self, run):
         run.return_value = subprocess.CompletedProcess(["pgrep"], 1, stdout="", stderr="")

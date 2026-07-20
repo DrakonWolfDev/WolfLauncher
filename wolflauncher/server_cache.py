@@ -42,7 +42,11 @@ def connect(path: Path = SERVER_CACHE_PATH) -> sqlite3.Connection:
     ensure_data_dir(path.parent)
     connection = sqlite3.connect(path)
     connection.row_factory = sqlite3.Row
-    initialize(connection)
+    try:
+        initialize(connection)
+    except BaseException:
+        connection.close()
+        raise
     return connection
 
 
