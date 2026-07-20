@@ -95,9 +95,17 @@ cannot be run.
 - The first transition from the unmodded run to the BattlEye server requested
   a game restart. Repeating the identical guarded launch after closing DayZ
   proceeded normally; no command or path change was required.
-- No Workshop subscriptions, downloads, updates or removals were requested
-  during this validation. Those state-changing Windows flows still need a
-  separate explicitly confirmed test row.
+- New Dawn DeerIsle initially reported 59 of 62 required items ready. After
+  explicit confirmation, the native Steamworks helper subscribed to and
+  downloaded Tent Actions Fix, DayZ-Expansion-Bundle and
+  Community-Online-Tools while reporting live progress for the 2.6 GiB batch.
+- Closing the success notice triggered a fresh readiness check. The Mods tab
+  rebuilt from the current Steam state and reported all 62 items installed,
+  with no missing, update-pending or download-pending items.
+- The guarded DeerIsle launch completed through native Steam. The running
+  `DayZ_x64.exe` command line contained exactly 62 absolute Workshop paths and
+  `-connect=198.244.177.109:2502`.
+- No Workshop items were removed or unsubscribed during validation.
 
 ### 2026-07-18 — Linux Mint 22.3, native Steam, packaged `0.9.0~dev0`
 

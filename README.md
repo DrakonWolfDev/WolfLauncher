@@ -139,9 +139,10 @@ WolfLauncher reads Steam's registry location and library manifests. Windows
 uses native `steam.exe`, direct absolute Workshop paths and the DayZ
 `steam_api64.dll`; Flatpak, Proton/PRIME diagnostics and the external shell
 launcher are intentionally absent. Use native launch preview first. Actual
-Connect has been validated on Windows 11 24H2 with both an unmodded handoff and
-a 58-mod server session. Automatic Workshop subscription and update changes
-remain experimental validation steps and still require explicit confirmation.
+Connect has been validated on Windows 11 24H2 with an unmodded handoff, a
+58-mod installed server session and an explicitly confirmed 62-mod session that
+subscribed to and downloaded three missing Workshop items before launch.
+Workshop changes remain explicitly confirmed operations.
 
 #### Linux
 
