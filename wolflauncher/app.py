@@ -119,6 +119,7 @@ from .platform_detection import (
     select_steam_install,
     steam_mode_label,
 )
+from .platforms import current_platform
 from .redaction import redact_support_text
 from .secret_store import (
     SecretStore,
@@ -269,17 +270,23 @@ class MainWindow(QMainWindow):
         set_monospace(self.launcher_path)
         self.player_name = QLineEdit(str(self.settings.get("player_name") or DEFAULT_PLAYER_NAME))
         self.launch_engine = QComboBox()
-        self.launch_engine.addItems(["Native launcher", "External launcher"])
+        self.launch_engine.addItem("Native launcher")
+        if current_platform().capabilities.supports_external_launcher:
+            self.launch_engine.addItem("External launcher")
+        saved_launch_engine = str(self.settings.get("launch_engine") or "native")
         self.launch_engine.setCurrentText(
             "Native launcher"
-            if str(self.settings.get("launch_engine") or "native") == "native"
+            if saved_launch_engine == "native"
+            or not current_platform().capabilities.supports_external_launcher
             else "External launcher"
         )
         self.launch_engine.currentTextChanged.connect(self.handle_launch_engine_changed)
         self.native_steam_mode = QComboBox()
-        self.native_steam_mode.addItems(
-            ["Auto", "Native Steam", "Flatpak Steam", "STEAM_ROOT Steam library"]
-        )
+        steam_modes = ["Auto", "Native Steam"]
+        if current_platform().capabilities.supports_flatpak:
+            steam_modes.append("Flatpak Steam")
+        steam_modes.append("STEAM_ROOT Steam library")
+        self.native_steam_mode.addItems(steam_modes)
         self.native_steam_mode.setCurrentText(
             self._native_steam_mode_label(str(self.settings.get("native_steam_mode") or "auto"))
         )

@@ -30,7 +30,10 @@ def redact_support_text(text: str, secrets: Iterable[str] = ()) -> str:
     redacted = _KEY_VALUE_PATTERN.sub(r"\g<label><redacted>", redacted)
     redacted = _QUERY_KEY_PATTERN.sub(r"\g<label><redacted>", redacted)
     redacted = _STEAM_USERDATA_PATTERN.sub(r"\1<steam-account>", redacted)
-    home = str(Path.home())
+    try:
+        home = str(Path.home())
+    except RuntimeError:
+        home = ""
     if home and home != "/":
         redacted = redacted.replace(home, "~")
     return redacted

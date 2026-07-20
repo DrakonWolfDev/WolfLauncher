@@ -87,7 +87,7 @@ class LaunchPreflightTests(unittest.TestCase):
             ok=True,
             server=server,
             required_mods=[RequiredMod("123", installed=False)],
-            workshop_dir="/steam/workshop/content/221100",
+            workshop_dir=str(Path("/steam/workshop/content/221100")),
         )
         install = SteamInstall(
             mode="native",
@@ -156,7 +156,7 @@ class LaunchPreflightTests(unittest.TestCase):
             ok=True,
             server=server,
             required_mods=[],
-            workshop_dir="/steam-a/workshop/content/221100",
+            workshop_dir=str(Path("/steam-a/workshop/content/221100")),
         )
 
         self.assertIs(

@@ -1,3 +1,4 @@
+import os
 import tempfile
 import unittest
 from datetime import datetime, timezone
@@ -51,6 +52,7 @@ def make_install(root: Path, mode: str = "native") -> SteamInstall:
     )
 
 
+@unittest.skipIf(os.name == "nt", "Linux symlink contract is validated on Linux")
 class NativeLauncherTests(unittest.TestCase):
     def test_failure_details_use_install_context_without_current_mod_check(self):
         with tempfile.TemporaryDirectory() as tmpdir:

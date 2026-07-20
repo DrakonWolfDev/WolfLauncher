@@ -1,6 +1,7 @@
 # WolfLauncher
 
-A Linux-first DayZ launcher designed to remove the guesswork from joining modded servers.
+A Linux-primary DayZ launcher designed to remove the guesswork from joining
+modded servers, with an experimental Windows source runtime.
 
 DayZ runs surprisingly well on Linux. The problem is everything around it: Steam setup, Proton behaviour, Workshop content, server mod requirements, and paths that vary between native Steam and Flatpak Steam.
 
@@ -10,7 +11,10 @@ The upstream MIT-licensed shell launcher is vendored in `external/dayz-linux-cli
 
 ## Status
 
-Current baseline: v0.8 native-launch parity validated, with the native launcher used by default and the external launcher retained as a fallback.
+Current baseline: v0.8 Linux native-launch parity validated, with the native
+launcher used by default and the external launcher retained as a Linux
+fallback. Windows detection, GUI startup and native launch preview are
+implemented; real DayZ handoff and Windows packaging are not yet validated.
 
 The server browser, settings health checks, diagnostics, mod checks and guarded launch handoff are working. The native engine has been validated with native and Flatpak Steam, Steam running and stopped, unmodded servers, fully installed mod sets and partially missing mod sets. Connect pre-flight asks the signed-in Steam client to subscribe, download or update required items and verifies them before launch; manual Workshop pages remain available as an advanced fallback. The external launcher remains available as a fallback. The only known bug is that DayZ does not run when Steam launch options contain:
 
@@ -97,12 +101,18 @@ Useful evidence for debugging:
 - Pre-launch validation checks.
 - Launch diagnostics and output logging.
 - External `dayz-launcher.sh` handoff using resolved IP addresses where available.
+- Experimental native Windows Steam/DayZ detection and absolute Workshop mod
+  handoff without symlinks or the external shell launcher.
 
 ## Installation
 
 These instructions target Linux Mint 21/22 and Ubuntu 22.04/24.04 family systems.
 
 Steam and DayZ should already be installed through native Steam or Flatpak Steam. WolfLauncher does not install DayZ or Proton. Workshop operations are delegated to the user's signed-in Steam client.
+
+On Windows, Steam and DayZ should already be installed through native Steam.
+The current Windows lane is for source development and validation; there is no
+supported installer yet.
 
 At startup, WolfLauncher checks the selected Steam installation and warns once
 if Steam is stopped or unavailable. Server browsing remains available, but
@@ -114,6 +124,24 @@ Missing or outdated mods are resolved automatically during Connect pre-flight an
 After a successful batch, **Launch server** waits for the isolated Steamworks helper to exit and for a fresh mod check to confirm every required directory before starting the selected server. A failed or incomplete recheck returns control to the Mods tab instead of launching with stale readiness data.
 
 ### Quick Development Setup
+
+#### Windows
+
+From PowerShell in the repository root:
+
+```powershell
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt -r requirements-quality.txt
+.\.venv\Scripts\python.exe main.py
+```
+
+WolfLauncher reads Steam's registry location and library manifests. Windows
+uses native `steam.exe`, direct absolute Workshop paths and the DayZ
+`steam_api64.dll`; Flatpak, Proton/PRIME diagnostics and the external shell
+launcher are intentionally absent. Use native launch preview first. Actual
+Connect and automatic Workshop changes remain experimental validation steps.
+
+#### Linux
 
 From the repository root:
 

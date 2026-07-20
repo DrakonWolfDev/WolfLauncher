@@ -18,6 +18,7 @@ from .platform_detection import (
     steam_command_detail,
     steam_mode_label,
 )
+from .platforms import current_platform
 from .redaction import redact_support_text
 from .status import resolve_host
 
@@ -262,12 +263,16 @@ def prepare_native_launch_parity_report(
         required_mods,
         extra_params,
     )
-    try:
-        external_command = build_launch_command(launcher_path, player_name, preview.server)
-        external_error = ""
-    except LaunchError as exc:
+    if current_platform().capabilities.supports_external_launcher:
+        try:
+            external_command = build_launch_command(launcher_path, player_name, preview.server)
+            external_error = ""
+        except LaunchError as exc:
+            external_command = []
+            external_error = str(exc)
+    else:
         external_command = []
-        external_error = str(exc)
+        external_error = "External launcher fallback is not supported on this platform"
     return NativeLaunchParityReport(
         preview=preview,
         install=install,
@@ -285,6 +290,9 @@ def format_native_launch_parity_report(
     generated_at: datetime | None = None,
 ) -> str:
     """Return a copyable native-launch parity report for testing and bug reports."""
+    if not current_platform().capabilities.supports_external_launcher:
+        return _format_native_launch_preview_report(report, generated_at)
+
     preview = report.preview
     install = report.install
     install_detail = install_label(install)
@@ -401,6 +409,66 @@ def format_native_launch_parity_report(
     return redact_support_text("\n".join(lines))
 
 
+def _format_native_launch_preview_report(
+    report: NativeLaunchParityReport,
+    generated_at: datetime | None = None,
+) -> str:
+    preview = report.preview
+    install = report.install
+    timestamp = generated_at or datetime.now(timezone.utc)
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=timezone.utc)
+    lines = [
+        "Native launch preview report",
+        f"Generated at: {timestamp.astimezone(timezone.utc).replace(microsecond=0).isoformat()}",
+        "",
+        "This preview did not launch Steam or DayZ.",
+        "",
+        "Validation checklist:",
+        f"- Steam install setting: {_selected_steam_mode_label(report.selected_steam_mode)}",
+        f"- Steam mode: {install_label(install)}",
+        f"- Steam command: {steam_command_detail(install)}",
+        f"- Steam running: {'yes' if install.running else 'no'}",
+        f"- Steam root: {_path_text(install.root)}",
+        f"- Steam library: {_path_text(install.steamapps)}",
+        f"- DayZ path: {_path_text(install.dayz_dir)}",
+        f"- Workshop path: {_path_text(install.workshop_dir)}",
+        f"- Server: {preview.server.name}",
+        f"- Resolved connect: {report.resolved_connect}",
+        f"- Query port: {preview.server.query_port}",
+        f"- Required mod count: {len(report.required_mod_ids)}",
+        f"- Prepared Workshop paths: {len(preview.mod_setup.prepared_mods)}",
+        f"- Missing Workshop directories: {len(preview.mod_setup.missing_mod_ids)}",
+        f"- Native ready: {'yes' if preview.ready else 'no'}",
+        "",
+    ]
+    if report.required_mod_ids:
+        lines.append("Required Workshop mods:")
+        lines.extend(f"- {label}" for label in report.required_mod_labels)
+    else:
+        lines.append("Required Workshop mods: none")
+    lines.append("")
+    if preview.mod_setup.prepared_mods:
+        lines.append("Native Workshop paths:")
+        for prepared in preview.mod_setup.prepared_mods:
+            lines.append(f"- {prepared.name} ({prepared.workshop_id}) -> {prepared.link_name}")
+    else:
+        lines.append("Native Workshop paths: none")
+    if preview.mod_setup.missing_mod_ids:
+        lines.extend(
+            [
+                "",
+                "Missing Workshop mod directories:",
+                *[f"- {label}" for label in report.missing_mod_labels],
+                "",
+                "Native Steam command: not ready until all required mods are installed.",
+            ]
+        )
+    else:
+        lines.extend(["", "Native Steam command:", report.native_command_text])
+    return redact_support_text("\n".join(lines))
+
+
 def format_native_launch_unavailable_context(
     install: SteamInstall,
     server: Server,
@@ -492,15 +560,28 @@ def prepare_mod_links(
             )
 
         link_path = dayz_dir / compact_name
-        created = _ensure_relative_symlink(mod_path, link_path)
-        setup.mod_links.append(compact_name)
+        strategy = current_platform().capabilities.mod_link_strategy
+        if strategy == "relative_symlink":
+            created = _ensure_relative_symlink(mod_path, link_path)
+            launch_reference = compact_name
+        elif strategy == "absolute_path":
+            created = False
+            link_path = mod_path
+            launch_reference = str(mod_path)
+        else:
+            raise NativeLaunchError(
+                f"Unsupported mod launch strategy: {strategy}",
+                stage="mod setup",
+                guidance="Use a supported WolfLauncher platform backend.",
+            )
+        setup.mod_links.append(launch_reference)
         setup.prepared_mods.append(
             PreparedModLink(
                 workshop_id=workshop_id,
                 name=mod_name,
                 source_path=mod_path,
                 link_path=link_path,
-                link_name=compact_name,
+                link_name=launch_reference,
                 created=created,
             )
         )

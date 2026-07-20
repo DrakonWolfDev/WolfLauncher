@@ -1,6 +1,6 @@
 # WolfLauncher Roadmap
 
-Updated: 2026-07-18
+Updated: 2026-07-20
 
 This file records milestones, not individual engineering jobs. The single
 ordered implementation backlog is `PRODUCTION_READINESS_REVIEW.md`.
@@ -50,6 +50,12 @@ Completion means:
 - CI and the supported native/Flatpak Steam desktop matrix pass for that
   artifact, or each exception has an explicit release waiver.
 
+An experimental Windows source runtime now detects the local Steam/DayZ install
+and prepares native commands without Linux links or shell tools. Before Windows
+becomes a supported target, validate unmodded and modded DayZ handoffs,
+Steamworks query/subscription lifecycle, then add a reproducible signed package
+and Windows CI lane. These gates do not delay the Linux v1.0 boundary.
+
 ## v1.0 — supported native release
 
 - Publish the first supported production artifact after all v0.9 gates pass.
@@ -65,8 +71,10 @@ Completion means:
 - Continue the P1/P2 quality, accessibility, network, logging, cache and typing
   work in the production review.
 - Define a signed update strategy and bounded data/log retention.
-- Consider AppImage, Steam Deck layout, community submissions and Windows only
-  after the first supported Linux format is stable.
+- Consider AppImage, Steam Deck layout and community submissions after the
+  first supported Linux format is stable.
+- Promote Windows from experimental to supported only after its handoff,
+  Steamworks, packaging, signing and update gates pass.
 
 ## Known external investigation
 

@@ -1,4 +1,5 @@
 import json
+import os
 import stat
 import tempfile
 import unittest
@@ -18,7 +19,8 @@ class AtomicPersistenceTests(unittest.TestCase):
 
             ensure_private_file(path)
 
-            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
+            if os.name != "nt":
+                self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
 
     def test_atomic_write_creates_private_file_and_parent(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -27,8 +29,9 @@ class AtomicPersistenceTests(unittest.TestCase):
             atomic_write_text(path, "complete\n")
 
             self.assertEqual(path.read_text(encoding="utf-8"), "complete\n")
-            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
-            self.assertEqual(stat.S_IMODE(path.parent.stat().st_mode), 0o700)
+            if os.name != "nt":
+                self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
+                self.assertEqual(stat.S_IMODE(path.parent.stat().st_mode), 0o700)
 
     def test_atomic_write_preserves_backup_of_previous_value(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -61,7 +64,8 @@ class AtomicPersistenceTests(unittest.TestCase):
             self.assertEqual(
                 json.loads(path.read_text(encoding="utf-8")), {"steam_web_api_key": "secret"}
             )
-            self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
+            if os.name != "nt":
+                self.assertEqual(stat.S_IMODE(path.stat().st_mode), 0o600)
 
 
 if __name__ == "__main__":

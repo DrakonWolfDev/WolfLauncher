@@ -96,7 +96,13 @@ class SteamApiLibraryTests(unittest.TestCase):
             library.touch()
             install = install_for(root, root / "workshop")
 
-            self.assertEqual(find_steam_api_library(install), library)
+            from wolflauncher.platforms.linux import LinuxPlatformBackend
+
+            with patch(
+                "wolflauncher.workshop_subscription.current_platform",
+                return_value=LinuxPlatformBackend(),
+            ):
+                self.assertEqual(find_steam_api_library(install), library)
 
 
 class WorkshopRecoveryStateTests(unittest.TestCase):

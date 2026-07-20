@@ -50,7 +50,8 @@ def atomic_write_bytes(path: Path, content: bytes, *, mode: int = PRIVATE_FILE_M
     )
     temporary_path = Path(temporary_name)
     try:
-        os.fchmod(file_descriptor, mode)
+        if hasattr(os, "fchmod"):
+            os.fchmod(file_descriptor, mode)
         with os.fdopen(file_descriptor, "wb") as handle:
             file_descriptor = -1
             handle.write(content)
@@ -69,6 +70,10 @@ def atomic_write_bytes(path: Path, content: bytes, *, mode: int = PRIVATE_FILE_M
 
 
 def _fsync_directory(path: Path) -> None:
+    if os.name == "nt":
+        # Windows flushes the replaced file above but does not support opening
+        # a directory with os.open for the POSIX directory-fsync pattern.
+        return
     flags = os.O_RDONLY
     if hasattr(os, "O_DIRECTORY"):
         flags |= os.O_DIRECTORY

@@ -199,23 +199,24 @@ def detect_steam() -> list[SteamInstall]:
         )
     )
 
-    flatpak_installed = _flatpak_steam_installed()
-    flatpak_root = FLATPAK_STEAM_ROOT if FLATPAK_STEAM_ROOT.exists() else None
-    flatpak_libraries = _library_steamapps_from_root(flatpak_root)
-    flatpak_steamapps = _select_visible_steamapps(flatpak_libraries)
-    installs.append(
-        SteamInstall(
-            mode="flatpak",
-            executable=FLATPAK_STEAM_ID if flatpak_installed else "",
-            running=_flatpak_steam_running() if flatpak_installed else False,
-            root=flatpak_root,
-            steamapps=flatpak_steamapps,
-            dayz_dir=_dayz_from_libraries(flatpak_libraries),
-            workshop_dir=_workshop_from_libraries(flatpak_libraries),
-            compatdata_dir=_compatdata_from_libraries(flatpak_libraries),
-            library_steamapps=flatpak_libraries,
+    if current_platform().capabilities.supports_flatpak:
+        flatpak_installed = _flatpak_steam_installed()
+        flatpak_root = FLATPAK_STEAM_ROOT if FLATPAK_STEAM_ROOT.exists() else None
+        flatpak_libraries = _library_steamapps_from_root(flatpak_root)
+        flatpak_steamapps = _select_visible_steamapps(flatpak_libraries)
+        installs.append(
+            SteamInstall(
+                mode="flatpak",
+                executable=FLATPAK_STEAM_ID if flatpak_installed else "",
+                running=_flatpak_steam_running() if flatpak_installed else False,
+                root=flatpak_root,
+                steamapps=flatpak_steamapps,
+                dayz_dir=_dayz_from_libraries(flatpak_libraries),
+                workshop_dir=_workshop_from_libraries(flatpak_libraries),
+                compatdata_dir=_compatdata_from_libraries(flatpak_libraries),
+                library_steamapps=flatpak_libraries,
+            )
         )
-    )
 
     env_root = os.environ.get("STEAM_ROOT")
     if env_root:
@@ -412,6 +413,8 @@ def yes_no(value: bool) -> str:
 
 
 def proton_compatdata_detail(install: SteamInstall | None) -> str:
+    if not current_platform().capabilities.uses_proton:
+        return "not applicable on Windows"
     if install and install.compatdata_dir:
         return str(install.compatdata_dir)
     if install and (install.root or install.steamapps or install.dayz_dir):

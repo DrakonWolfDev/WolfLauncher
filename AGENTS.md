@@ -2,9 +2,14 @@
 
 ## Project Orientation
 
-WolfLauncher is a Linux-first DayZ launcher GUI built with Python and PySide6. The current working baseline is v0.8 native-launch parity validated, with v0.9 native hardening in progress.
+WolfLauncher is a Linux-primary DayZ launcher GUI built with Python and PySide6,
+with an experimental Windows source runtime. The current working baseline is
+v0.8 Linux native-launch parity validated, with v0.9 native hardening in progress.
 
-The app validates the local Steam/DayZ/Workshop setup, checks server status, compares required server mods with locally installed Workshop mods, then hands launch control to an external `dayz-launcher.sh` script.
+The app validates the local Steam/DayZ/Workshop setup, checks server status,
+compares required server mods with locally installed Workshop mods, then hands
+launch control to Steam through the native Python engine. The external
+`dayz-launcher.sh` is a Linux-only fallback.
 
 The upstream shell launcher is vendored at `external/dayz-linux-cli-launcher/` as the legacy reference engine.
 
@@ -76,6 +81,7 @@ wolflauncher/mod_presenter.py   Mods-tab summary and row presentation
 wolflauncher/mods.py            required mod lookup and Workshop scan
 wolflauncher/platform_detection.py
                                 native/Flatpak Steam, DayZ and Workshop detection
+wolflauncher/platforms/         Linux and experimental Windows platform backends
 wolflauncher/native_launcher.py native Python launch engine
 wolflauncher/server_cache.py    SQLite discovered-server cache
 wolflauncher/server_discovery.py
@@ -128,11 +134,10 @@ The vendored script then:
   changed code touches genuinely platform-sensitive concerns—such as Steam and
   process detection, filesystem links and permissions, user-data locations,
   launch commands, diagnostics or packaging—keep the shared behavior separate
-  from the Linux implementation and preserve a clear platform boundary so a
-  future Windows backend can be added without duplicating the application.
-  Introduce only the abstractions justified by the current change: preserve
-  validated Linux behavior, avoid scattered platform conditionals, and do not
-  claim Windows support without implementation and validation on Windows.
+  from each backend and preserve a clear platform boundary. Introduce only the
+  abstractions justified by the current change: preserve validated Linux
+  behavior, avoid scattered platform conditionals, and keep Windows marked
+  experimental until handoff, Workshop lifecycle and packaging are validated.
 - Prefer smooth, low-noise user experience: keep background checks quiet and preserve useful previous results while new work is running. Do not hide meaningful uncertainty, failures or launch boundaries; surface them honestly in status labels, health checks, dialogs or diagnostics when they matter.
 - Preserve the approved v0.9 GUI rhythm: information/summary first, common controls next, results in the middle and secondary/advanced tools at the bottom.
 - Keep frequent actions visible and advanced discovery, diagnostics, parity, copying and fallback controls available through compact direction-marked disclosures. Do not treat simplification as permission to remove advanced features.
@@ -157,10 +162,13 @@ The vendored script then:
   `PROJECT_STATE.md`, `ARCHITECTURE.md` and `ROADMAP.md` as applicable, and
   record launcher constraints back in WolfAPI's contract.
 - Mod management is read-only and advisory; do not auto-subscribe or auto-download Workshop content without an explicit future design.
-- User settings and favourites live under `~/.config/wolflauncher`.
+- User settings and favourites live under `~/.config/wolflauncher` on Linux
+  and `%APPDATA%\wolflauncher` on Windows; cache data uses the corresponding
+  platform data directory.
 - Prefer small, testable changes around launch command generation and platform detection.
 - Keep native parity reports easy to compare with the external launcher: show readiness, shared connect/query targets, current required-mod counts and missing local Workshop directories.
-- Keep the native launcher as the default and preserve the external launcher as a visible fallback.
+- Keep the native launcher as the default and preserve the external launcher as
+  a visible Linux fallback; Windows must not expose the shell launcher.
 - Keep the vendored launcher untouched unless deliberately updating the legacy reference; build replacement Python behavior behind WolfLauncher interfaces first.
 - Preserve third-party license notices when moving or replacing vendored code.
 

@@ -6,6 +6,7 @@ import yaml
 
 from .models import Server
 from .persistence import atomic_write_text, ensure_private_file
+from .platforms import current_platform
 from .settings import CURATED_SERVERS_PATH
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -28,12 +29,16 @@ EXAMPLE_SERVERS_PATH = _source_or_installed(
 )
 LEGACY_SERVERS_PATH = PROJECT_ROOT / "servers.yaml"
 
-DEFAULT_LAUNCHER_PATHS = [
-    Path.home() / ".local/bin/dayz-launcher.sh",
-    Path("/opt/wolflauncher/dayz-launcher.sh"),
-    Path.home() / "dayz-launcher.sh",
-    VENDORED_LAUNCHER_PATH,
-]
+DEFAULT_LAUNCHER_PATHS = (
+    [
+        Path.home() / ".local/bin/dayz-launcher.sh",
+        Path("/opt/wolflauncher/dayz-launcher.sh"),
+        Path.home() / "dayz-launcher.sh",
+        VENDORED_LAUNCHER_PATH,
+    ]
+    if current_platform().capabilities.supports_external_launcher
+    else []
+)
 
 
 def normalize_server_endpoint(host: str, game_port: int, query_port: int) -> tuple[str, int, int]:
@@ -86,7 +91,7 @@ def find_default_launcher_path() -> str:
     for path in DEFAULT_LAUNCHER_PATHS:
         if path.exists():
             return str(path)
-    return str(DEFAULT_LAUNCHER_PATHS[0])
+    return str(DEFAULT_LAUNCHER_PATHS[0]) if DEFAULT_LAUNCHER_PATHS else ""
 
 
 def load_servers(path: Path) -> list[Server]:

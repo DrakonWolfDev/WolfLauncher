@@ -1,3 +1,4 @@
+import os
 import tempfile
 import unittest
 from datetime import datetime, timezone
@@ -46,12 +47,13 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertIn("WolfLauncher launch output", report)
         self.assertIn("Generated at: 2026-06-21T15:53:45+00:00", report)
         self.assertIn(
-            "Command: bash ~/dayz-launcher.sh -s 81.152.152.55:3302 -p 3303 -n Andi --launch",
+            f"Command: bash ~{os.sep}dayz-launcher.sh -s 81.152.152.55:3302 -p 3303 -n Andi --launch",
             report,
         )
         self.assertIn("Output:\nStarting launcher...", report)
         self.assertIn("[dayz-launcher.sh][info] Using flatpak mode", report)
 
+    @unittest.skipIf(os.name == "nt", "PRIME diagnostics are Linux-only")
     def test_reports_prime_environment_without_reading_steam_launch_options(self):
         with tempfile.NamedTemporaryFile() as launcher:
             with patch("wolflauncher.diagnostics.detect_steam", return_value=[]):
@@ -124,6 +126,7 @@ class DiagnosticsTests(unittest.TestCase):
         )
         self.assertIn("Next step: Open Settings health", report)
 
+    @unittest.skipIf(os.name == "nt", "PRIME diagnostics are Linux-only")
     def test_diagnostics_report_uses_one_environment_snapshot(self):
         def mutate_environment():
             env.clear()
@@ -179,6 +182,7 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertIn("Selected Steam mode: Flatpak Steam", report)
         self.assertIn("Selected Steam install: MISSING - Flatpak Steam not detected", report)
 
+    @unittest.skipIf(os.name == "nt", "Proton diagnostics are Linux-only")
     def test_launch_troubleshooting_report_summarizes_selected_flatpak_install(self):
         install = SteamInstall(
             mode="flatpak",
@@ -225,6 +229,7 @@ class DiagnosticsTests(unittest.TestCase):
             any("compare native versus Flatpak Steam" in step for step in report.next_steps)
         )
 
+    @unittest.skipIf(os.name == "nt", "Proton diagnostics are Linux-only")
     def test_launch_troubleshooting_report_explains_missing_compatdata_for_ready_install(self):
         install = SteamInstall(
             mode="native",
@@ -260,6 +265,7 @@ class DiagnosticsTests(unittest.TestCase):
             any("Check Steam's DayZ launch options in Steam" in step for step in report.next_steps)
         )
 
+    @unittest.skipIf(os.name == "nt", "PRIME diagnostics are Linux-only")
     def test_launch_troubleshooting_report_warns_for_known_bad_prime_pair(self):
         report = launch_troubleshooting_report(
             "auto",

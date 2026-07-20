@@ -1,3 +1,4 @@
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -25,6 +26,7 @@ class LauncherPathDiscoveryTests(unittest.TestCase):
             with patch.object(config, "DEFAULT_LAUNCHER_PATHS", [first, second]):
                 self.assertEqual(config.find_default_launcher_path(), str(first))
 
+    @unittest.skipIf(os.name == "nt", "External shell launcher is Linux-only")
     def test_vendored_launcher_is_default_candidate(self):
         self.assertIn(config.VENDORED_LAUNCHER_PATH, config.DEFAULT_LAUNCHER_PATHS)
         self.assertTrue(config.VENDORED_LAUNCHER_PATH.exists())

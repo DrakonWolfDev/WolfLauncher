@@ -20,8 +20,8 @@ from .platform_detection import (
     steam_selection_candidates_detail,
     steam_selection_report,
 )
+from .platforms import current_platform
 
-REQUIRED_TOOLS = ("python3", "gamedig", "node", "npm", "dig", "curl", "jq", "gawk")
 HealthRow = tuple[str, str, str]
 
 
@@ -52,17 +52,17 @@ def build_settings_health_snapshot(
     if selected_steam_status == "OK" and selected_install and not selected_install.running:
         selected_steam_status = "WARN"
         selected_steam_detail += "; Connect will start Steam"
-    missing_tools = [command for command in REQUIRED_TOOLS if not command_lookup(command)]
+    capabilities = current_platform().capabilities
+    missing_tools = [
+        command for command in capabilities.diagnostic_tools if not command_lookup(command)
+    ]
     existing_launcher_candidates = [
         str(candidate) for candidate in launcher_candidates if candidate.exists()
     ]
-    prime_report = prime_environment_report()
-    prime_helpers = prime_helper_report()
-    launch_options = steam_launch_options_report()
     process_check = dayz_process_check()
     launch_report = launch_troubleshooting_report(selected_steam_mode, installs, process_check)
 
-    rows: tuple[HealthRow, ...] = (
+    rows: list[HealthRow] = [
         (
             "Launch engine",
             "OK",
@@ -79,9 +79,6 @@ def build_settings_health_snapshot(
             "OK" if not missing_tools else "WARN",
             "All found" if not missing_tools else "Missing: " + ", ".join(missing_tools),
         ),
-        ("PRIME environment", prime_report.status, prime_report.summary),
-        ("PRIME helpers", prime_helpers.status, prime_helpers.summary),
-        ("Steam launch options", launch_options.status, launch_options.summary),
         ("Selected Steam", selected_steam_status, selected_steam_detail),
         ("Auto Steam", auto_steam_report.status, auto_steam_report.detail),
         ("Launch troubleshooting", launch_report.status, "; ".join(launch_report.next_steps)),
@@ -105,19 +102,33 @@ def build_settings_health_snapshot(
             if selected_install and selected_install.workshop_dir
             else "Not detected",
         ),
-        ("Proton compatdata", "OK", proton_compatdata_detail(selected_install)),
         (
             "Configured Steam installs",
             "OK" if any(item.root or item.executable for item in installs) else "WARN",
             ", ".join(
                 steam_install_summary(item) for item in installs if item.root or item.executable
             )
-            or "No native or Flatpak Steam roots found",
+            or "No Steam roots found",
         ),
-        (
-            "Launcher candidates",
-            "OK" if existing_launcher_candidates else "WARN",
-            ", ".join(existing_launcher_candidates) or "No default candidate exists",
-        ),
-    )
-    return SettingsHealthSnapshot(selected_install_summary(selected_install), rows)
+    ]
+    if capabilities.uses_proton:
+        prime_report = prime_environment_report()
+        prime_helpers = prime_helper_report()
+        launch_options = steam_launch_options_report()
+        rows.extend(
+            [
+                ("PRIME environment", prime_report.status, prime_report.summary),
+                ("PRIME helpers", prime_helpers.status, prime_helpers.summary),
+                ("Steam launch options", launch_options.status, launch_options.summary),
+                ("Proton compatdata", "OK", proton_compatdata_detail(selected_install)),
+            ]
+        )
+    if capabilities.supports_external_launcher:
+        rows.append(
+            (
+                "Launcher candidates",
+                "OK" if existing_launcher_candidates else "WARN",
+                ", ".join(existing_launcher_candidates) or "No default candidate exists",
+            )
+        )
+    return SettingsHealthSnapshot(selected_install_summary(selected_install), tuple(rows))

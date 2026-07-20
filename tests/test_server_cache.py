@@ -11,8 +11,8 @@ class ServerCacheTests(unittest.TestCase):
         tmpdir = tempfile.TemporaryDirectory()
         path = Path(tmpdir.name) / "server_cache.sqlite3"
         connection = server_cache.connect(path)
-        self.addCleanup(connection.close)
         self.addCleanup(tmpdir.cleanup)
+        self.addCleanup(connection.close)
         return connection
 
     def test_connect_initializes_schema_version(self):

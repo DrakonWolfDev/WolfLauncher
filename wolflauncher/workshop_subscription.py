@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Callable, Iterable
 
 from .platform_detection import STEAM_APP_ID_DAYZ, SteamInstall
+from .platforms import current_platform
 
 ITEM_STATE_SUBSCRIBED = 1
 ITEM_STATE_INSTALLED = 4
@@ -172,16 +173,11 @@ def steam_api_library_candidates(install: SteamInstall | None) -> list[Path]:
     override = os.environ.get("WOLFLAUNCHER_STEAM_API_LIBRARY", "").strip()
     if override:
         candidates.append(Path(override).expanduser())
-    if install and install.root:
-        candidates.append(install.root / "steamrt64" / "libsteam_api.so")
     candidates.extend(
-        [
-            Path.home() / ".local/share/Steam/steamrt64/libsteam_api.so",
-            Path.home() / ".steam/steam/steamrt64/libsteam_api.so",
-            Path.home() / ".var/app/com.valvesoftware.Steam/data/Steam/steamrt64/libsteam_api.so",
-            Path.home()
-            / ".var/app/com.valvesoftware.Steam/.local/share/Steam/steamrt64/libsteam_api.so",
-        ]
+        current_platform().steam_api_library_candidates(
+            install.root if install else None,
+            install.dayz_dir if install else None,
+        )
     )
     unique: list[Path] = []
     for candidate in candidates:
