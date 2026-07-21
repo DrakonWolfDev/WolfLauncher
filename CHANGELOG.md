@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Fixed completed freshness batches leaving the status bar permanently in a
+  checking state. Completion now reports explicitly and no longer performs a
+  redundant full Server Browser table rebuild after its row-level updates.
+
 - Made repeated searches latest-search-wins for result freshness: a new result
   set cancels in-flight GameDig processes from the obsolete batch, then starts
   at most six visible-row checks with a 750 ms socket / 2 second process budget.

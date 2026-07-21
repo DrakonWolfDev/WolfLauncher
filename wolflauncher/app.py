@@ -1737,6 +1737,10 @@ class MainWindow(QMainWindow):
             if server.cache_key not in selected_workers and local_enrichment_due(server)
         ][:MAX_RESULTS_FRESHNESS_BATCH]
         if not servers:
+            self.pending_results_freshness = False
+            self.statusBar().showMessage(
+                "Matching servers already have recent live status.", 5000
+            )
             return
         self.pending_results_freshness = False
         self.statusBar().showMessage(
@@ -1756,11 +1760,11 @@ class MainWindow(QMainWindow):
 
     def handle_results_freshness_finished(self):
         self.results_freshness_worker = None
-        self.refresh_server_browser()
         if self.pending_results_freshness:
             self.pending_results_freshness = False
             QTimer.singleShot(0, self.schedule_results_freshness_check)
         else:
+            self.statusBar().showMessage("Live freshness check complete.", 5000)
             self.schedule_selected_discovered_server_check()
 
     def schedule_selected_discovered_server_check(self):

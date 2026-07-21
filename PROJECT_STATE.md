@@ -49,6 +49,7 @@ vendored MIT shell launcher remains a visible compatibility fallback.
   and uses only each provider row's primary query port for speed. Thorough
   fallback-port probing remains selection- and launch-driven. Superseded result
   batches terminate their GameDig child processes rather than delaying later searches.
+  Batch completion updates status explicitly and never rebuilds the full table.
 - Linux and Windows storage paths, Steam command discovery and process
   inspection sit behind tested platform backends. On Windows, registry/library
   detection, settings persistence, the offscreen GUI, absolute Workshop mod

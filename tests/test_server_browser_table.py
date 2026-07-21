@@ -288,6 +288,25 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertTrue(window.pending_results_freshness)
         running.cancel.assert_called_once_with()
 
+    def test_results_freshness_completion_does_not_rebuild_the_table(self):
+        status_bar = Mock()
+        window = SimpleNamespace(
+            results_freshness_worker=Mock(),
+            pending_results_freshness=False,
+            refresh_server_browser=Mock(),
+            schedule_selected_discovered_server_check=Mock(),
+            statusBar=Mock(return_value=status_bar),
+        )
+
+        MainWindow.handle_results_freshness_finished(window)
+
+        self.assertIsNone(window.results_freshness_worker)
+        window.refresh_server_browser.assert_not_called()
+        status_bar.showMessage.assert_called_once_with(
+            "Live freshness check complete.", 5000
+        )
+        window.schedule_selected_discovered_server_check.assert_called_once_with()
+
     def test_first_two_search_characters_do_not_rebuild_the_table(self):
         timer = Mock()
         summary = Mock()

@@ -424,7 +424,8 @@ do not build a work backlog. There is no unbounded visible-row enrichment workfl
 no network work is performed on the Qt UI thread. These lightweight batches
 follow the visible table from top to bottom and try only the provider's primary
 query port. Selecting or launching a server still uses the fuller fallback-port
-check when needed.
+check when needed. Completed batches update their rows in place and report
+completion without rebuilding the whole results table.
 
 ## Project Documentation
 
