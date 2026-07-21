@@ -194,7 +194,7 @@ from .workshop_subscription import (
 
 MAX_SELECTED_BROWSER_RUNNERS = 3
 MAX_SELECTED_STATUS_RUNNERS = 1
-MAX_RESULTS_FRESHNESS_BATCH = 10
+MAX_RESULTS_FRESHNESS_BATCH = 6
 MIN_BROWSER_SEARCH_LENGTH = 3
 
 
@@ -1710,6 +1710,7 @@ class MainWindow(QMainWindow):
             return
         if self.results_freshness_worker and self.results_freshness_worker.isRunning():
             self.pending_results_freshness = True
+            self.results_freshness_worker.cancel()
             return
         selected_workers = set(self.selection_enrichment_workers)
         servers_by_key = {server.cache_key: server for server in self.browser_servers}

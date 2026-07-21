@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Made repeated searches latest-search-wins for result freshness: a new result
+  set cancels in-flight GameDig processes from the obsolete batch, then starts
+  at most six visible-row checks with a 750 ms socket / 2 second process budget.
+  Selected-server and launch checks retain their thorough timeout policy.
+
 - Made bounded result freshness follow the table's actual visual order, checking
   visible rows from top to bottom before hidden rows. Lightweight result batches
   now probe only the provider's primary query port; selected-server and launch
@@ -18,7 +23,7 @@
   and replaced Windows' redundant Steam-installation selector with a player-name
   field synchronized with Favourite Servers.
 - Added bounded results freshness after an explicit server-list refresh or a
-  completed WolfAPI search. At most ten matching rows are checked by the
+  completed WolfAPI search. At most six matching rows are checked by the
   background GameDig worker, and repeated requests coalesce without blocking
   Qt's UI thread.
 

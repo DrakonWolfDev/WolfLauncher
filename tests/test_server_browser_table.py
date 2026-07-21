@@ -267,8 +267,8 @@ class ServerBrowserTableTests(unittest.TestCase):
         MainWindow.schedule_results_freshness_check(window)
 
         queued = worker_class.call_args.args[0]
-        self.assertEqual(len(queued), 10)
-        visual_keys = [table.item(row, 0).data(Qt.UserRole) for row in range(10)]
+        self.assertEqual(len(queued), 6)
+        visual_keys = [table.item(row, 0).data(Qt.UserRole) for row in range(6)]
         self.assertEqual([server.cache_key for server in queued], visual_keys)
         self.assertFalse(worker_class.call_args.kwargs["probe_fallbacks"])
         worker.start.assert_called_once_with()
@@ -286,6 +286,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         MainWindow.schedule_results_freshness_check(window)
 
         self.assertTrue(window.pending_results_freshness)
+        running.cancel.assert_called_once_with()
 
     def test_first_two_search_characters_do_not_rebuild_the_table(self):
         timer = Mock()

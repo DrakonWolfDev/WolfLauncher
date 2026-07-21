@@ -214,6 +214,20 @@ class WorkerTests(unittest.TestCase):
 
         check_server.assert_called_once()
         self.assertEqual(check_server.call_args.args[0].query_port, 2302)
+        self.assertEqual(check_server.call_args.kwargs["socket_timeout_ms"], 750)
+        self.assertEqual(check_server.call_args.kwargs["process_timeout"], 2)
+
+    @patch("wolflauncher.workers.check_server")
+    def test_cancelled_enrichment_does_not_start_more_checks(self, check_server):
+        worker = ServerEnrichmentWorker(
+            [DiscoveredServer("Cancelled", "127.0.0.1", 2302, 2302)],
+            probe_fallbacks=False,
+        )
+
+        worker.cancel()
+        worker.run()
+
+        check_server.assert_not_called()
 
 
 if __name__ == "__main__":

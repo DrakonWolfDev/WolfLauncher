@@ -341,6 +341,11 @@ class ServerEnrichmentWorker(QThread):
         super().__init__()
         self.servers = servers
         self.probe_fallbacks = probe_fallbacks
+        self._cancel_event = threading.Event()
+
+    def cancel(self):
+        self._cancel_event.set()
+        self.requestInterruption()
 
     def run(self):
         checked_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
@@ -348,13 +353,22 @@ class ServerEnrichmentWorker(QThread):
         total = len(self.servers)
 
         def enrich_one(server):
+            if self._cancel_event.is_set():
+                return None
             try:
                 status = ServerStatus(False, error="No valid query ports to probe.")
                 probes = enrichment_probe_servers(server)
                 if not self.probe_fallbacks:
                     probes = probes[:1]
                 for probe in probes:
-                    status = check_server(probe)
+                    status = check_server(
+                        probe,
+                        socket_timeout_ms=750 if not self.probe_fallbacks else 1500,
+                        process_timeout=2 if not self.probe_fallbacks else 5,
+                        cancel_event=self._cancel_event if not self.probe_fallbacks else None,
+                    )
+                    if self._cancel_event.is_set():
+                        return None
                     if status.online:
                         break
             except Exception as exc:
@@ -366,6 +380,8 @@ class ServerEnrichmentWorker(QThread):
             for completed, (original, server) in enumerate(
                 zip(self.servers, executor.map(enrich_one, self.servers)), 1
             ):
+                if server is None:
+                    continue
                 enriched.append(server)
                 self.enrichment_progress.emit((original.cache_key, server), completed, total)
         self.enrichment_ready.emit(enriched, "")

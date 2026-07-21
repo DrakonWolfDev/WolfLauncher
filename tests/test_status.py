@@ -1,10 +1,17 @@
 import json
 import subprocess
+import threading
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from wolflauncher.models import Server
-from wolflauncher.status import ServerStatus, check_server, gamedig_command, resolve_host
+from wolflauncher.status import (
+    ServerStatus,
+    _run_cancellable,
+    check_server,
+    gamedig_command,
+    resolve_host,
+)
 
 
 class ResolveHostTests(unittest.TestCase):
@@ -15,6 +22,22 @@ class ResolveHostTests(unittest.TestCase):
     def test_resolve_host_looks_up_dns_names(self, gethostbyname):
         self.assertEqual(resolve_host("dayz.example.test"), "203.0.113.10")
         gethostbyname.assert_called_once_with("dayz.example.test")
+
+
+class CancellableProcessTests(unittest.TestCase):
+    @patch("wolflauncher.status.subprocess.Popen")
+    def test_cancel_terminates_an_inflight_gamedig_process(self, popen):
+        process = popen.return_value
+        process.poll.return_value = None
+        process.wait.return_value = 0
+        cancelled = threading.Event()
+        cancelled.set()
+
+        result = _run_cancellable(["gamedig"], 2, cancelled)
+
+        self.assertIsNone(result)
+        process.terminate.assert_called_once_with()
+        process.wait.assert_called_once_with(timeout=0.25)
 
 
 class GameDigCommandTests(unittest.TestCase):

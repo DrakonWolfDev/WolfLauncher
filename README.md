@@ -418,8 +418,9 @@ background worker. Only the selected row and inspector are updated; rapid
 selection changes retain only the newest pending check. WolfAPI remains
 browse-time truth and the guarded launch preflight performs the final live
 check. An explicit **Refresh server list** action or a completed WolfAPI search
-also checks up to ten matching rows in one bounded background batch. Repeated
-requests coalesce, there is no unbounded visible-row enrichment workflow, and
+also checks up to six matching rows in one bounded background batch. A newer
+search cancels the obsolete batch and its GameDig processes, so repeated searches
+do not build a work backlog. There is no unbounded visible-row enrichment workflow, and
 no network work is performed on the Qt UI thread. These lightweight batches
 follow the visible table from top to bottom and try only the provider's primary
 query port. Selecting or launching a server still uses the fuller fallback-port

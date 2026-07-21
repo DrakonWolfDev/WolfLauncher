@@ -3,6 +3,7 @@ import os
 import shutil
 import socket
 import subprocess
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -55,7 +56,13 @@ def gamedig_command() -> list[str] | None:
     return [gamedig] if gamedig else None
 
 
-def check_server(server: Server) -> ServerStatus:
+def check_server(
+    server: Server,
+    *,
+    socket_timeout_ms: int = 1500,
+    process_timeout: float = 5,
+    cancel_event=None,
+) -> ServerStatus:
     try:
         ip = resolve_host(server.host)
     except OSError as exc:
@@ -65,23 +72,29 @@ def check_server(server: Server) -> ServerStatus:
     if command is None:
         return ServerStatus(False, resolved_ip=ip, error="gamedig not installed")
 
+    arguments = [
+        *command,
+        "--type",
+        "dayz",
+        f"{ip}:{server.query_port}",
+        "--maxAttempts",
+        "1",
+        "--socketTimeout",
+        str(socket_timeout_ms),
+    ]
     try:
-        result = subprocess.run(
-            [
-                *command,
-                "--type",
-                "dayz",
-                f"{ip}:{server.query_port}",
-                "--maxAttempts",
-                "1",
-                "--socketTimeout",
-                "1500",
-            ],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
+        if cancel_event is None:
+            result = subprocess.run(
+                arguments,
+                check=False,
+                capture_output=True,
+                text=True,
+                timeout=process_timeout,
+            )
+        else:
+            result = _run_cancellable(arguments, process_timeout, cancel_event)
+            if result is None:
+                return ServerStatus(False, resolved_ip=ip, error="status check cancelled")
     except subprocess.TimeoutExpired:
         return ServerStatus(False, resolved_ip=ip, error="status check timed out")
 
@@ -130,6 +143,32 @@ def check_server(server: Server) -> ServerStatus:
         modded=modded,
         connect=str(connect),
     )
+
+
+def _run_cancellable(arguments: list[str], timeout: float, cancel_event):
+    process = subprocess.Popen(
+        arguments,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    deadline = time.monotonic() + timeout
+    while process.poll() is None:
+        if cancel_event.is_set():
+            process.terminate()
+            try:
+                process.wait(timeout=0.25)
+            except subprocess.TimeoutExpired:
+                process.kill()
+                process.wait()
+            return None
+        if time.monotonic() >= deadline:
+            process.kill()
+            stdout, stderr = process.communicate()
+            raise subprocess.TimeoutExpired(arguments, timeout, stdout, stderr)
+        time.sleep(0.025)
+    stdout, stderr = process.communicate()
+    return subprocess.CompletedProcess(arguments, process.returncode, stdout, stderr)
 
 
 def _optional_float(value: Any) -> float | None:
