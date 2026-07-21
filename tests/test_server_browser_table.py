@@ -395,12 +395,12 @@ class ServerBrowserTableTests(unittest.TestCase):
         timer.start.assert_called_once_with()
 
     @patch.object(MainWindow, "_schedule_results_freshness_check")
-    def test_scrolled_freshness_is_one_visible_only_batch(self, schedule):
+    def test_scrolled_freshness_is_four_visible_only_batches(self, schedule):
         window = SimpleNamespace()
 
         MainWindow.start_browser_scroll_freshness_check(window)
 
-        self.assertEqual(window.initial_results_freshness_batches_remaining, 1)
+        self.assertEqual(window.initial_results_freshness_batches_remaining, 4)
         self.assertTrue(window.results_freshness_visible_only)
         schedule.assert_called_once_with(window)
 

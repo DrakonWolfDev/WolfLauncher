@@ -1737,8 +1737,8 @@ class MainWindow(QMainWindow):
         self.browser_scroll_timer.start()
 
     def start_browser_scroll_freshness_check(self):
-        """Live-check at most one batch drawn only from currently visible rows."""
-        self.initial_results_freshness_batches_remaining = 1
+        """Live-check up to four batches drawn only from currently visible rows."""
+        self.initial_results_freshness_batches_remaining = INITIAL_RESULTS_FRESHNESS_BATCHES
         self.results_freshness_visible_only = True
         MainWindow._schedule_results_freshness_check(self)
 
