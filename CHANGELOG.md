@@ -7,6 +7,10 @@
   SQLite, and a same-search completion queues one follow-up freshness batch
   without cancelling a running worker. Changed searches still cancel obsolete
   freshness work immediately.
+- Clicking **Refresh server list** while a GameDig batch is already active now
+  cancels that batch and defers the provider refresh until the worker has fully
+  emitted `finished`. The transition is asynchronous, so the Qt interface
+  remains responsive and SQLite never has both paths changing it concurrently.
 
 - Aligned Windows and Linux readiness documentation with current validation
   evidence and added the approved cross-platform update-delivery strategy.

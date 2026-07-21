@@ -50,6 +50,9 @@ provider/cache update to finish before starting local freshness, and repeated
 same-search requests coalesce without cancelling a live worker. A genuinely
 changed search still cancels obsolete checks. This removes the Linux native
 worker/cache overlap while preserving a fluid UI on both platforms.
+If the user clicks refresh during an existing GameDig batch, Launcher cancels
+that batch and defers provider startup until the worker's `finished` signal;
+it never blocks the Qt thread or overlaps the two SQLite writers.
 
 ## Future Codex resume note — 2026-07-14
 

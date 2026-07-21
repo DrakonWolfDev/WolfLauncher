@@ -260,6 +260,7 @@ class MainWindow(QMainWindow):
         self.pending_selection_checks = {}
         self.results_freshness_worker = None
         self.pending_results_freshness = False
+        self.pending_provider_refresh = False
         self.initial_results_freshness_batches_remaining = 0
         self.results_freshness_visible_only = False
         self.results_freshness_context = ""
@@ -1268,6 +1269,22 @@ class MainWindow(QMainWindow):
     def refresh_from_configured_provider(self):
         provider = self.discovery_provider_key()
         self.save_user_settings(silent=True)
+        if getattr(self, "pending_provider_refresh", False):
+            return
+        if self.results_freshness_worker is not None:
+            self.pending_provider_refresh = True
+            self.pending_results_freshness = False
+            self.initial_results_freshness_batches_remaining = 0
+            self.results_freshness_visible_only = False
+            self._set_database_refresh_enabled(False)
+            self.statusBar().showMessage(
+                "Finishing the current live check before refreshing the server list…"
+            )
+            self.results_freshness_worker.cancel()
+            return
+        self._start_configured_provider_refresh(provider)
+
+    def _start_configured_provider_refresh(self, provider: str):
         if provider in ("wolfapi", "wolfapi_v1"):
             self.refresh_from_wolfapi()
         elif provider == "battlemetrics":
@@ -1282,6 +1299,12 @@ class MainWindow(QMainWindow):
                 "Discovery disabled",
                 "Choose a server API provider in Settings before refreshing the database.",
             )
+
+    def _run_pending_configured_provider_refresh(self):
+        if not self.pending_provider_refresh or getattr(self, "_shutting_down", False):
+            return
+        self.pending_provider_refresh = False
+        self._start_configured_provider_refresh(self.discovery_provider_key())
 
     def _set_database_refresh_enabled(self, enabled: bool):
         if hasattr(self, "refresh_database_button"):
@@ -1843,6 +1866,13 @@ class MainWindow(QMainWindow):
 
     def handle_results_freshness_finished(self):
         self.results_freshness_worker = None
+        if getattr(self, "pending_provider_refresh", False):
+            self.pending_results_freshness = False
+            self.initial_results_freshness_batches_remaining = 0
+            self.results_freshness_visible_only = False
+            self.results_freshness_attempted_keys.clear()
+            QTimer.singleShot(0, self._run_pending_configured_provider_refresh)
+            return
         if self.pending_results_freshness:
             self.pending_results_freshness = False
         if self.initial_results_freshness_batches_remaining:

@@ -26,14 +26,39 @@ class ServerBrowserTableTests(unittest.TestCase):
         window = SimpleNamespace(
             discovery_provider_key=Mock(return_value="wolfapi_v1"),
             save_user_settings=Mock(),
-            refresh_from_wolfapi=Mock(),
-            schedule_results_freshness_check=Mock(),
+            pending_provider_refresh=False,
+            results_freshness_worker=None,
+            _start_configured_provider_refresh=Mock(),
         )
 
         MainWindow.refresh_from_configured_provider(window)
 
-        window.refresh_from_wolfapi.assert_called_once_with()
-        window.schedule_results_freshness_check.assert_not_called()
+        window._start_configured_provider_refresh.assert_called_once_with("wolfapi_v1")
+
+    def test_manual_refresh_defers_until_running_freshness_worker_finishes(self):
+        worker = Mock()
+        window = SimpleNamespace(
+            discovery_provider_key=Mock(return_value="wolfapi_v1"),
+            save_user_settings=Mock(),
+            pending_provider_refresh=False,
+            pending_results_freshness=True,
+            initial_results_freshness_batches_remaining=3,
+            results_freshness_visible_only=True,
+            results_freshness_worker=worker,
+            _set_database_refresh_enabled=Mock(),
+            statusBar=Mock(return_value=Mock()),
+            _start_configured_provider_refresh=Mock(),
+        )
+
+        MainWindow.refresh_from_configured_provider(window)
+
+        self.assertTrue(window.pending_provider_refresh)
+        self.assertFalse(window.pending_results_freshness)
+        self.assertEqual(window.initial_results_freshness_batches_remaining, 0)
+        self.assertFalse(window.results_freshness_visible_only)
+        window._set_database_refresh_enabled.assert_called_once_with(False)
+        worker.cancel.assert_called_once_with()
+        window._start_configured_provider_refresh.assert_not_called()
 
     @classmethod
     def setUpClass(cls):
@@ -348,6 +373,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         window = SimpleNamespace(
             results_freshness_worker=Mock(),
             pending_results_freshness=False,
+            pending_provider_refresh=False,
             initial_results_freshness_batches_remaining=0,
             refresh_server_browser=Mock(),
             schedule_selected_discovered_server_check=Mock(),
@@ -360,6 +386,27 @@ class ServerBrowserTableTests(unittest.TestCase):
         window.refresh_server_browser.assert_not_called()
         window.schedule_selected_discovered_server_check.assert_not_called()
         single_shot.assert_called_once_with(0, window.schedule_results_freshness_check)
+
+    @patch("wolflauncher.app.QTimer.singleShot")
+    def test_results_freshness_completion_starts_deferred_provider_refresh(self, single_shot):
+        window = SimpleNamespace(
+            results_freshness_worker=Mock(),
+            pending_provider_refresh=True,
+            pending_results_freshness=True,
+            initial_results_freshness_batches_remaining=3,
+            results_freshness_visible_only=True,
+            results_freshness_attempted_keys={"checked"},
+            _run_pending_configured_provider_refresh=Mock(),
+        )
+
+        MainWindow.handle_results_freshness_finished(window)
+
+        self.assertIsNone(window.results_freshness_worker)
+        self.assertFalse(window.pending_results_freshness)
+        self.assertEqual(window.initial_results_freshness_batches_remaining, 0)
+        self.assertFalse(window.results_freshness_visible_only)
+        self.assertEqual(window.results_freshness_attempted_keys, set())
+        single_shot.assert_called_once_with(0, window._run_pending_configured_provider_refresh)
 
     @patch("wolflauncher.app.QTimer.singleShot")
     def test_initial_freshness_completion_continues_until_four_batches(self, single_shot):
