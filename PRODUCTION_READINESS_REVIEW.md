@@ -302,8 +302,9 @@ enough that future translation is possible even if v1 ships English-only.
   migrations and hostile/truncated YAML/JSON.
 - Measure startup, third-character remote search, large-table refresh and memory
   behavior with production-size caches. Set budgets and keep benchmark results.
-- Add a supportable update strategy: manual notification, repository packages
-  or another signed channel. Do not silently self-update initially.
+- Implement the supportable update strategy in `docs/UPDATE_STRATEGY.md`:
+  prompted signed installers on Windows and a signed APT repository on Linux.
+  Do not silently self-update.
 - Review whether `gamedig` should remain a system Node dependency. Keeping it is
   reasonable because it is proven, but the packaged product must own version
   detection and compatibility. A native Python replacement should happen only
@@ -421,8 +422,8 @@ not merely source changes.
   in-game server time on Favourite Servers when live status provides it.
 - [ ] **PR-16 — Add schema migrations, fuzz/property coverage and performance
   budgets** for settings, parsers, cache identity, startup and browser search.
-- [ ] **PR-17 — Define supported update and retention policies** for packages,
-  cache, logs, thumbnails and reports.
+- [ ] **PR-17 — Implement the defined update strategy and complete retention
+  policies** for packages, cache, logs, thumbnails and reports.
 
 Ideas beyond PR-17 belong in the post-v1 roadmap only when they have a concrete
 user outcome. They must not displace unfinished release gates.

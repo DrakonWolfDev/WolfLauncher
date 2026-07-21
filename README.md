@@ -15,8 +15,8 @@ Current baseline: v0.8 Linux native-launch parity validated, with the native
 launcher used by default and the external launcher retained as a Linux
 fallback. Windows detection, native Steam/DayZ handoff, confirmed Workshop
 resolution and portable packaging have been validated on Windows 11. The
-Windows build remains experimental until signing, installation and update gates
-are defined and exercised.
+Windows build remains experimental until signing, update delivery and broader
+release-artifact desktop gates are exercised.
 
 The server browser, settings health checks, diagnostics, mod checks and guarded launch handoff are working. The native engine has been validated with native and Flatpak Steam, Steam running and stopped, unmodded servers, fully installed mod sets and partially missing mod sets. Connect pre-flight asks the signed-in Steam client to subscribe, download or update required items and verifies them before launch; manual Workshop pages remain available as an advanced fallback. The external launcher remains available as a fallback. The only known bug is that DayZ does not run when Steam launch options contain:
 
@@ -118,6 +118,10 @@ a portable ZIP, each with the bundled status-query runtime. Setup does not need
 administrator rights, creates a Start Menu shortcut and leaves settings and
 cache data in the user profile when uninstalled. The artifacts are not yet
 digitally signed.
+
+Planned updates use a signed evergreen bootstrapper and prompted installer on
+Windows, and a signed APT repository through the normal system update manager
+on Linux. See [`docs/UPDATE_STRATEGY.md`](docs/UPDATE_STRATEGY.md).
 
 At startup, WolfLauncher checks the selected Steam installation and warns once
 if Steam is stopped or unavailable. Server browsing remains available, but

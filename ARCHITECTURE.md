@@ -308,9 +308,16 @@ inside the DayZ installation. The selected DayZ `steam_api64.dll` supplies the
 same Steamworks exports used by the isolated Workshop helper.
 
 Current Windows evidence covers detection, persistence, GUI construction,
-non-launching command preview and DLL exports on a real installation. Real
-DayZ handoff, Workshop state/subscription lifecycle and packaging remain
+native command preview and handoff, DLL exports, installed and missing-mod
+Steamworks flows, a portable ZIP and a per-user installer on Windows 11.
+Signing, update delivery and broader release-artifact desktop coverage remain
 validation gates, so Windows is experimental rather than a supported release.
+
+Update ownership is platform-native. Windows uses a signed evergreen
+bootstrapper and prompted replacement through a verified signed installer;
+Linux uses a signed APT repository and the system package manager. The running
+launcher may check and explain availability but must not silently replace its
+own executable or system-owned files. See `docs/UPDATE_STRATEGY.md`.
 
 Primary target:
 

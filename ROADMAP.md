@@ -57,6 +57,10 @@ CI packaging lane. Before Windows becomes a supported target, add signing and
 update behavior, then exercise the release artifact on the intended desktop
 matrix. These gates do not delay the Linux v1.0 boundary.
 
+The approved delivery direction is documented in `docs/UPDATE_STRATEGY.md`:
+signed prompted installer updates on Windows and signed repository-managed
+updates on Linux, sharing one release-channel manifest and policy.
+
 ## v1.0 — supported native release
 
 - Publish the first supported production artifact after all v0.9 gates pass.
@@ -71,7 +75,8 @@ matrix. These gates do not delay the Linux v1.0 boundary.
   rewrite.
 - Continue the P1/P2 quality, accessibility, network, logging, cache and typing
   work in the production review.
-- Define a signed update strategy and bounded data/log retention.
+- Extend the initial signed update channels only from release evidence, and
+  define bounded data/log retention.
 - Consider AppImage, Steam Deck layout and community submissions after the
   first supported Linux format is stable.
 - Promote Windows from experimental to supported only after its handoff,

@@ -118,7 +118,8 @@ cannot be run.
   Credential Manager smoke after each install.
 - Silent uninstall removed the installed executable while preserving sentinels
   under both roaming configuration and local application-data directories. The
-  installer remains unsigned and update behavior is not yet defined.
+  installer remains unsigned. The update direction is defined in
+  `docs/UPDATE_STRATEGY.md` but is not yet implemented or release-validated.
 
 ### 2026-07-18 — Linux Mint 22.3, native Steam, packaged `0.9.0~dev0`
 

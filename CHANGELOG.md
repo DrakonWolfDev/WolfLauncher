@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Aligned Windows and Linux readiness documentation with current validation
+  evidence and added the approved cross-platform update-delivery strategy.
+- Kept package build and smoke coverage on every CI run while restricting
+  large artifact uploads to tags and manually dispatched release candidates.
+
 - Server Browser summaries now show the online count against the complete
   cached directory total, rather than presenting the online figure alone.
 
