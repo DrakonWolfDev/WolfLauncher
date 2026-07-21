@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Opening the Server Browser now starts one non-blocking live freshness batch
+  for the first six visible servers. Searches can cancel and supersede this
+  initial batch, while cached rows remain immediately usable.
+
 - Removed Region from the Server Browser table and inspector because its only
   trusted source was the now-disabled BattleMetrics ingestion. Stored country
   fields remain compatible with older caches but are no longer presented as

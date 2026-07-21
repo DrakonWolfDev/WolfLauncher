@@ -258,6 +258,7 @@ class MainWindow(QMainWindow):
         self.pending_selection_checks = {}
         self.results_freshness_worker = None
         self.pending_results_freshness = False
+        self.results_freshness_single_batch = False
         self.results_freshness_context = ""
         self.results_freshness_attempted_keys = set()
         self.browser_mod_workers = {}
@@ -1491,6 +1492,7 @@ class MainWindow(QMainWindow):
         if index != self.server_browser_tab_index:
             return
         self.schedule_selected_discovered_server_check()
+        QTimer.singleShot(0, self.schedule_initial_results_freshness_check)
         QTimer.singleShot(0, self.maybe_auto_refresh_configured_provider)
 
     def should_auto_refresh_provider(self, provider: str) -> bool:
@@ -1707,6 +1709,15 @@ class MainWindow(QMainWindow):
 
     def schedule_results_freshness_check(self):
         """Live-check only the small result set produced by an explicit user action."""
+        self.results_freshness_single_batch = False
+        MainWindow._schedule_results_freshness_check(self)
+
+    def schedule_initial_results_freshness_check(self):
+        """Live-check one visible batch when the browser is first opened."""
+        self.results_freshness_single_batch = True
+        MainWindow._schedule_results_freshness_check(self)
+
+    def _schedule_results_freshness_check(self):
         if not hasattr(self, "browser_servers"):
             return
         context = (
@@ -1778,6 +1789,12 @@ class MainWindow(QMainWindow):
         self.results_freshness_worker = None
         if self.pending_results_freshness:
             self.pending_results_freshness = False
+        if self.results_freshness_single_batch:
+            self.results_freshness_single_batch = False
+            self.results_freshness_attempted_keys.clear()
+            self.statusBar().showMessage("Initial live freshness check complete.", 5000)
+            self.schedule_selected_discovered_server_check()
+            return
         QTimer.singleShot(0, self.schedule_results_freshness_check)
 
     def schedule_selected_discovered_server_check(self):
