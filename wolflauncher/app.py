@@ -195,6 +195,7 @@ from .workshop_subscription import (
 MAX_SELECTED_BROWSER_RUNNERS = 3
 MAX_SELECTED_STATUS_RUNNERS = 1
 MAX_RESULTS_FRESHNESS_BATCH = 6
+INITIAL_RESULTS_FRESHNESS_BATCHES = 4
 MIN_BROWSER_SEARCH_LENGTH = 3
 
 
@@ -258,7 +259,7 @@ class MainWindow(QMainWindow):
         self.pending_selection_checks = {}
         self.results_freshness_worker = None
         self.pending_results_freshness = False
-        self.results_freshness_single_batch = False
+        self.initial_results_freshness_batches_remaining = 0
         self.results_freshness_context = ""
         self.results_freshness_attempted_keys = set()
         self.browser_mod_workers = {}
@@ -1709,12 +1710,15 @@ class MainWindow(QMainWindow):
 
     def schedule_results_freshness_check(self):
         """Live-check only the small result set produced by an explicit user action."""
-        self.results_freshness_single_batch = False
+        self.initial_results_freshness_batches_remaining = 0
         MainWindow._schedule_results_freshness_check(self)
 
     def schedule_initial_results_freshness_check(self):
-        """Live-check one visible batch when the browser is first opened."""
-        self.results_freshness_single_batch = True
+        """Live-check four visible-order batches when the browser is first opened."""
+        self.initial_results_freshness_batches_remaining = INITIAL_RESULTS_FRESHNESS_BATCHES
+        MainWindow._schedule_results_freshness_check(self)
+
+    def continue_initial_results_freshness_check(self):
         MainWindow._schedule_results_freshness_check(self)
 
     def _schedule_results_freshness_check(self):
@@ -1758,6 +1762,7 @@ class MainWindow(QMainWindow):
         ][:MAX_RESULTS_FRESHNESS_BATCH]
         if not servers:
             self.pending_results_freshness = False
+            self.initial_results_freshness_batches_remaining = 0
             completed_pass = bool(self.results_freshness_attempted_keys)
             self.results_freshness_attempted_keys.clear()
             message = (
@@ -1789,8 +1794,11 @@ class MainWindow(QMainWindow):
         self.results_freshness_worker = None
         if self.pending_results_freshness:
             self.pending_results_freshness = False
-        if self.results_freshness_single_batch:
-            self.results_freshness_single_batch = False
+        if self.initial_results_freshness_batches_remaining:
+            self.initial_results_freshness_batches_remaining -= 1
+            if self.initial_results_freshness_batches_remaining:
+                QTimer.singleShot(0, self.continue_initial_results_freshness_check)
+                return
             self.results_freshness_attempted_keys.clear()
             self.statusBar().showMessage("Initial live freshness check complete.", 5000)
             self.schedule_selected_discovered_server_check()

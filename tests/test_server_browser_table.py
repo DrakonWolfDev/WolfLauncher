@@ -258,7 +258,7 @@ class ServerBrowserTableTests(unittest.TestCase):
             browser_table=table,
             results_freshness_worker=None,
             pending_results_freshness=False,
-            results_freshness_single_batch=False,
+            initial_results_freshness_batches_remaining=0,
             results_freshness_context="",
             results_freshness_attempted_keys=set(),
             selection_enrichment_workers={},
@@ -298,7 +298,7 @@ class ServerBrowserTableTests(unittest.TestCase):
             browser_servers=[],
             results_freshness_worker=running,
             pending_results_freshness=False,
-            results_freshness_single_batch=False,
+            initial_results_freshness_batches_remaining=0,
             results_freshness_context="",
             results_freshness_attempted_keys=set(),
         )
@@ -315,7 +315,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         window = SimpleNamespace(
             results_freshness_worker=Mock(),
             pending_results_freshness=False,
-            results_freshness_single_batch=False,
+            initial_results_freshness_batches_remaining=0,
             refresh_server_browser=Mock(),
             schedule_selected_discovered_server_check=Mock(),
             schedule_results_freshness_check=Mock(),
@@ -328,11 +328,31 @@ class ServerBrowserTableTests(unittest.TestCase):
         window.schedule_selected_discovered_server_check.assert_not_called()
         single_shot.assert_called_once_with(0, window.schedule_results_freshness_check)
 
-    def test_initial_freshness_completion_stops_after_one_batch(self):
+    @patch("wolflauncher.app.QTimer.singleShot")
+    def test_initial_freshness_completion_continues_until_four_batches(self, single_shot):
         window = SimpleNamespace(
             results_freshness_worker=Mock(),
             pending_results_freshness=False,
-            results_freshness_single_batch=True,
+            initial_results_freshness_batches_remaining=4,
+            results_freshness_attempted_keys={"checked"},
+            statusBar=Mock(return_value=Mock()),
+            continue_initial_results_freshness_check=Mock(),
+            schedule_selected_discovered_server_check=Mock(),
+        )
+
+        MainWindow.handle_results_freshness_finished(window)
+
+        self.assertIsNone(window.results_freshness_worker)
+        self.assertEqual(window.initial_results_freshness_batches_remaining, 3)
+        self.assertEqual(window.results_freshness_attempted_keys, {"checked"})
+        single_shot.assert_called_once_with(0, window.continue_initial_results_freshness_check)
+        window.schedule_selected_discovered_server_check.assert_not_called()
+
+    def test_initial_freshness_completion_stops_after_fourth_batch(self):
+        window = SimpleNamespace(
+            results_freshness_worker=Mock(),
+            pending_results_freshness=False,
+            initial_results_freshness_batches_remaining=1,
             results_freshness_attempted_keys={"checked"},
             statusBar=Mock(return_value=Mock()),
             schedule_selected_discovered_server_check=Mock(),
@@ -340,8 +360,7 @@ class ServerBrowserTableTests(unittest.TestCase):
 
         MainWindow.handle_results_freshness_finished(window)
 
-        self.assertIsNone(window.results_freshness_worker)
-        self.assertFalse(window.results_freshness_single_batch)
+        self.assertEqual(window.initial_results_freshness_batches_remaining, 0)
         self.assertEqual(window.results_freshness_attempted_keys, set())
         window.schedule_selected_discovered_server_check.assert_called_once_with()
 

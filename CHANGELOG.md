@@ -2,8 +2,8 @@
 
 ## Unreleased
 
-- Opening the Server Browser now starts one non-blocking live freshness batch
-  for the first six visible servers. Searches can cancel and supersede this
+- Opening the Server Browser now starts four non-blocking live freshness batches
+  for up to 24 servers in visible order. Searches can cancel and supersede this
   initial batch, while cached rows remain immediately usable.
 
 - Removed Region from the Server Browser table and inspector because its only
