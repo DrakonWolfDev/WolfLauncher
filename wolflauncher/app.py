@@ -1268,7 +1268,6 @@ class MainWindow(QMainWindow):
     def refresh_from_configured_provider(self):
         provider = self.discovery_provider_key()
         self.save_user_settings(silent=True)
-        self.schedule_results_freshness_check()
         if provider in ("wolfapi", "wolfapi_v1"):
             self.refresh_from_wolfapi()
         elif provider == "battlemetrics":
@@ -1772,12 +1771,14 @@ class MainWindow(QMainWindow):
         context = (
             " ".join(self.browser_search.text().split()) if hasattr(self, "browser_search") else ""
         )
-        if context != self.results_freshness_context:
+        context_changed = context != self.results_freshness_context
+        if context_changed:
             self.results_freshness_context = context
             self.results_freshness_attempted_keys.clear()
         if self.results_freshness_worker and self.results_freshness_worker.isRunning():
             self.pending_results_freshness = True
-            self.results_freshness_worker.cancel()
+            if context_changed:
+                self.results_freshness_worker.cancel()
             return
         selected_workers = set(self.selection_enrichment_workers)
         servers_by_key = {server.cache_key: server for server in self.browser_servers}

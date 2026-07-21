@@ -22,6 +22,19 @@ from wolflauncher.theme import STATUS_COLOURS
 
 
 class ServerBrowserTableTests(unittest.TestCase):
+    def test_manual_wolfapi_refresh_waits_to_start_freshness(self):
+        window = SimpleNamespace(
+            discovery_provider_key=Mock(return_value="wolfapi_v1"),
+            save_user_settings=Mock(),
+            refresh_from_wolfapi=Mock(),
+            schedule_results_freshness_check=Mock(),
+        )
+
+        MainWindow.refresh_from_configured_provider(window)
+
+        window.refresh_from_wolfapi.assert_called_once_with()
+        window.schedule_results_freshness_check.assert_not_called()
+
     @classmethod
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
@@ -291,7 +304,7 @@ class ServerBrowserTableTests(unittest.TestCase):
             {server.cache_key for server in servers},
         )
 
-    def test_results_freshness_coalesces_while_a_batch_is_running(self):
+    def test_results_freshness_coalesces_without_cancelling_same_context_batch(self):
         running = Mock()
         running.isRunning.return_value = True
         window = SimpleNamespace(
@@ -306,6 +319,26 @@ class ServerBrowserTableTests(unittest.TestCase):
         MainWindow.schedule_results_freshness_check(window)
 
         self.assertTrue(window.pending_results_freshness)
+        running.cancel.assert_not_called()
+
+    def test_results_freshness_cancels_running_batch_when_search_changes(self):
+        running = Mock()
+        running.isRunning.return_value = True
+        window = SimpleNamespace(
+            browser_servers=[],
+            browser_search=Mock(text=Mock(return_value="new dawn")),
+            results_freshness_worker=running,
+            pending_results_freshness=False,
+            initial_results_freshness_batches_remaining=0,
+            results_freshness_context="new hope",
+            results_freshness_attempted_keys={"old-result"},
+        )
+
+        MainWindow.schedule_results_freshness_check(window)
+
+        self.assertTrue(window.pending_results_freshness)
+        self.assertEqual(window.results_freshness_context, "new dawn")
+        self.assertEqual(window.results_freshness_attempted_keys, set())
         running.cancel.assert_called_once_with()
 
     @patch("wolflauncher.app.QTimer.singleShot")

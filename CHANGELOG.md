@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Fixed a Linux crash race after **Refresh server list**. Manual provider
+  refresh no longer starts GameDig while the WolfAPI helper is still updating
+  SQLite, and a same-search completion queues one follow-up freshness batch
+  without cancelling a running worker. Changed searches still cancel obsolete
+  freshness work immediately.
+
 - Aligned Windows and Linux readiness documentation with current validation
   evidence and added the approved cross-platform update-delivery strategy.
 - Kept package build and smoke coverage on every CI run while restricting

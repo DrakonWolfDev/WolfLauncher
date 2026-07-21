@@ -44,6 +44,13 @@ offline startup. The Server Browser uses that value for the whole WolfAPI
 directory total; its SQLite row count is labelled as local cache state and is
 never presented as the directory size. This is shared Windows/Linux behavior.
 
+Manual-refresh scheduling correction on 2026-07-21: provider refresh and local
+GameDig freshness are serialized. **Refresh server list** waits for the
+provider/cache update to finish before starting local freshness, and repeated
+same-search requests coalesce without cancelling a live worker. A genuinely
+changed search still cancels obsolete checks. This removes the Linux native
+worker/cache overlap while preserving a fluid UI on both platforms.
+
 ## Future Codex resume note — 2026-07-14
 
 Treat WolfLauncher and `../WolfAPI` as one discovery product with two separately
