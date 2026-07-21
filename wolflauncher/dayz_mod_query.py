@@ -13,7 +13,7 @@ MAX_DLC_ENTRIES = 16
 MAX_MODS = 255
 MAX_SIGNATURES = 255
 MAX_WORKSHOP_ID_BYTES = 8
-MAX_TRAILING_TEXT_BYTES = 2048
+MAX_TRAILING_EXTENSION_BYTES = 2048
 
 
 class DayzModQueryError(RuntimeError):
@@ -131,17 +131,8 @@ def decode_dayz_mod_rules(rules: Mapping[bytes, bytes]) -> list[DayzRequiredMod]
         length = reader.uint8(f"signature length {index + 1}")
         reader.read(length, f"signature {index + 1}")
     trailer = reader.payload[reader.offset :]
-    if trailer:
-        if len(trailer) > MAX_TRAILING_TEXT_BYTES:
-            raise DayzModQueryError("DayZ mod manifest text extension is too large")
-        try:
-            trailer_text = trailer.decode("utf-8")
-        except UnicodeDecodeError as exc:
-            raise DayzModQueryError(
-                "DayZ mod manifest contains an invalid trailing extension"
-            ) from exc
-        if not all(character.isprintable() for character in trailer_text):
-            raise DayzModQueryError("DayZ mod manifest contains an invalid trailing extension")
+    if len(trailer) > MAX_TRAILING_EXTENSION_BYTES:
+        raise DayzModQueryError("DayZ mod manifest extension is too large")
     return mods
 
 

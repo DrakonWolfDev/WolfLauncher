@@ -81,12 +81,15 @@ class DecodeDayzModRulesTests(unittest.TestCase):
         with self.assertRaisesRegex(DayzModQueryError, "duplicate"):
             decode_dayz_mod_rules(_rules(_manifest((111, "One"), (111, "Two"))))
 
-    def test_accepts_bounded_printable_server_extension(self):
-        self.assertEqual(decode_dayz_mod_rules(_rules(_manifest() + b"server-extension")), [])
+    def test_accepts_bounded_opaque_server_extension(self):
+        self.assertEqual(
+            decode_dayz_mod_rules(_rules(_manifest() + b"\x00\xffserver-extension")),
+            [],
+        )
 
-    def test_rejects_binary_trailing_data(self):
-        with self.assertRaisesRegex(DayzModQueryError, "trailing extension"):
-            decode_dayz_mod_rules(_rules(_manifest() + b"\x00\xff"))
+    def test_rejects_oversized_server_extension(self):
+        with self.assertRaisesRegex(DayzModQueryError, "extension is too large"):
+            decode_dayz_mod_rules(_rules(_manifest() + (b"x" * 2049)))
 
 
 class QueryDayzRequiredModsTests(unittest.TestCase):

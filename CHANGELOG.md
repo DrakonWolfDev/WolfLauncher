@@ -5,6 +5,9 @@
   a strict bounded manifest decoder that rejects incomplete, overflowed,
   duplicate or malformed responses atomically, while retaining Steam for
   Workshop metadata and installed-item truth on Windows and Linux.
+- Accepted DayZ's bounded opaque post-signature rules extension after complete
+  manifest parsing; this fixes Linux/server combinations that legitimately
+  return binary extension bytes without weakening declared-record validation.
 
 ## Unreleased
 

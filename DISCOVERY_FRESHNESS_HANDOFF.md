@@ -42,9 +42,10 @@ and launch preflight now obtain the required Workshop manifest directly from
 the game server's binary `A2S_RULES` response on the existing background
 worker. The owned decoder is bounded and fail-closed for overflow, truncation,
 duplicates and structural ambiguity; it never accepts a partial prefix. Live
-DayZ responses may append an undocumented printable signature/name extension
-after the declared signature records, so the decoder permits only a bounded,
-valid UTF-8, wholly printable trailer and rejects binary/control data. Steam
+DayZ responses may append an undocumented opaque extension after the declared
+signature records. The decoder permits that suffix only after every declared
+mod and signature has parsed completely and limits it to 2 KiB; its content is
+never interpreted or exposed. Steam
 remains responsible for Workshop display metadata and local item state. DZSA
 remains only in the explicitly labelled legacy Linux shell-launcher fallback,
 not in the native Windows/Linux path. WolfAPI cached counts remain browse-time
