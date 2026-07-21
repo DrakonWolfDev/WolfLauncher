@@ -431,12 +431,13 @@ def browser_summary_text(summary: dict[str, int], shown: int, match_count: int, 
     if total == 0:
         return "No discovered servers cached"
 
-    parts = [f"Showing {shown} of {match_count} matching", f"{summary['online']} online"]
-    if shown == limit and match_count > shown:
-        parts[0] = f"Showing first {shown} of {match_count} matching"
-    elif shown == 0:
-        parts[0] = f"No matches from {total} cached"
-    return " · ".join(parts)
+    if shown == 0:
+        result_text = "No matching servers"
+    elif shown == limit and match_count > shown:
+        result_text = f"{shown:,} of {match_count:,} matching servers shown"
+    else:
+        result_text = f"{match_count:,} matching servers"
+    return f"{result_text} · {summary['online']:,} online in directory"
 
 
 def browser_summary_tooltip(summary: dict[str, int]) -> str:

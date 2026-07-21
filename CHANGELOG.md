@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Clarified the Server Browser count summary so search results and the overall
+  directory total cannot be mistaken for a download fraction, for example
+  `102 matching servers · 1,113 online in directory`.
+
 - Changed six-server freshness from a total cap into a concurrency batch size.
   The launcher now walks every current matching row in successive top-to-bottom
   batches, while a changed search still cancels the obsolete pass immediately.
