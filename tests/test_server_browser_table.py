@@ -258,6 +258,8 @@ class ServerBrowserTableTests(unittest.TestCase):
             browser_table=table,
             results_freshness_worker=None,
             pending_results_freshness=False,
+            results_freshness_context="",
+            results_freshness_attempted_keys=set(),
             selection_enrichment_workers={},
             statusBar=Mock(return_value=Mock()),
             handle_results_freshness_progress=Mock(),
@@ -273,6 +275,20 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertFalse(worker_class.call_args.kwargs["probe_fallbacks"])
         worker.start.assert_called_once_with()
         self.assertIs(window.results_freshness_worker, worker)
+        self.assertEqual(
+            window.results_freshness_attempted_keys,
+            {server.cache_key for server in queued},
+        )
+
+        window.results_freshness_worker = None
+        MainWindow.schedule_results_freshness_check(window)
+
+        second_batch = worker_class.call_args.args[0]
+        self.assertEqual(len(second_batch), 6)
+        self.assertEqual(
+            window.results_freshness_attempted_keys,
+            {server.cache_key for server in servers},
+        )
 
     def test_results_freshness_coalesces_while_a_batch_is_running(self):
         running = Mock()
@@ -281,6 +297,8 @@ class ServerBrowserTableTests(unittest.TestCase):
             browser_servers=[],
             results_freshness_worker=running,
             pending_results_freshness=False,
+            results_freshness_context="",
+            results_freshness_attempted_keys=set(),
         )
 
         MainWindow.schedule_results_freshness_check(window)
@@ -288,24 +306,26 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertTrue(window.pending_results_freshness)
         running.cancel.assert_called_once_with()
 
-    def test_results_freshness_completion_does_not_rebuild_the_table(self):
-        status_bar = Mock()
+    @patch("wolflauncher.app.QTimer.singleShot")
+    def test_results_freshness_completion_schedules_the_next_batch_without_rebuild(
+        self, single_shot
+    ):
         window = SimpleNamespace(
             results_freshness_worker=Mock(),
             pending_results_freshness=False,
             refresh_server_browser=Mock(),
             schedule_selected_discovered_server_check=Mock(),
-            statusBar=Mock(return_value=status_bar),
+            schedule_results_freshness_check=Mock(),
         )
 
         MainWindow.handle_results_freshness_finished(window)
 
         self.assertIsNone(window.results_freshness_worker)
         window.refresh_server_browser.assert_not_called()
-        status_bar.showMessage.assert_called_once_with(
-            "Live freshness check complete.", 5000
+        window.schedule_selected_discovered_server_check.assert_not_called()
+        single_shot.assert_called_once_with(
+            0, window.schedule_results_freshness_check
         )
-        window.schedule_selected_discovered_server_check.assert_called_once_with()
 
     def test_first_two_search_characters_do_not_rebuild_the_table(self):
         timer = Mock()

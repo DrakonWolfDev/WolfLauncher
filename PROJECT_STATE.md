@@ -39,7 +39,7 @@ vendored MIT shell launcher remains a visible compatibility fallback.
   browsing, one background GameDig worker checks the selected row, and launch
   preflight is authoritative. Bulk visible-row enrichment and redundant cache
   refresh controls are retired. Explicit refreshes and completed searches may
-  check up to six matching rows on one latest-search-wins background worker. Settings
+  check all current matching rows six at a time on one latest-search-wins background worker. Settings
   hides non-actionable and platform-irrelevant controls from the normal Windows
   experience and keeps its health cards full-width and vertically ordered.
 - Server Browser text search does no cache query or table rebuild before three

@@ -40,6 +40,7 @@ def owner_with(**overrides):
         "pending_browser_mod_previews": {"two": object()},
         "pending_wolfapi_search": "query",
         "pending_results_freshness": True,
+        "results_freshness_attempted_keys": {"three"},
         "wolfapi_refresh_process": None,
     }
     values.update(overrides)
@@ -101,6 +102,7 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(owner.pending_browser_mod_previews, {})
         self.assertEqual(owner.pending_wolfapi_search, "")
         self.assertFalse(owner.pending_results_freshness)
+        self.assertEqual(owner.results_freshness_attempted_keys, set())
         self.assertTrue(owner._shutting_down)
 
     def test_stop_runtime_reports_worker_that_outlives_deadline(self):

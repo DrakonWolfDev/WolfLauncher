@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Changed six-server freshness from a total cap into a concurrency batch size.
+  The launcher now walks every current matching row in successive top-to-bottom
+  batches, while a changed search still cancels the obsolete pass immediately.
+
 - Fixed completed freshness batches leaving the status bar permanently in a
   checking state. Completion now reports explicitly and no longer performs a
   redundant full Server Browser table rebuild after its row-level updates.
@@ -27,7 +31,7 @@
   and replaced Windows' redundant Steam-installation selector with a player-name
   field synchronized with Favourite Servers.
 - Added bounded results freshness after an explicit server-list refresh or a
-  completed WolfAPI search. At most six matching rows are checked by the
+  completed WolfAPI search. Matching rows are checked six at a time by the
   background GameDig worker, and repeated requests coalesce without blocking
   Qt's UI thread.
 

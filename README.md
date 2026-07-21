@@ -418,7 +418,7 @@ background worker. Only the selected row and inspector are updated; rapid
 selection changes retain only the newest pending check. WolfAPI remains
 browse-time truth and the guarded launch preflight performs the final live
 check. An explicit **Refresh server list** action or a completed WolfAPI search
-also checks up to six matching rows in one bounded background batch. A newer
+also checks all current matching rows in bounded batches of six. A newer
 search cancels the obsolete batch and its GameDig processes, so repeated searches
 do not build a work backlog. There is no unbounded visible-row enrichment workflow, and
 no network work is performed on the Qt UI thread. These lightweight batches

@@ -258,6 +258,8 @@ class MainWindow(QMainWindow):
         self.pending_selection_checks = {}
         self.results_freshness_worker = None
         self.pending_results_freshness = False
+        self.results_freshness_context = ""
+        self.results_freshness_attempted_keys = set()
         self.browser_mod_workers = {}
         self.pending_browser_mod_previews = {}
         self.browser_mod_results = {}
@@ -1708,6 +1710,14 @@ class MainWindow(QMainWindow):
         """Live-check only the small result set produced by an explicit user action."""
         if not hasattr(self, "browser_servers"):
             return
+        context = (
+            " ".join(self.browser_search.text().split())
+            if hasattr(self, "browser_search")
+            else ""
+        )
+        if context != self.results_freshness_context:
+            self.results_freshness_context = context
+            self.results_freshness_attempted_keys.clear()
         if self.results_freshness_worker and self.results_freshness_worker.isRunning():
             self.pending_results_freshness = True
             self.results_freshness_worker.cancel()
@@ -1734,14 +1744,25 @@ class MainWindow(QMainWindow):
         servers = [
             server
             for server in ordered_servers
-            if server.cache_key not in selected_workers and local_enrichment_due(server)
+            if server.cache_key not in selected_workers
+            and server.cache_key not in self.results_freshness_attempted_keys
+            and local_enrichment_due(server)
         ][:MAX_RESULTS_FRESHNESS_BATCH]
         if not servers:
             self.pending_results_freshness = False
-            self.statusBar().showMessage(
-                "Matching servers already have recent live status.", 5000
+            completed_pass = bool(self.results_freshness_attempted_keys)
+            self.results_freshness_attempted_keys.clear()
+            message = (
+                "Live freshness check complete."
+                if completed_pass
+                else "Matching servers already have recent live status."
             )
+            self.statusBar().showMessage(message, 5000)
+            self.schedule_selected_discovered_server_check()
             return
+        self.results_freshness_attempted_keys.update(
+            server.cache_key for server in servers
+        )
         self.pending_results_freshness = False
         self.statusBar().showMessage(
             f"Checking live freshness for {len(servers)} matching server(s) in the background..."
@@ -1762,10 +1783,7 @@ class MainWindow(QMainWindow):
         self.results_freshness_worker = None
         if self.pending_results_freshness:
             self.pending_results_freshness = False
-            QTimer.singleShot(0, self.schedule_results_freshness_check)
-        else:
-            self.statusBar().showMessage("Live freshness check complete.", 5000)
-            self.schedule_selected_discovered_server_check()
+        QTimer.singleShot(0, self.schedule_results_freshness_check)
 
     def schedule_selected_discovered_server_check(self):
         if not hasattr(self, "browser_selection_timer"):

@@ -39,7 +39,11 @@ def stop_runtime_scheduling(owner) -> None:
         timer = getattr(owner, name, None)
         if timer is not None:
             timer.stop()
-    for name in ("pending_selection_checks", "pending_browser_mod_previews"):
+    for name in (
+        "pending_selection_checks",
+        "pending_browser_mod_previews",
+        "results_freshness_attempted_keys",
+    ):
         pending = getattr(owner, name, None)
         if pending is not None:
             pending.clear()
