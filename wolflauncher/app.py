@@ -195,6 +195,17 @@ from .workshop_subscription import (
 MAX_SELECTED_BROWSER_RUNNERS = 3
 MAX_SELECTED_STATUS_RUNNERS = 1
 MAX_RESULTS_FRESHNESS_BATCH = 10
+MIN_BROWSER_SEARCH_LENGTH = 3
+
+
+def persist_enriched_server(connection, old_cache_key: str, server: DiscoveredServer) -> bool:
+    """Persist a live correction unless it conflicts with another stable server."""
+    try:
+        server_cache.replace_server_key(connection, old_cache_key, server)
+    except ValueError:
+        connection.rollback()
+        return False
+    return True
 
 
 class MainWindow(QMainWindow):
@@ -308,6 +319,10 @@ class MainWindow(QMainWindow):
         self.remote_search_timer.setSingleShot(True)
         self.remote_search_timer.setInterval(450)
         self.remote_search_timer.timeout.connect(self.start_remote_wolfapi_search)
+        self.browser_filter_timer = QTimer(self)
+        self.browser_filter_timer.setSingleShot(True)
+        self.browser_filter_timer.setInterval(250)
+        self.browser_filter_timer.timeout.connect(self.refresh_server_browser)
         self.browser_selection_timer = QTimer(self)
         self.browser_selection_timer.setSingleShot(True)
         self.browser_selection_timer.setInterval(450)
@@ -468,7 +483,7 @@ class MainWindow(QMainWindow):
         self.browser_search.setClearButtonEnabled(True)
         self.browser_search.setMinimumWidth(280)
         self.browser_search.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        self.browser_search.textChanged.connect(self.refresh_server_browser)
+        self.browser_search.textChanged.connect(self.schedule_browser_search_refresh)
         self.browser_search.textChanged.connect(self.schedule_remote_wolfapi_search)
         filters.addWidget(self.browser_search, 1)
 
@@ -1629,6 +1644,16 @@ class MainWindow(QMainWindow):
         self.pending_wolfapi_search = query
         self.remote_search_timer.start()
 
+    def schedule_browser_search_refresh(self, text: str):
+        self.browser_filter_timer.stop()
+        query = " ".join(text.split())
+        if query and len(query) < MIN_BROWSER_SEARCH_LENGTH:
+            self.browser_summary.setText(
+                f"Type at least {MIN_BROWSER_SEARCH_LENGTH} characters to search servers."
+            )
+            return
+        self.browser_filter_timer.start()
+
     def start_remote_wolfapi_search(self):
         query = " ".join(self.browser_search.text().split())
         if self.discovery_provider_key() != "wolfapi_v1" or len(query) < 3:
@@ -1706,7 +1731,8 @@ class MainWindow(QMainWindow):
 
     def handle_results_freshness_progress(self, payload, _completed: int, _total: int):
         old_cache_key, server = payload
-        server_cache.replace_server_key(self.server_cache, old_cache_key, server)
+        if not persist_enriched_server(self.server_cache, old_cache_key, server):
+            return
         update_browser_table_row(self.browser_table, old_cache_key, server)
 
     def handle_results_freshness_finished(self):
@@ -1760,7 +1786,12 @@ class MainWindow(QMainWindow):
 
     def handle_selected_enrichment_progress(self, payload, _completed: int, _total: int):
         old_cache_key, server = payload
-        server_cache.replace_server_key(self.server_cache, old_cache_key, server)
+        if not persist_enriched_server(self.server_cache, old_cache_key, server):
+            self.statusBar().showMessage(
+                "Live result matched another stable server; the cached identity was kept.",
+                7000,
+            )
+            return
         update_browser_table_row(self.browser_table, old_cache_key, server)
         self.update_browser_selection_context()
         if server.online:

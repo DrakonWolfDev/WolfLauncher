@@ -8,7 +8,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PySide6.QtCore import QItemSelectionModel, QSize, Qt
 from PySide6.QtWidgets import QApplication, QCheckBox, QHeaderView, QPushButton, QTableWidget
 
-from wolflauncher.app import MainWindow
+from wolflauncher.app import MainWindow, persist_enriched_server
 from wolflauncher.models import DiscoveredServer
 from wolflauncher.server_browser_table import (
     BROWSER_COLUMN_COUNT,
@@ -278,6 +278,40 @@ class ServerBrowserTableTests(unittest.TestCase):
         MainWindow.schedule_results_freshness_check(window)
 
         self.assertTrue(window.pending_results_freshness)
+
+    def test_first_two_search_characters_do_not_rebuild_the_table(self):
+        timer = Mock()
+        summary = Mock()
+        window = SimpleNamespace(browser_filter_timer=timer, browser_summary=summary)
+
+        MainWindow.schedule_browser_search_refresh(window, "n")
+        MainWindow.schedule_browser_search_refresh(window, "ne")
+
+        self.assertEqual(timer.stop.call_count, 2)
+        timer.start.assert_not_called()
+        summary.setText.assert_called_with("Type at least 3 characters to search servers.")
+
+    def test_three_search_characters_schedule_one_debounced_rebuild(self):
+        timer = Mock()
+        window = SimpleNamespace(browser_filter_timer=timer, browser_summary=Mock())
+
+        MainWindow.schedule_browser_search_refresh(window, "new")
+
+        timer.stop.assert_called_once_with()
+        timer.start.assert_called_once_with()
+
+    def test_enrichment_identity_collision_is_rolled_back_and_skipped(self):
+        connection = Mock()
+        server = DiscoveredServer("Conflict", "203.0.113.20", 2302, 27016)
+
+        with patch(
+            "wolflauncher.app.server_cache.replace_server_key",
+            side_effect=ValueError("Corrected endpoint belongs to another stable server."),
+        ):
+            persisted = persist_enriched_server(connection, "old-key", server)
+
+        self.assertFalse(persisted)
+        connection.rollback.assert_called_once_with()
 
     @patch("wolflauncher.app.QTimer.singleShot")
     def test_opening_browser_schedules_background_refresh_without_reloading_view(

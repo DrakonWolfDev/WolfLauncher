@@ -362,7 +362,11 @@ advanced tools for an explicit refresh. The legacy WolfAPI, BattleMetrics,
 Steam Web API and Steam Master providers remain advanced alternatives; failed
 refreshes keep the existing SQLite rows.
 
-Full-snapshot provider refreshes sync their own cache rows rather than accumulating old entries. Bounded WolfAPI v1 refreshes fetch 100-row pages in the background up to the configured limit and merge by stable ID without deleting off-page rows. With v1 selected, Server Browser search displays SQLite matches immediately, waits briefly for typing to settle, then merges up to 100 remote matches from the full directory. An exact `host:port` search uses alias-aware resolution and checks the port as either game or query port. Failed refreshes and searches keep existing cached rows. Keep servers you care about in Favourite Servers.
+Full-snapshot provider refreshes sync their own cache rows rather than accumulating old entries. Bounded WolfAPI v1 refreshes fetch 100-row pages in the background up to the configured limit and merge by stable ID without deleting off-page rows. With v1 selected, Server Browser search displays cached SQLite matches after typing pauses, then merges up to 100 remote matches from the full directory. An exact `host:port` search uses alias-aware resolution and checks the port as either game or query port. Failed refreshes and searches keep existing cached rows. Keep servers you care about in Favourite Servers.
+
+Server Browser search begins at three characters. One- and two-character input
+does not query the cache or rebuild the table; after the third character the
+local refresh waits briefly for typing to pause, keeping the UI responsive.
 
 Hover the Server Browser **Status** cell, or copy a server's details, to inspect
 WolfAPI freshness, validation time and provider observation. These fields are

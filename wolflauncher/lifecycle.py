@@ -25,7 +25,12 @@ WORKER_COLLECTION_ATTRIBUTES = (
     "browser_mod_workers",
 )
 
-TIMER_ATTRIBUTES = ("timer", "remote_search_timer", "browser_selection_timer")
+TIMER_ATTRIBUTES = (
+    "timer",
+    "remote_search_timer",
+    "browser_filter_timer",
+    "browser_selection_timer",
+)
 
 
 def stop_runtime_scheduling(owner) -> None:

@@ -42,6 +42,9 @@ vendored MIT shell launcher remains a visible compatibility fallback.
   check up to ten matching rows on one coalescing background worker. Settings
   hides non-actionable and platform-irrelevant controls from the normal Windows
   experience and keeps its health cards full-width and vertically ordered.
+- Server Browser text search does no cache query or table rebuild before three
+  normalized characters and debounces the eventual local refresh. Conflicting
+  live endpoint corrections never replace another stable WolfAPI identity.
 - Linux and Windows storage paths, Steam command discovery and process
   inspection sit behind tested platform backends. On Windows, registry/library
   detection, settings persistence, the offscreen GUI, absolute Workshop mod

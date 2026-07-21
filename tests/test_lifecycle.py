@@ -18,6 +18,7 @@ def owner_with(**overrides):
     values = {
         "timer": Mock(),
         "remote_search_timer": Mock(),
+        "browser_filter_timer": Mock(),
         "browser_selection_timer": Mock(),
         "worker": None,
         "mod_worker": None,
@@ -91,6 +92,7 @@ class LifecycleTests(unittest.TestCase):
 
         owner.timer.stop.assert_called_once_with()
         owner.remote_search_timer.stop.assert_called_once_with()
+        owner.browser_filter_timer.stop.assert_called_once_with()
         owner.browser_selection_timer.stop.assert_called_once_with()
         worker.cancel.assert_called_once_with()
         worker.requestInterruption.assert_called_once_with()

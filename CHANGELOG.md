@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Fixed Server Browser search rebuilding a broad result table on the first
+  keystroke. Local and WolfAPI searches now share a three-character threshold,
+  while the local table refresh also waits for a short typing pause.
+- Prevented live GameDig endpoint corrections from raising into Qt when the
+  corrected endpoint already belongs to another stable WolfAPI server. The
+  conflicting correction is rolled back and the remaining batch continues.
+
 - Stacked the Steam and launcher health cards at full width with Steam first,
   and replaced Windows' redundant Steam-installation selector with a player-name
   field synchronized with Favourite Servers.
