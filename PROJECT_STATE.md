@@ -52,6 +52,8 @@ vendored MIT shell launcher remains a visible compatibility fallback.
   Batch completion updates status explicitly and never rebuilds the full table.
 - Entering the Server Browser schedules four six-server freshness batches in
   visual table order; explicit searches supersede them and may continue across all matches.
+- Scrolling is debounced and checks at most six stale servers from the settled
+  viewport; hidden rows are never used to fill that scroll-triggered batch.
 - Region is not shown in normal browsing: BattleMetrics was its only trusted
   source, while the supported Steam/A2S path supplies no reliable country data.
 - Linux and Windows storage paths, Steam command discovery and process

@@ -5,6 +5,8 @@
 - Opening the Server Browser now starts four non-blocking live freshness batches
   for up to 24 servers in visible order. Searches can cancel and supersede this
   initial batch, while cached rows remain immediately usable.
+- Scrolling the Server Browser now starts one six-server freshness batch after
+  movement settles, limited strictly to stale rows in the current viewport.
 
 - Removed Region from the Server Browser table and inspector because its only
   trusted source was the now-disabled BattleMetrics ingestion. Stored country

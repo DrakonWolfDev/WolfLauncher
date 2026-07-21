@@ -260,6 +260,7 @@ class MainWindow(QMainWindow):
         self.results_freshness_worker = None
         self.pending_results_freshness = False
         self.initial_results_freshness_batches_remaining = 0
+        self.results_freshness_visible_only = False
         self.results_freshness_context = ""
         self.results_freshness_attempted_keys = set()
         self.browser_mod_workers = {}
@@ -331,6 +332,10 @@ class MainWindow(QMainWindow):
         self.browser_selection_timer.setSingleShot(True)
         self.browser_selection_timer.setInterval(450)
         self.browser_selection_timer.timeout.connect(self.check_selected_discovered_server_status)
+        self.browser_scroll_timer = QTimer(self)
+        self.browser_scroll_timer.setSingleShot(True)
+        self.browser_scroll_timer.setInterval(350)
+        self.browser_scroll_timer.timeout.connect(self.start_browser_scroll_freshness_check)
 
         self.tabs = QTabWidget()
         self.tabs.setObjectName("mainTabs")
@@ -616,6 +621,9 @@ class MainWindow(QMainWindow):
             lambda item: self.handle_browser_double_clicked(item.row(), item.column())
         )
         self.browser_table.itemSelectionChanged.connect(self.update_browser_selection_context)
+        self.browser_table.verticalScrollBar().valueChanged.connect(
+            self.schedule_browser_scroll_freshness_check
+        )
         self.browser_table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.browser_table.customContextMenuRequested.connect(self.show_browser_context_menu)
         self.browser_detail_card = QFrame()
@@ -1711,14 +1719,27 @@ class MainWindow(QMainWindow):
     def schedule_results_freshness_check(self):
         """Live-check only the small result set produced by an explicit user action."""
         self.initial_results_freshness_batches_remaining = 0
+        self.results_freshness_visible_only = False
         MainWindow._schedule_results_freshness_check(self)
 
     def schedule_initial_results_freshness_check(self):
         """Live-check four visible-order batches when the browser is first opened."""
         self.initial_results_freshness_batches_remaining = INITIAL_RESULTS_FRESHNESS_BATCHES
+        self.results_freshness_visible_only = False
         MainWindow._schedule_results_freshness_check(self)
 
     def continue_initial_results_freshness_check(self):
+        MainWindow._schedule_results_freshness_check(self)
+
+    def schedule_browser_scroll_freshness_check(self, _value: int):
+        """Debounce viewport freshness until the user has stopped scrolling."""
+        self.browser_scroll_timer.stop()
+        self.browser_scroll_timer.start()
+
+    def start_browser_scroll_freshness_check(self):
+        """Live-check at most one batch drawn only from currently visible rows."""
+        self.initial_results_freshness_batches_remaining = 1
+        self.results_freshness_visible_only = True
         MainWindow._schedule_results_freshness_check(self)
 
     def _schedule_results_freshness_check(self):
@@ -1745,7 +1766,11 @@ class MainWindow(QMainWindow):
         if bottom_row < top_row:
             bottom_row = min(row_count - 1, top_row + MAX_RESULTS_FRESHNESS_BATCH - 1)
         visible_rows = range(top_row, bottom_row + 1)
-        remaining_rows = (*range(0, top_row), *range(bottom_row + 1, row_count))
+        remaining_rows = (
+            ()
+            if getattr(self, "results_freshness_visible_only", False)
+            else (*range(0, top_row), *range(bottom_row + 1, row_count))
+        )
         ordered_servers = []
         for row in (*visible_rows, *remaining_rows):
             item = self.browser_table.item(row, 0)
@@ -1763,6 +1788,7 @@ class MainWindow(QMainWindow):
         if not servers:
             self.pending_results_freshness = False
             self.initial_results_freshness_batches_remaining = 0
+            self.results_freshness_visible_only = False
             completed_pass = bool(self.results_freshness_attempted_keys)
             self.results_freshness_attempted_keys.clear()
             message = (
@@ -1799,8 +1825,14 @@ class MainWindow(QMainWindow):
             if self.initial_results_freshness_batches_remaining:
                 QTimer.singleShot(0, self.continue_initial_results_freshness_check)
                 return
+            message = (
+                "Visible server freshness check complete."
+                if getattr(self, "results_freshness_visible_only", False)
+                else "Initial live freshness check complete."
+            )
+            self.results_freshness_visible_only = False
             self.results_freshness_attempted_keys.clear()
-            self.statusBar().showMessage("Initial live freshness check complete.", 5000)
+            self.statusBar().showMessage(message, 5000)
             self.schedule_selected_discovered_server_check()
             return
         QTimer.singleShot(0, self.schedule_results_freshness_check)

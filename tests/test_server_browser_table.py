@@ -385,6 +385,25 @@ class ServerBrowserTableTests(unittest.TestCase):
         timer.stop.assert_called_once_with()
         timer.start.assert_called_once_with()
 
+    def test_scrolling_restarts_the_viewport_freshness_debounce(self):
+        timer = Mock()
+        window = SimpleNamespace(browser_scroll_timer=timer)
+
+        MainWindow.schedule_browser_scroll_freshness_check(window, 12)
+
+        timer.stop.assert_called_once_with()
+        timer.start.assert_called_once_with()
+
+    @patch.object(MainWindow, "_schedule_results_freshness_check")
+    def test_scrolled_freshness_is_one_visible_only_batch(self, schedule):
+        window = SimpleNamespace()
+
+        MainWindow.start_browser_scroll_freshness_check(window)
+
+        self.assertEqual(window.initial_results_freshness_batches_remaining, 1)
+        self.assertTrue(window.results_freshness_visible_only)
+        schedule.assert_called_once_with(window)
+
     def test_enrichment_identity_collision_is_rolled_back_and_skipped(self):
         connection = Mock()
         server = DiscoveredServer("Conflict", "203.0.113.20", 2302, 27016)
