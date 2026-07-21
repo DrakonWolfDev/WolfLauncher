@@ -594,7 +594,6 @@ class MainWindow(QMainWindow):
                 "Last Checked",
                 "Last Seen",
                 "Source",
-                "Region",
                 "Game Time",
             ]
         )
@@ -1711,9 +1710,7 @@ class MainWindow(QMainWindow):
         if not hasattr(self, "browser_servers"):
             return
         context = (
-            " ".join(self.browser_search.text().split())
-            if hasattr(self, "browser_search")
-            else ""
+            " ".join(self.browser_search.text().split()) if hasattr(self, "browser_search") else ""
         )
         if context != self.results_freshness_context:
             self.results_freshness_context = context
@@ -1760,9 +1757,7 @@ class MainWindow(QMainWindow):
             self.statusBar().showMessage(message, 5000)
             self.schedule_selected_discovered_server_check()
             return
-        self.results_freshness_attempted_keys.update(
-            server.cache_key for server in servers
-        )
+        self.results_freshness_attempted_keys.update(server.cache_key for server in servers)
         self.pending_results_freshness = False
         self.statusBar().showMessage(
             f"Checking live freshness for {len(servers)} matching server(s) in the background..."
@@ -2398,9 +2393,7 @@ class MainWindow(QMainWindow):
             self.browser_detail_map.setText(detail.map_name)
             self.browser_detail_players.setText(detail.players)
             self.browser_detail_ping.setText(detail.ping)
-            self.browser_detail_context.setText(
-                f"Region  {detail.region}\nGame time  {detail.game_time}"
-            )
+            self.browser_detail_context.setText(f"Game time  {detail.game_time}")
             self.browser_detail_truth.setText(f"Truth basis\n{detail.truth}")
             self.browser_detail_features.setText(f"Features\n{detail.features}")
             self.browser_detail_mods.setText(f"Mod readiness\n{detail.mods}")
@@ -2423,7 +2416,7 @@ class MainWindow(QMainWindow):
             )
         configure_priority_columns(
             self.browser_table,
-            (0, 5, 6, 16, 7, 15, 8, 10, 11),
+            (0, 5, 6, 15, 7, 8, 10, 11),
             show_details=show_details,
             stretch_columns=(),
         )
@@ -4314,7 +4307,6 @@ class MainWindow(QMainWindow):
         self.launch_button.setEnabled(True)
 
     def perform_launch(self, server: Server):
-
         try:
             command = self.build_selected_launch_command(server)
         except NativeLaunchError as exc:

@@ -10,9 +10,8 @@ from .server_display import ping_severity
 from .table_items import SortableTableWidgetItem
 from .theme import STATUS_COLOURS, monospace_font, time_icon
 
-BROWSER_COLUMN_COUNT = 17
-BROWSER_REGION_COLUMN = 15
-BROWSER_GAME_TIME_COLUMN = 16
+BROWSER_COLUMN_COUNT = 16
+BROWSER_GAME_TIME_COLUMN = 15
 
 
 def selected_browser_cache_key(table: QTableWidget) -> str:
@@ -111,7 +110,7 @@ def _set_browser_table_row(
                 item.setForeground(QColor(STATUS_COLOURS["negative"]))
         if column in {7, 8}:
             item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        if column in {2, 3, 4, 8, 9, 11, BROWSER_REGION_COLUMN, BROWSER_GAME_TIME_COLUMN}:
+        if column in {2, 3, 4, 8, 9, 11, BROWSER_GAME_TIME_COLUMN}:
             item.setFont(monospace_font())
         if column == BROWSER_GAME_TIME_COLUMN:
             is_day = game_time_is_day(server)

@@ -50,7 +50,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertEqual(table.item(0, 7).text(), "12/60")
         self.assertIsInstance(table.item(0, 7), SortableTableWidgetItem)
         self.assertEqual(table.item(0, 7).sort_value, 12)
-        self.assertEqual(table.item(0, 15).text(), "DE")
+        self.assertEqual(table.columnCount(), 16)
         self.assertEqual(table.item(0, 0).data(Qt.UserRole), server.cache_key)
         self.assertIn("Locally validated live name", table.item(0, 0).toolTip())
         self.assertEqual(
@@ -73,8 +73,8 @@ class ServerBrowserTableTests(unittest.TestCase):
         populate_browser_table(table, [server])
 
         self.assertEqual(table.iconSize(), QSize(20, 20))
-        self.assertFalse(table.item(0, 16).icon().isNull())
-        self.assertEqual(table.item(0, 16).text(), "17:07 · 3×")
+        self.assertFalse(table.item(0, 15).icon().isNull())
+        self.assertEqual(table.item(0, 15).text(), "17:07 · 3×")
 
     def test_visible_selection_wins_over_a_stale_current_row(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)
@@ -323,9 +323,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertIsNone(window.results_freshness_worker)
         window.refresh_server_browser.assert_not_called()
         window.schedule_selected_discovered_server_check.assert_not_called()
-        single_shot.assert_called_once_with(
-            0, window.schedule_results_freshness_check
-        )
+        single_shot.assert_called_once_with(0, window.schedule_results_freshness_check)
 
     def test_first_two_search_characters_do_not_rebuild_the_table(self):
         timer = Mock()
@@ -362,9 +360,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         connection.rollback.assert_called_once_with()
 
     @patch("wolflauncher.app.QTimer.singleShot")
-    def test_opening_browser_schedules_background_refresh_without_reloading_view(
-        self, single_shot
-    ):
+    def test_opening_browser_schedules_background_refresh_without_reloading_view(self, single_shot):
         window = SimpleNamespace(
             server_browser_tab_index=1,
             schedule_selected_discovered_server_check=Mock(),
@@ -424,8 +420,8 @@ class ServerBrowserTableTests(unittest.TestCase):
         header = table.horizontalHeader()
         self.assertEqual(header.sectionResizeMode(0), QHeaderView.Stretch)
         self.assertEqual(
-            [header.logicalIndex(index) for index in range(9)],
-            [0, 5, 6, 16, 7, 15, 8, 10, 11],
+            [header.logicalIndex(index) for index in range(8)],
+            [0, 5, 6, 15, 7, 8, 10, 11],
         )
 
     def test_population_replaces_existing_rows_and_keeps_missing_ping_guidance(self):
@@ -546,7 +542,6 @@ class ServerBrowserTableTests(unittest.TestCase):
                 "Last Checked",
                 "Last Seen",
                 "Source",
-                "Region",
                 "Game Time",
             ]
         )

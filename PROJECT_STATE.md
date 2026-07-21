@@ -50,6 +50,8 @@ vendored MIT shell launcher remains a visible compatibility fallback.
   fallback-port probing remains selection- and launch-driven. Superseded result
   batches terminate their GameDig child processes rather than delaying later searches.
   Batch completion updates status explicitly and never rebuilds the full table.
+- Region is not shown in normal browsing: BattleMetrics was its only trusted
+  source, while the supported Steam/A2S path supplies no reliable country data.
 - Linux and Windows storage paths, Steam command discovery and process
   inspection sit behind tested platform backends. On Windows, registry/library
   detection, settings persistence, the offscreen GUI, absolute Workshop mod

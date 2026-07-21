@@ -2,7 +2,7 @@ import json
 import subprocess
 import threading
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from wolflauncher.models import Server
 from wolflauncher.status import (

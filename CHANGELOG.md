@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Removed Region from the Server Browser table and inspector because its only
+  trusted source was the now-disabled BattleMetrics ingestion. Stored country
+  fields remain compatible with older caches but are no longer presented as
+  current browsing information.
+
 - Clarified the Server Browser count summary so search results and the overall
   directory total cannot be mistaken for a download fraction, for example
   `102 matching servers · 1,113 online in directory`.

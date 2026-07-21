@@ -43,7 +43,6 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertEqual(detail.title, "Namalsk Adventure")
         self.assertEqual(detail.status_kind, "ready")
         self.assertEqual(detail.map_name, "Namalsk")
-        self.assertEqual(detail.region, "DE")
         self.assertEqual(detail.game_time, "Unknown until locally checked")
         self.assertEqual(detail.players, "12/60")
         self.assertEqual(detail.ping, "42 ms")
@@ -138,28 +137,11 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertEqual(row.values[7], "12/60")
         self.assertEqual(row.values[10], "Password, Modded")
         self.assertEqual(row.values[15], "—")
-        self.assertEqual(row.values[16], "—")
         self.assertEqual(row.sort_values[7], 12)
         self.assertIn("Locally validated live name", row.tooltips[0])
         self.assertIn("Provider/cache name: Cached Name", row.tooltips[0])
         self.assertIn(12, row.tooltips)
         self.assertEqual(row.status_colour, STATUS_COLOURS["positive"])
-
-    def test_browser_row_presents_trusted_country_as_compact_region(self):
-        server = DiscoveredServer(
-            name="German Server",
-            host="203.0.113.10",
-            game_port=2302,
-            query_port=27016,
-            country_code="DE",
-            country_source="battlemetrics",
-        )
-
-        row = browser_row(server)
-
-        self.assertEqual(row.values[15], "DE")
-        self.assertEqual(row.sort_values[15], "DE")
-        self.assertIn("Battlemetrics", row.tooltips[15].title())
 
     def test_game_time_uses_24_hour_day_night_cues_and_effective_multiplier(self):
         day = DiscoveredServer(
@@ -183,8 +165,8 @@ class ServerBrowserPresenterTests(unittest.TestCase):
 
         self.assertEqual(game_time_text(day), "☀ 15:04 · 6×")
         self.assertEqual(game_time_text(night), "☾ 23:10 · 24×")
-        self.assertEqual(browser_row(day).values[16], "15:04 · 6×")
-        self.assertIn("effective night acceleration x24", browser_row(night).tooltips[16])
+        self.assertEqual(browser_row(day).values[15], "15:04 · 6×")
+        self.assertIn("effective night acceleration x24", browser_row(night).tooltips[15])
 
     def test_unified_name_uses_provider_name_until_live_name_is_local(self):
         server = DiscoveredServer(

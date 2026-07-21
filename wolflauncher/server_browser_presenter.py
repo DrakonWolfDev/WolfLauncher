@@ -23,7 +23,6 @@ class BrowserInspector:
     status_kind: str
     endpoint: str
     map_name: str
-    region: str
     game_time: str
     players: str
     ping: str
@@ -264,14 +263,7 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
             + ", ".join(flag.replace("_", " ") for flag in server.quality_flags)
             + ". This is advisory provider-data screening, not proof the server is unsafe."
         )
-    if server.country_code:
-        tooltips[15] = (
-            f"Country reported by {server.country_source or 'the discovery provider'}; "
-            "this is provider metadata, not an IP-based guess."
-        )
-    else:
-        tooltips[15] = "Country is not available from a trusted discovery source."
-    tooltips[16] = game_time_tooltip(server)
+    tooltips[15] = game_time_tooltip(server)
 
     return BrowserRow(
         values=[
@@ -290,7 +282,6 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
             server.last_checked,
             server.last_seen,
             server.source,
-            server.country_code or "—",
             game_time_text(server, include_symbol=False),
         ],
         sort_values=[
@@ -309,7 +300,6 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
             server.last_checked,
             server.last_seen,
             server.source,
-            server.country_code or None,
             _game_time_sort_value(server.game_time),
         ],
         tooltips=tooltips,
@@ -352,7 +342,6 @@ def browser_inspector(
         status_kind=status_kind,
         endpoint=server.connect_target,
         map_name=display_map_name(server.map_name),
-        region=server.country_code or "Not available",
         game_time=(
             game_time_text(server)
             if game_time_text(server) != "—"
