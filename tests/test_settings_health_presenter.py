@@ -30,6 +30,9 @@ class SettingsHealthPresenterTests(unittest.TestCase):
         self.assertEqual(groups[0].status, "WARN")
         self.assertEqual(groups[1].status, "MISSING")
         self.assertEqual(groups[2].status, "OK")
+        self.assertEqual([row[0] for row in groups[0].rows], ["Server API"])
+        self.assertIn("DayZ process", [row[0] for row in groups[1].rows])
+        self.assertNotIn("Proton compatdata", [row[0] for row in groups[1].rows])
         self.assertNotIn("Steam candidates", [row[0] for group in groups for row in group.rows])
 
     def test_aggregate_status_uses_missing_then_warning_then_ok(self):
@@ -42,6 +45,20 @@ class SettingsHealthPresenterTests(unittest.TestCase):
             aggregate_health_status((("A", "WARN", ""), ("B", "MISSING", ""))),
             "MISSING",
         )
+
+    def test_windows_rows_leave_linux_graphics_group_empty(self):
+        groups = settings_health_groups(
+            (
+                ("Server API", "OK", "WolfAPI"),
+                ("Selected Steam", "OK", "Native Steam"),
+                ("DayZ", "OK", "C:/DayZ"),
+                ("Workshop", "OK", "C:/Workshop"),
+                ("DayZ process", "OK", "Not running"),
+            )
+        )
+
+        self.assertEqual(groups[2].key, "graphics")
+        self.assertEqual(groups[2].rows, ())
 
 
 if __name__ == "__main__":

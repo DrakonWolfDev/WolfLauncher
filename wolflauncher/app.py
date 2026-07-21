@@ -193,6 +193,7 @@ from .workshop_subscription import (
 )
 
 MAX_SELECTED_BROWSER_RUNNERS = 3
+MAX_SELECTED_STATUS_RUNNERS = 1
 
 
 class MainWindow(QMainWindow):
@@ -241,8 +242,6 @@ class MainWindow(QMainWindow):
         self.wolfapi_cache_context = (False, "WolfAPI", "wolfapi")
         self.wolfapi_search_worker = None
         self.pending_wolfapi_search = ""
-        self.enrichment_worker = None
-        self.enrichment_mode = ""
         self.selection_enrichment_workers = {}
         self.pending_selection_checks = {}
         self.browser_mod_workers = {}
@@ -320,6 +319,7 @@ class MainWindow(QMainWindow):
         )
         self.mods_tab_index = self.tabs.addTab(self._build_mods_tab(), theme_icon("mods"), "Mods")
         self.tabs.addTab(self._build_settings_tab(), theme_icon("settings"), "Settings")
+        self.tabs.currentChanged.connect(self.handle_main_tab_changed)
         self.setCentralWidget(self.tabs)
 
         self.apply_refresh_timer()
@@ -704,13 +704,8 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.browser_splitter, 1)
 
         buttons = QHBoxLayout()
-        self.refresh_database_button = QPushButton("Refresh database")
+        self.refresh_database_button = QPushButton("Refresh server list")
         self.refresh_database_button.clicked.connect(self.refresh_from_configured_provider)
-        self.enrich_visible_button = QPushButton("Check visible servers")
-        self.enrich_visible_button.setToolTip(
-            "Advanced bulk check. Normal browsing checks only the selected server."
-        )
-        self.enrich_visible_button.clicked.connect(self.enrich_visible_discovered_servers)
         self.browser_promote_button = QPushButton("Add to Favourite Servers")
         self.browser_promote_button.clicked.connect(self.promote_selected_discovered_server)
         self.browser_inspect_button = QPushButton("View mod details")
@@ -721,12 +716,8 @@ class MainWindow(QMainWindow):
         self.browser_launch_button.clicked.connect(self.launch_selected_discovered_server)
         clear_filters = QPushButton("Reset filters")
         clear_filters.clicked.connect(self.reset_browser_filters)
-        refresh = QPushButton("Refresh cache view")
-        refresh.clicked.connect(self.refresh_server_browser)
         advanced_tools = QHBoxLayout()
         advanced_tools.addWidget(self.refresh_database_button)
-        advanced_tools.addWidget(self.enrich_visible_button)
-        advanced_tools.addWidget(refresh)
         advanced_tools.addWidget(clear_filters)
         advanced_tools.addStretch(1)
         advanced_layout.addLayout(advanced_tools)
@@ -944,28 +935,39 @@ class MainWindow(QMainWindow):
         set_ui_role(self.system_summary, "summary")
         layout.addWidget(self.system_summary)
 
+        capabilities = current_platform().capabilities
         launcher_settings = QFormLayout()
-        launcher_controls = QWidget()
-        launcher_controls_layout = QHBoxLayout(launcher_controls)
-        launcher_controls_layout.setContentsMargins(0, 0, 0, 0)
-        launcher_controls_layout.addWidget(self.launch_engine, 1)
+        if capabilities.supports_external_launcher:
+            launcher_controls = QWidget()
+            launcher_controls_layout = QHBoxLayout(launcher_controls)
+            launcher_controls_layout.setContentsMargins(0, 0, 0, 0)
+            launcher_controls_layout.addWidget(self.launch_engine, 1)
 
-        self.external_launcher_settings = QWidget()
-        external_launcher_layout = QHBoxLayout(self.external_launcher_settings)
-        external_launcher_layout.setContentsMargins(0, 0, 0, 0)
-        external_launcher_layout.addWidget(QLabel("Script"))
-        external_launcher_layout.addWidget(self.launcher_path, 1)
-        browse = QPushButton("Browse")
-        browse.clicked.connect(self.browse_launcher)
-        external_launcher_layout.addWidget(browse)
-        launcher_controls_layout.addWidget(self.external_launcher_settings, 1)
-        launcher_settings.addRow("Launch engine", launcher_controls)
-        launcher_settings.addRow("Steam install mode", self.native_steam_mode)
+            self.external_launcher_settings = QWidget()
+            external_launcher_layout = QHBoxLayout(self.external_launcher_settings)
+            external_launcher_layout.setContentsMargins(0, 0, 0, 0)
+            external_launcher_layout.addWidget(QLabel("Script"))
+            external_launcher_layout.addWidget(self.launcher_path, 1)
+            browse = QPushButton("Browse")
+            browse.clicked.connect(self.browse_launcher)
+            external_launcher_layout.addWidget(browse)
+            launcher_controls_layout.addWidget(self.external_launcher_settings, 1)
+            launcher_settings.addRow("Launch engine", launcher_controls)
+        launcher_settings.addRow("Steam installation", self.native_steam_mode)
         layout.addLayout(launcher_settings)
         self.launch_engine.currentTextChanged.connect(
             self.update_external_launcher_settings_visibility
         )
         self.update_external_launcher_settings_visibility()
+
+        self.discovery_auto_refresh = QCheckBox("Keep the server list current automatically")
+        self.discovery_auto_refresh.setChecked(
+            bool(self.settings.get("discovery_auto_refresh", True))
+        )
+        self.discovery_auto_refresh.stateChanged.connect(self.handle_settings_changed)
+        browser_settings = QFormLayout()
+        browser_settings.addRow("Server Browser", self.discovery_auto_refresh)
+        layout.addLayout(browser_settings)
 
         self.health_table = QTableWidget(0, 3)
         self.health_table.setHorizontalHeaderLabels(["Check", "Status", "Details"])
@@ -1001,7 +1003,7 @@ class MainWindow(QMainWindow):
         self.discovery_provider = QComboBox()
         self.discovery_provider.addItems(
             [
-                "WolfAPI v1 (staged)",
+                "WolfAPI",
                 "WolfAPI (legacy fallback)",
                 "BattleMetrics",
                 "Steam Web API",
@@ -1023,13 +1025,6 @@ class MainWindow(QMainWindow):
         self.discovery_limit.valueChanged.connect(self.handle_settings_changed)
         discovery_settings.addRow("Refresh limit", self.discovery_limit)
 
-        self.discovery_auto_refresh = QCheckBox("Refresh selected provider quietly after startup")
-        self.discovery_auto_refresh.setChecked(
-            bool(self.settings.get("discovery_auto_refresh", False))
-        )
-        self.discovery_auto_refresh.stateChanged.connect(self.handle_settings_changed)
-        discovery_settings.addRow("Automatic refresh", self.discovery_auto_refresh)
-
         self.steam_web_api_key = QLineEdit(
             self.steam_api_key
             or os.environ.get("WOLFLAUNCHER_STEAM_WEB_API_KEY")
@@ -1049,6 +1044,8 @@ class MainWindow(QMainWindow):
         self.steam_master_endpoints.editingFinished.connect(self.handle_settings_changed)
         discovery_settings.addRow("Steam masters", self.steam_master_endpoints)
         advanced_layout.addLayout(discovery_settings)
+        self.discovery_settings_layout = discovery_settings
+        self.update_discovery_settings_visibility()
 
         support_tools = QHBoxLayout()
         copy_health = QPushButton("Copy health")
@@ -1161,12 +1158,16 @@ class MainWindow(QMainWindow):
             row_layout.addWidget(name_label)
             row_layout.addWidget(detail_label, 1)
             card_layout.addWidget(row)
-            self.health_group_rows[name] = (status_label, detail_label)
+            self.health_group_rows[name] = (row, status_label, detail_label)
         return card
 
     def update_settings_health_groups(self, rows):
+        visible_names = {name for name, _status, _detail in rows}
+        for name, (row, _status_label, _detail_label) in self.health_group_rows.items():
+            row.setVisible(name in visible_names)
         for group in settings_health_groups(tuple(rows)):
             card, badge = self.health_group_badges[group.key]
+            card.setVisible(bool(group.rows))
             card.setProperty("healthStatus", group.status)
             badge.setProperty("healthStatus", group.status)
             badge.setText(
@@ -1177,7 +1178,7 @@ class MainWindow(QMainWindow):
             badge.style().unpolish(badge)
             badge.style().polish(badge)
             for name, status, detail in group.rows:
-                status_label, detail_label = self.health_group_rows[name]
+                _row, status_label, detail_label = self.health_group_rows[name]
                 status_label.setText("●")
                 status_label.setStyleSheet(f"color: {self._health_colour(status)};")
                 detail_label.setText(detail)
@@ -1188,6 +1189,17 @@ class MainWindow(QMainWindow):
             self.external_launcher_settings.setVisible(
                 self.launch_engine.currentText() == "External launcher"
             )
+
+    def update_discovery_settings_visibility(self):
+        if not hasattr(self, "discovery_settings_layout"):
+            return
+        provider = self.discovery_provider_key()
+        self.discovery_settings_layout.setRowVisible(
+            self.steam_web_api_key, provider == "steam_web_api"
+        )
+        self.discovery_settings_layout.setRowVisible(
+            self.steam_master_endpoints, provider == "steam_master"
+        )
 
     def browse_launcher(self):
         path, _ = QFileDialog.getOpenFileName(self, "Select dayz-launcher.sh")
@@ -1448,6 +1460,12 @@ class MainWindow(QMainWindow):
             self.discovery_worker.discovery_ready.connect(self.handle_auto_steam_discovery_ready)
             self.discovery_worker.start()
 
+    def handle_main_tab_changed(self, index: int):
+        if index != self.server_browser_tab_index:
+            return
+        self.schedule_selected_discovered_server_check()
+        QTimer.singleShot(0, self.maybe_auto_refresh_configured_provider)
+
     def should_auto_refresh_provider(self, provider: str) -> bool:
         return auto_refresh_due(self.settings.get(f"last_{provider}_auto_refresh_at"))
 
@@ -1642,54 +1660,6 @@ class MainWindow(QMainWindow):
         if self.pending_wolfapi_search and self.pending_wolfapi_search == query:
             self.remote_search_timer.start()
 
-    def enrich_visible_discovered_servers(self):
-        if self.enrichment_worker and self.enrichment_worker.isRunning():
-            return
-        servers = list(self.browser_servers)
-        if not servers:
-            QMessageBox.warning(
-                self, "No visible servers", "No discovered servers are visible to enrich."
-            )
-            return
-        self.start_discovered_enrichment(servers, mode="bulk")
-
-    def start_discovered_enrichment(self, servers, mode: str = "bulk"):
-        self.enrichment_mode = mode
-        if mode == "bulk":
-            self.browser_summary.setText(f"Checking {len(servers)} visible server(s) locally...")
-        self.enrich_visible_button.setEnabled(False)
-        self.enrichment_worker = ServerEnrichmentWorker(servers)
-        self.enrichment_worker.enrichment_progress.connect(self.handle_enrichment_progress)
-        self.enrichment_worker.enrichment_ready.connect(self.handle_enrichment_ready)
-        self.enrichment_worker.start()
-
-    def handle_enrichment_progress(self, payload, completed: int, total: int):
-        if self.enrichment_mode == "bulk" and (completed == total or completed % 5 == 0):
-            self.browser_summary.setText(
-                f"Checked {completed} of {total} visible server(s) locally..."
-            )
-
-    def handle_enrichment_ready(self, servers, error: str):
-        mode = self.enrichment_mode
-        self.enrichment_mode = ""
-        self.enrich_visible_button.setEnabled(True)
-        if mode == "selection":
-            count = len(servers)
-        else:
-            count = server_cache.upsert_servers(self.server_cache, servers)
-            self.refresh_server_browser()
-        if error:
-            QMessageBox.warning(
-                self,
-                "Enrichment stopped",
-                f"Updated {count} row(s) before enrichment stopped:\n\n{error}",
-            )
-            return
-        if mode == "bulk":
-            self.statusBar().showMessage(
-                f"Local checks complete: updated {count} discovered server row(s).",
-                7000,
-            )
         else:
             self.schedule_selected_discovered_server_check()
 
@@ -1723,7 +1693,8 @@ class MainWindow(QMainWindow):
         cache_key = server.cache_key
         if cache_key in self.selection_enrichment_workers:
             return
-        if len(self.selection_enrichment_workers) >= MAX_SELECTED_BROWSER_RUNNERS:
+        if len(self.selection_enrichment_workers) >= MAX_SELECTED_STATUS_RUNNERS:
+            self.pending_selection_checks.clear()
             self.pending_selection_checks[cache_key] = server
             return
         worker = ServerEnrichmentWorker([server])
@@ -1744,7 +1715,7 @@ class MainWindow(QMainWindow):
         self.selection_enrichment_workers.pop(cache_key, None)
         while (
             self.pending_selection_checks
-            and len(self.selection_enrichment_workers) < MAX_SELECTED_BROWSER_RUNNERS
+            and len(self.selection_enrichment_workers) < MAX_SELECTED_STATUS_RUNNERS
         ):
             pending_key = next(iter(self.pending_selection_checks))
             server = self.pending_selection_checks.pop(pending_key)
@@ -1932,7 +1903,7 @@ class MainWindow(QMainWindow):
 
     def _provider_label(self, key: str) -> str:
         labels = {
-            "wolfapi_v1": "WolfAPI v1 (staged)",
+            "wolfapi_v1": "WolfAPI",
             "wolfapi": "WolfAPI (legacy fallback)",
             "battlemetrics": "BattleMetrics",
             "steam_web_api": "Steam Web API",
@@ -1948,6 +1919,7 @@ class MainWindow(QMainWindow):
         if not hasattr(self, "discovery_provider"):
             return str(self.settings.get("discovery_provider") or DEFAULT_DISCOVERY_PROVIDER)
         keys = {
+            "WolfAPI": "wolfapi_v1",
             "WolfAPI v1 (staged)": "wolfapi_v1",
             "WolfAPI (legacy fallback)": "wolfapi",
             "BattleMetrics": "battlemetrics",
@@ -2013,6 +1985,7 @@ class MainWindow(QMainWindow):
         self.update_settings_health()
 
     def handle_discovery_provider_changed(self, *_args):
+        self.update_discovery_settings_visibility()
         self.handle_settings_changed()
         if hasattr(self, "browser_search"):
             self.schedule_remote_wolfapi_search(self.browser_search.text())
@@ -3925,7 +3898,7 @@ class MainWindow(QMainWindow):
                 )
         elif provider == "wolfapi_v1":
             provider_status = "OK"
-            provider_detail = "WolfAPI v1 bounded discovery (staged)"
+            provider_detail = "WolfAPI server discovery"
         elif provider == "wolfapi":
             provider_status = "OK"
             provider_detail = "WolfAPI legacy hosted cache fallback"

@@ -35,6 +35,11 @@ vendored MIT shell launcher remains a visible compatibility fallback.
 - The Server Browser, Mods, Settings and Favourite Servers layouts have passed
   real-desktop review. Preserve their information-first hierarchy unless new
   evidence requires a change.
+- Server Browser live truth is selection-driven: WolfAPI supplies fluid cached
+  browsing, one background GameDig worker checks the selected row, and launch
+  preflight is authoritative. Bulk visible-row enrichment and redundant cache
+  refresh controls are retired. Settings hides non-actionable and platform-
+  irrelevant controls from the normal Windows experience.
 - Linux and Windows storage paths, Steam command discovery and process
   inspection sit behind tested platform backends. On Windows, registry/library
   detection, settings persistence, the offscreen GUI, absolute Workshop mod

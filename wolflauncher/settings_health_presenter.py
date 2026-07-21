@@ -17,17 +17,17 @@ GROUP_SPECS = (
     (
         "launcher",
         "Launcher readiness",
-        ("Launch engine", "Server API", "Required tools", "Launcher script"),
+        ("Server API",),
     ),
     (
         "steam",
         "Steam and DayZ",
-        ("Selected Steam", "DayZ", "Workshop", "Proton compatdata"),
+        ("Selected Steam", "DayZ", "Workshop", "DayZ process"),
     ),
     (
         "graphics",
-        "Graphics and launch",
-        ("PRIME environment", "PRIME helpers", "Steam launch options", "DayZ process"),
+        "Linux graphics and compatibility",
+        ("PRIME environment", "PRIME helpers", "Steam launch options", "Proton compatdata"),
     ),
 )
 

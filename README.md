@@ -355,7 +355,12 @@ Select an imported/discovered row and use **Add to Favourite Servers** to add it
 to the curated YAML. Right-click a discovered row to add it or copy its connect
 address/details.
 
-Choose a server API provider in Settings, then use **Refresh database** in the Server Browser tab. **WolfAPI v1 (staged)** uses the deployed bounded contract with strict rollout validation and is selected by default for fresh installations; existing installations retain their saved choice. **WolfAPI (legacy fallback)** preserves the `/api/servers` path. Both remain read-only and preserve cached SQLite rows on failure. BattleMetrics works without a key, Steam Web API uses the saved Steam API key, and Steam Master uses Valve's legacy UDP master server path.
+WolfAPI is the normal Server Browser source. Cached rows render immediately and
+the launcher refreshes the list quietly when it is due, including when the
+Server Browser is opened. **Refresh server list** remains available under
+advanced tools for an explicit refresh. The legacy WolfAPI, BattleMetrics,
+Steam Web API and Steam Master providers remain advanced alternatives; failed
+refreshes keep the existing SQLite rows.
 
 Full-snapshot provider refreshes sync their own cache rows rather than accumulating old entries. Bounded WolfAPI v1 refreshes fetch 100-row pages in the background up to the configured limit and merge by stable ID without deleting off-page rows. With v1 selected, Server Browser search displays SQLite matches immediately, waits briefly for typing to settle, then merges up to 100 remote matches from the full directory. An exact `host:port` search uses alias-aware resolution and checks the port as either game or query port. Failed refreshes and searches keep existing cached rows. Keep servers you care about in Favourite Servers.
 
@@ -365,7 +370,9 @@ API-side directory evidence; local ping and final launch checks remain
 separate. If cached freshness has expired, WolfLauncher says a refresh is
 pending rather than asserting a new state.
 
-Settings also contains the refresh row limit, an opt-in automatic refresh toggle, and a comma-separated **Steam masters** endpoint list for cases where Valve's default DNS names do not resolve, for example `HOST:27011,HOST:27015`.
+Settings keeps the ordinary automatic-refresh choice visible. Provider,
+refresh-limit, Steam-key and master-server controls are advanced; provider-only
+fields stay hidden unless their provider is selected.
 
 When automatic refresh is enabled, WolfLauncher waits after startup and refreshes the selected provider at most once every 24 hours.
 
@@ -402,7 +409,12 @@ Use `--master HOST[:PORT]` to test specific Steam master endpoints if local DNS 
 
 The app honors `WOLFLAUNCHER_STEAM_MASTER_ENDPOINTS` as a comma-separated endpoint list, plus the older `WOLFLAUNCHER_STEAM_MASTER_HOST` / `WOLFLAUNCHER_STEAM_MASTER_PORT` overrides. Steam discovery rows are treated as candidates until later status enrichment confirms display names, maps, player counts and port details.
 
-Use **Enrich visible** in the Server Browser tab to query the currently visible cached rows and fill in live status fields such as server name, map, players, ping, version and online state. WolfAPI's current `/api/servers` contract does not supply ping, so WolfAPI rows show a blank ping until they are enriched locally; WolfLauncher will also consume an additive `ping_ms` field if the API provides one in the future. Enrichment tries the cached query port first, then a small set of likely DayZ query-port fallbacks when discovered rows have uncertain port data. The Server Browser map and version filters are populated from cached/enriched values when those fields are available.
+Selecting a server automatically starts one debounced GameDig check on a
+background worker. Only the selected row and inspector are updated; rapid
+selection changes retain only the newest pending check. WolfAPI remains
+browse-time truth and the guarded launch preflight performs the final live
+check. There is no bulk visible-row enrichment workflow and no network work is
+performed on the Qt UI thread.
 
 ## Project Documentation
 

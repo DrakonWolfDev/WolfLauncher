@@ -17,7 +17,6 @@ WORKER_ATTRIBUTES = (
     "wolfapi_worker",
     "wolfapi_cache_worker",
     "wolfapi_search_worker",
-    "enrichment_worker",
 )
 
 WORKER_COLLECTION_ATTRIBUTES = (

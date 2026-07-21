@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Simplified Server Browser freshness into three levels: cached WolfAPI browse
+  data, one automatic background GameDig check for the selected row, and the
+  authoritative launch preflight. Removed bulk visible-row checking and the
+  redundant cache-view refresh control; rapid selections retain only the newest
+  pending live check so the Qt event loop remains fluid.
+- Made Settings quieter and platform-adaptive: Windows no longer presents an
+  irrelevant launch-engine choice or empty Linux health rows, ordinary health
+  cards contain only actionable checks, WolfAPI loses the staged label, and
+  provider-specific credentials and master overrides appear only when selected.
+
 - Added an experimental Windows runtime backend with registry-backed Steam
   discovery, native process inspection, roaming/local application data paths,
   direct absolute Workshop mod arguments and `steam_api64.dll` discovery. The

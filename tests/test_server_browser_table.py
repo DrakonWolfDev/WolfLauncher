@@ -224,33 +224,35 @@ class ServerBrowserTableTests(unittest.TestCase):
         timer.stop.assert_called_once_with()
         timer.start.assert_not_called()
 
-    def test_bulk_check_progress_only_updates_lightweight_summary(self):
+    def test_rapid_selection_retains_only_newest_pending_live_check(self):
+        newest = DiscoveredServer(
+            name="Newest", host="203.0.113.12", game_port=2302, query_port=27016
+        )
         window = SimpleNamespace(
-            enrichment_mode="bulk",
-            browser_summary=Mock(),
+            selection_enrichment_workers={"running": Mock()},
+            pending_selection_checks={"older": object()},
         )
 
-        MainWindow.handle_enrichment_progress(window, ("old", object()), 10, 200)
+        MainWindow.start_selected_discovered_enrichment(window, newest)
 
-        window.browser_summary.setText.assert_called_once_with(
-            "Checked 10 of 200 visible server(s) locally..."
-        )
+        self.assertEqual(window.pending_selection_checks, {newest.cache_key: newest})
 
-    @patch("wolflauncher.app.server_cache.upsert_servers", return_value=200)
-    def test_bulk_check_persists_and_refreshes_once_at_completion(self, upsert):
-        servers = [object(), object()]
+    @patch("wolflauncher.app.QTimer.singleShot")
+    def test_opening_browser_schedules_background_refresh_without_reloading_view(
+        self, single_shot
+    ):
         window = SimpleNamespace(
-            enrichment_mode="bulk",
-            enrich_visible_button=Mock(),
-            server_cache=object(),
+            server_browser_tab_index=1,
+            schedule_selected_discovered_server_check=Mock(),
+            maybe_auto_refresh_configured_provider=Mock(),
             refresh_server_browser=Mock(),
-            statusBar=Mock(return_value=Mock()),
         )
 
-        MainWindow.handle_enrichment_ready(window, servers, "")
+        MainWindow.handle_main_tab_changed(window, 1)
 
-        upsert.assert_called_once_with(window.server_cache, servers)
-        window.refresh_server_browser.assert_called_once_with()
+        window.schedule_selected_discovered_server_check.assert_called_once_with()
+        window.refresh_server_browser.assert_not_called()
+        single_shot.assert_called_once_with(0, window.maybe_auto_refresh_configured_provider)
 
     def test_required_mods_sort_handles_known_and_unknown_counts(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)
