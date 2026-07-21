@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Server Browser summaries now show the online count against the complete
+  cached directory total, rather than presenting the online figure alone.
+
 - Opening the Server Browser now starts four non-blocking live freshness batches
   for up to 24 servers in visible order. Searches can cancel and supersede this
   initial batch, while cached rows remain immediately usable.

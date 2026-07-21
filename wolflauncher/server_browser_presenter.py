@@ -426,7 +426,7 @@ def browser_summary_text(summary: dict[str, int], shown: int, match_count: int, 
         result_text = f"{shown:,} of {match_count:,} matching servers shown"
     else:
         result_text = f"{match_count:,} matching servers"
-    return f"{result_text} · {summary['online']:,} online in directory"
+    return f"{result_text} · {summary['online']:,} online servers out of {total:,} in directory"
 
 
 def browser_summary_tooltip(summary: dict[str, int]) -> str:

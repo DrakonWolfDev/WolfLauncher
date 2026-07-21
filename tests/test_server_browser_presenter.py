@@ -101,9 +101,12 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertNotIn("Cached discovered servers:", truncated)
         self.assertEqual(
             truncated,
-            "200 of 350 matching servers shown · 100 online in directory",
+            "200 of 350 matching servers shown · 100 online servers out of 500 in directory",
         )
-        self.assertEqual(no_matches, "No matching servers · 100 online in directory")
+        self.assertEqual(
+            no_matches,
+            "No matching servers · 100 online servers out of 500 in directory",
+        )
         self.assertIn("500 cached", browser_summary_tooltip(summary))
         self.assertIn("200 checked", browser_summary_tooltip(summary))
 
@@ -112,7 +115,10 @@ class ServerBrowserPresenterTests(unittest.TestCase):
 
         text = browser_summary_text(summary, shown=102, match_count=102, limit=200)
 
-        self.assertEqual(text, "102 matching servers · 1,113 online in directory")
+        self.assertEqual(
+            text,
+            "102 matching servers · 1,113 online servers out of 1,500 in directory",
+        )
 
     def test_browser_row_builds_display_sort_tooltip_and_colour_metadata(self):
         server = DiscoveredServer(
