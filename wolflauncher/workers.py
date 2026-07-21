@@ -337,9 +337,10 @@ class ServerEnrichmentWorker(QThread):
     enrichment_ready = Signal(object, str)
     enrichment_progress = Signal(object, int, int)
 
-    def __init__(self, servers):
+    def __init__(self, servers, probe_fallbacks: bool = True):
         super().__init__()
         self.servers = servers
+        self.probe_fallbacks = probe_fallbacks
 
     def run(self):
         checked_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
@@ -349,7 +350,10 @@ class ServerEnrichmentWorker(QThread):
         def enrich_one(server):
             try:
                 status = ServerStatus(False, error="No valid query ports to probe.")
-                for probe in enrichment_probe_servers(server):
+                probes = enrichment_probe_servers(server)
+                if not self.probe_fallbacks:
+                    probes = probes[:1]
+                for probe in probes:
                     status = check_server(probe)
                     if status.online:
                         break

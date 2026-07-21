@@ -205,6 +205,16 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(len(completed[0][0]), 2)
         self.assertEqual(completed[0][1], "")
 
+    @patch("wolflauncher.workers.check_server", return_value=ServerStatus(False))
+    def test_fast_enrichment_checks_only_primary_query_port(self, check_server):
+        server = DiscoveredServer("Fast", "127.0.0.1", 2302, 2302)
+        worker = ServerEnrichmentWorker([server], probe_fallbacks=False)
+
+        worker.run()
+
+        check_server.assert_called_once()
+        self.assertEqual(check_server.call_args.args[0].query_port, 2302)
+
 
 if __name__ == "__main__":
     unittest.main()

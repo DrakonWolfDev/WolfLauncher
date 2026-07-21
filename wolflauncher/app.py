@@ -1712,9 +1712,27 @@ class MainWindow(QMainWindow):
             self.pending_results_freshness = True
             return
         selected_workers = set(self.selection_enrichment_workers)
+        servers_by_key = {server.cache_key: server for server in self.browser_servers}
+        row_count = self.browser_table.rowCount()
+        viewport = self.browser_table.viewport()
+        top_row = self.browser_table.rowAt(0)
+        bottom_row = self.browser_table.rowAt(max(0, viewport.height() - 1))
+        if top_row < 0:
+            top_row = 0
+        if bottom_row < top_row:
+            bottom_row = min(row_count - 1, top_row + MAX_RESULTS_FRESHNESS_BATCH - 1)
+        visible_rows = range(top_row, bottom_row + 1)
+        remaining_rows = (*range(0, top_row), *range(bottom_row + 1, row_count))
+        ordered_servers = []
+        for row in (*visible_rows, *remaining_rows):
+            item = self.browser_table.item(row, 0)
+            cache_key = item.data(Qt.UserRole) if item is not None else ""
+            server = servers_by_key.get(cache_key)
+            if server is not None:
+                ordered_servers.append(server)
         servers = [
             server
-            for server in self.browser_servers
+            for server in ordered_servers
             if server.cache_key not in selected_workers and local_enrichment_due(server)
         ][:MAX_RESULTS_FRESHNESS_BATCH]
         if not servers:
@@ -1723,7 +1741,7 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(
             f"Checking live freshness for {len(servers)} matching server(s) in the background..."
         )
-        worker = ServerEnrichmentWorker(servers)
+        worker = ServerEnrichmentWorker(servers, probe_fallbacks=False)
         self.results_freshness_worker = worker
         worker.enrichment_progress.connect(self.handle_results_freshness_progress)
         worker.finished.connect(self.handle_results_freshness_finished)

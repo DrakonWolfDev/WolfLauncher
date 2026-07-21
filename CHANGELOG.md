@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Made bounded result freshness follow the table's actual visual order, checking
+  visible rows from top to bottom before hidden rows. Lightweight result batches
+  now probe only the provider's primary query port; selected-server and launch
+  checks retain the thorough fallback-port sequence.
+
 - Fixed Server Browser search rebuilding a broad result table on the first
   keystroke. Local and WolfAPI searches now share a three-character threshold,
   while the local table refresh also waits for a short typing pause.

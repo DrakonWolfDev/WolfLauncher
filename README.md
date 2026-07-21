@@ -420,7 +420,10 @@ browse-time truth and the guarded launch preflight performs the final live
 check. An explicit **Refresh server list** action or a completed WolfAPI search
 also checks up to ten matching rows in one bounded background batch. Repeated
 requests coalesce, there is no unbounded visible-row enrichment workflow, and
-no network work is performed on the Qt UI thread.
+no network work is performed on the Qt UI thread. These lightweight batches
+follow the visible table from top to bottom and try only the provider's primary
+query port. Selecting or launching a server still uses the fuller fallback-port
+check when needed.
 
 ## Project Documentation
 

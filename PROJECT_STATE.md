@@ -45,6 +45,9 @@ vendored MIT shell launcher remains a visible compatibility fallback.
 - Server Browser text search does no cache query or table rebuild before three
   normalized characters and debounces the eventual local refresh. Conflicting
   live endpoint corrections never replace another stable WolfAPI identity.
+- Result freshness is ordered from the table viewport, visible top row first,
+  and uses only each provider row's primary query port for speed. Thorough
+  fallback-port probing remains selection- and launch-driven.
 - Linux and Windows storage paths, Steam command discovery and process
   inspection sit behind tested platform backends. On Windows, registry/library
   detection, settings persistence, the offscreen GUI, absolute Workshop mod

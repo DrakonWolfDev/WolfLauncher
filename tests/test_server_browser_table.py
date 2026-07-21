@@ -249,9 +249,13 @@ class ServerBrowserTableTests(unittest.TestCase):
             )
             for index in range(12)
         ]
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        populate_browser_table(table, servers)
+        table.resize(1000, 220)
         worker = worker_class.return_value
         window = SimpleNamespace(
-            browser_servers=servers,
+            browser_servers=list(reversed(servers)),
+            browser_table=table,
             results_freshness_worker=None,
             pending_results_freshness=False,
             selection_enrichment_workers={},
@@ -262,7 +266,11 @@ class ServerBrowserTableTests(unittest.TestCase):
 
         MainWindow.schedule_results_freshness_check(window)
 
-        self.assertEqual(len(worker_class.call_args.args[0]), 10)
+        queued = worker_class.call_args.args[0]
+        self.assertEqual(len(queued), 10)
+        visual_keys = [table.item(row, 0).data(Qt.UserRole) for row in range(10)]
+        self.assertEqual([server.cache_key for server in queued], visual_keys)
+        self.assertFalse(worker_class.call_args.kwargs["probe_fallbacks"])
         worker.start.assert_called_once_with()
         self.assertIs(window.results_freshness_worker, worker)
 
