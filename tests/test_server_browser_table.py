@@ -237,6 +237,48 @@ class ServerBrowserTableTests(unittest.TestCase):
 
         self.assertEqual(window.pending_selection_checks, {newest.cache_key: newest})
 
+    @patch("wolflauncher.app.ServerEnrichmentWorker")
+    @patch("wolflauncher.app.local_enrichment_due", return_value=True)
+    def test_results_freshness_is_bounded_and_runs_in_background(self, _due, worker_class):
+        servers = [
+            DiscoveredServer(
+                name=f"Match {index}",
+                host=f"203.0.113.{index + 1}",
+                game_port=2302,
+                query_port=27016,
+            )
+            for index in range(12)
+        ]
+        worker = worker_class.return_value
+        window = SimpleNamespace(
+            browser_servers=servers,
+            results_freshness_worker=None,
+            pending_results_freshness=False,
+            selection_enrichment_workers={},
+            statusBar=Mock(return_value=Mock()),
+            handle_results_freshness_progress=Mock(),
+            handle_results_freshness_finished=Mock(),
+        )
+
+        MainWindow.schedule_results_freshness_check(window)
+
+        self.assertEqual(len(worker_class.call_args.args[0]), 10)
+        worker.start.assert_called_once_with()
+        self.assertIs(window.results_freshness_worker, worker)
+
+    def test_results_freshness_coalesces_while_a_batch_is_running(self):
+        running = Mock()
+        running.isRunning.return_value = True
+        window = SimpleNamespace(
+            browser_servers=[],
+            results_freshness_worker=running,
+            pending_results_freshness=False,
+        )
+
+        MainWindow.schedule_results_freshness_check(window)
+
+        self.assertTrue(window.pending_results_freshness)
+
     @patch("wolflauncher.app.QTimer.singleShot")
     def test_opening_browser_schedules_background_refresh_without_reloading_view(
         self, single_shot

@@ -38,8 +38,10 @@ vendored MIT shell launcher remains a visible compatibility fallback.
 - Server Browser live truth is selection-driven: WolfAPI supplies fluid cached
   browsing, one background GameDig worker checks the selected row, and launch
   preflight is authoritative. Bulk visible-row enrichment and redundant cache
-  refresh controls are retired. Settings hides non-actionable and platform-
-  irrelevant controls from the normal Windows experience.
+  refresh controls are retired. Explicit refreshes and completed searches may
+  check up to ten matching rows on one coalescing background worker. Settings
+  hides non-actionable and platform-irrelevant controls from the normal Windows
+  experience and keeps its health cards full-width and vertically ordered.
 - Linux and Windows storage paths, Steam command discovery and process
   inspection sit behind tested platform backends. On Windows, registry/library
   detection, settings persistence, the offscreen GUI, absolute Workshop mod

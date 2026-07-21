@@ -17,6 +17,7 @@ WORKER_ATTRIBUTES = (
     "wolfapi_worker",
     "wolfapi_cache_worker",
     "wolfapi_search_worker",
+    "results_freshness_worker",
 )
 
 WORKER_COLLECTION_ATTRIBUTES = (
@@ -39,6 +40,8 @@ def stop_runtime_scheduling(owner) -> None:
             pending.clear()
     if hasattr(owner, "pending_wolfapi_search"):
         owner.pending_wolfapi_search = ""
+    if hasattr(owner, "pending_results_freshness"):
+        owner.pending_results_freshness = False
 
 
 def active_workers(owner) -> list:

@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Stacked the Steam and launcher health cards at full width with Steam first,
+  and replaced Windows' redundant Steam-installation selector with a player-name
+  field synchronized with Favourite Servers.
+- Added bounded results freshness after an explicit server-list refresh or a
+  completed WolfAPI search. At most ten matching rows are checked by the
+  background GameDig worker, and repeated requests coalesce without blocking
+  Qt's UI thread.
+
 - Simplified Server Browser freshness into three levels: cached WolfAPI browse
   data, one automatic background GameDig check for the selected row, and the
   authoritative launch preflight. Removed bulk visible-row checking and the

@@ -413,8 +413,10 @@ Selecting a server automatically starts one debounced GameDig check on a
 background worker. Only the selected row and inspector are updated; rapid
 selection changes retain only the newest pending check. WolfAPI remains
 browse-time truth and the guarded launch preflight performs the final live
-check. There is no bulk visible-row enrichment workflow and no network work is
-performed on the Qt UI thread.
+check. An explicit **Refresh server list** action or a completed WolfAPI search
+also checks up to ten matching rows in one bounded background batch. Repeated
+requests coalesce, there is no unbounded visible-row enrichment workflow, and
+no network work is performed on the Qt UI thread.
 
 ## Project Documentation
 

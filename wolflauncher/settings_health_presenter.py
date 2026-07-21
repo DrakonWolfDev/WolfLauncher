@@ -15,14 +15,14 @@ class HealthGroup:
 
 GROUP_SPECS = (
     (
-        "launcher",
-        "Launcher readiness",
-        ("Server API",),
-    ),
-    (
         "steam",
         "Steam and DayZ",
         ("Selected Steam", "DayZ", "Workshop", "DayZ process"),
+    ),
+    (
+        "launcher",
+        "Launcher readiness",
+        ("Server API",),
     ),
     (
         "graphics",

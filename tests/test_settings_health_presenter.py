@@ -7,7 +7,7 @@ from wolflauncher.settings_health_presenter import (
 
 
 class SettingsHealthPresenterTests(unittest.TestCase):
-    def test_groups_prioritise_launcher_steam_and_graphics_checks(self):
+    def test_groups_prioritise_steam_launcher_and_graphics_checks(self):
         rows = (
             ("Launch engine", "OK", "Native"),
             ("Server API", "WARN", "Disabled"),
@@ -26,13 +26,13 @@ class SettingsHealthPresenterTests(unittest.TestCase):
 
         groups = settings_health_groups(rows)
 
-        self.assertEqual([group.key for group in groups], ["launcher", "steam", "graphics"])
-        self.assertEqual(groups[0].status, "WARN")
-        self.assertEqual(groups[1].status, "MISSING")
+        self.assertEqual([group.key for group in groups], ["steam", "launcher", "graphics"])
+        self.assertEqual(groups[0].status, "MISSING")
+        self.assertEqual(groups[1].status, "WARN")
         self.assertEqual(groups[2].status, "OK")
-        self.assertEqual([row[0] for row in groups[0].rows], ["Server API"])
-        self.assertIn("DayZ process", [row[0] for row in groups[1].rows])
-        self.assertNotIn("Proton compatdata", [row[0] for row in groups[1].rows])
+        self.assertEqual([row[0] for row in groups[1].rows], ["Server API"])
+        self.assertIn("DayZ process", [row[0] for row in groups[0].rows])
+        self.assertNotIn("Proton compatdata", [row[0] for row in groups[0].rows])
         self.assertNotIn("Steam candidates", [row[0] for group in groups for row in group.rows])
 
     def test_aggregate_status_uses_missing_then_warning_then_ok(self):

@@ -31,12 +31,14 @@ def owner_with(**overrides):
         "wolfapi_worker": None,
         "wolfapi_cache_worker": None,
         "wolfapi_search_worker": None,
+        "results_freshness_worker": None,
         "enrichment_worker": None,
         "selection_enrichment_workers": {},
         "browser_mod_workers": {},
         "pending_selection_checks": {"one": object()},
         "pending_browser_mod_previews": {"two": object()},
         "pending_wolfapi_search": "query",
+        "pending_results_freshness": True,
         "wolfapi_refresh_process": None,
     }
     values.update(overrides)
@@ -96,6 +98,7 @@ class LifecycleTests(unittest.TestCase):
         self.assertEqual(owner.pending_selection_checks, {})
         self.assertEqual(owner.pending_browser_mod_previews, {})
         self.assertEqual(owner.pending_wolfapi_search, "")
+        self.assertFalse(owner.pending_results_freshness)
         self.assertTrue(owner._shutting_down)
 
     def test_stop_runtime_reports_worker_that_outlives_deadline(self):

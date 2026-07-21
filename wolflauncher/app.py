@@ -194,6 +194,7 @@ from .workshop_subscription import (
 
 MAX_SELECTED_BROWSER_RUNNERS = 3
 MAX_SELECTED_STATUS_RUNNERS = 1
+MAX_RESULTS_FRESHNESS_BATCH = 10
 
 
 class MainWindow(QMainWindow):
@@ -244,6 +245,8 @@ class MainWindow(QMainWindow):
         self.pending_wolfapi_search = ""
         self.selection_enrichment_workers = {}
         self.pending_selection_checks = {}
+        self.results_freshness_worker = None
+        self.pending_results_freshness = False
         self.browser_mod_workers = {}
         self.pending_browser_mod_previews = {}
         self.browser_mod_results = {}
@@ -365,6 +368,7 @@ class MainWindow(QMainWindow):
         player_name_row = QHBoxLayout()
         player_name_row.addWidget(self.player_name)
         self.player_name.returnPressed.connect(self.save_player_name)
+        self.player_name.textChanged.connect(self.sync_settings_player_name)
         set_player_name = QPushButton("Set name")
         set_player_name.clicked.connect(self.save_player_name)
         player_name_row.addWidget(set_player_name)
@@ -953,7 +957,16 @@ class MainWindow(QMainWindow):
             external_launcher_layout.addWidget(browse)
             launcher_controls_layout.addWidget(self.external_launcher_settings, 1)
             launcher_settings.addRow("Launch engine", launcher_controls)
-        launcher_settings.addRow("Steam installation", self.native_steam_mode)
+        if capabilities.platform_id == "windows":
+            self.settings_player_name = QLineEdit(self.player_name.text())
+            self.settings_player_name.setToolTip(
+                "This is the same player name shown on Favourite Servers."
+            )
+            self.settings_player_name.textChanged.connect(self.sync_favourites_player_name)
+            self.settings_player_name.returnPressed.connect(self.save_player_name)
+            launcher_settings.addRow("Player name", self.settings_player_name)
+        else:
+            launcher_settings.addRow("Steam installation", self.native_steam_mode)
         layout.addLayout(launcher_settings)
         self.launch_engine.currentTextChanged.connect(
             self.update_external_launcher_settings_visibility
@@ -978,16 +991,11 @@ class MainWindow(QMainWindow):
         self.health_table.customContextMenuRequested.connect(self.show_health_context_menu)
         self.health_group_badges = {}
         self.health_group_rows = {}
-        health_overview = QGridLayout()
+        health_overview = QVBoxLayout()
         health_overview.setSpacing(10)
-        for index, (key, title, names) in enumerate(GROUP_SPECS):
+        for key, title, names in GROUP_SPECS:
             card = self._build_settings_health_group(key, title, names)
-            if index < 2:
-                health_overview.addWidget(card, 0, index)
-            else:
-                health_overview.addWidget(card, 1, 0, 1, 2)
-        health_overview.setColumnStretch(0, 1)
-        health_overview.setColumnStretch(1, 1)
+            health_overview.addWidget(card)
         layout.addLayout(health_overview)
 
         self.settings_advanced_toggle = QPushButton()
@@ -1233,6 +1241,7 @@ class MainWindow(QMainWindow):
     def refresh_from_configured_provider(self):
         provider = self.discovery_provider_key()
         self.save_user_settings(silent=True)
+        self.schedule_results_freshness_check()
         if provider in ("wolfapi", "wolfapi_v1"):
             self.refresh_from_wolfapi()
         elif provider == "battlemetrics":
@@ -1289,6 +1298,7 @@ class MainWindow(QMainWindow):
             self.server_cache, "steam_master", servers
         )
         self.refresh_server_browser()
+        self.schedule_results_freshness_check()
         self.statusBar().showMessage(
             f"Steam discovery complete: added {inserted} candidate(s), removed {removed} stale row(s).",
             7000,
@@ -1325,6 +1335,7 @@ class MainWindow(QMainWindow):
             self.server_cache, "steam_web_api", servers
         )
         self.refresh_server_browser()
+        self.schedule_results_freshness_check()
         self.statusBar().showMessage(
             f"Steam Web API discovery complete: added {inserted} row(s), removed {removed} stale row(s).",
             7000,
@@ -1534,6 +1545,8 @@ class MainWindow(QMainWindow):
             self.server_cache, "battlemetrics", servers
         )
         self.refresh_server_browser()
+        if not automatic:
+            self.schedule_results_freshness_check()
         if automatic:
             self.statusBar().showMessage(
                 f"BattleMetrics auto-refresh added {inserted} row(s), removed {removed}.",
@@ -1594,6 +1607,8 @@ class MainWindow(QMainWindow):
             )
             return
         self.refresh_server_browser()
+        if not automatic:
+            self.schedule_results_freshness_check()
         if automatic:
             self.statusBar().showMessage(
                 f"{label} auto-refresh added {inserted} row(s), removed {removed}.",
@@ -1660,6 +1675,46 @@ class MainWindow(QMainWindow):
         if self.pending_wolfapi_search and self.pending_wolfapi_search == query:
             self.remote_search_timer.start()
 
+        else:
+            self.schedule_selected_discovered_server_check()
+            self.schedule_results_freshness_check()
+
+    def schedule_results_freshness_check(self):
+        """Live-check only the small result set produced by an explicit user action."""
+        if not hasattr(self, "browser_servers"):
+            return
+        if self.results_freshness_worker and self.results_freshness_worker.isRunning():
+            self.pending_results_freshness = True
+            return
+        selected_workers = set(self.selection_enrichment_workers)
+        servers = [
+            server
+            for server in self.browser_servers
+            if server.cache_key not in selected_workers and local_enrichment_due(server)
+        ][:MAX_RESULTS_FRESHNESS_BATCH]
+        if not servers:
+            return
+        self.pending_results_freshness = False
+        self.statusBar().showMessage(
+            f"Checking live freshness for {len(servers)} matching server(s) in the background..."
+        )
+        worker = ServerEnrichmentWorker(servers)
+        self.results_freshness_worker = worker
+        worker.enrichment_progress.connect(self.handle_results_freshness_progress)
+        worker.finished.connect(self.handle_results_freshness_finished)
+        worker.start()
+
+    def handle_results_freshness_progress(self, payload, _completed: int, _total: int):
+        old_cache_key, server = payload
+        server_cache.replace_server_key(self.server_cache, old_cache_key, server)
+        update_browser_table_row(self.browser_table, old_cache_key, server)
+
+    def handle_results_freshness_finished(self):
+        self.results_freshness_worker = None
+        self.refresh_server_browser()
+        if self.pending_results_freshness:
+            self.pending_results_freshness = False
+            QTimer.singleShot(0, self.schedule_results_freshness_check)
         else:
             self.schedule_selected_discovered_server_check()
 
@@ -2026,6 +2081,14 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage(
             f"Player name saved as {self.player_name.text().strip()}.", 5000
         )
+
+    def sync_settings_player_name(self, text: str):
+        if hasattr(self, "settings_player_name") and self.settings_player_name.text() != text:
+            self.settings_player_name.setText(text)
+
+    def sync_favourites_player_name(self, text: str):
+        if self.player_name.text() != text:
+            self.player_name.setText(text)
 
     def save_user_settings(self, silent: bool = False):
         auto_refresh_timestamps = {
