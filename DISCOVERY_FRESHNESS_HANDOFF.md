@@ -367,21 +367,27 @@ until a deliberate later removal.
 
 ## Known follow-up dependencies
 
-- Direct DayZ `A2S_RULES` mod-manifest research is paused and handed off in
-  `../WolfAPI/DIRECT_DAYZ_MOD_QUERY_HANDOFF.md`. Six isolated New Dawn samples
-  matched DZSA Workshop IDs exactly across 5--64 required mods, but Launcher
-  behavior must not change until strict decoding fixtures, broader evidence and
-  a bounded API worker canary pass.
+- Native direct DayZ `A2S_RULES` inspection is implemented and confirmed on
+  Windows canaries plus the user's real Linux desktop across every server tried.
+  It is noticeably faster than the former DZSA lookup. Keep it authoritative
+  for the selected server and launch preflight, and keep it off browser
+  freshness batches so search/scroll responsiveness cannot be held behind
+  split-packet manifest work.
+- Next shared direction: WolfAPI may gradually populate the existing cached
+  required-mod count/manifest fields from direct `A2S_RULES` as advisory
+  browse-time evidence. Implement this as a disabled-by-default, separately
+  budgeted lane after successful reachability—not as part of public HTTP
+  requests and not as a condition of reachability success. Preserve the last
+  successful count on later rules failure. The browser count answers roughly
+  “lightly or heavily modded”; Launcher direct inspection remains final truth.
 
 - WolfAPI has a transactional port-correction operation, but automatic use
   still needs trustworthy corrected-port evidence; A2S reachability alone does
   not provide it.
-- Required-mod metadata is implemented behind WolfAPI's committed
-  disabled-by-default job. The local production `.env` enables it persistently.
-  Its original ten-row canary completed 40/40 across four cycles, then exposed
-  strict unknown-first refresh starvation. The local fair-lane fix reserves
-  new/refresh/retry capacity without changing the hard budget or Launcher
-  truth boundary; observe it in production before increasing coverage.
+- Required-mod persistence and cached-only API fields already exist. The old
+  DZSA-backed scheduled job remains disabled and must not be revived. Reuse the
+  tested direct decoder for a new canary lane only after its separate budget,
+  provenance, stale-retention and health/error telemetry are covered by tests.
 
 The earlier development snapshot contained no flagged rows, but the
 2026-07-14 production snapshot contained 1,810 flagged and 50,492 unflagged

@@ -205,9 +205,13 @@ shared endpoints, identity, search/resolve, freshness, validation, caching,
 polling or rollout behavior, read `DISCOVERY_FRESHNESS_HANDOFF.md`,
 `../WolfAPI/AGENTS.md` and `../WolfAPI/DISCOVERY_FRESHNESS_CONTRACT.md`.
 
-The API's bounded required-mod metadata job has passed its initial canary and
-scheduled cycle. Continue observing production cycles and increase its global
-budget progressively; direct Launcher inspection remains final truth.
+The next optional cross-project enhancement is a bounded direct-`A2S_RULES`
+WolfAPI preview lane using the existing required-mod persistence. It should
+gradually provide advisory counts for “lightly or heavily modded” browsing,
+never run synchronously from public requests, never affect reachability truth,
+and never be folded into Launcher freshness batches. The native Launcher query
+is implemented, materially faster than DZSA in desktop use, confirmed across
+the user's Linux sample, and remains final selected-server/launch truth.
 
 ## Truth documents
 
