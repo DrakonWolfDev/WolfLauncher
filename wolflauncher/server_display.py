@@ -23,7 +23,7 @@ def display_server_flags(
         flags.append("Password")
     flags.append("Modded" if modded else "Vanilla")
     if quality_warning:
-        flags.append("Quality warning")
+        flags.append("Listing data warning")
     return ", ".join(flags)
 
 

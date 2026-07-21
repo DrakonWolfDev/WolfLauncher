@@ -274,7 +274,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         row = browser_row(server)
         details = discovered_server_details(server)
 
-        self.assertEqual(row.values[10], "Vanilla, Quality warning")
+        self.assertEqual(row.values[10], "Vanilla, Listing data warning")
         self.assertIn("not proof the server is unsafe", row.tooltips[10])
         self.assertIn("suspicious bots", details)
 

@@ -567,7 +567,7 @@ class MainWindow(QMainWindow):
         advanced_filters.addWidget(QLabel("Sort"))
         advanced_filters.addWidget(self.browser_sort)
         advanced_filters.addWidget(self.browser_descending)
-        self.browser_hide_quality_flagged = QCheckBox("Hide quality warnings")
+        self.browser_hide_quality_flagged = QCheckBox("Hide listing data warnings")
         self.browser_hide_quality_flagged.setToolTip(
             "Hide rows WolfAPI flags for suspicious provider telemetry or dense "
             "same-host populations. Off by default; exact/local data is retained."

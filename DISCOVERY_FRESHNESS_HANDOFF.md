@@ -105,7 +105,7 @@ Production quality-filter evaluation on 2026-07-14 found 1,383 flagged rows in
 the current directory. Samples coherently showed impossible `bots=255`
 telemetry and dense same-host populations, while some names could still be
 legitimate communities with bad provider data. WolfLauncher therefore adds an
-explicit advanced **Hide quality warnings** filter, off by default. SQLite
+explicit advanced **Hide listing data warnings** filter, off by default. SQLite
 schema v7 persists the advisory flags so cached/offline filtering agrees with
 v1 list and name-search requests. Exact resolution remains available, but the
 local visibility filter still applies. Visible flagged rows say the warning is

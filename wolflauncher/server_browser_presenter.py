@@ -259,7 +259,7 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
         tooltips[5] = "\n".join(part for part in (existing_status, status_tooltip) if part)
     if server.quality_flags:
         tooltips[10] = (
-            "WolfAPI quality warning: "
+            "WolfAPI listing data warning: "
             + ", ".join(flag.replace("_", " ") for flag in server.quality_flags)
             + ". This is advisory provider-data screening, not proof the server is unsafe."
         )
@@ -389,7 +389,7 @@ def discovered_server_details(server: DiscoveredServer) -> str:
         lines.append("API mod metadata: " + server.mod_metadata_status.replace("_", " ").title())
     if server.quality_flags:
         lines.append(
-            "API quality warnings: "
+            "API listing data warnings: "
             + ", ".join(flag.replace("_", " ") for flag in server.quality_flags)
         )
     if server.mod_metadata_checked_at:

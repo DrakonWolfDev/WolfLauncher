@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Renamed the Server Browser's ambiguous **Quality warning** label to
+  **Listing data warning**, including its advanced hide control and detail
+  headings. The warning continues to describe WolfAPI directory-data quality,
+  not server safety, moderation or gameplay quality.
+
 - Fixed a Linux crash race after **Refresh server list**. Manual provider
   refresh no longer starts GameDig while the WolfAPI helper is still updating
   SQLite, and a same-search completion queues one follow-up freshness batch
