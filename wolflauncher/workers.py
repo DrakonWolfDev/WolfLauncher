@@ -14,6 +14,7 @@ from .mods import (
     fetch_workshop_metadata,
 )
 from .server_discovery import (
+    WolfApiServerList,
     discover_dayz_servers,
     discover_dayz_servers_battlemetrics,
     discover_dayz_servers_web_api,
@@ -269,6 +270,7 @@ def discover_wolfapi_v1_pages(limit: int, unflagged_only: bool = False) -> list:
     """Fetch bounded v1 pages in a background worker up to the user limit."""
     target = max(1, int(limit))
     servers = []
+    directory_total = None
     offset = 0
     while len(servers) < target:
         page_limit = min(WOLFAPI_V1_PAGE_SIZE, target - len(servers))
@@ -276,11 +278,13 @@ def discover_wolfapi_v1_pages(limit: int, unflagged_only: bool = False) -> list:
         if unflagged_only:
             kwargs["unflagged_only"] = True
         page = discover_dayz_servers_wolfapi_v1(**kwargs)
+        if getattr(page, "directory_total", None) is not None:
+            directory_total = page.directory_total
         servers.extend(page)
         if len(page) < page_limit:
             break
         offset += len(page)
-    return servers[:target]
+    return WolfApiServerList(servers[:target], directory_total=directory_total)
 
 
 class WolfApiSearchWorker(QThread):
@@ -315,11 +319,13 @@ class WolfApiSearchWorker(QThread):
                 servers = search_dayz_servers_wolfapi_v1(self.query, **kwargs)
             else:
                 host, port = endpoint
-                resolved = [
-                    *resolve_dayz_server_wolfapi_v1(host, game_port=port),
-                    *resolve_dayz_server_wolfapi_v1(host, query_port=port),
-                ]
-                servers = []
+                game_matches = resolve_dayz_server_wolfapi_v1(host, game_port=port)
+                query_matches = resolve_dayz_server_wolfapi_v1(host, query_port=port)
+                directory_total = getattr(game_matches, "directory_total", None)
+                if directory_total is None:
+                    directory_total = getattr(query_matches, "directory_total", None)
+                resolved = [*game_matches, *query_matches]
+                servers = WolfApiServerList(directory_total=directory_total)
                 seen = set()
                 for server in resolved:
                     identity = server.stable_server_id or server.cache_key

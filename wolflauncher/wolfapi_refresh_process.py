@@ -29,7 +29,12 @@ def refresh_cache(
             removed = 0
         else:
             inserted, removed = server_cache.sync_source_servers(connection, "wolfapi", servers)
-        return {"inserted": inserted, "removed": removed, "error": ""}
+        return {
+            "inserted": inserted,
+            "removed": removed,
+            "directory_total": getattr(servers, "directory_total", None),
+            "error": "",
+        }
     except Exception as exc:
         return {"inserted": 0, "removed": 0, "error": str(exc)}
     finally:

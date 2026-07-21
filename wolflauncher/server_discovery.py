@@ -65,6 +65,14 @@ class WolfApiError(RuntimeError):
     pass
 
 
+class WolfApiServerList(list):
+    """Server rows plus the whole-directory size reported by WolfAPI v1."""
+
+    def __init__(self, servers=(), *, directory_total: int | None = None):
+        super().__init__(servers)
+        self.directory_total = directory_total
+
+
 def build_master_server_request(
     start_address: str = "0.0.0.0:0",
     app_id: int = DAYZ_APP_ID,
@@ -539,7 +547,17 @@ def parse_wolfapi_v1_servers(data, limit: int = 500) -> list[DiscoveredServer]:
     missing = [field for field in required if not data.get(field)]
     if missing:
         raise WolfApiError("WolfAPI v1 response is missing rollout metadata: " + ", ".join(missing))
-    return parse_wolfapi_servers(data, limit=limit)
+    coverage = data["coverage"]
+    try:
+        directory_total = int(coverage.get("eligible"))
+    except (AttributeError, TypeError, ValueError) as exc:
+        raise WolfApiError("WolfAPI returned an invalid eligible directory count.") from exc
+    if directory_total < 0:
+        raise WolfApiError("WolfAPI returned an invalid eligible directory count.")
+    return WolfApiServerList(
+        parse_wolfapi_servers(data, limit=limit),
+        directory_total=directory_total,
+    )
 
 
 def parse_wolfapi_servers(data, limit: int = 10000) -> list[DiscoveredServer]:

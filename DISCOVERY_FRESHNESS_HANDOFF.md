@@ -37,6 +37,13 @@ subscription is a disabled-by-default, locally configured Launcher power-user
 integration; its credentials and failures must never become a WolfAPI
 dependency or contaminate the shared cache.
 
+Directory-count correction on 2026-07-21: WolfLauncher now carries
+`coverage.eligible` from every successful WolfAPI v1 list/search/resolve
+response through its background workers and persists the last known value for
+offline startup. The Server Browser uses that value for the whole WolfAPI
+directory total; its SQLite row count is labelled as local cache state and is
+never presented as the directory size. This is shared Windows/Linux behavior.
+
 ## Future Codex resume note — 2026-07-14
 
 Treat WolfLauncher and `../WolfAPI` as one discovery product with two separately

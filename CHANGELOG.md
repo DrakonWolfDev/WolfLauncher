@@ -9,8 +9,10 @@
 - Split portable Windows and installer uploads so a validated ZIP remains
   available even when the separate installer lifecycle fails or stalls.
 
-- Server Browser summaries now show the online count against the complete
-  cached directory total, rather than presenting the online figure alone.
+- Server Browser summaries now use WolfAPI v1's `coverage.eligible` for the
+  whole directory total on both Windows and Linux, while explicitly labelling
+  online and total rows that come only from the local cache. The last known API
+  total is retained for offline startup.
 
 - Opening the Server Browser now starts four non-blocking live freshness batches
   for up to 24 servers in visible order. Searches can cancel and supersede this

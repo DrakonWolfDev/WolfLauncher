@@ -654,6 +654,33 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         with self.assertRaisesRegex(WolfApiError, "rollout metadata"):
             parse_wolfapi_v1_servers({"contract_version": "1", "servers": []})
 
+    def test_parse_wolfapi_v1_preserves_whole_directory_total(self):
+        servers = parse_wolfapi_v1_servers(
+            {
+                "contract_version": "1",
+                "generated_at": "2026-07-21T12:00:00Z",
+                "validation_policy": {"live_for_seconds": 1800},
+                "coverage": {"eligible": 57411},
+                "validation_queue": {"ready": 1},
+                "servers": [],
+            }
+        )
+
+        self.assertEqual(servers.directory_total, 57411)
+
+    def test_parse_wolfapi_v1_rejects_invalid_whole_directory_total(self):
+        with self.assertRaisesRegex(WolfApiError, "eligible directory count"):
+            parse_wolfapi_v1_servers(
+                {
+                    "contract_version": "1",
+                    "generated_at": "2026-07-21T12:00:00Z",
+                    "validation_policy": {"live_for_seconds": 1800},
+                    "coverage": {"eligible": "unknown"},
+                    "validation_queue": {"ready": 1},
+                    "servers": [],
+                }
+            )
+
     @patch("wolflauncher.server_discovery.urllib.request.urlopen")
     def test_wolfapi_discovery_fetches_default_endpoint(self, urlopen):
         class FakeResponse:

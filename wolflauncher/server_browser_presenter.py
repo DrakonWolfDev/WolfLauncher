@@ -415,10 +415,18 @@ def discovered_server_details(server: DiscoveredServer) -> str:
     return "\n".join(lines).strip()
 
 
-def browser_summary_text(summary: dict[str, int], shown: int, match_count: int, limit: int) -> str:
+def browser_summary_text(
+    summary: dict[str, int],
+    shown: int,
+    match_count: int,
+    limit: int,
+    directory_total: int | None = None,
+) -> str:
     total = summary["total"]
     if total == 0:
-        return "No discovered servers cached"
+        if directory_total is None:
+            return "No discovered servers cached"
+        return f"No discovered servers cached · {directory_total:,} servers in WolfAPI directory"
 
     if shown == 0:
         result_text = "No matching servers"
@@ -426,7 +434,12 @@ def browser_summary_text(summary: dict[str, int], shown: int, match_count: int, 
         result_text = f"{shown:,} of {match_count:,} matching servers shown"
     else:
         result_text = f"{match_count:,} matching servers"
-    return f"{result_text} · {summary['online']:,} online servers out of {total:,} in directory"
+    if directory_total is None:
+        return f"{result_text} · {summary['online']:,} online out of {total:,} cached locally"
+    return (
+        f"{result_text} · {summary['online']:,} cached as online · "
+        f"{directory_total:,} servers in WolfAPI directory"
+    )
 
 
 def browser_summary_tooltip(summary: dict[str, int]) -> str:

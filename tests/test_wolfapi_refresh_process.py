@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from wolflauncher import server_cache
 from wolflauncher.models import DiscoveredServer
+from wolflauncher.server_discovery import WolfApiServerList
 from wolflauncher.wolfapi_refresh_process import refresh_cache
 
 
@@ -18,7 +19,7 @@ class WolfApiRefreshProcessTests(unittest.TestCase):
             27016,
             stable_server_id="stable-1",
         )
-        discover.return_value = [server]
+        discover.return_value = WolfApiServerList([server], directory_total=57411)
         with TemporaryDirectory() as directory:
             path = Path(directory) / "servers.sqlite3"
 
@@ -29,7 +30,10 @@ class WolfApiRefreshProcessTests(unittest.TestCase):
                 stored = server_cache.get_server(connection, server.cache_key)
             finally:
                 connection.close()
-        self.assertEqual(result, {"inserted": 1, "removed": 0, "error": ""})
+        self.assertEqual(
+            result,
+            {"inserted": 1, "removed": 0, "directory_total": 57411, "error": ""},
+        )
         self.assertIsNotNone(stored)
         discover.assert_called_once_with(100, unflagged_only=False)
 

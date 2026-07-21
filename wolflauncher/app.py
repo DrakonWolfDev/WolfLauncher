@@ -255,6 +255,7 @@ class MainWindow(QMainWindow):
         self.wolfapi_cache_context = (False, "WolfAPI", "wolfapi")
         self.wolfapi_search_worker = None
         self.pending_wolfapi_search = ""
+        self.wolfapi_directory_total = self._saved_wolfapi_directory_total()
         self.selection_enrichment_workers = {}
         self.pending_selection_checks = {}
         self.results_freshness_worker = None
@@ -1429,6 +1430,8 @@ class MainWindow(QMainWindow):
         except (ValueError, TypeError, json.JSONDecodeError):
             inserted, removed = 0, 0
             error = stderr or "WolfAPI refresh helper returned an invalid response."
+        if not error:
+            self.record_wolfapi_directory_total(payload.get("directory_total"))
         if automatic:
             self.mark_auto_refresh(provider)
         self.handle_wolfapi_cache_ready(inserted, removed, error)
@@ -1509,6 +1512,26 @@ class MainWindow(QMainWindow):
 
     def mark_auto_refresh(self, provider: str):
         self.settings[f"last_{provider}_auto_refresh_at"] = auto_refresh_timestamp()
+        self.save_user_settings(silent=True)
+
+    def _saved_wolfapi_directory_total(self) -> int | None:
+        try:
+            total = int(self.settings.get("wolfapi_directory_total"))
+        except (TypeError, ValueError):
+            return None
+        return total if total >= 0 else None
+
+    def record_wolfapi_directory_total(self, value) -> None:
+        if value is None:
+            return
+        try:
+            total = int(value)
+        except (TypeError, ValueError):
+            return
+        if total < 0 or total == self.wolfapi_directory_total:
+            return
+        self.wolfapi_directory_total = total
+        self.settings["wolfapi_directory_total"] = total
         self.save_user_settings(silent=True)
 
     def handle_auto_steam_discovery_ready(self, servers, error: str):
@@ -1698,6 +1721,7 @@ class MainWindow(QMainWindow):
                     7000,
                 )
             return
+        self.record_wolfapi_directory_total(getattr(servers, "directory_total", None))
         merged = server_cache.merge_source_servers(self.server_cache, "wolfapi", servers)
         if query == current_query and self.discovery_provider_key() == "wolfapi_v1":
             self.refresh_server_browser()
@@ -2237,6 +2261,7 @@ class MainWindow(QMainWindow):
             "steam_master_endpoints": self.steam_master_endpoints.text().strip()
             if hasattr(self, "steam_master_endpoints")
             else "",
+            "wolfapi_directory_total": self.wolfapi_directory_total,
         }
         api_key = (
             self.steam_web_api_key.text().strip()
@@ -2355,7 +2380,15 @@ class MainWindow(QMainWindow):
                 self.apply_browser_mod_preview(server.cache_key, cached[1])
         self.configure_browser_columns()
         self.browser_summary.setText(
-            browser_summary_text(snapshot.cache_summary, len(servers), snapshot.match_count, limit)
+            browser_summary_text(
+                snapshot.cache_summary,
+                len(servers),
+                snapshot.match_count,
+                limit,
+                self.wolfapi_directory_total
+                if self.discovery_provider_key() == "wolfapi_v1"
+                else None,
+            )
         )
         self.browser_summary.setToolTip(browser_summary_tooltip(snapshot.cache_summary))
         self.update_browser_selection_context()

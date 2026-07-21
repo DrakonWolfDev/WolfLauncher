@@ -101,11 +101,11 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertNotIn("Cached discovered servers:", truncated)
         self.assertEqual(
             truncated,
-            "200 of 350 matching servers shown · 100 online servers out of 500 in directory",
+            "200 of 350 matching servers shown · 100 online out of 500 cached locally",
         )
         self.assertEqual(
             no_matches,
-            "No matching servers · 100 online servers out of 500 in directory",
+            "No matching servers · 100 online out of 500 cached locally",
         )
         self.assertIn("500 cached", browser_summary_tooltip(summary))
         self.assertIn("200 checked", browser_summary_tooltip(summary))
@@ -113,11 +113,25 @@ class ServerBrowserPresenterTests(unittest.TestCase):
     def test_summary_separates_matches_from_directory_online_total(self):
         summary = {"total": 1500, "online": 1113, "checked": 400, "seen": 1200}
 
-        text = browser_summary_text(summary, shown=102, match_count=102, limit=200)
+        text = browser_summary_text(
+            summary, shown=102, match_count=102, limit=200, directory_total=57411
+        )
 
         self.assertEqual(
             text,
-            "102 matching servers · 1,113 online servers out of 1,500 in directory",
+            "102 matching servers · 1,113 cached as online · 57,411 servers in WolfAPI directory",
+        )
+
+    def test_summary_uses_api_directory_total_with_an_empty_local_cache(self):
+        summary = {"total": 0, "online": 0, "checked": 0, "seen": 0}
+
+        text = browser_summary_text(
+            summary, shown=0, match_count=0, limit=200, directory_total=57411
+        )
+
+        self.assertEqual(
+            text,
+            "No discovered servers cached · 57,411 servers in WolfAPI directory",
         )
 
     def test_browser_row_builds_display_sort_tooltip_and_colour_metadata(self):

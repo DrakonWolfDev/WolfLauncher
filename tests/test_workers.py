@@ -98,11 +98,17 @@ class WorkerTests(unittest.TestCase):
 
     @patch("wolflauncher.workers.discover_dayz_servers_wolfapi_v1")
     def test_v1_background_discovery_fetches_bounded_pages(self, discover):
-        discover.side_effect = [list(range(100)), list(range(100, 150))]
+        from wolflauncher.server_discovery import WolfApiServerList
+
+        discover.side_effect = [
+            WolfApiServerList(range(100), directory_total=57411),
+            WolfApiServerList(range(100, 150), directory_total=57411),
+        ]
 
         servers = discover_wolfapi_v1_pages(150)
 
         self.assertEqual(len(servers), 150)
+        self.assertEqual(servers.directory_total, 57411)
         self.assertEqual(
             discover.call_args_list,
             [
