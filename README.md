@@ -1,7 +1,7 @@
 # WolfLauncher
 
 A Linux-primary DayZ launcher designed to remove the guesswork from joining
-modded servers, with an experimental Windows source runtime.
+modded servers, with an experimental portable Windows build.
 
 DayZ runs surprisingly well on Linux. The problem is everything around it: Steam setup, Proton behaviour, Workshop content, server mod requirements, and paths that vary between native Steam and Flatpak Steam.
 
@@ -13,8 +13,10 @@ The upstream MIT-licensed shell launcher is vendored in `external/dayz-linux-cli
 
 Current baseline: v0.8 Linux native-launch parity validated, with the native
 launcher used by default and the external launcher retained as a Linux
-fallback. Windows detection, GUI startup and native launch preview are
-implemented; real DayZ handoff and Windows packaging are not yet validated.
+fallback. Windows detection, native Steam/DayZ handoff, confirmed Workshop
+resolution and portable packaging have been validated on Windows 11. The
+Windows build remains experimental until signing, installation and update gates
+are defined and exercised.
 
 The server browser, settings health checks, diagnostics, mod checks and guarded launch handoff are working. The native engine has been validated with native and Flatpak Steam, Steam running and stopped, unmodded servers, fully installed mod sets and partially missing mod sets. Connect pre-flight asks the signed-in Steam client to subscribe, download or update required items and verifies them before launch; manual Workshop pages remain available as an advanced fallback. The external launcher remains available as a fallback. The only known bug is that DayZ does not run when Steam launch options contain:
 
@@ -111,8 +113,11 @@ These instructions target Linux Mint 21/22 and Ubuntu 22.04/24.04 family systems
 Steam and DayZ should already be installed through native Steam or Flatpak Steam. WolfLauncher does not install DayZ or Proton. Workshop operations are delegated to the user's signed-in Steam client.
 
 On Windows, Steam and DayZ should already be installed through native Steam.
-The current Windows lane is for source development and validation; there is no
-supported installer yet.
+The experimental Windows release produces both a per-user Setup executable and
+a portable ZIP, each with the bundled status-query runtime. Setup does not need
+administrator rights, creates a Start Menu shortcut and leaves settings and
+cache data in the user profile when uninstalled. The artifacts are not yet
+digitally signed.
 
 At startup, WolfLauncher checks the selected Steam installation and warns once
 if Steam is stopped or unavailable. Server browsing remains available, but
@@ -139,7 +144,10 @@ WolfLauncher reads Steam's registry location and library manifests. Windows
 uses native `steam.exe`, direct absolute Workshop paths and the DayZ
 `steam_api64.dll`; Flatpak, Proton/PRIME diagnostics and the external shell
 launcher are intentionally absent. Use native launch preview first. Actual
-Connect and automatic Workshop changes remain experimental validation steps.
+Connect has been validated on Windows 11 24H2 with an unmodded handoff, a
+58-mod installed server session and an explicitly confirmed 62-mod session that
+subscribed to and downloaded three missing Workshop items before launch.
+Workshop changes remain explicitly confirmed operations.
 
 #### Linux
 
@@ -172,6 +180,35 @@ icon, curated template, legacy fallback and license notices. It writes the
 `.deb` and SHA-256 file under ignored `dist/`. Release artifacts must be built
 and smoke-tested in the release CI environment; a developer-machine build is a
 local validation artifact, not evidence for every supported distro.
+
+On Windows, install the pinned release tools and build the portable ZIP from
+PowerShell:
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-windows-release.txt
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\scripts\build-windows.ps1 `
+  -Python .\.venv\Scripts\python.exe
+```
+
+The script installs the lockfile-pinned GameDig tree, bundles the current Node
+runtime, runs the packaged GUI and Windows Credential Manager smoke checks, and
+writes a versioned ZIP plus SHA-256 file under `dist\windows`.
+
+Build the per-user installer from that bundle with the hash-pinned Inno Setup
+compiler:
+
+```powershell
+$iscc = powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
+  .\scripts\install-inno-setup.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File `
+  .\scripts\build-windows-installer.ps1 -Iscc $iscc `
+  -Python .\.venv\Scripts\python.exe
+```
+
+`scripts\test-windows-installer.ps1` performs isolated install, packaged-start,
+in-place reinstall and uninstall checks, and verifies that roaming configuration
+and local application data survive. GitHub Actions repeats the portable and
+installer builds and publishes their binaries and SHA-256 sidecars together.
 
 ### Manual Linux Mint / Ubuntu Setup
 

@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 
 from wolflauncher.models import Server
-from wolflauncher.status import ServerStatus, check_server, resolve_host
+from wolflauncher.status import ServerStatus, check_server, gamedig_command, resolve_host
 
 
 class ResolveHostTests(unittest.TestCase):
@@ -15,6 +15,30 @@ class ResolveHostTests(unittest.TestCase):
     def test_resolve_host_looks_up_dns_names(self, gethostbyname):
         self.assertEqual(resolve_host("dayz.example.test"), "203.0.113.10")
         gethostbyname.assert_called_once_with("dayz.example.test")
+
+
+class GameDigCommandTests(unittest.TestCase):
+    @patch("wolflauncher.status.Path.is_file", return_value=True)
+    @patch("wolflauncher.status.shutil.which", return_value=r"C:\\bundle\\node.exe")
+    def test_bundled_script_runs_through_bundled_node(self, which, is_file):
+        with patch.dict(
+            "wolflauncher.status.os.environ",
+            {"WOLFLAUNCHER_GAMEDIG_SCRIPT": r"C:\\bundle\\gamedig.js"},
+            clear=True,
+        ):
+            command = gamedig_command()
+
+        self.assertEqual(command, [r"C:\\bundle\\node.exe", r"C:\\bundle\\gamedig.js"])
+        which.assert_called_once_with("node")
+        is_file.assert_called_once()
+
+    @patch("wolflauncher.status.shutil.which", return_value="/usr/bin/gamedig")
+    def test_path_gamedig_remains_the_source_runtime_fallback(self, which):
+        with patch.dict("wolflauncher.status.os.environ", {}, clear=True):
+            command = gamedig_command()
+
+        self.assertEqual(command, ["/usr/bin/gamedig"])
+        which.assert_called_once_with("gamedig")
 
 
 class CheckServerTests(unittest.TestCase):

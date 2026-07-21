@@ -11,6 +11,7 @@ htmlcov/
 build/
 dist/
 *.egg-info/
+packaging/npm/node_modules/
 
 # Local curated server list. The tracked example.servers.yaml is the template.
 servers.yaml

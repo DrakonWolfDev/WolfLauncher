@@ -50,11 +50,12 @@ Completion means:
 - CI and the supported native/Flatpak Steam desktop matrix pass for that
   artifact, or each exception has an explicit release waiver.
 
-An experimental Windows source runtime now detects the local Steam/DayZ install
-and prepares native commands without Linux links or shell tools. Before Windows
-becomes a supported target, validate unmodded and modded DayZ handoffs,
-Steamworks query/subscription lifecycle, then add a reproducible signed package
-and Windows CI lane. These gates do not delay the Linux v1.0 boundary.
+The experimental Windows lane now has validated unmodded and modded DayZ
+handoffs, confirmed Steamworks query/subscription lifecycle, a reproducible
+portable ZIP, a per-user installer with data-preserving uninstall and a Windows
+CI packaging lane. Before Windows becomes a supported target, add signing and
+update behavior, then exercise the release artifact on the intended desktop
+matrix. These gates do not delay the Linux v1.0 boundary.
 
 ## v1.0 — supported native release
 

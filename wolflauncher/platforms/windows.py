@@ -21,7 +21,7 @@ class WindowsPlatformBackend:
         uses_proton=False,
         supports_external_launcher=False,
         mod_link_strategy="absolute_path",
-        diagnostic_tools=("gamedig", "node", "npm"),
+        diagnostic_tools=("gamedig", "node"),
     )
 
     def user_config_dir(self) -> Path:

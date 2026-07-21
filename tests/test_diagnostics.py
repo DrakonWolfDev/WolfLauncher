@@ -225,9 +225,7 @@ class DiagnosticsTests(unittest.TestCase):
             "Known DayZ process visibility: Detected known DayZ process: DayZ_x64.exe",
             report.details,
         )
-        self.assertTrue(
-            any("compare native versus Flatpak Steam" in step for step in report.next_steps)
-        )
+        self.assertTrue(any("test it directly" in step for step in report.next_steps))
 
     @unittest.skipIf(os.name == "nt", "Proton diagnostics are Linux-only")
     def test_launch_troubleshooting_report_explains_missing_compatdata_for_ready_install(self):

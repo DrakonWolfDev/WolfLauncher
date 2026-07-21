@@ -3,8 +3,9 @@
 ## Project Orientation
 
 WolfLauncher is a Linux-primary DayZ launcher GUI built with Python and PySide6,
-with an experimental Windows source runtime. The current working baseline is
-v0.8 Linux native-launch parity validated, with v0.9 native hardening in progress.
+with experimental portable and installed Windows builds. The current working
+baseline is v0.8 Linux native-launch parity validated, with v0.9 native hardening
+in progress.
 
 The app validates the local Steam/DayZ/Workshop setup, checks server status,
 compares required server mods with locally installed Workshop mods, then hands
@@ -161,7 +162,9 @@ The vendored script then:
 - If shared discovery behavior changes, update `DISCOVERY_FRESHNESS_HANDOFF.md`,
   `PROJECT_STATE.md`, `ARCHITECTURE.md` and `ROADMAP.md` as applicable, and
   record launcher constraints back in WolfAPI's contract.
-- Mod management is read-only and advisory; do not auto-subscribe or auto-download Workshop content without an explicit future design.
+- Workshop mutation is always an explicitly confirmed, Steam-managed operation.
+  Do not subscribe, download or update without confirmation, and never remove
+  subscriptions.
 - User settings and favourites live under `~/.config/wolflauncher` on Linux
   and `%APPDATA%\wolflauncher` on Windows; cache data uses the corresponding
   platform data directory.

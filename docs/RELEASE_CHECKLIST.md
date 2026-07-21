@@ -78,6 +78,48 @@ cannot be run.
 
 ## Validation evidence
 
+### 2026-07-20 — Windows 11 Pro 24H2, native Steam, source checkout
+
+- A clean Python 3.12 virtual environment started the Qt desktop application
+  from the installed `wolflauncher.exe` console entry point.
+- Fresh settings selected the native launcher automatically. Settings Health
+  detected the running signed-in Steam client, DayZ installation and Workshop
+  directory through the Windows registry and Steam library manifests.
+- An unmodded curated server completed the Steam handoff and reached a visible
+  `DayZ_x64.exe` loading screen.
+- A read-only Steamworks check for New Dawn Cherno returned all 58 required
+  Workshop items as installed, including item names, IDs, sizes and previews.
+- The 58-mod launch used direct absolute Workshop paths, passed the guarded
+  handoff, loaded DayZ Expansion and connected to `198.244.177.109:2302`.
+  The DayZ RPT recorded live world-entity loading from the server session.
+- The first transition from the unmodded run to the BattlEye server requested
+  a game restart. Repeating the identical guarded launch after closing DayZ
+  proceeded normally; no command or path change was required.
+- New Dawn DeerIsle initially reported 59 of 62 required items ready. After
+  explicit confirmation, the native Steamworks helper subscribed to and
+  downloaded Tent Actions Fix, DayZ-Expansion-Bundle and
+  Community-Online-Tools while reporting live progress for the 2.6 GiB batch.
+- Closing the success notice triggered a fresh readiness check. The Mods tab
+  rebuilt from the current Steam state and reported all 62 items installed,
+  with no missing, update-pending or download-pending items.
+- The guarded DeerIsle launch completed through native Steam. The running
+  `DayZ_x64.exe` command line contained exactly 62 absolute Workshop paths and
+  `-connect=198.244.177.109:2502`.
+- No Workshop items were removed or unsubscribed during validation.
+- The portable `0.9.0.dev0` one-folder artifact built with pinned Python and npm
+  dependencies plus the official Node 24.14.0 Windows runtime. Its packaged GUI
+  started from an isolated profile, loaded the Windows Credential Manager
+  backend and exited cleanly under the automated smoke watchdog.
+- The versioned ZIP and SHA-256 sidecar were reproduced locally. The executable
+  reports product/file version `0.9.0.dev0`.
+- The hash-pinned Inno Setup 6.7.3 compiler produced a per-user Setup executable
+  and SHA-256 sidecar. Two successive silent installs completed without
+  elevation; the installed application passed its packaged startup and Windows
+  Credential Manager smoke after each install.
+- Silent uninstall removed the installed executable while preserving sentinels
+  under both roaming configuration and local application-data directories. The
+  installer remains unsigned and update behavior is not yet defined.
+
 ### 2026-07-18 — Linux Mint 22.3, native Steam, packaged `0.9.0~dev0`
 
 - CI artifact checksum and Debian metadata verified before installation.
