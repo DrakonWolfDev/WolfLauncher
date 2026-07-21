@@ -286,6 +286,28 @@ until a deliberate later removal.
 
 ## Rollout gates
 
+- On 2026-07-21 WolfAPI proved concurrency 10 over 160 scheduled 100-row
+  cycles, but measured a roughly six-day eligible-directory revisit. API
+  selection now reserves bounded capacity for provider-fresh new, active
+  revisit, cooled retry and long-tail background lanes and publishes 24-hour
+  provider-fresh first-check and six-hour active-revisit objectives. Batch 250
+  and 500 mixed-load production canaries remain required. No Launcher code
+  change is needed: API freshness remains browse-time truth, while selected
+  server and launch-time checks remain authoritative.
+- Enabled WolfAPI source failures now degrade top-level operator health. The
+  Launcher should continue treating `/api/health` as diagnostics and retain
+  cached SQLite results on provider failure.
+- BattleMetrics now returns an explicit subscription-required HTTP 403 even
+  for page one, so its scheduled WolfAPI source is disabled unless the
+  operator deliberately provisions paid API access. Retained observations are
+  preserved; Launcher behavior remains unchanged and Steam/direct A2S are the
+  active discovery-freshness path.
+- WolfAPI final production canary uses batch 600/concurrency 10. It completed
+  in 96.685 seconds during 20,000 mixed v1 requests with zero HTTP errors and
+  projects a 24-hour full revisit for 57,411 eligible rows. Launcher behavior
+  remains unchanged; observe one real full window before closing the coverage
+  objective.
+
 - Production reports `contract_version >= 1`, `generated_at`, validation
   policy, coverage and queue-lag metadata. WolfAPI now also exposes ready and
   cooling-down candidate counts, oldest-ready age, and configured-capacity
