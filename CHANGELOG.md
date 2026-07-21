@@ -1,5 +1,11 @@
 # Changelog
 
+- Replaced the native Mods-screen and launch-preflight DZSA lookup with a
+  direct, background DayZ `A2S_RULES` query to the selected game server. Added
+  a strict bounded manifest decoder that rejects incomplete, overflowed,
+  duplicate or malformed responses atomically, while retaining Steam for
+  Workshop metadata and installed-item truth on Windows and Linux.
+
 ## Unreleased
 
 - Tightened Browser-to-Mods context: opening **Mods** directly from **Server

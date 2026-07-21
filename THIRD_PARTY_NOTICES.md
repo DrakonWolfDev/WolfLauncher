@@ -11,6 +11,17 @@ WolfLauncher includes third-party open-source software.
 
 The upstream license text is preserved at `external/dayz-linux-cli-launcher/LICENSE`.
 
+## python-a2s
+
+- Use: Direct Valve A2S query transport, challenge handling and split-packet
+  reassembly for selected DayZ server mod manifests.
+- Version: 1.4.2
+- License: MIT
+- Copyright: Copyright (c) 2020 Gabriel Huber
+- Source: https://github.com/Yepoleb/python-a2s
+
+The package includes its MIT license in its installed distribution metadata.
+
 ## Inno Setup
 
 - Use: Builds the Windows Setup executable; its setup/uninstall runtime is

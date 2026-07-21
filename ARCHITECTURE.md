@@ -69,7 +69,8 @@ wolflauncher/
   launch_selection.py    Validated cached resolved-IP target selection
   models.py              Shared dataclasses
   mod_presenter.py       Pure Mods-tab summary and row presentation
-  mods.py                DayZSA API mod lookup and local Workshop comparison
+  dayz_mod_query.py      strict direct DayZ A2S_RULES manifest decoder
+  mods.py                direct server mod lookup and local Workshop comparison
   platform_detection.py  Shared Steam-library parsing, selection and readiness facade
   platforms/
     base.py              Platform capability and backend contracts
@@ -226,7 +227,7 @@ The launch dialog shows the generated command and captures launcher output. Exit
 The vendored legacy launcher performs the lower-level launch work:
 
 ```text
-DayZSA API query
+DayZSA API query (legacy external launcher only)
   -> required Workshop IDs
   -> local Workshop folder checks
   -> shortened @base64modid symlinks in the DayZ directory
@@ -235,6 +236,13 @@ DayZSA API query
 ```
 
 This behavior is the reference contract for any future native Python launcher engine.
+
+WolfLauncher's native engine and Mods screen no longer use that third-party
+lookup. Their existing background `ModWorker` queries the selected game
+server's binary `A2S_RULES` manifest directly, rejects incomplete or ambiguous
+manifests atomically, and then uses Steam only for Workshop display metadata
+and local install state. DNS, UDP reassembly, decoding and Steam metadata work
+remain off the Qt UI thread on both Windows and Linux.
 
 The native Python engine lives behind `wolflauncher.native_launcher`.
 It currently prepares the shell launcher's shortened `@base64modid` symlinks,

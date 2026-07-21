@@ -14,3 +14,4 @@ more-itertools==11.1.0
 cryptography==49.0.0
 cffi==2.1.0
 pycparser==3.0
+python-a2s==1.4.2

@@ -132,21 +132,14 @@ class ScanInstalledModsTests(unittest.TestCase):
 
 class FetchRequiredModsTests(unittest.TestCase):
     @patch("wolflauncher.mods.resolve_host", return_value="203.0.113.10")
-    @patch("wolflauncher.mods.urllib.request.urlopen")
-    def test_fetch_required_mods_parses_api_response_and_deduplicates(self, urlopen, resolve_host):
-        urlopen.return_value = FakeResponse(
-            {
-                "result": {
-                    "mods": [
-                        {"steamWorkshopId": "111", "name": "Community Framework"},
-                        {"workshopId": 222, "title": "Namalsk Survival"},
-                        {"id": "111", "name": "Duplicate"},
-                        {"name": "Missing ID"},
-                        "not a dict",
-                    ]
-                }
-            }
-        )
+    @patch("wolflauncher.mods.query_dayz_required_mods")
+    def test_fetch_required_mods_uses_direct_server_manifest(self, query_mods, resolve_host):
+        from wolflauncher.dayz_mod_query import DayzRequiredMod
+
+        query_mods.return_value = [
+            DayzRequiredMod(111, "Community Framework"),
+            DayzRequiredMod(222, "Namalsk Survival"),
+        ]
 
         required = fetch_required_mods(make_server())
 
@@ -166,32 +159,7 @@ class FetchRequiredModsTests(unittest.TestCase):
             ],
         )
         resolve_host.assert_called_once_with("dayz.example.test")
-        request = urlopen.call_args.args[0]
-        self.assertEqual(
-            request.full_url, "https://dayzsalauncher.com/api/v1/query/203.0.113.10/27016"
-        )
-        self.assertEqual(request.headers["User-agent"], "WolfLauncher/0.4")
-
-    @patch("wolflauncher.mods.resolve_host", return_value="203.0.113.10")
-    @patch("wolflauncher.mods.urllib.request.urlopen")
-    def test_fetch_required_mods_accepts_unmodded_response(self, urlopen, resolve_host):
-        urlopen.return_value = FakeResponse({"result": {"mods": None}})
-
-        self.assertEqual(fetch_required_mods(make_server()), [])
-
-    @patch("wolflauncher.mods.resolve_host", return_value="203.0.113.10")
-    @patch("wolflauncher.mods.urllib.request.urlopen")
-    def test_fetch_required_mods_rejects_invalid_mods_shape(self, urlopen, resolve_host):
-        urlopen.return_value = FakeResponse({"result": {"mods": {"bad": "shape"}}})
-
-        with self.assertRaisesRegex(RuntimeError, "mods list"):
-            fetch_required_mods(make_server())
-
-    @patch("wolflauncher.mods.resolve_host", return_value="203.0.113.10")
-    @patch("wolflauncher.mods.urllib.request.urlopen", side_effect=urllib.error.URLError("offline"))
-    def test_fetch_required_mods_wraps_url_errors(self, urlopen, resolve_host):
-        with self.assertRaisesRegex(RuntimeError, "mod API connection failed"):
-            fetch_required_mods(make_server())
+        query_mods.assert_called_once_with("203.0.113.10", 27016)
 
 
 class CheckServerModsTests(unittest.TestCase):
@@ -315,7 +283,7 @@ class FormatModCheckReportTests(unittest.TestCase):
         report = format_mod_check_report(result)
 
         self.assertIn("Required mod count: 0", report)
-        self.assertIn("Required Workshop mods: none reported by the server API", report)
+        self.assertIn("Required Workshop mods: none reported by the game server", report)
         self.assertNotIn("Missing Workshop IDs:", report)
 
     def test_format_mod_check_report_includes_error(self):

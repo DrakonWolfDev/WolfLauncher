@@ -32,6 +32,11 @@ vendored MIT shell launcher remains a visible compatibility fallback.
 - Fixed startup probing of discovered rows is retired. Provider data is browsing
   evidence; selected-server inspection and launch-time checks remain local
   truth.
+- Native mod inspection now queries the selected game server's DayZ
+  `A2S_RULES` manifest directly on the existing background worker. The strict
+  decoder rejects partial/overflow/ambiguous responses, while Steam remains
+  the source for Workshop metadata and local install state. DZSA is retained
+  only inside the visible legacy Linux shell-launcher fallback.
 - The Server Browser, Mods, Settings and Favourite Servers layouts have passed
   real-desktop review. Preserve their information-first hierarchy unless new
   evidence requires a change.

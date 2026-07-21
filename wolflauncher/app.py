@@ -4475,7 +4475,7 @@ class MainWindow(QMainWindow):
 
     def build_selected_launch_command(self, server: Server, row: int | None = None) -> list[str]:
         # Launch with the resolved IP address when available. This mirrors the
-        # original terminal menu and avoids DayZSA API failures with some DNS
+        # original terminal menu and avoids direct server-query failures with some DNS
         # hostnames.
         if row is None and self.active_discovered_server is None:
             row = self.table.currentRow()

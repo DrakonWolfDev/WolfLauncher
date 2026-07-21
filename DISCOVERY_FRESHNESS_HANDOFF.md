@@ -37,6 +37,19 @@ subscription is a disabled-by-default, locally configured Launcher power-user
 integration; its credentials and failures must never become a WolfAPI
 dependency or contaminate the shared cache.
 
+Launcher direct-mod transition on 2026-07-21: native selected-server inspection
+and launch preflight now obtain the required Workshop manifest directly from
+the game server's binary `A2S_RULES` response on the existing background
+worker. The owned decoder is bounded and fail-closed for overflow, truncation,
+duplicates and structural ambiguity; it never accepts a partial prefix. Live
+DayZ responses may append an undocumented printable signature/name extension
+after the declared signature records, so the decoder permits only a bounded,
+valid UTF-8, wholly printable trailer and rejects binary/control data. Steam
+remains responsible for Workshop display metadata and local item state. DZSA
+remains only in the explicitly labelled legacy Linux shell-launcher fallback,
+not in the native Windows/Linux path. WolfAPI cached counts remain browse-time
+evidence and are not made authoritative by this launcher-only change.
+
 Directory-count correction on 2026-07-21: WolfLauncher now carries
 `coverage.eligible` from every successful WolfAPI v1 list/search/resolve
 response through its background workers and persists the last known value for

@@ -8,11 +8,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from .dayz_mod_query import query_dayz_required_mods
 from .models import Server
 from .redaction import redact_support_text
 from .status import resolve_host
 
-DAYZSA_QUERY_URL = "https://dayzsalauncher.com/api/v1/query/{address}/{port}"
 WORKSHOP_URL = "https://steamcommunity.com/sharedfiles/filedetails/?id={mod_id}"
 WORKSHOP_DETAILS_URL = (
     "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"
@@ -195,62 +195,17 @@ def scan_installed_mods(workshop_dir: Path | None) -> dict[str, str]:
     return mods
 
 
-def _mod_name_from_api(mod: dict[str, Any]) -> str:
-    for key in ("name", "title", "modName", "workshopTitle"):
-        value = mod.get(key)
-        if value:
-            return str(value)
-    return ""
-
-
 def fetch_required_mods(server: Server) -> list[RequiredMod]:
-    """Query DZSA-style API for a server's required Steam Workshop mods."""
+    """Query the game server directly for its required Steam Workshop mods."""
     address = resolve_host(server.host)
-    url = DAYZSA_QUERY_URL.format(address=address, port=server.query_port)
-    request = urllib.request.Request(url, headers={"User-Agent": "WolfLauncher/0.4"})
-
-    try:
-        with urllib.request.urlopen(request, timeout=10) as response:
-            payload = response.read().decode("utf-8", errors="replace")
-    except urllib.error.HTTPError as exc:
-        raise RuntimeError(f"mod API HTTP error: {exc.code}") from exc
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f"mod API connection failed: {exc.reason}") from exc
-    except TimeoutError as exc:
-        raise RuntimeError("mod API timed out") from exc
-
-    try:
-        data = json.loads(payload)
-    except json.JSONDecodeError as exc:
-        raise RuntimeError("mod API returned invalid JSON") from exc
-
-    result = data.get("result", {}) if isinstance(data, dict) else {}
-    mods = result.get("mods", []) if isinstance(result, dict) else []
-    if mods is None:
-        mods = []
-    if not isinstance(mods, list):
-        raise RuntimeError("mod API response did not contain a mods list")
-
-    required: list[RequiredMod] = []
-    seen: set[str] = set()
-    for mod in mods:
-        if not isinstance(mod, dict):
-            continue
-        workshop_id = mod.get("steamWorkshopId") or mod.get("workshopId") or mod.get("id")
-        if workshop_id is None:
-            continue
-        workshop_id = str(workshop_id).strip()
-        if not workshop_id or workshop_id in seen:
-            continue
-        seen.add(workshop_id)
-        required.append(
-            RequiredMod(
-                workshop_id=workshop_id,
-                name=_mod_name_from_api(mod),
-                workshop_url=WORKSHOP_URL.format(mod_id=workshop_id),
-            )
+    return [
+        RequiredMod(
+            workshop_id=str(mod.workshop_id),
+            name=mod.name,
+            workshop_url=WORKSHOP_URL.format(mod_id=mod.workshop_id),
         )
-    return required
+        for mod in query_dayz_required_mods(address, server.query_port)
+    ]
 
 
 def check_server_mods(
@@ -339,7 +294,7 @@ def format_mod_check_report(
             if mod.workshop_url:
                 lines.append(f"  url: {mod.workshop_url}")
     else:
-        lines.append("Required Workshop mods: none reported by the server API")
+        lines.append("Required Workshop mods: none reported by the game server")
 
     if missing:
         lines.extend(["", "Missing Workshop IDs:"])

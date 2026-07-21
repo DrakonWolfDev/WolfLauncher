@@ -183,7 +183,8 @@ def prepare_native_launch(
 
     This mirrors the vendored shell launcher core while staying behind a Python
     interface. Callers can pass already-fetched mods to keep GUI preflight and
-    native preparation in sync; otherwise the DayZSA API is queried here.
+    native preparation in sync; otherwise the server's DayZ A2S_RULES manifest
+    is queried directly here.
     """
     dayz_dir = _require_dir(install.dayz_dir, "DayZ install")
     workshop_dir = _require_dir(install.workshop_dir, "DayZ Workshop")
