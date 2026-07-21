@@ -28,6 +28,15 @@ This does not hide provider rows, change freshness/validation fields, or alter
 Launcher behavior; local selected-server and launch-time checks remain final
 truth.
 
+Current-scope close-out on 2026-07-21: WolfAPI's operating model is now fixed
+at Steam discovery plus bounded rolling A2S validation, with capacity for a
+24-hour eligible-directory revisit. BattleMetrics and scheduled DZSA metadata
+are disabled in the hosted API. GameDig remains authoritative for a selected
+server and at launch time. Any future BattleMetrics, DZSA or other directory
+subscription is a disabled-by-default, locally configured Launcher power-user
+integration; its credentials and failures must never become a WolfAPI
+dependency or contaminate the shared cache.
+
 ## Future Codex resume note — 2026-07-14
 
 Treat WolfLauncher and `../WolfAPI` as one discovery product with two separately
