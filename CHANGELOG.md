@@ -6,6 +6,8 @@
   evidence and added the approved cross-platform update-delivery strategy.
 - Kept package build and smoke coverage on every CI run while restricting
   large artifact uploads to tags and manually dispatched release candidates.
+- Split portable Windows and installer uploads so a validated ZIP remains
+  available even when the separate installer lifecycle fails or stalls.
 
 - Server Browser summaries now show the online count against the complete
   cached directory total, rather than presenting the online figure alone.
