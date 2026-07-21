@@ -48,6 +48,12 @@ details retain that data. Reuse `ui_sections.set_disclosure_state`, avoid
 redundant labels and verify collapsed and expanded states at the default
 1350x720 window size.
 
+Moving directly from Server Browser to Mods carries the highlighted discovered
+server into the same read-only active context used by **View mod details**.
+Rows from a previous curated or discovered server are cleared before the new
+mod check starts or queues, so Mods never labels stale content as the current
+Browser selection.
+
 ## Module Map
 
 ```text

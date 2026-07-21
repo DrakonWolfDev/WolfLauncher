@@ -30,6 +30,57 @@ def window_state(worker=None):
 
 
 class ModContextChangeTests(unittest.TestCase):
+    def test_browser_to_mods_tab_follows_highlighted_discovered_server(self):
+        discovered = DiscoveredServer(
+            name="Browser server",
+            host="203.0.113.10",
+            game_port=2302,
+            query_port=27016,
+        )
+        server = Server("Browser server", "Discovered (read-only)", "203.0.113.10", 2302, 27016)
+        window = SimpleNamespace(
+            active_main_tab_index=1,
+            server_browser_tab_index=1,
+            mods_tab_index=2,
+            follow_browser_selection_to_mods=Mock(),
+        )
+
+        MainWindow.handle_main_tab_changed(window, 2)
+
+        window.follow_browser_selection_to_mods.assert_called_once_with()
+        self.assertEqual(window.active_main_tab_index, 2)
+
+        mods_table = Mock()
+        follow_window = SimpleNamespace(
+            selected_discovered_server=Mock(return_value=discovered),
+            active_discovered_cache_key="different-server",
+            activate_discovered_server=Mock(return_value=server),
+            last_mod_result=object(),
+            mods_table=mods_table,
+            update_mod_detail_card=Mock(),
+            check_server_mods=Mock(),
+        )
+
+        MainWindow.follow_browser_selection_to_mods(follow_window)
+
+        follow_window.activate_discovered_server.assert_called_once_with(discovered)
+        self.assertIsNone(follow_window.last_mod_result)
+        mods_table.setRowCount.assert_called_once_with(0)
+        follow_window.update_mod_detail_card.assert_called_once_with()
+        follow_window.check_server_mods.assert_called_once_with(server, silent=True)
+
+    def test_mods_tab_does_not_replace_context_when_opened_from_another_tab(self):
+        window = SimpleNamespace(
+            active_main_tab_index=0,
+            server_browser_tab_index=1,
+            mods_tab_index=2,
+            follow_browser_selection_to_mods=Mock(),
+        )
+
+        MainWindow.handle_main_tab_changed(window, 2)
+
+        window.follow_browser_selection_to_mods.assert_not_called()
+
     def test_selected_mod_populates_the_detail_card(self):
         mod = RequiredMod(
             "111",

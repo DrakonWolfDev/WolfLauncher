@@ -348,6 +348,7 @@ class MainWindow(QMainWindow):
         )
         self.mods_tab_index = self.tabs.addTab(self._build_mods_tab(), theme_icon("mods"), "Mods")
         self.tabs.addTab(self._build_settings_tab(), theme_icon("settings"), "Settings")
+        self.active_main_tab_index = self.tabs.currentIndex()
         self.tabs.currentChanged.connect(self.handle_main_tab_changed)
         self.setCentralWidget(self.tabs)
 
@@ -1523,6 +1524,12 @@ class MainWindow(QMainWindow):
             self.discovery_worker.start()
 
     def handle_main_tab_changed(self, index: int):
+        previous_index = getattr(self, "active_main_tab_index", None)
+        self.active_main_tab_index = index
+        if index == getattr(self, "mods_tab_index", -1):
+            if previous_index == self.server_browser_tab_index:
+                self.follow_browser_selection_to_mods()
+            return
         if index != self.server_browser_tab_index:
             return
         self.schedule_selected_discovered_server_check()
@@ -2103,10 +2110,25 @@ class MainWindow(QMainWindow):
                 self, "No discovered server selected", "Select a discovered server first."
             )
             return None
+        return self.activate_discovered_server(discovered)
+
+    def activate_discovered_server(self, discovered: DiscoveredServer) -> Server:
         self.active_discovered_server = self.discovered_server_context(discovered)
         self.active_discovered_cache_key = discovered.cache_key
         self.update_launch_button_text()
         return self.active_discovered_server
+
+    def follow_browser_selection_to_mods(self):
+        discovered = self.selected_discovered_server()
+        if discovered is None:
+            return
+        context_changed = discovered.cache_key != self.active_discovered_cache_key
+        server = self.activate_discovered_server(discovered)
+        if context_changed:
+            self.last_mod_result = None
+            self.mods_table.setRowCount(0)
+            self.update_mod_detail_card()
+        self.check_server_mods(server, silent=True)
 
     def inspect_selected_discovered_server(self):
         server = self.activate_selected_discovered_server()

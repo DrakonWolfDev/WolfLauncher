@@ -501,6 +501,8 @@ class ServerBrowserTableTests(unittest.TestCase):
     def test_opening_browser_schedules_background_refresh_without_reloading_view(self, single_shot):
         window = SimpleNamespace(
             server_browser_tab_index=1,
+            mods_tab_index=2,
+            active_main_tab_index=0,
             schedule_selected_discovered_server_check=Mock(),
             schedule_initial_results_freshness_check=Mock(),
             maybe_auto_refresh_configured_provider=Mock(),
@@ -518,6 +520,7 @@ class ServerBrowserTableTests(unittest.TestCase):
                 call(0, window.maybe_auto_refresh_configured_provider),
             ],
         )
+        self.assertEqual(window.active_main_tab_index, 1)
 
     def test_required_mods_sort_handles_known_and_unknown_counts(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)

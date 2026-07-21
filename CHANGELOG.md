@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Tightened Browser-to-Mods context: opening **Mods** directly from **Server
+  Browser** now follows the highlighted discovered server using the same
+  read-only context as **View mod details**. Stale rows from a different server
+  are cleared immediately while the selected server's check starts or queues.
+
 - Renamed the Server Browser's ambiguous **Quality warning** label to
   **Listing data warning**, including its advanced hide control and detail
   headings. The warning continues to describe WolfAPI directory-data quality,
