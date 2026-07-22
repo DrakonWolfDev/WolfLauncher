@@ -123,6 +123,7 @@ from .secret_store import (
     settings_with_stored_steam_api_key,
 )
 from .server_browser_controller import BrowserQuery, browser_filter_options, load_browser_snapshot
+from .browser_filter_options import combo_filter_value, set_combo_filter_options
 from .server_browser_presenter import (
     browser_inspector,
     browser_mod_pill,
@@ -2589,21 +2590,10 @@ class MainWindow(QMainWindow):
         )
 
     def _set_combo_filter_options(self, combo: QComboBox, any_label: str, values: list[str]):
-        choices = [any_label, *values]
-        existing = [combo.itemText(index) for index in range(combo.count())]
-        if existing == choices:
-            return
-
-        current = combo.currentText()
-        combo.blockSignals(True)
-        combo.clear()
-        combo.addItems(choices)
-        combo.setCurrentText(current if current in choices else any_label)
-        combo.blockSignals(False)
+        set_combo_filter_options(combo, any_label, values)
 
     def _combo_filter_value(self, combo: QComboBox, any_label: str) -> str:
-        value = combo.currentText().strip()
-        return "" if value == any_label else value
+        return combo_filter_value(combo, any_label)
 
     def reset_browser_filters(self):
         self.browser_search.clear()
