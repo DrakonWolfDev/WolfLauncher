@@ -59,6 +59,8 @@ Browser selection.
 ```text
 wolflauncher/
   app.py                 Main Qt GUI, tabs and launch workflow coordination
+  connect_preflight.py   Qt coordination for Steam/Workshop connect preparation
+  launch_execution.py    Qt command preparation, preview and launch handoff
   config.py              YAML server loading and default launcher candidates
   curated_server_presenter.py
                          Pure curated-row display construction

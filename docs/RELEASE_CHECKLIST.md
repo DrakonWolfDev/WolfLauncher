@@ -176,8 +176,11 @@ cannot be run.
   Steam Workshop pages, completion through Steam Downloads and **Recheck
   mods**. Native Steam retains its validated automatic helper.
 - This is failure evidence plus a safe fallback, not Flatpak release
-  certification. Re-run the complete Flatpak row after the helper lifecycle is
-  deliberately redesigned or replaced.
+  certification. Automatic Flatpak Workshop automation has an explicit PR-08
+  release-scope waiver only; handoff and local readiness checks remain subject
+  to their normal validation. Re-run the complete Flatpak row after the helper
+  lifecycle is deliberately redesigned or replaced, following
+  `docs/FLATPAK_WORKSHOP_INVESTIGATION.md`.
 - Mint 21 and Ubuntu 22.04/24.04 real-desktop rows still require machines or
   explicit release-scope waivers. CI package build/startup evidence alone is
   not recorded as desktop certification.

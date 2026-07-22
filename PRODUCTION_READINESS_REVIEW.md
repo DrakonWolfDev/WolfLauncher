@@ -397,7 +397,10 @@ not merely source changes.
 - [ ] **PR-08 — Execute packaged-artifact validation.** Run the supported
   Mint/Ubuntu, native/Flatpak Steam, Workshop, network, secondary-library,
   offline, clean-install and upgrade matrix in `docs/RELEASE_CHECKLIST.md`.
-  Record dated evidence or an explicit waiver for every required row.
+  Record dated evidence or an explicit waiver for every required row. The
+  automatic Flatpak Workshop helper is manual-only under the scoped waiver and
+  may be re-enabled only through the evidence gates in
+  `docs/FLATPAK_WORKSHOP_INVESTIGATION.md`.
 - [ ] **PR-09 — Cut the production release.** Re-run all gates on the exact
   artifact and commit, synchronize the changelog/version/tag, publish checksums
   and installation guidance, and confirm CI on the tag.
@@ -406,7 +409,9 @@ not merely source changes.
 
 - [ ] **PR-10 — Extract feature ownership from `app.py` incrementally**, starting
   with the lifecycle coordinator needed by PR-04; preserve tested behavior and
-  the approved GUI hierarchy.
+  the approved GUI hierarchy. The first slice is `RuntimeShutdownCoordinator`:
+  it now owns the bounded, non-blocking shutdown protocol while `MainWindow`
+  retains only its Qt dialog and close-event presentation.
 - [ ] **PR-11 — Unify and bound network clients**, including response limits,
   versioned User-Agent, content validation, cancellation and structured errors.
 - [ ] **PR-12 — Harden disposable SQLite operation** with busy handling,

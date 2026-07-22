@@ -126,7 +126,10 @@ reinstall all passed. The second Mint 22 machine exposed the Flatpak Steamworks
 helper lifecycle failure described above; that row remains failed with a safe
 manual-Workshop fallback rather than release validation. Mint 21 and Ubuntu
 desktop rows remain unavailable and need evidence or an explicit release-scope
-waiver before PR-08 closes.
+waiver before PR-08 closes. Flatpak automatic Workshop automation has its own
+explicit scope waiver: Flatpak Steam may hand off DayZ and verify locally ready
+mods, but it must use manual Workshop links plus **Recheck mods** until the
+re-enable evidence in `docs/FLATPAK_WORKSHOP_INVESTIGATION.md` is complete.
 
 `ROADMAP.md` contains milestones only. `docs/RELEASE_CHECKLIST.md` records the
 checks to run against a release candidate; neither file is a second backlog.

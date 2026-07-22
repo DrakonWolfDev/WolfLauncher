@@ -66,6 +66,8 @@ from .discovery_refresh import (
     auto_refresh_due,
     auto_refresh_timestamp,
 )
+from .connect_preflight import ConnectPreflightCoordinator
+from .launch_execution import LaunchExecutionCoordinator
 from .launch_dialogs import LaunchDialog, NativeLaunchPreviewDialog, PreflightLaunchDialog
 from .launch_history import load_last_launch_report, save_last_launch_report
 from .launch_preflight import (
@@ -75,12 +77,9 @@ from .launch_preflight import (
     next_launch_preflight_action,
     usable_mod_result,
 )
-from .launch_selection import server_with_resolved_ipv4
-from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
+from .launcher import DEFAULT_PLAYER_NAME
 from .lifecycle import (
-    begin_runtime_shutdown,
-    kill_runtime_process,
-    runtime_shutdown_complete,
+    RuntimeShutdownCoordinator,
 )
 from .mod_presenter import (
     combined_download_estimate,
@@ -104,10 +103,6 @@ from .mods import (
 )
 from .native_launcher import (
     NativeLaunchError,
-    format_native_launch_parity_report,
-    native_launch_failure_details,
-    prepare_native_launch,
-    prepare_native_launch_parity_report,
 )
 from .platform_detection import (
     SteamInstall,
@@ -217,9 +212,10 @@ class MainWindow(QMainWindow):
 
         self.config_path = CURATED_SERVERS_PATH
         self._shutting_down = False
-        self._shutdown_started = False
+        self.shutdown_coordinator = RuntimeShutdownCoordinator(self)
+        self.connect_preflight = ConnectPreflightCoordinator(self)
+        self.launch_execution = LaunchExecutionCoordinator(self)
         self._shutdown_dialog = None
-        self._shutdown_deadline = None
         ensure_servers_file(self.config_path)
         self.servers = load_servers(self.config_path)
         self.curated_status_cache = load_status_cache()
@@ -813,7 +809,7 @@ class MainWindow(QMainWindow):
         set_ui_role(check, "accent")
         check.clicked.connect(lambda _checked=False: self.check_selected_server_mods(force=True))
         native_preview = QPushButton("Native launch preview")
-        native_preview.clicked.connect(self.preview_native_launch)
+        native_preview.clicked.connect(self.launch_execution.preview_native)
         copy_report = QPushButton("Copy mod report")
         copy_report.clicked.connect(self.copy_mod_check_report)
         copy_missing = QPushButton("Copy missing links")
@@ -4090,55 +4086,7 @@ class MainWindow(QMainWindow):
         return result
 
     def preview_native_launch(self):
-        if not self.last_mod_result or not self.last_mod_result.ok:
-            QMessageBox.warning(
-                self,
-                "No mod check yet",
-                "Check selected server mods successfully before preparing a native launch preview.",
-            )
-            return
-
-        server = self.active_server_context()
-        if not server:
-            QMessageBox.warning(self, "No server selected", "Select a favourite server first.")
-            return
-        if server_key(server) != server_key(self.last_mod_result.server):
-            QMessageBox.warning(
-                self,
-                "Mods are for another server",
-                "Recheck selected server mods before preparing a native launch preview.",
-            )
-            return
-
-        install = self.selected_steam_install()
-        if not install:
-            QMessageBox.critical(
-                self,
-                "Steam not detected",
-                "WolfLauncher could not detect the selected Steam installation.",
-            )
-            return
-
-        try:
-            report = prepare_native_launch_parity_report(
-                install,
-                self.launcher_path.text(),
-                server,
-                self.player_name.text().strip() or DEFAULT_PLAYER_NAME,
-                self.last_mod_result.required_mods,
-                selected_steam_mode=self.native_steam_mode_key(),
-            )
-        except NativeLaunchError as exc:
-            self.show_native_preview_error(exc)
-            return
-
-        dialog = NativeLaunchPreviewDialog(
-            self,
-            f"Native launch preview for {server.name}",
-            format_native_launch_parity_report(report),
-            report.preview.command,
-        )
-        dialog.exec()
+        self.launch_execution.preview_native()
 
     def update_settings_health(self):
         if not hasattr(self, "health_table"):
@@ -4224,196 +4172,7 @@ class MainWindow(QMainWindow):
             return
 
         self.save_user_settings(silent=True)
-        self.start_connect_preflight(server)
-
-    def start_connect_preflight(self, server: Server):
-        """Run the user-facing Steam, Workshop, launcher and process checklist."""
-        self.preflight_server = server
-        self.preflight_dialog = PreflightLaunchDialog(self, server.name)
-        self.preflight_dialog.finished.connect(self.cancel_connect_preflight)
-        self.preflight_dialog.launch_report_ready.connect(self.persist_launch_report)
-        self.preflight_dialog.show()
-        self.launch_button.setEnabled(False)
-        self.ensure_preflight_steam()
-
-    def cancel_connect_preflight(self, *_args):
-        worker = self.preflight_workshop_worker
-        if worker and worker.isRunning():
-            worker.cancel()
-        self.launch_button.setEnabled(True)
-
-    def fail_connect_preflight(self, key: str, detail: str):
-        if self.preflight_dialog:
-            self.preflight_dialog.set_failed(key, detail)
-        self.launch_button.setEnabled(True)
-
-    def ensure_preflight_steam(self):
-        dialog = self.preflight_dialog
-        if not dialog or not dialog.isVisible():
-            return
-        install = (
-            self.selected_steam_install()
-            if self.launch_engine_key() == "native"
-            else best_install()
-        )
-        if not install or not install.dayz_dir:
-            self.fail_connect_preflight(
-                "steam",
-                "The selected Steam/DayZ installation was not detected. Check Settings health.",
-            )
-            return
-        if not install.workshop_dir:
-            self.fail_connect_preflight(
-                "mods", "The DayZ Workshop folder was not detected. Check Settings health."
-            )
-            return
-        if install.running:
-            dialog.set_complete(
-                "steam", f"{install_label(install)} is running. Checking required mods…"
-            )
-            self.start_preflight_mod_check(install)
-            return
-        command = build_steam_start_command(install)
-        if not command:
-            self.fail_connect_preflight(
-                "steam", "The selected Steam client has no runnable command."
-            )
-            return
-        dialog.set_working("steam", f"Starting {install_label(install)}…")
-        started, _pid = QProcess.startDetached(command[0], command[1:])
-        if not started:
-            self.fail_connect_preflight("steam", "Steam could not be started.")
-            return
-        self.preflight_steam_attempts = 0
-        QTimer.singleShot(1000, self.poll_preflight_steam)
-
-    def poll_preflight_steam(self):
-        dialog = self.preflight_dialog
-        if not dialog or not dialog.isVisible():
-            return
-        self.preflight_steam_attempts += 1
-        install = (
-            self.selected_steam_install()
-            if self.launch_engine_key() == "native"
-            else best_install()
-        )
-        if install and install.running:
-            dialog.set_complete(
-                "steam", f"{install_label(install)} is running. Checking required mods…"
-            )
-            self.start_preflight_mod_check(install)
-            return
-        if self.preflight_steam_attempts >= 60:
-            self.fail_connect_preflight(
-                "steam",
-                "Steam was started, but did not become ready within 60 seconds. Sign in to Steam and try again.",
-            )
-            return
-        QTimer.singleShot(1000, self.poll_preflight_steam)
-
-    def start_preflight_mod_check(self, install: SteamInstall):
-        dialog = self.preflight_dialog
-        server = self.preflight_server
-        if not dialog or not server:
-            return
-        dialog.set_working("mods", "Checking the server manifest and local Workshop state…")
-        self.preflight_mod_worker = ModWorker(
-            server,
-            install.workshop_dir,
-            self.mod_check_steam_context(install),
-            workshop_install=install,
-        )
-        self.preflight_mod_worker.mods_ready.connect(self.finish_preflight_mod_check)
-        self.preflight_mod_worker.start()
-
-    def finish_preflight_mod_check(self, result: ModCheckResult):
-        self.preflight_mod_worker = None
-        dialog = self.preflight_dialog
-        server = self.preflight_server
-        if not dialog or not dialog.isVisible() or not server:
-            return
-        if server_key(result.server) != server_key(server) or not result.ok:
-            self.fail_connect_preflight("mods", result.error or "The required-mod check failed.")
-            return
-        self.last_mod_result = result
-        self.display_mods_result(result)
-        if result.missing_mods:
-            install = (
-                self.selected_steam_install()
-                if self.launch_engine_key() == "native"
-                else best_install()
-            )
-            if not install or not install.running:
-                self.fail_connect_preflight(
-                    "mods", "Steam stopped before required mods could be installed."
-                )
-                return
-            unavailable = workshop_automation_unavailable_reason(install)
-            if unavailable:
-                self.fail_connect_preflight("mods", unavailable)
-                return
-            dialog.set_working(
-                "mods",
-                f"Installing or updating {len(result.missing_mods)} required Workshop item(s)…",
-            )
-            self.preflight_workshop_worker = WorkshopSubscriptionWorker(
-                [mod.workshop_id for mod in result.missing_mods], install
-            )
-            self.preflight_workshop_worker.progress_ready.connect(
-                self.update_preflight_workshop_progress
-            )
-            self.preflight_workshop_worker.subscription_ready.connect(
-                self.finish_preflight_workshop
-            )
-            self.preflight_workshop_worker.start()
-            return
-        dialog.set_complete("mods", f"All {len(result.required_mods)} required mod(s) are ready.")
-        self.finish_connect_preflight()
-
-    def update_preflight_workshop_progress(self, snapshots):
-        dialog = self.preflight_dialog
-        if not dialog or not snapshots:
-            return
-        installed = sum(1 for item in snapshots if item.installed)
-        active = current_workshop_item(snapshots)
-        suffix = (
-            f"; current item {active.percent}%" if active and active.percent is not None else ""
-        )
-        dialog.set_working(
-            "mods", f"Steam has prepared {installed} of {len(snapshots)} required item(s){suffix}."
-        )
-
-    def finish_preflight_workshop(self, result):
-        self.preflight_workshop_worker = None
-        if not result.ok:
-            self.fail_connect_preflight(
-                "mods", result.error or "Steam did not finish every required Workshop item."
-            )
-            return
-        install = (
-            self.selected_steam_install()
-            if self.launch_engine_key() == "native"
-            else best_install()
-        )
-        if not install:
-            self.fail_connect_preflight(
-                "mods", "The selected Steam installation is no longer available."
-            )
-            return
-        self.start_preflight_mod_check(install)
-
-    def finish_connect_preflight(self):
-        dialog = self.preflight_dialog
-        server = self.preflight_server
-        if not dialog or not server:
-            return
-        dialog.set_working("launcher", "Building the Steam launch command…")
-        try:
-            command = self.build_selected_launch_command(server)
-        except (NativeLaunchError, LaunchError) as exc:
-            self.fail_connect_preflight("launcher", str(exc))
-            return
-        dialog.start_launch(command)
+        self.connect_preflight.start(server)
 
     def finish_prelaunch_workshop_check(self, server, result, state_result):
         current = self.active_server_context()
@@ -4450,86 +4209,16 @@ class MainWindow(QMainWindow):
         self.launch_button.setEnabled(True)
 
     def perform_launch(self, server: Server):
-        try:
-            command = self.build_selected_launch_command(server)
-        except NativeLaunchError as exc:
-            self.show_native_launch_error(exc)
-            return
-        except LaunchError as exc:
-            QMessageBox.critical(self, "Launch failed", str(exc))
-            return
-
-        handoff_label = (
-            "native launch command" if self.launch_engine_key() == "native" else "external launcher"
-        )
-        dialog = LaunchDialog(self, command, f"Launching {server.name}", handoff_label)
-        dialog.exec()
-        try:
-            save_last_launch_report(dialog.copyable_output_text())
-        except OSError as exc:
-            QMessageBox.warning(
-                self,
-                "Could not save launch report",
-                f"The launch completed, but WolfLauncher could not save its support report.\n\n{exc}",
-            )
+        self.launch_execution.perform(server)
 
     def build_selected_launch_command(self, server: Server, row: int | None = None) -> list[str]:
-        # Launch with the resolved IP address when available. This mirrors the
-        # original terminal menu and avoids direct server-query failures with some DNS
-        # hostnames.
-        if row is None and self.active_discovered_server is None:
-            row = self.table.currentRow()
-        resolved_item = self.table.item(row, 5) if row is not None and row >= 0 else None
-        resolved_ip = resolved_item.text().strip() if resolved_item else ""
-        launch_server = server_with_resolved_ipv4(server, resolved_ip)
-
-        player_name = self.player_name.text().strip() or DEFAULT_PLAYER_NAME
-        if self.launch_engine_key() == "native":
-            install = self.selected_steam_install()
-            if not install:
-                raise NativeLaunchError(
-                    "Selected Steam installation not detected",
-                    stage="Steam detection",
-                    guidance="Open Settings health and confirm the selected native or Flatpak Steam install can be detected.",
-                )
-            current_mod_result = usable_mod_result(
-                server, self.last_mod_result, install.workshop_dir
-            )
-            required_mods = current_mod_result.required_mods if current_mod_result else None
-            try:
-                prepared = prepare_native_launch(install, launch_server, player_name, required_mods)
-            except NativeLaunchError as exc:
-                raise exc.with_details(
-                    native_launch_failure_details(
-                        install,
-                        self.launcher_path.text(),
-                        launch_server,
-                        player_name,
-                        required_mods,
-                        self.native_steam_mode_key(),
-                    )
-                ) from exc
-            return prepared.command
-
-        return build_launch_command(self.launcher_path.text(), player_name, launch_server)
+        return self.launch_execution.build_command(server, row)
 
     def show_native_launch_error(self, error: NativeLaunchError):
-        box = QMessageBox(self)
-        box.setIcon(QMessageBox.Critical)
-        box.setWindowTitle(f"Launch failed during {error.stage}")
-        box.setText(error.user_message())
-        if error.details:
-            box.setDetailedText(error.details)
-        box.exec()
+        self.launch_execution.show_native_launch_error(error)
 
     def show_native_preview_error(self, error: NativeLaunchError):
-        box = QMessageBox(self)
-        box.setIcon(QMessageBox.Critical)
-        box.setWindowTitle(f"Native preview failed during {error.stage}")
-        box.setText(error.user_message())
-        if error.details:
-            box.setDetailedText(error.details)
-        box.exec()
+        self.launch_execution.show_native_preview_error(error)
 
     def confirm_launch_preflight(self, server: Server) -> bool:
         install = (
@@ -4653,12 +4342,9 @@ class MainWindow(QMainWindow):
         return True
 
     def closeEvent(self, event):
-        if not self._shutdown_started:
-            self._shutdown_started = True
+        if not self.shutdown_coordinator.started:
             self.save_user_settings(silent=True)
-            self._shutdown_deadline = time.monotonic() + 15
-            begin_runtime_shutdown(self)
-        if not runtime_shutdown_complete(self):
+        if not self.shutdown_coordinator.begin():
             event.ignore()
             if self._shutdown_dialog is None:
                 self._shutdown_dialog = QProgressDialog(
@@ -4686,11 +4372,10 @@ class MainWindow(QMainWindow):
         super().closeEvent(event)
 
     def _poll_shutdown(self):
-        if runtime_shutdown_complete(self):
+        if self.shutdown_coordinator.poll():
             self.close()
             return
-        if self._shutdown_deadline is not None and time.monotonic() >= self._shutdown_deadline:
-            kill_runtime_process(self)
+        if self.shutdown_coordinator.overdue():
             if self._shutdown_dialog is not None:
                 self._shutdown_dialog.setLabelText(
                     "A background check is taking longer than expected. "

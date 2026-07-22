@@ -5,6 +5,7 @@ from unittest.mock import Mock
 from PySide6.QtCore import QProcess
 
 from wolflauncher.lifecycle import (
+    RuntimeShutdownCoordinator,
     WORKER_ATTRIBUTES,
     WORKER_COLLECTION_ATTRIBUTES,
     active_workers,
@@ -48,6 +49,36 @@ def owner_with(**overrides):
 
 
 class LifecycleTests(unittest.TestCase):
+    def test_shutdown_coordinator_starts_once_and_reports_completion(self):
+        worker = Mock()
+        worker.isRunning.side_effect = [True, True, False]
+        owner = owner_with(mod_worker=worker)
+        coordinator = RuntimeShutdownCoordinator(owner, monotonic=lambda: 10)
+
+        self.assertFalse(coordinator.begin())
+        self.assertTrue(coordinator.started)
+        self.assertEqual(coordinator.deadline, 25)
+        self.assertTrue(coordinator.poll())
+
+        worker.cancel.assert_called_once_with()
+        worker.requestInterruption.assert_called_once_with()
+
+    def test_shutdown_coordinator_kills_only_an_overdue_process(self):
+        process = Mock()
+        process.state.return_value = QProcess.Running
+        owner = owner_with(wolfapi_refresh_process=process)
+        now = [10]
+        coordinator = RuntimeShutdownCoordinator(owner, monotonic=lambda: now[0])
+
+        self.assertFalse(coordinator.begin())
+        self.assertFalse(coordinator.poll())
+        process.kill.assert_not_called()
+
+        now[0] = 25
+        self.assertFalse(coordinator.poll())
+        self.assertTrue(coordinator.overdue())
+        process.kill.assert_called_once_with()
+
     def test_nonblocking_shutdown_requests_cancellation_without_waiting(self):
         worker = Mock()
         worker.isRunning.return_value = True
