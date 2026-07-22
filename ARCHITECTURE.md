@@ -63,6 +63,8 @@ wolflauncher/
   launch_execution.py    Qt command preparation, preview and launch handoff
   settings_health_controller.py
                          Qt Settings health refresh and table coordination
+  workshop_resolution_controller.py
+                         Qt Steam Workshop resolution-session coordination
   config.py              YAML server loading and default launcher candidates
   curated_server_presenter.py
                          Pure curated-row display construction

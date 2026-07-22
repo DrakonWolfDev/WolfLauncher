@@ -69,6 +69,7 @@ from .discovery_refresh import (
 from .connect_preflight import ConnectPreflightCoordinator
 from .launch_execution import LaunchExecutionCoordinator
 from .settings_health_controller import SettingsHealthCoordinator
+from .workshop_resolution_controller import WorkshopResolutionCoordinator
 from .launch_dialogs import LaunchDialog, NativeLaunchPreviewDialog, PreflightLaunchDialog
 from .launch_history import load_last_launch_report, save_last_launch_report
 from .launch_preflight import (
@@ -215,6 +216,7 @@ class MainWindow(QMainWindow):
         self.connect_preflight = ConnectPreflightCoordinator(self)
         self.launch_execution = LaunchExecutionCoordinator(self)
         self.settings_health = SettingsHealthCoordinator(self)
+        self.workshop_resolution = WorkshopResolutionCoordinator(self)
         self._shutdown_dialog = None
         ensure_servers_file(self.config_path)
         self.servers = load_servers(self.config_path)
@@ -3715,6 +3717,8 @@ class MainWindow(QMainWindow):
             QDesktopServices.openUrl(QUrl(mod.workshop_url))
 
     def subscribe_missing_workshop_mods(self):
+        self.workshop_resolution.subscribe_missing_mods()
+        return
         result = self._selected_mod_result(successful=True)
         if not result:
             QMessageBox.warning(
@@ -3804,6 +3808,8 @@ class MainWindow(QMainWindow):
         self.start_workshop_resolution(missing, result, install)
 
     def check_update_mod_row(self, row: int):
+        self.workshop_resolution.check_update_mod(row)
+        return
         result = self._selected_mod_result(successful=True)
         workshop_id = self._mods_cell(row, 2)
         mod = (
@@ -3854,6 +3860,8 @@ class MainWindow(QMainWindow):
             self.start_workshop_resolution([mod], result, install)
 
     def start_workshop_resolution(self, mods, result, install):
+        self.workshop_resolution.start_resolution(mods, result, install)
+        return
         """Start the existing isolated Steam resolution flow for selected mods."""
         ids = [mod.workshop_id for mod in mods]
 
