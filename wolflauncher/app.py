@@ -183,6 +183,7 @@ from .workers import (
 from .workshop_subscription import (
     ITEM_STATE_DOWNLOADING,
     current_workshop_item,
+    launch_block_reason,
     workshop_automation_unavailable_reason,
     workshop_recovery_state,
 )
@@ -3890,25 +3891,11 @@ class MainWindow(QMainWindow):
         QTimer.singleShot(0, self.launch_selected)
 
     def workshop_launch_block_reason(self) -> str:
-        state_worker = getattr(self, "workshop_state_worker", None)
-        if state_worker and state_worker.isRunning():
-            return "WolfLauncher is completing the final Steam Workshop readiness check."
-        worker = self.workshop_subscription_worker
-        if worker and worker.isRunning():
-            return (
-                "Steam is still processing the required Workshop items. Wait for monitoring "
-                "to finish. Hide monitor only hides the progress window; use Install "
-                "missing mods again to reopen the same monitor."
-            )
-        if self.workshop_recovery_ids:
-            count = len(self.workshop_recovery_ids)
-            noun = "item is" if count == 1 else "items are"
-            return (
-                f"Steam may still be downloading {count} required Workshop {noun} staged from "
-                "an earlier session. Check Steam Downloads, wait for it to finish, then use "
-                "Recheck mods before launching."
-            )
-        return ""
+        return launch_block_reason(
+            self.workshop_subscription_worker,
+            getattr(self, "workshop_state_worker", None),
+            getattr(self, "workshop_recovery_ids", ()),
+        )
 
     def _selected_mod_result(self, *, successful: bool = False) -> ModCheckResult | None:
         server = self.active_server_context()
