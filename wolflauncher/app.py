@@ -68,6 +68,7 @@ from .discovery_refresh import (
 )
 from .connect_preflight import ConnectPreflightCoordinator
 from .launch_execution import LaunchExecutionCoordinator
+from .settings_health_controller import SettingsHealthCoordinator
 from .launch_dialogs import LaunchDialog, NativeLaunchPreviewDialog, PreflightLaunchDialog
 from .launch_history import load_last_launch_report, save_last_launch_report
 from .launch_preflight import (
@@ -109,7 +110,6 @@ from .platform_detection import (
     best_install,
     best_install_from,
     build_steam_start_command,
-    detect_steam,
     install_label,
     select_steam_install,
     steam_mode_label,
@@ -153,7 +153,6 @@ from .settings import (
     save_settings,
     server_key,
 )
-from .settings_health import build_settings_health_snapshot
 from .settings_health_presenter import GROUP_SPECS, settings_health_groups
 from .status import ServerStatus
 from .theme import (
@@ -215,6 +214,7 @@ class MainWindow(QMainWindow):
         self.shutdown_coordinator = RuntimeShutdownCoordinator(self)
         self.connect_preflight = ConnectPreflightCoordinator(self)
         self.launch_execution = LaunchExecutionCoordinator(self)
+        self.settings_health = SettingsHealthCoordinator(self)
         self._shutdown_dialog = None
         ensure_servers_file(self.config_path)
         self.servers = load_servers(self.config_path)
@@ -4089,77 +4089,10 @@ class MainWindow(QMainWindow):
         self.launch_execution.preview_native()
 
     def update_settings_health(self):
-        if not hasattr(self, "health_table"):
-            return
-        install_rows = detect_steam()
-        self.detected_steam_installs = install_rows
-        provider = self.discovery_provider_key()
-        provider_detail = self.discovery_provider.currentText()
-        if provider == "steam_web_api":
-            provider_status = "OK" if self.steam_web_api_key.text().strip() else "MISSING"
-            provider_detail = (
-                "Steam Web API key saved"
-                if provider_status == "OK"
-                else "Steam Web API key required"
-            )
-        elif provider == "steam_master":
-            try:
-                addresses = self.steam_master_addresses()
-            except (OSError, ValueError) as exc:
-                provider_status = "WARN"
-                provider_detail = str(exc)
-            else:
-                provider_status = "OK"
-                provider_detail = (
-                    ", ".join(address.address for address in addresses)
-                    if addresses
-                    else "Default Steam masters"
-                )
-        elif provider == "wolfapi_v1":
-            provider_status = "OK"
-            provider_detail = "WolfAPI server discovery"
-        elif provider == "wolfapi":
-            provider_status = "OK"
-            provider_detail = "WolfAPI legacy hosted cache fallback"
-        elif provider == "battlemetrics":
-            provider_status = "OK"
-            provider_detail = "BattleMetrics public API"
-        elif provider == "disabled":
-            provider_status = "WARN"
-            provider_detail = "Database refresh is disabled"
-        else:
-            provider_status = "OK"
-
-        snapshot = build_settings_health_snapshot(
-            self.launcher_path.text(),
-            self.launch_engine_key(),
-            self.native_steam_mode_key(),
-            provider_status,
-            provider_detail,
-            install_rows,
-        )
-        self.system_summary.setText(snapshot.summary)
-        rows = snapshot.rows
-        self.health_table.setRowCount(len(rows))
-        for row, (name, status, details) in enumerate(rows):
-            self._set_health_item(row, 0, name)
-            self._set_health_item(row, 1, status, self._health_colour(status))
-            self._set_health_item(row, 2, details)
-        self.health_table.resizeColumnsToContents()
-        self.update_settings_health_groups(rows)
+        self.settings_health.refresh()
 
     def _health_colour(self, status: str) -> str:
-        if status == "OK":
-            return STATUS_COLOURS["positive"]
-        if status == "WARN":
-            return STATUS_COLOURS["warning"]
-        return STATUS_COLOURS["negative"]
-
-    def _set_health_item(self, row: int, column: int, text: str, colour: str | None = None):
-        item = QTableWidgetItem(text)
-        if colour:
-            item.setForeground(QColor(colour))
-        self.health_table.setItem(row, column, item)
+        return self.settings_health.colour(status)
 
     def launch_selected(self):
         workshop_block = self.workshop_launch_block_reason()
