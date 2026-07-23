@@ -23,7 +23,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QListWidget,
-    QListWidgetItem,
     QMainWindow,
     QMenu,
     QMessageBox,
@@ -51,7 +50,7 @@ from .config import (
     update_curated_server,
 )
 from .curated_dialogs import EditCuratedServerDialog, PromoteServerDialog
-from .curated_server_cards import CuratedServerCard
+from .curated_server_cards_controller import CuratedServerCardsCoordinator
 from .curated_server_presenter import curated_server_row
 from .curated_status_cache import (
     cached_status_for_server,
@@ -219,6 +218,7 @@ class MainWindow(QMainWindow):
         self.launch_execution = LaunchExecutionCoordinator(self)
         self.settings_health = SettingsHealthCoordinator(self)
         self.workshop_resolution = WorkshopResolutionCoordinator(self)
+        self.curated_server_cards = CuratedServerCardsCoordinator(self)
         self._shutdown_dialog = None
         ensure_servers_file(self.config_path)
         self.servers = load_servers(self.config_path)
@@ -2665,63 +2665,22 @@ class MainWindow(QMainWindow):
         return ""
 
     def update_curated_status_summary(self):
-        if not hasattr(self, "curated_online_summary"):
-            return
-        statuses = [
-            self.table.item(row, 8).text()
-            for row in range(self.table.rowCount())
-            if self.table.item(row, 8)
-        ]
-        online = statuses.count("ONLINE")
-        offline = statuses.count("OFFLINE")
-        self.curated_online_summary.setText(f"{online} online")
-        self.curated_offline_summary.setText(f"{offline} offline")
+        self.curated_server_cards.update_status_summary()
 
     def refresh_curated_server_cards(self):
-        if not hasattr(self, "server_cards"):
-            return
-        selected_row = self.table.currentRow()
-        self.server_cards.blockSignals(True)
-        self.server_cards.clear()
-        for row in range(self.table.rowCount()):
-            values = [self._server_cell(row, column) for column in range(16)]
-            card = CuratedServerCard(row, values, self.server_cards)
-            card.selected.connect(self._select_curated_card)
-            card.activated.connect(self._launch_curated_card)
-            card.favourite_requested.connect(self.toggle_favourite)
-            card.context_requested.connect(self.show_server_card_context_menu)
-            item = QListWidgetItem()
-            item.setData(Qt.UserRole, row)
-            item.setSizeHint(QSize(0, max(64, card.sizeHint().height() + 6)))
-            self.server_cards.addItem(item)
-            self.server_cards.setItemWidget(item, card)
-        if 0 <= selected_row < self.server_cards.count():
-            self.server_cards.setCurrentRow(selected_row)
-        self.server_cards.blockSignals(False)
-        self._sync_curated_card_selection()
+        self.curated_server_cards.refresh_cards()
 
     def _select_curated_table_row(self, row: int):
-        if 0 <= row < self.table.rowCount() and self.table.currentRow() != row:
-            self.table.selectRow(row)
-        self._sync_curated_card_selection()
+        self.curated_server_cards.select_table_row(row)
 
     def _select_curated_card(self, row: int):
-        if 0 <= row < self.server_cards.count():
-            self.server_cards.setCurrentRow(row)
-        self._select_curated_table_row(row)
+        self.curated_server_cards.select_card(row)
 
     def _launch_curated_card(self, row: int):
-        self._select_curated_card(row)
-        self.launch_selected()
+        self.curated_server_cards.launch_card(row)
 
     def _sync_curated_card_selection(self):
-        if not hasattr(self, "server_cards"):
-            return
-        selected_row = self.table.currentRow()
-        for row in range(self.server_cards.count()):
-            card = self.server_cards.itemWidget(self.server_cards.item(row))
-            if isinstance(card, CuratedServerCard):
-                card.set_selected(row == selected_row)
+        self.curated_server_cards.sync_selection()
 
     def add_curated_server(self):
         dialog = EditCuratedServerDialog(
