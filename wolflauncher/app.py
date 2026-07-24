@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 )
 
 from . import __version__, server_cache
+from .logging_setup import configure_local_logging
 from .config import (
     CURATED_SERVERS_PATH,
     ensure_servers_file,
@@ -312,6 +313,7 @@ def configure_packaged_smoke_test(app, window, environ=None) -> bool:
 
 
 def main():
+    configure_local_logging()
     app = QApplication(sys.argv)
     app.setApplicationName("WolfLauncher")
     app.setApplicationVersion(__version__)
