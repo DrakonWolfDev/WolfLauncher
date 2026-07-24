@@ -1,16 +1,14 @@
 from __future__ import annotations
 
-import json
 import os
 import socket
 import time
-import urllib.error
 import urllib.parse
-import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from .models import DiscoveredServer
+from .http_client import HttpClientError, fetch_json
 
 DAYZ_APP_ID = 221100
 STEAM_WEB_API_SERVER_LIST_URL = "https://api.steampowered.com/IGameServersService/GetServerList/v1/"
@@ -276,22 +274,10 @@ def discover_dayz_servers_web_api(
         "filter": filter_text or f"\\appid\\{DAYZ_APP_ID}",
     }
     url = f"{STEAM_WEB_API_SERVER_LIST_URL}?{urllib.parse.urlencode(params)}"
-    request = urllib.request.Request(url, headers={"User-Agent": "WolfLauncher/0.6"})
-
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            payload = response.read().decode("utf-8", errors="replace")
-    except urllib.error.HTTPError as exc:
-        raise SteamWebApiError(f"Steam Web API HTTP error: {exc.code}") from exc
-    except urllib.error.URLError as exc:
-        raise SteamWebApiError(f"Steam Web API connection failed: {exc.reason}") from exc
-    except TimeoutError as exc:
-        raise SteamWebApiError("Steam Web API timed out") from exc
-
-    try:
-        data = json.loads(payload)
-    except json.JSONDecodeError as exc:
-        raise SteamWebApiError("Steam Web API returned invalid JSON") from exc
+        data = fetch_json(url, timeout=timeout)
+    except HttpClientError as exc:
+        raise SteamWebApiError(f"Steam Web API {exc}") from exc
 
     return parse_steam_web_api_servers(data)
 
@@ -512,22 +498,10 @@ def _fetch_wolfapi_servers(
     timeout: float,
     require_v1: bool = False,
 ) -> list[DiscoveredServer]:
-    request = urllib.request.Request(endpoint, headers={"User-Agent": "WolfLauncher/0.7"})
-
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            payload = response.read().decode("utf-8", errors="replace")
-    except urllib.error.HTTPError as exc:
-        raise WolfApiError(f"WolfAPI HTTP error: {exc.code}") from exc
-    except urllib.error.URLError as exc:
-        raise WolfApiError(f"WolfAPI connection failed: {exc.reason}") from exc
-    except TimeoutError as exc:
-        raise WolfApiError("WolfAPI timed out") from exc
-
-    try:
-        data = json.loads(payload)
-    except json.JSONDecodeError as exc:
-        raise WolfApiError("WolfAPI returned invalid JSON") from exc
+        data = fetch_json(endpoint, timeout=timeout)
+    except HttpClientError as exc:
+        raise WolfApiError(f"WolfAPI {exc}") from exc
 
     if require_v1:
         return parse_wolfapi_v1_servers(data, limit=limit)
@@ -690,22 +664,10 @@ def _quality_flags(value) -> tuple[str, ...]:
 
 
 def fetch_battlemetrics_page(url: str, timeout: float = 15.0) -> dict:
-    request = urllib.request.Request(url, headers={"User-Agent": "WolfLauncher/0.6"})
-
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
-            payload = response.read().decode("utf-8", errors="replace")
-    except urllib.error.HTTPError as exc:
-        raise BattleMetricsError(f"BattleMetrics API HTTP error: {exc.code}") from exc
-    except urllib.error.URLError as exc:
-        raise BattleMetricsError(f"BattleMetrics API connection failed: {exc.reason}") from exc
-    except TimeoutError as exc:
-        raise BattleMetricsError("BattleMetrics API timed out") from exc
-
-    try:
-        data = json.loads(payload)
-    except json.JSONDecodeError as exc:
-        raise BattleMetricsError("BattleMetrics API returned invalid JSON") from exc
+        data = fetch_json(url, timeout=timeout)
+    except HttpClientError as exc:
+        raise BattleMetricsError(f"BattleMetrics API {exc}") from exc
 
     if not isinstance(data, dict):
         raise BattleMetricsError("BattleMetrics API returned invalid JSON object.")

@@ -681,7 +681,7 @@ class WolfApiDiscoveryTests(unittest.TestCase):
                 }
             )
 
-    @patch("wolflauncher.server_discovery.urllib.request.urlopen")
+    @patch("wolflauncher.http_client.urllib.request.urlopen")
     def test_wolfapi_discovery_fetches_default_endpoint(self, urlopen):
         class FakeResponse:
             def __enter__(self):
@@ -690,7 +690,7 @@ class WolfApiDiscoveryTests(unittest.TestCase):
             def __exit__(self, *_args):
                 return False
 
-            def read(self):
+            def read(self, _size=-1):
                 return b'{"servers": [{"addr": "203.0.113.10:27016", "game_port": 2302}]}'
 
         urlopen.return_value = FakeResponse()
@@ -702,7 +702,7 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         self.assertEqual(request.full_url, "https://api.drakonwolf.ddns.net/api/servers")
         self.assertEqual(urlopen.call_args.kwargs["timeout"], 7)
 
-    @patch("wolflauncher.server_discovery.urllib.request.urlopen")
+    @patch("wolflauncher.http_client.urllib.request.urlopen")
     def test_wolfapi_v1_initial_page_is_bounded(self, urlopen):
         urlopen.return_value = self.fake_wolfapi_response()
 
@@ -715,7 +715,7 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         self.assertEqual(urllib.parse.parse_qs(parsed.query), {"limit": ["500"], "offset": ["25"]})
         self.assertEqual(urlopen.call_args.kwargs["timeout"], 4)
 
-    @patch("wolflauncher.server_discovery.urllib.request.urlopen")
+    @patch("wolflauncher.http_client.urllib.request.urlopen")
     def test_wolfapi_v1_list_requests_unflagged_quality_when_selected(self, urlopen):
         urlopen.return_value = self.fake_wolfapi_response()
 
@@ -725,7 +725,7 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         query = urllib.parse.parse_qs(urllib.parse.urlparse(request.full_url).query)
         self.assertEqual(query["quality"], ["unflagged"])
 
-    @patch("wolflauncher.server_discovery.urllib.request.urlopen")
+    @patch("wolflauncher.http_client.urllib.request.urlopen")
     def test_wolfapi_v1_search_normalizes_and_encodes_filters(self, urlopen):
         urlopen.return_value = self.fake_wolfapi_response()
 
@@ -751,7 +751,7 @@ class WolfApiDiscoveryTests(unittest.TestCase):
             },
         )
 
-    @patch("wolflauncher.server_discovery.urllib.request.urlopen")
+    @patch("wolflauncher.http_client.urllib.request.urlopen")
     def test_wolfapi_v1_search_requests_unflagged_quality_when_selected(self, urlopen):
         urlopen.return_value = self.fake_wolfapi_response()
 
@@ -765,7 +765,7 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "query"):
             search_dayz_servers_wolfapi_v1("   ")
 
-    @patch("wolflauncher.server_discovery.urllib.request.urlopen")
+    @patch("wolflauncher.http_client.urllib.request.urlopen")
     def test_wolfapi_v1_resolution_encodes_exact_endpoint(self, urlopen):
         urlopen.return_value = self.fake_wolfapi_response()
 
@@ -809,7 +809,7 @@ class WolfApiDiscoveryTests(unittest.TestCase):
             def __exit__(self, *_args):
                 return False
 
-            def read(self):
+            def read(self, _size=-1):
                 return (
                     b'{"contract_version":"1","generated_at":"2026-07-13T12:00:00Z",'
                     b'"validation_policy":{"live_for_seconds":1800},'
@@ -823,3 +823,4 @@ class WolfApiDiscoveryTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
