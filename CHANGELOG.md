@@ -11,6 +11,12 @@
 
 ## Unreleased
 
+- Moved the NVIDIA PRIME Steam launch-option notice to a non-blocking **Known
+  external issues** disclosure in Settings. WolfLauncher no longer inspects
+  Linux PRIME environment values or presents them as launch-health warnings.
+- Hardened the disposable discovered-server SQLite cache with a bounded busy
+  timeout, WAL mode and transactional schema initialization.
+
 - Tightened Browser-to-Mods context: opening **Mods** directly from **Server
   Browser** now follows the highlighted discovered server using the same
   read-only context as **View mod details**. Stale rows from a different server

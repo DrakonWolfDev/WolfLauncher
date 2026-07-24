@@ -1,4 +1,3 @@
-import os
 import shutil
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -25,147 +24,12 @@ from .platforms import current_platform
 from .redaction import redact_support_text
 from .status import resolve_host
 
-PRIME_ENV_VARS = (
-    "__NV_PRIME_RENDER_OFFLOAD",
-    "__GLX_VENDOR_LIBRARY_NAME",
-    "DRI_PRIME",
-)
-
-
-@dataclass(frozen=True)
-class PrimeEnvironmentReport:
-    status: str
-    summary: str
-    details: list[str]
-
-
-@dataclass(frozen=True)
-class PrimeHelperReport:
-    status: str
-    summary: str
-    details: list[str]
-
-
-@dataclass(frozen=True)
-class SteamLaunchOptionsReport:
-    status: str
-    summary: str
-    details: list[str]
-
-
 @dataclass(frozen=True)
 class LaunchTroubleshootingReport:
     status: str
     summary: str
     details: list[str]
     next_steps: list[str]
-
-
-def prime_environment_report(environ=None) -> PrimeEnvironmentReport:
-    env = environ if environ is not None else os.environ
-    offload = env.get("__NV_PRIME_RENDER_OFFLOAD")
-    glx_vendor = env.get("__GLX_VENDOR_LIBRARY_NAME")
-    dri_prime = env.get("DRI_PRIME")
-
-    if offload == "1" and glx_vendor == "nvidia":
-        return PrimeEnvironmentReport(
-            status="WARN",
-            summary="Known problematic NVIDIA PRIME offload variables are visible to WolfLauncher.",
-            details=[
-                "This matches the known bad Steam launch-option pattern for DayZ.",
-                "WolfLauncher cannot confirm whether Steam applies the same per-game launch option.",
-                "Test DayZ directly from Steam with no per-game launch options before testing WolfLauncher handoff.",
-                "For hybrid-GPU checks, test PRIME outside WolfLauncher first, for example prime-run glxinfo -B and prime-run steam.",
-            ],
-        )
-
-    if offload or glx_vendor or dri_prime:
-        return PrimeEnvironmentReport(
-            status="OK",
-            summary="PRIME-related variables are present, but not the known bad NVIDIA launch-option pair.",
-            details=[
-                "WolfLauncher reports only the environment it can see.",
-                "Per-game Steam launch options still need to be checked in Steam if DayZ does not start.",
-            ],
-        )
-
-    return PrimeEnvironmentReport(
-        status="OK",
-        summary="No PRIME-related variables are visible to WolfLauncher; Steam launch options may still set them.",
-        details=[
-            "This does not prove Steam has no per-game launch options.",
-            "Check Steam's DayZ launch options directly if Proton or DayZ does not start after handoff.",
-        ],
-    )
-
-
-def prime_helper_report(which=shutil.which) -> PrimeHelperReport:
-    helpers = {
-        "prime-run": which("prime-run"),
-        "switcherooctl": which("switcherooctl"),
-    }
-    found = [name for name, path in helpers.items() if path]
-    details = [f"{name}: {path or 'not found'}" for name, path in helpers.items()]
-
-    if found:
-        return PrimeHelperReport(
-            status="OK",
-            summary="PRIME helper commands visible: " + ", ".join(found),
-            details=details
-            + [
-                "Use helper commands outside WolfLauncher first when reproducing hybrid-GPU launch issues.",
-            ],
-        )
-
-    return PrimeHelperReport(
-        status="OK",
-        summary="No PRIME helper commands are visible on PATH; this may be normal on non-hybrid systems.",
-        details=details
-        + [
-            "If this is a hybrid-GPU system, confirm the distro's PRIME/offload tool is installed before testing DayZ.",
-        ],
-    )
-
-
-def steam_launch_options_report(environ=None) -> SteamLaunchOptionsReport:
-    prime = prime_environment_report(environ)
-    details = [
-        "WolfLauncher cannot reliably read Steam's per-game DayZ launch options.",
-        "Open Steam, DayZ, Properties, General, Launch Options to inspect the effective value.",
-        "For baseline testing, leave DayZ launch options empty and start DayZ directly from Steam once before testing WolfLauncher.",
-    ]
-
-    if prime.status == "WARN":
-        return SteamLaunchOptionsReport(
-            status="WARN",
-            summary="Check Steam's DayZ launch options for the known bad NVIDIA PRIME option.",
-            details=details
-            + [
-                "Remove __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command% while testing this issue.",
-                "Do not add that option as a WolfLauncher default or workaround.",
-            ],
-        )
-
-    return SteamLaunchOptionsReport(
-        status="OK",
-        summary="Steam launch options are external to WolfLauncher; check them in Steam if DayZ does not start.",
-        details=details
-        + [
-            "Visible WolfLauncher PRIME environment does not prove which variables Steam will apply to Proton.",
-        ],
-    )
-
-
-def post_handoff_launch_option_guidance(environ=None) -> str:
-    launch_options = steam_launch_options_report(environ)
-    if launch_options.status == "WARN":
-        return (
-            "Check Steam's DayZ launch options and remove the known bad "
-            "__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command% option while testing this issue."
-        )
-    return (
-        "Check Steam's DayZ launch options in Steam if Proton or DayZ does not start after handoff."
-    )
 
 
 def format_settings_health_report(
@@ -223,17 +87,10 @@ def launch_troubleshooting_report(
     install = select_steam_install(selected_mode, detected)
     process = process_check if process_check is not None else dayz_process_check()
     capabilities = current_platform().capabilities
-    prime = prime_environment_report(environ) if capabilities.uses_proton else None
-    launch_options = steam_launch_options_report(environ) if capabilities.uses_proton else None
-
     status = "OK"
     if selection.status == "MISSING":
         status = "MISSING"
-    elif (
-        selection.status == "WARN"
-        or (prime and prime.status == "WARN")
-        or (launch_options and launch_options.status == "WARN")
-    ):
+    elif selection.status == "WARN":
         status = "WARN"
 
     details = [
@@ -249,12 +106,10 @@ def launch_troubleshooting_report(
         f"Workshop folder: {(install.workshop_dir if install and install.workshop_dir else 'not detected')}",
         f"Known DayZ process visibility: {process.detail}",
     ]
-    if capabilities.uses_proton and prime and launch_options:
+    if capabilities.uses_proton:
         details.extend(
             [
                 f"Proton compatdata: {proton_compatdata_detail(install)}",
-                f"PRIME status: {prime.status} - {prime.summary}",
-                f"Steam launch options: {launch_options.status} - {launch_options.summary}",
             ]
         )
 
@@ -271,8 +126,6 @@ def launch_troubleshooting_report(
         next_steps.append(
             "If this was captured after a successful handoff, allow Steam time to start DayZ, then check Steam downloads and BattlEye prompts."
         )
-        if capabilities.uses_proton:
-            next_steps.append(post_handoff_launch_option_guidance(environ))
     if (
         capabilities.uses_proton
         and install
@@ -283,10 +136,6 @@ def launch_troubleshooting_report(
         next_steps.append(
             "If DayZ has not been launched through this Steam install yet, start it once directly from Steam so Proton can create compatdata and show first-run prompts."
         )
-    if prime and prime.status == "WARN":
-        next_steps.append(
-            "Remove the known bad NVIDIA PRIME Steam launch option and test DayZ directly from Steam without WolfLauncher."
-        )
     if not next_steps:
         next_steps.append(
             "If DayZ still does not start, test it directly from the selected Steam installation with the same Workshop content."
@@ -294,11 +143,7 @@ def launch_troubleshooting_report(
 
     return LaunchTroubleshootingReport(
         status=status,
-        summary="; ".join(
-            part
-            for part in (selection.detail, process.detail, prime.summary if prime else "")
-            if part
-        ),
+        summary="; ".join(part for part in (selection.detail, process.detail) if part),
         details=details,
         next_steps=next_steps,
     )
@@ -312,7 +157,6 @@ def run_diagnostics(
     generated_at: datetime | None = None,
 ) -> str:
     lines: list[str] = []
-    environment = dict(os.environ)
     lines.append("WolfLauncher diagnostics")
     lines.append("========================")
     lines.append("")
@@ -376,31 +220,13 @@ def run_diagnostics(
         )
     lines.append("")
 
-    if capabilities.uses_proton:
-        lines.append("Launch option environment:")
-        for name in PRIME_ENV_VARS:
-            lines.append(f"  {name}: {environment.get(name) or 'not set'}")
-        prime = prime_environment_report(environment)
-        lines.append(f"  PRIME status: {prime.status} - {prime.summary}")
-        for detail in prime.details:
-            lines.append(f"  PRIME guidance: {detail}")
-        helper_report = prime_helper_report()
-        lines.append(f"  PRIME helpers: {helper_report.status} - {helper_report.summary}")
-        for detail in helper_report.details:
-            lines.append(f"  PRIME helper detail: {detail}")
-        launch_options = steam_launch_options_report(environment)
-        lines.append(f"  Steam launch options: {launch_options.status} - {launch_options.summary}")
-        for detail in launch_options.details:
-            lines.append(f"  Steam launch option guidance: {detail}")
-        lines.append("")
-
     process_check = dayz_process_check()
     lines.append("DayZ process check:")
     lines.append(f"  {process_check.detail}")
     lines.append("")
 
     launch_report = launch_troubleshooting_report(
-        selected_steam_mode, installs, process_check, environment
+        selected_steam_mode, installs, process_check
     )
     lines.append("Launch troubleshooting:")
     lines.append(f"  Status: {launch_report.status}")

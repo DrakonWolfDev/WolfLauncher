@@ -12,18 +12,6 @@ class SettingsHealthSnapshotTests(unittest.TestCase):
     def setUp(self):
         self.report_patches = (
             patch(
-                "wolflauncher.settings_health.prime_environment_report",
-                return_value=SimpleNamespace(status="OK", summary="PRIME clear"),
-            ),
-            patch(
-                "wolflauncher.settings_health.prime_helper_report",
-                return_value=SimpleNamespace(status="OK", summary="Helpers checked"),
-            ),
-            patch(
-                "wolflauncher.settings_health.steam_launch_options_report",
-                return_value=SimpleNamespace(status="OK", summary="Options external"),
-            ),
-            patch(
                 "wolflauncher.settings_health.dayz_process_check",
                 return_value=ProcessCheck(False, "No DayZ process visible"),
             ),

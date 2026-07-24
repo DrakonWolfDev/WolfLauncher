@@ -416,6 +416,8 @@ not merely source changes.
   versioned User-Agent, content validation, cancellation and structured errors.
 - [ ] **PR-12 — Harden disposable SQLite operation** with busy handling,
   transactional migrations and safe quarantine/rebuild of cache corruption.
+  Busy waiting, WAL mode and transactional schema initialization are complete;
+  corruption quarantine/rebuild remains.
 - [ ] **PR-13 — Add redacted structured local logging and GUI crash boundaries**
   with bounded retention and opt-in-only upload.
 - [ ] **PR-14 — Bound external/provider data and image decoding**, and document

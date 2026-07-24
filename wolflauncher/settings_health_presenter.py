@@ -27,7 +27,7 @@ GROUP_SPECS = (
     (
         "graphics",
         "Linux graphics and compatibility",
-        ("PRIME environment", "PRIME helpers", "Steam launch options", "Proton compatdata"),
+        ("Proton compatdata",),
     ),
 )
 

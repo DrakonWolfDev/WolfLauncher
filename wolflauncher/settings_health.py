@@ -6,9 +6,6 @@ from typing import Callable, Iterable
 from .config import DEFAULT_LAUNCHER_PATHS
 from .diagnostics import (
     launch_troubleshooting_report,
-    prime_environment_report,
-    prime_helper_report,
-    steam_launch_options_report,
 )
 from .platform_detection import (
     SteamInstall,
@@ -112,14 +109,8 @@ def build_settings_health_snapshot(
         ),
     ]
     if capabilities.uses_proton:
-        prime_report = prime_environment_report()
-        prime_helpers = prime_helper_report()
-        launch_options = steam_launch_options_report()
         rows.extend(
             [
-                ("PRIME environment", prime_report.status, prime_report.summary),
-                ("PRIME helpers", prime_helpers.status, prime_helpers.summary),
-                ("Steam launch options", launch_options.status, launch_options.summary),
                 ("Proton compatdata", "OK", proton_compatdata_detail(selected_install)),
             ]
         )

@@ -40,6 +40,11 @@ class ServerCacheTests(unittest.TestCase):
         self.assertIn("game_time", columns)
         self.assertIn("day_acceleration", columns)
         self.assertIn("night_acceleration", columns)
+        self.assertEqual(
+            connection.execute("PRAGMA busy_timeout").fetchone()[0],
+            server_cache.SQLITE_BUSY_TIMEOUT_MS,
+        )
+        self.assertEqual(connection.execute("PRAGMA journal_mode").fetchone()[0], "wal")
 
     def test_schema_v6_migrates_local_game_time_additively(self):
         connection = server_cache.sqlite3.connect(":memory:")

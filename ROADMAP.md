@@ -82,7 +82,8 @@ updates on Linux, sharing one release-channel manifest and policy.
 - Promote Windows from experimental to supported only after its handoff,
   Steamworks, packaging, signing and update gates pass.
 
-## Known external investigation
+## Known external issue
 
-Continue NVIDIA PRIME/Steam launch-option investigation only from reproducible
-evidence. Do not bake the known problematic PRIME option into defaults.
+Keep the NVIDIA PRIME/Steam launch-option note as an advisory Settings FAQ item.
+Investigate only from reproducible evidence; do not inspect, modify or default
+the known problematic option.

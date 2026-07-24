@@ -61,7 +61,7 @@ authorized this coordinated workflow.
 
 When these files disagree, update them as part of the same change.
 
-## Known Bug
+## Known External Issue
 
 DayZ currently does not run when Steam launch options contain:
 
@@ -69,7 +69,9 @@ DayZ currently does not run when Steam launch options contain:
 __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%
 ```
 
-Treat this as an external Steam/Proton/DayZ launch-option compatibility issue until reproduced. Do not bake this option into WolfLauncher defaults.
+Treat this as an advisory external Steam/Proton/DayZ compatibility issue. Do
+not inspect or change the user's Steam launch options; do not bake this option
+into WolfLauncher defaults.
 
 ## Code Map
 

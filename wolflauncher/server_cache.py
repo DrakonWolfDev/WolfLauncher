@@ -14,6 +14,7 @@ from .paths import user_data_dir
 from .persistence import ensure_private_directory
 
 SCHEMA_VERSION = 7
+SQLITE_BUSY_TIMEOUT_MS = 5000
 DATA_DIR = user_data_dir()
 SERVER_CACHE_PATH = DATA_DIR / "server_cache.sqlite3"
 
@@ -40,7 +41,7 @@ def ensure_data_dir(path: Path = DATA_DIR) -> None:
 
 def connect(path: Path = SERVER_CACHE_PATH) -> sqlite3.Connection:
     ensure_data_dir(path.parent)
-    connection = sqlite3.connect(path)
+    connection = sqlite3.connect(path, timeout=SQLITE_BUSY_TIMEOUT_MS / 1000)
     connection.row_factory = sqlite3.Row
     try:
         initialize(connection)
@@ -52,18 +53,30 @@ def connect(path: Path = SERVER_CACHE_PATH) -> sqlite3.Connection:
 
 def initialize(connection: sqlite3.Connection) -> None:
     connection.execute("PRAGMA foreign_keys = ON")
-    version = int(connection.execute("PRAGMA user_version").fetchone()[0])
-    if version > SCHEMA_VERSION:
-        raise RuntimeError(
-            f"Server cache schema version {version} is newer than WolfLauncher supports ({SCHEMA_VERSION})."
-        )
-    if version == 0:
-        _initialize_schema_v1(connection)
-    elif version < SCHEMA_VERSION:
-        _migrate(connection, version, SCHEMA_VERSION)
-    else:
-        _initialize_schema_v1(connection)
+    connection.execute(f"PRAGMA busy_timeout = {SQLITE_BUSY_TIMEOUT_MS}")
+    # The discovered-server cache is disposable. WAL permits the GUI to read it
+    # while a background worker completes a short write transaction.
+    connection.execute("PRAGMA journal_mode = WAL")
+    # Each cache migration is all-or-nothing. The cache is disposable, but a
+    # partial schema update would still make the current session unreliable.
     connection.commit()
+    connection.execute("BEGIN IMMEDIATE")
+    try:
+        version = int(connection.execute("PRAGMA user_version").fetchone()[0])
+        if version > SCHEMA_VERSION:
+            raise RuntimeError(
+                f"Server cache schema version {version} is newer than WolfLauncher supports ({SCHEMA_VERSION})."
+            )
+        if version == 0:
+            _initialize_schema_v1(connection)
+        elif version < SCHEMA_VERSION:
+            _migrate(connection, version, SCHEMA_VERSION)
+        else:
+            _initialize_schema_v1(connection)
+        connection.commit()
+    except BaseException:
+        connection.rollback()
+        raise
 
 
 def _initialize_schema_v1(connection: sqlite3.Connection) -> None:

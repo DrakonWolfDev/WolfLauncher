@@ -18,40 +18,21 @@ resolution and portable packaging have been validated on Windows 11. The
 Windows build remains experimental until signing, update delivery and broader
 release-artifact desktop gates are exercised.
 
-The server browser, settings health checks, diagnostics, mod checks and guarded launch handoff are working. The native engine has been validated with native and Flatpak Steam, Steam running and stopped, unmodded servers, fully installed mod sets and partially missing mod sets. Connect pre-flight asks the signed-in Steam client to subscribe, download or update required items and verifies them before launch; manual Workshop pages remain available as an advanced fallback. The external launcher remains available as a fallback. The only known bug is that DayZ does not run when Steam launch options contain:
+The server browser, settings health checks, diagnostics, mod checks and guarded launch handoff are working. The native engine has been validated with native and Flatpak Steam, Steam running and stopped, unmodded servers, fully installed mod sets and partially missing mod sets. Connect pre-flight asks the signed-in Steam client to subscribe, download or update required items and verifies them before launch; manual Workshop pages remain available as an advanced fallback. The external launcher remains available as a fallback.
+
+## Known external issues
+
+### NVIDIA PRIME Steam launch option
+
+DayZ may not start when this Steam launch option is set:
 
 ```text
 __NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%
 ```
 
-That issue is tracked as a Steam/Proton/DayZ launch-option compatibility problem until it is reproduced and diagnosed.
-
-## NVIDIA PRIME / Steam Launch Options
-
-WolfLauncher does not currently set or rewrite Steam launch options. Steam stores those per game, and WolfLauncher cannot reliably read them from the outside. The diagnostics report can show PRIME-related environment variables visible to WolfLauncher, but it cannot prove which launch options Steam applies when Proton starts DayZ.
-
-Known-bad option while this issue is under investigation:
-
-```text
-__NV_PRIME_RENDER_OFFLOAD=1 __GLX_VENDOR_LIBRARY_NAME=nvidia %command%
-```
-
-For hybrid-GPU systems, prefer testing GPU offload outside WolfLauncher first:
-
-```bash
-prime-run glxinfo -B
-prime-run steam
-```
-
-Then test DayZ directly from Steam with no WolfLauncher involvement. If DayZ only fails when the per-game Steam launch option above is present, remove that option and launch through WolfLauncher again. Do not add the known-bad option as a WolfLauncher default or recommended workaround.
-
-Useful evidence for debugging:
-
-- Whether Steam is native or Flatpak.
-- GPU driver and PRIME helper in use, for example `prime-run`, `switcherooctl` or manual environment variables.
-- Proton version selected for DayZ.
-- Whether DayZ starts directly from Steam with no per-game launch option.
-- WolfLauncher diagnostics output, especially the PRIME environment values and Steam/DayZ detection section.
+This is a Steam/Proton/DayZ compatibility issue. WolfLauncher does not set, read
+or change Steam launch options. Remove the option in Steam while testing, then
+verify DayZ directly from Steam before trying WolfLauncher again.
 
 ## Features
 
@@ -146,7 +127,7 @@ py -3.12 -m venv .venv
 
 WolfLauncher reads Steam's registry location and library manifests. Windows
 uses native `steam.exe`, direct absolute Workshop paths and the DayZ
-`steam_api64.dll`; Flatpak, Proton/PRIME diagnostics and the external shell
+`steam_api64.dll`; Flatpak/Proton diagnostics and the external shell
 launcher are intentionally absent. Use native launch preview first. Actual
 Connect has been validated on Windows 11 24H2 with an unmodded handoff, a
 58-mod installed server session and an explicitly confirmed 62-mod session that
@@ -247,9 +228,9 @@ Run the test suite:
 PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest discover
 ```
 
-If the app starts but launch preflight fails, open **Settings** and press **Check health**. That table reports the selected Steam install, the install Auto would choose, other detected Steam candidates, their launch command details, DayZ, Workshop, required tools and visible PRIME/offload environment state. Use **Copy health** or the health-table right-click menu to copy a compact support snapshot, **Copy diagnostics** for the full diagnostics report, or **Copy last launch** to recover the most recent saved launch output report after closing the launch dialog. WolfLauncher reads Steam `libraryfolders.vdf` and DayZ's `appmanifest_221100.acf` for native and Flatpak Steam, so DayZ and Workshop can be detected from secondary Steam libraries as well as the primary Steam folder.
+If the app starts but launch preflight fails, open **Settings** and press **Check health**. That table reports the selected Steam install, the install Auto would choose, other detected Steam candidates, their launch command details, DayZ, Workshop and required tools. Use **Copy health** or the health-table right-click menu to copy a compact support snapshot, **Copy diagnostics** for the full diagnostics report, or **Copy last launch** to recover the most recent saved launch output report after closing the launch dialog. WolfLauncher reads Steam `libraryfolders.vdf` and DayZ's `appmanifest_221100.acf` for native and Flatpak Steam, so DayZ and Workshop can be detected from secondary Steam libraries as well as the primary Steam folder.
 
-The health table and diagnostics also show whether common PRIME helper commands such as `prime-run` and `switcherooctl` are visible. Missing helper commands are informational only, because non-hybrid systems usually do not have them. The selected install's DayZ Proton compatdata folder is reported when visible; if it is missing, Steam may create it on first Proton launch. For a never-launched Steam install, start DayZ once directly from Steam so Proton can create the prefix and show first-run prompts.
+The selected install's DayZ Proton compatdata folder is reported when visible; if it is missing, Steam may create it on first Proton launch. For a never-launched Steam install, start DayZ once directly from Steam so Proton can create the prefix and show first-run prompts. Use the **Known external issues** disclosure in Settings for advisory Steam/Proton compatibility notes.
 
 ## Launching
 

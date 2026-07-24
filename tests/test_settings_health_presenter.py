@@ -17,9 +17,6 @@ class SettingsHealthPresenterTests(unittest.TestCase):
             ("DayZ", "OK", "/dayz"),
             ("Workshop", "MISSING", "Not detected"),
             ("Proton compatdata", "OK", "/compatdata"),
-            ("PRIME environment", "OK", "Clear"),
-            ("PRIME helpers", "OK", "Available"),
-            ("Steam launch options", "OK", "External"),
             ("DayZ process", "OK", "Not running"),
             ("Steam candidates", "OK", "Support detail"),
         )

@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 
-from .diagnostics import format_launch_output_report, post_handoff_launch_option_guidance
+from .diagnostics import format_launch_output_report
 from .platform_detection import dayz_process_check
 from .theme import set_monospace, set_ui_role
 
@@ -54,8 +54,8 @@ class PostHandoffProcessCheckMixin:
         self.output.append(
             f"\nPost-handoff process check: no known DayZ process detected after about {elapsed_seconds} seconds. "
             "Steam may still be preparing Proton, but if there is no Steam activity, check downloads, Proton/BattlEye prompts, "
-            "and the selected Steam install in Settings health. "
-            f"{post_handoff_launch_option_guidance()}"
+            "and the selected Steam install in Settings health. Review Known external issues "
+            "in Settings for advisory Steam/Proton compatibility notes."
         )
 
 

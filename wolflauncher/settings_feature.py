@@ -30,6 +30,7 @@ from .diagnostics import (
 )
 from .launch_history import load_last_launch_report, save_last_launch_report
 from .launcher import DEFAULT_PLAYER_NAME
+from .known_issues import known_external_issues_text
 from .platform_detection import (
     steam_mode_label,
 )
@@ -218,6 +219,30 @@ class SettingsFeatureMixin:
         leopard_row.addStretch(1)
         advanced_layout.addLayout(leopard_row)
         advanced_layout.addWidget(self.leopard_panel)
+
+        self.known_issues_toggle = QPushButton()
+        self.known_issues_toggle.setCheckable(True)
+        set_ui_role(self.known_issues_toggle, "disclosure")
+        self.known_issues_panel = QLabel(known_external_issues_text())
+        set_ui_role(self.known_issues_panel, "metadata")
+        self.known_issues_panel.setWordWrap(True)
+        self.known_issues_panel.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.known_issues_toggle.toggled.connect(
+            lambda expanded: set_disclosure_state(
+                self.known_issues_toggle,
+                self.known_issues_panel,
+                "known external issues",
+                expanded,
+            )
+        )
+        advanced_layout.addWidget(self.known_issues_toggle)
+        advanced_layout.addWidget(self.known_issues_panel)
+        set_disclosure_state(
+            self.known_issues_toggle,
+            self.known_issues_panel,
+            "known external issues",
+            False,
+        )
 
         layout.addStretch(1)
         row = QHBoxLayout()
