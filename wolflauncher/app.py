@@ -10,6 +10,7 @@ from PySide6.QtWidgets import (
     QLabel,
     QLineEdit,
     QMainWindow,
+    QMessageBox,
     QProgressDialog,
     QSpinBox,
     QTabWidget,
@@ -17,7 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 from . import __version__, server_cache
-from .logging_setup import configure_local_logging
+from .logging_setup import configure_local_logging, install_exception_hook
 from .config import (
     CURATED_SERVERS_PATH,
     ensure_servers_file,
@@ -313,12 +314,21 @@ def configure_packaged_smoke_test(app, window, environ=None) -> bool:
 
 
 def main():
-    configure_local_logging()
+    log_path = configure_local_logging()
     app = QApplication(sys.argv)
     app.setApplicationName("WolfLauncher")
     app.setApplicationVersion(__version__)
     app.setOrganizationName("WolfLauncher")
     apply_application_theme(app)
+    install_exception_hook(
+        log_path,
+        lambda report_name: QMessageBox.critical(
+            None,
+            "WolfLauncher encountered an error",
+            "The application can remain open, but the current action may not have completed. "
+            f"A redacted local report was saved as {report_name} in WolfLauncher application data.",
+        ),
+    )
     window = MainWindow()
     window.show()
     configure_packaged_smoke_test(app, window)
