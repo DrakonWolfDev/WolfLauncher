@@ -9,6 +9,7 @@ from PySide6.QtCore import QItemSelectionModel, QSize, Qt
 from PySide6.QtWidgets import QApplication, QCheckBox, QHeaderView, QPushButton, QTableWidget
 
 from wolflauncher.app import MainWindow, persist_enriched_server
+from wolflauncher.server_browser_feature import ServerBrowserMixin
 from wolflauncher.models import DiscoveredServer
 from wolflauncher.server_browser_table import (
     BROWSER_COLUMN_COUNT,
@@ -230,7 +231,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         mod_status.setProperty.assert_any_call("serverStatus", "offline")
         mod_status.setVisible.assert_called_once_with(True)
 
-    @patch("wolflauncher.app.local_enrichment_due", return_value=True)
+    @patch("wolflauncher.server_browser_feature.local_enrichment_due", return_value=True)
     def test_selected_server_check_is_debounced_when_local_data_is_due(self, _due):
         timer = Mock()
         server = DiscoveredServer(
@@ -246,7 +247,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         timer.stop.assert_called_once_with()
         timer.start.assert_called_once_with()
 
-    @patch("wolflauncher.app.local_enrichment_due", return_value=False)
+    @patch("wolflauncher.server_browser_feature.local_enrichment_due", return_value=False)
     def test_selected_server_check_reuses_recent_local_data(self, _due):
         timer = Mock()
         server = DiscoveredServer(
@@ -275,8 +276,8 @@ class ServerBrowserTableTests(unittest.TestCase):
 
         self.assertEqual(window.pending_selection_checks, {newest.cache_key: newest})
 
-    @patch("wolflauncher.app.ServerEnrichmentWorker")
-    @patch("wolflauncher.app.local_enrichment_due", return_value=True)
+    @patch("wolflauncher.server_browser_feature.ServerEnrichmentWorker")
+    @patch("wolflauncher.server_browser_feature.local_enrichment_due", return_value=True)
     def test_results_freshness_is_bounded_and_runs_in_background(self, _due, worker_class):
         servers = [
             DiscoveredServer(
@@ -366,7 +367,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertEqual(window.results_freshness_attempted_keys, set())
         running.cancel.assert_called_once_with()
 
-    @patch("wolflauncher.app.QTimer.singleShot")
+    @patch("wolflauncher.server_browser_feature.QTimer.singleShot")
     def test_results_freshness_completion_schedules_the_next_batch_without_rebuild(
         self, single_shot
     ):
@@ -387,7 +388,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         window.schedule_selected_discovered_server_check.assert_not_called()
         single_shot.assert_called_once_with(0, window.schedule_results_freshness_check)
 
-    @patch("wolflauncher.app.QTimer.singleShot")
+    @patch("wolflauncher.server_browser_feature.QTimer.singleShot")
     def test_results_freshness_completion_starts_deferred_provider_refresh(self, single_shot):
         window = SimpleNamespace(
             results_freshness_worker=Mock(),
@@ -408,7 +409,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertEqual(window.results_freshness_attempted_keys, set())
         single_shot.assert_called_once_with(0, window._run_pending_configured_provider_refresh)
 
-    @patch("wolflauncher.app.QTimer.singleShot")
+    @patch("wolflauncher.server_browser_feature.QTimer.singleShot")
     def test_initial_freshness_completion_continues_until_four_batches(self, single_shot):
         window = SimpleNamespace(
             results_freshness_worker=Mock(),
@@ -474,7 +475,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         timer.stop.assert_called_once_with()
         timer.start.assert_called_once_with()
 
-    @patch.object(MainWindow, "_schedule_results_freshness_check")
+    @patch.object(ServerBrowserMixin, "_schedule_results_freshness_check")
     def test_scrolled_freshness_is_four_visible_only_batches(self, schedule):
         window = SimpleNamespace()
 
@@ -497,7 +498,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertFalse(persisted)
         connection.rollback.assert_called_once_with()
 
-    @patch("wolflauncher.app.QTimer.singleShot")
+    @patch("wolflauncher.server_browser_feature.QTimer.singleShot")
     def test_opening_browser_schedules_background_refresh_without_reloading_view(self, single_shot):
         window = SimpleNamespace(
             server_browser_tab_index=1,
