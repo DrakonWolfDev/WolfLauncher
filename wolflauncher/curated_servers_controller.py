@@ -85,6 +85,8 @@ class CuratedServersMixin:
         layout.addLayout(common_settings)
 
         self.table = QTableWidget(len(self.servers), 16)
+        self.table.setAccessibleName("Favourite servers")
+        self.table.setAccessibleDescription("Saved DayZ servers and their latest known status.")
         self.table.setHorizontalHeaderLabels(
             [
                 "Fav",

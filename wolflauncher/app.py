@@ -210,6 +210,8 @@ class MainWindow(
 
         self.tabs = QTabWidget()
         self.tabs.setObjectName("mainTabs")
+        self.tabs.setAccessibleName("WolfLauncher main sections")
+        self.tabs.tabBar().setAccessibleName("WolfLauncher main sections")
         self.tabs.setCornerWidget(self._build_brand_lockup(), Qt.TopRightCorner)
         self.tabs.addTab(self._build_servers_tab(), theme_icon("servers"), "Servers")
         self.server_browser_tab_index = self.tabs.addTab(
@@ -217,6 +219,8 @@ class MainWindow(
         )
         self.mods_tab_index = self.tabs.addTab(self._build_mods_tab(), theme_icon("mods"), "Mods")
         self.tabs.addTab(self._build_settings_tab(), theme_icon("settings"), "Settings")
+        for index in range(self.tabs.count()):
+            self.tabs.setTabToolTip(index, f"Open {self.tabs.tabText(index)}")
         self.active_main_tab_index = self.tabs.currentIndex()
         self.tabs.currentChanged.connect(self.handle_main_tab_changed)
         self.setCentralWidget(self.tabs)

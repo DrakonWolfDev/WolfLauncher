@@ -156,6 +156,10 @@ class ModsFeatureMixin:
         )
 
         self.mods_table = QTableWidget(0, 4)
+        self.mods_table.setAccessibleName("Required Workshop mods")
+        self.mods_table.setAccessibleDescription(
+            "Workshop mods required by the selected DayZ server and their readiness."
+        )
         self.mods_table.setHorizontalHeaderLabels(
             [
                 "Status",

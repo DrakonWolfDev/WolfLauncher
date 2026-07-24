@@ -109,6 +109,7 @@ class ServerBrowserMixin:
 
         filters = QHBoxLayout()
         self.browser_search = QLineEdit()
+        self.browser_search.setAccessibleName("Search discovered servers")
         self.browser_search.setPlaceholderText("Search discovered servers")
         self.browser_search.setClearButtonEnabled(True)
         self.browser_search.setMinimumWidth(280)
@@ -205,6 +206,10 @@ class ServerBrowserMixin:
         advanced_layout.addLayout(advanced_filters)
 
         self.browser_table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        self.browser_table.setAccessibleName("Discovered servers")
+        self.browser_table.setAccessibleDescription(
+            "Read-only discovered DayZ servers. Select a row to inspect or launch it."
+        )
         self.browser_table.setHorizontalHeaderLabels(
             [
                 "Server Name",
