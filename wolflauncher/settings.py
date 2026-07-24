@@ -10,6 +10,7 @@ SETTINGS_PATH = APP_DIR / "settings.json"
 FAVOURITES_PATH = APP_DIR / "favourites.json"
 CURATED_SERVERS_PATH = APP_DIR / "servers.yaml"
 DEFAULT_DISCOVERY_PROVIDER = "wolfapi_v1"
+SETTINGS_SCHEMA_VERSION = 1
 
 
 def ensure_app_dir() -> None:
@@ -36,11 +37,30 @@ def save_json(path: Path, data: Any) -> None:
 
 def load_settings() -> dict[str, Any]:
     data = load_json(SETTINGS_PATH, {})
-    return data if isinstance(data, dict) else {}
+    return normalize_settings(data)
 
 
 def save_settings(data: dict[str, Any]) -> None:
-    save_json(SETTINGS_PATH, data)
+    save_json(SETTINGS_PATH, normalize_settings(data))
+
+
+def normalize_settings(data: Any) -> dict[str, Any]:
+    """Apply additive settings migrations without discarding unknown keys."""
+    if not isinstance(data, dict):
+        return {"schema_version": SETTINGS_SCHEMA_VERSION}
+    migrated = dict(data)
+    version = migrated.get("schema_version", 0)
+    try:
+        version = int(version)
+    except (TypeError, ValueError):
+        version = 0
+    if version < 0:
+        version = 0
+    # Version 1 records the schema explicitly; legacy settings are already
+    # compatible and unknown keys deliberately survive the migration.
+    if version <= SETTINGS_SCHEMA_VERSION:
+        migrated["schema_version"] = SETTINGS_SCHEMA_VERSION
+    return migrated
 
 
 def server_key(server) -> str:
