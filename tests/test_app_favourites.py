@@ -35,7 +35,7 @@ class StartupSteamCheckTests(unittest.TestCase):
             ["flatpak", "run", "com.valvesoftware.Steam"],
         )
 
-    @patch("wolflauncher.app.QMessageBox.warning")
+    @patch("wolflauncher.launch_feature.QMessageBox.warning")
     def test_stopped_steam_is_explained_at_startup(self, warning):
         window = SimpleNamespace(selected_steam_install=Mock(return_value=stopped_install()))
 
@@ -44,7 +44,7 @@ class StartupSteamCheckTests(unittest.TestCase):
         self.assertIn("not currently running", warning.call_args.args[2])
         self.assertIn("Workshop mod information", warning.call_args.args[2])
 
-    @patch("wolflauncher.app.QMessageBox.warning")
+    @patch("wolflauncher.launch_feature.QMessageBox.warning")
     def test_running_steam_does_not_warn(self, warning):
         install = stopped_install()
         install.running = True
@@ -67,9 +67,12 @@ class FavouriteRemovalChoiceTests(unittest.TestCase):
             remove_curated_server_row=Mock(),
         )
 
-    @patch("wolflauncher.app.save_favourites")
-    @patch("wolflauncher.app.update_curated_server", return_value=True)
-    @patch("wolflauncher.app.QMessageBox.question", return_value=QMessageBox.No)
+    @patch("wolflauncher.settings_feature.save_favourites")
+    @patch("wolflauncher.curated_servers_controller.update_curated_server", return_value=True)
+    @patch(
+        "wolflauncher.curated_servers_controller.QMessageBox.question",
+        return_value=QMessageBox.No,
+    )
     def test_unfavourite_can_keep_server_in_list(self, _question, update, save):
         window = self.window()
 
@@ -80,7 +83,10 @@ class FavouriteRemovalChoiceTests(unittest.TestCase):
         window.remove_curated_server_row.assert_not_called()
         save.assert_called_once()
 
-    @patch("wolflauncher.app.QMessageBox.question", return_value=QMessageBox.Yes)
+    @patch(
+        "wolflauncher.curated_servers_controller.QMessageBox.question",
+        return_value=QMessageBox.Yes,
+    )
     def test_unfavourite_can_remove_server_from_list(self, _question):
         window = self.window()
 
@@ -88,7 +94,10 @@ class FavouriteRemovalChoiceTests(unittest.TestCase):
 
         window.remove_curated_server_row.assert_called_once_with(0, confirm=False)
 
-    @patch("wolflauncher.app.QMessageBox.question", return_value=QMessageBox.Cancel)
+    @patch(
+        "wolflauncher.curated_servers_controller.QMessageBox.question",
+        return_value=QMessageBox.Cancel,
+    )
     def test_unfavourite_can_be_cancelled(self, _question):
         window = self.window()
 

@@ -12,6 +12,12 @@ compares required server mods with locally installed Workshop mods, then hands
 launch control to Steam through the native Python engine. The external
 `dayz-launcher.sh` is a Linux-only fallback.
 
+## Branch Policy
+
+All completed changes must be committed and pushed directly to `main`. Do not
+create, push, or maintain feature, agent, or other long-lived branches unless
+the user explicitly overrides this policy for a specific task.
+
 The upstream shell launcher is vendored at `external/dayz-linux-cli-launcher/` as the legacy reference engine.
 
 ## Current Deployment Scope
