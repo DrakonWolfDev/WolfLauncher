@@ -140,7 +140,7 @@ class MainWindow(
         self.pending_mod_check_row = None
         self.pending_mod_server = None
         self.browser_servers = []
-        self.server_cache = server_cache.connect()
+        self.server_cache, self.recovered_server_cache_path = server_cache.connect_recovering()
 
         for server in self.servers:
             key = server_key(server)

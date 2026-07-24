@@ -4,6 +4,7 @@ import json
 import re
 import sqlite3
 from dataclasses import replace
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -49,6 +50,34 @@ def connect(path: Path = SERVER_CACHE_PATH) -> sqlite3.Connection:
         connection.close()
         raise
     return connection
+
+
+def connect_recovering(path: Path = SERVER_CACHE_PATH) -> tuple[sqlite3.Connection, Path | None]:
+    """Open the disposable cache, retaining a corrupt copy before rebuilding it.
+
+    Only SQLite database errors trigger recovery. Schema-version incompatibility
+    remains a visible error because replacing a valid newer cache would hide an
+    unsupported downgrade.
+    """
+    try:
+        return connect(path), None
+    except sqlite3.DatabaseError:
+        quarantined = quarantine_corrupt_cache(path)
+        return connect(path), quarantined
+
+
+def quarantine_corrupt_cache(path: Path) -> Path | None:
+    """Move a disposable cache and its sidecars aside without touching user data."""
+    if not path.exists():
+        return None
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    quarantined = path.with_name(f"{path.stem}.corrupt-{stamp}{path.suffix}")
+    path.replace(quarantined)
+    for suffix in ("-wal", "-shm"):
+        sidecar = Path(f"{path}{suffix}")
+        if sidecar.exists():
+            sidecar.replace(Path(f"{quarantined}{suffix}"))
+    return quarantined
 
 
 def initialize(connection: sqlite3.Connection) -> None:

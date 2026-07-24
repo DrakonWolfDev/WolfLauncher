@@ -46,6 +46,20 @@ class ServerCacheTests(unittest.TestCase):
         )
         self.assertEqual(connection.execute("PRAGMA journal_mode").fetchone()[0], "wal")
 
+    def test_corrupt_disposable_cache_is_quarantined_and_rebuilt(self):
+        tmpdir = tempfile.TemporaryDirectory()
+        self.addCleanup(tmpdir.cleanup)
+        path = Path(tmpdir.name) / "server_cache.sqlite3"
+        path.write_bytes(b"not a sqlite database")
+
+        connection, quarantined = server_cache.connect_recovering(path)
+        self.addCleanup(connection.close)
+
+        self.assertIsNotNone(quarantined)
+        self.assertTrue(quarantined.exists())
+        self.assertEqual(path.read_bytes()[:16], b"SQLite format 3\x00")
+        self.assertEqual(connection.execute("PRAGMA user_version").fetchone()[0], server_cache.SCHEMA_VERSION)
+
     def test_schema_v6_migrates_local_game_time_additively(self):
         connection = server_cache.sqlite3.connect(":memory:")
         self.addCleanup(connection.close)
