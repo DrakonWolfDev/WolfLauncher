@@ -31,7 +31,7 @@ class FakeResponse:
     def __exit__(self, exc_type, exc, traceback):
         return False
 
-    def read(self) -> bytes:
+    def read(self, _size=-1) -> bytes:
         return json.dumps(self.payload).encode("utf-8")
 
 
@@ -51,7 +51,7 @@ class WorkshopFileSizeTests(unittest.TestCase):
             }
         }
         with patch(
-            "wolflauncher.mods.urllib.request.urlopen",
+            "wolflauncher.http_client.urllib.request.urlopen",
             return_value=FakeResponse(payload),
         ):
             metadata = fetch_workshop_metadata(["111"])
@@ -76,7 +76,7 @@ class WorkshopFileSizeTests(unittest.TestCase):
             }
         }
         with patch(
-            "wolflauncher.mods.urllib.request.urlopen",
+            "wolflauncher.http_client.urllib.request.urlopen",
             return_value=FakeResponse(payload),
         ) as urlopen:
             sizes = fetch_workshop_file_sizes(["111", "222", "111"])
@@ -89,7 +89,7 @@ class WorkshopFileSizeTests(unittest.TestCase):
 
     def test_file_size_failure_is_advisory(self):
         with patch(
-            "wolflauncher.mods.urllib.request.urlopen",
+            "wolflauncher.http_client.urllib.request.urlopen",
             side_effect=urllib.error.URLError("offline"),
         ):
             self.assertEqual(fetch_workshop_file_sizes(["111"]), {})

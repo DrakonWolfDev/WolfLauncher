@@ -41,7 +41,47 @@ def fetch_json(
     retries: int = 1,
 ) -> Any:
     """Fetch one JSON document with bounded reads and transient GET retries."""
-    request = urllib.request.Request(url, headers={"User-Agent": user_agent(), "Accept": "application/json"})
+    return request_json(url, timeout=timeout, max_bytes=max_bytes, cancel=cancel, retries=retries)
+
+
+def post_form_json(
+    url: str,
+    fields: list[tuple[str, str]],
+    *,
+    timeout: float = 15.0,
+    max_bytes: int = DEFAULT_MAX_RESPONSE_BYTES,
+    cancel: Callable[[], bool] | None = None,
+) -> Any:
+    """POST form data once; non-idempotent requests are never retried."""
+    from urllib.parse import urlencode
+
+    return request_json(
+        url,
+        data=urlencode(fields).encode("ascii"),
+        method="POST",
+        timeout=timeout,
+        max_bytes=max_bytes,
+        cancel=cancel,
+        retries=0,
+    )
+
+
+def request_json(
+    url: str,
+    *,
+    data: bytes | None = None,
+    method: str | None = None,
+    timeout: float = 15.0,
+    max_bytes: int = DEFAULT_MAX_RESPONSE_BYTES,
+    cancel: Callable[[], bool] | None = None,
+    retries: int = 1,
+) -> Any:
+    """Perform a JSON request, retrying only idempotent GET failures."""
+    headers = {"User-Agent": user_agent(), "Accept": "application/json"}
+    if data is not None:
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+        retries = 0
+    request = urllib.request.Request(url, data=data, headers=headers, method=method)
     attempts = max(0, retries) + 1
     for attempt in range(attempts):
         if cancel and cancel():

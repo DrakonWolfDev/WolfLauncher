@@ -5,7 +5,7 @@ import unittest
 import urllib.error
 from unittest.mock import patch
 
-from wolflauncher.http_client import HttpClientError, fetch_json, user_agent
+from wolflauncher.http_client import HttpClientError, fetch_json, post_form_json, user_agent
 
 
 class _Response:
@@ -51,3 +51,11 @@ class HttpClientTests(unittest.TestCase):
     def test_honours_cancellation_before_request(self):
         with self.assertRaisesRegex(HttpClientError, "cancelled"):
             fetch_json("https://example.test/status", cancel=lambda: True)
+
+    @patch("wolflauncher.http_client.urllib.request.urlopen")
+    def test_post_form_is_not_retried(self, urlopen):
+        urlopen.side_effect = urllib.error.URLError("offline")
+
+        with self.assertRaises(HttpClientError):
+            post_form_json("https://example.test/form", [("key", "value")])
+        self.assertEqual(urlopen.call_count, 1)

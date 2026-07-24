@@ -1,14 +1,11 @@
-import json
 import re
-import urllib.error
-import urllib.parse
-import urllib.request
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from .dayz_mod_query import query_dayz_required_mods
+from .http_client import HttpClientError, post_form_json
 from .models import Server
 from .redaction import redact_support_text
 from .status import resolve_host
@@ -93,16 +90,9 @@ def fetch_workshop_file_sizes(workshop_ids) -> dict[str, int]:
         return {}
     fields = [("itemcount", str(len(ids)))]
     fields.extend((f"publishedfileids[{index}]", item) for index, item in enumerate(ids))
-    request = urllib.request.Request(
-        WORKSHOP_DETAILS_URL,
-        data=urllib.parse.urlencode(fields).encode("ascii"),
-        headers={"User-Agent": "WolfLauncher/0.8"},
-        method="POST",
-    )
     try:
-        with urllib.request.urlopen(request, timeout=10) as response:
-            payload = json.loads(response.read().decode("utf-8", errors="replace"))
-    except (OSError, ValueError, urllib.error.URLError):
+        payload = post_form_json(WORKSHOP_DETAILS_URL, fields, timeout=10)
+    except HttpClientError:
         return {}
     details = payload.get("response", {}).get("publishedfiledetails", [])
     sizes = {}
@@ -124,16 +114,9 @@ def fetch_workshop_metadata(workshop_ids) -> dict[str, dict[str, Any]]:
         return {}
     fields = [("itemcount", str(len(ids)))]
     fields.extend((f"publishedfileids[{index}]", item) for index, item in enumerate(ids))
-    request = urllib.request.Request(
-        WORKSHOP_DETAILS_URL,
-        data=urllib.parse.urlencode(fields).encode("ascii"),
-        headers={"User-Agent": "WolfLauncher/0.8"},
-        method="POST",
-    )
     try:
-        with urllib.request.urlopen(request, timeout=10) as response:
-            payload = json.loads(response.read().decode("utf-8", errors="replace"))
-    except (OSError, ValueError, urllib.error.URLError):
+        payload = post_form_json(WORKSHOP_DETAILS_URL, fields, timeout=10)
+    except HttpClientError:
         return {}
     details = payload.get("response", {}).get("publishedfiledetails", [])
     metadata = {}
