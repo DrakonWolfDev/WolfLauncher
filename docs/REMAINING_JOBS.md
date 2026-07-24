@@ -1,0 +1,81 @@
+# Remaining Jobs and Decisions
+
+Updated: 2026-07-24
+
+This is a practical execution list. The authoritative ordered backlog remains
+[`PRODUCTION_READINESS_REVIEW.md`](../PRODUCTION_READINESS_REVIEW.md).
+
+## Release before v1.0
+
+### PR-08 — Packaged-artifact desktop validation
+
+- Run or explicitly waive Mint 21, Mint 22, Ubuntu 22.04 and Ubuntu 24.04
+  desktop rows.
+- Validate native Steam and Flatpak Steam where applicable.
+- Record clean install, upgrade, read-only resources, migration, offline cache,
+  secondary-library, uninstall, checksum and provenance evidence.
+- Human systems and dated validation evidence are required.
+
+### PR-09 — Production release
+
+- Choose the final version.
+- Move release entries out of `Unreleased` in the changelog.
+- Re-run automated and package gates on the exact release artifact.
+- Create an annotated tag, publish checksums and installation guidance, and
+  confirm tagged CI.
+- Release-owner decisions and publishing authority are required.
+
+## Engineering hardening
+
+### PR-14 — External data and image bounds
+
+- Allow only safe thumbnail URL schemes.
+- Enforce thumbnail response content type, byte limit and decoded dimensions.
+- Define and document the IPv6 policy: support it end-to-end or reject it
+  consistently with clear validation feedback.
+- Implementation is local work; the IPv6 product decision is required.
+
+### PR-15 — Accessibility evidence
+
+- Complete screen-reader review.
+- Run keyboard-only checks across every tab and dialog.
+- Review high-contrast and reduced-motion behaviour.
+- Review 125%, 150% and 200% scaling.
+- Confirm status does not rely on colour alone.
+- Human desktop testing is required. Core accessible labels for the main
+  navigation and key data tables are already implemented.
+
+### PR-16 — Remaining resilience and performance work
+
+- Add a deterministic hostile/truncated YAML and JSON parser corpus.
+- Add property/fuzz coverage for provider parsing, endpoint normalization,
+  cache migration and settings.
+- Measure startup, third-character remote search, large-table refresh and memory
+  with a production-scale cache.
+- Set and document pass/fail performance budgets.
+- Fuzz coverage can be implemented locally; representative performance evidence
+  needs production-sized data and target hardware.
+
+### PR-17 — Updates and retention
+
+- Establish signing identities and protected CI signing boundaries.
+- Publish signed channel manifests and assets.
+- Implement an in-app availability notice.
+- Implement a signed Windows bootstrapper with prompted verified installer
+  updates.
+- Publish a signed Linux APT repository and setup package.
+- Define retention for cache, logs, thumbnails and reports.
+- Exercise update, interrupted-update, downgrade/recovery and user-data
+  preservation on the desktop matrix.
+- Signing/repository decisions, credentials and desktop validation are required.
+
+## Explicit decisions
+
+- Decide whether PR-10 is formally complete beyond its delivered lifecycle and
+  feature-extraction slices, or remains an ongoing incremental maintenance item.
+- Decide whether IPv6 is supported now or explicitly unsupported.
+- Decide whether crash reporting remains local-only or gains opt-in upload. If
+  uploads are approved, choose a provider, retention period, consent wording and
+  data-processing policy.
+- Approve release-scope waivers for any unavailable PR-08 desktop rows.
+- Choose release version/tag timing and the supported Linux distribution matrix.
