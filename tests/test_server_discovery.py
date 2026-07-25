@@ -34,6 +34,23 @@ from wolflauncher.server_discovery import (
 
 
 class SteamMasterServerProtocolTests(unittest.TestCase):
+    def test_provider_rows_drop_invalid_ports_and_oversized_names(self):
+        self.assertIsNone(
+            discovered_server_from_web_api_row(
+                {"addr": "203.0.113.10:70000", "gameport": 2302, "name": "Invalid"}
+            )
+        )
+        self.assertIsNone(
+            discovered_server_from_wolfapi_row(
+                {"ip": "203.0.113.10", "game_port": 2302, "query_port": 27016, "name": "x" * 257}
+            )
+        )
+        self.assertIsNone(
+            discovered_server_from_battlemetrics_row(
+                {"attributes": {"ip": "2001:db8::1", "port": 2302, "name": "IPv6"}}
+            )
+        )
+
     def test_build_master_server_request_uses_dayz_app_filter(self):
         request = build_master_server_request()
 

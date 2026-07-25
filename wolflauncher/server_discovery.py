@@ -25,6 +25,9 @@ MASTER_SERVER_HOSTS = [
 MASTER_SERVER_PORT = 27011
 MASTER_RESPONSE_HEADER = b"\xff\xff\xff\xfff\n"
 REGION_ALL = 0xFF
+MAX_PROVIDER_HOST_LENGTH = 253
+MAX_PROVIDER_NAME_LENGTH = 256
+MAX_PROVIDER_METADATA_LENGTH = 128
 
 
 @dataclass(frozen=True)
@@ -306,16 +309,18 @@ def discovered_server_from_web_api_row(row: dict, timestamp: str = "") -> Discov
     host, query_port = _host_port_from_addr(str(row.get("addr") or ""))
     if not host:
         host = str(row.get("ip") or row.get("host") or "").strip()
-    if not host:
-        return None
-
     game_port = _optional_int(row.get("gameport")) or query_port
     if game_port is None:
         return None
     if query_port is None:
         query_port = game_port
-
-    name = str(row.get("name") or f"{host}:{game_port}")
+    if not _valid_provider_endpoint(host, game_port, query_port):
+        return None
+    name = _provider_text(row.get("name") or f"{host}:{game_port}", MAX_PROVIDER_NAME_LENGTH)
+    map_name = _provider_text(row.get("map"), MAX_PROVIDER_METADATA_LENGTH)
+    version = _provider_text(row.get("version"), MAX_PROVIDER_METADATA_LENGTH)
+    if name is None or map_name is None or version is None:
+        return None
     players_current = _optional_int(row.get("players"))
     players_max = _optional_int(row.get("max_players") or row.get("maxplayers"))
     gametype = str(row.get("gametype") or "")
@@ -327,10 +332,10 @@ def discovered_server_from_web_api_row(row: dict, timestamp: str = "") -> Discov
         host=host,
         game_port=game_port,
         query_port=query_port,
-        map_name=str(row.get("map") or ""),
+        map_name=map_name,
         players_current=players_current,
         players_max=players_max,
-        version=str(row.get("version") or ""),
+        version=version,
         password=bool(row.get("password", False)),
         modded="mod" in gametype.lower(),
         online=True,
@@ -587,10 +592,14 @@ def discovered_server_from_wolfapi_row(row: dict, timestamp: str = "") -> Discov
         game_port = query_port
     if query_port is None:
         query_port = game_port
-    if not host or game_port is None or query_port is None:
+    if not _valid_provider_endpoint(host, game_port, query_port):
         return None
 
-    name = str(row.get("name") or row.get("server_name") or f"{host}:{game_port}")
+    name = _provider_text(row.get("name") or row.get("server_name") or f"{host}:{game_port}", MAX_PROVIDER_NAME_LENGTH)
+    map_name = _provider_text(row.get("map") or row.get("map_name"), MAX_PROVIDER_METADATA_LENGTH)
+    version = _provider_text(row.get("version"), MAX_PROVIDER_METADATA_LENGTH)
+    if name is None or map_name is None or version is None:
+        return None
     gametype = str(row.get("gametype") or "")
     online = row.get("online")
     if online is None:
@@ -609,11 +618,11 @@ def discovered_server_from_wolfapi_row(row: dict, timestamp: str = "") -> Discov
         host=host,
         game_port=game_port,
         query_port=query_port,
-        map_name=str(row.get("map") or row.get("map_name") or ""),
+        map_name=map_name,
         players_current=_optional_int(_first_present(row, "players", "players_current")),
         players_max=_optional_int(_first_present(row, "max_players", "maxplayers", "players_max")),
         ping_ms=_optional_int(_first_present(row, "ping_ms", "ping", "latency")),
-        version=str(row.get("version") or ""),
+        version=version,
         password=bool(row.get("password", False)),
         modded="mod" in gametype.lower() or bool(row.get("modded", False)),
         online=bool(online),
@@ -714,14 +723,18 @@ def discovered_server_from_battlemetrics_row(
         or _optional_int(attributes.get("query_port"))
         or port
     )
-    if not host or port is None:
+    if not _valid_provider_endpoint(host, port, query_port):
         return None
 
     details = attributes.get("details", {})
     if not isinstance(details, dict):
         details = {}
 
-    name = str(attributes.get("name") or f"{host}:{port}")
+    name = _provider_text(attributes.get("name") or f"{host}:{port}", MAX_PROVIDER_NAME_LENGTH)
+    map_name = _provider_text(details.get("map") or attributes.get("map"), MAX_PROVIDER_METADATA_LENGTH)
+    version = _provider_text(details.get("version") or attributes.get("version"), MAX_PROVIDER_METADATA_LENGTH)
+    if name is None or map_name is None or version is None:
+        return None
     status = str(attributes.get("status") or "").lower()
     players_current = _optional_int(attributes.get("players"))
     players_max = _optional_int(attributes.get("maxPlayers") or attributes.get("maxplayers"))
@@ -734,10 +747,10 @@ def discovered_server_from_battlemetrics_row(
         host=host,
         game_port=port,
         query_port=query_port,
-        map_name=str(details.get("map") or attributes.get("map") or ""),
+        map_name=map_name,
         players_current=players_current,
         players_max=players_max,
-        version=str(details.get("version") or attributes.get("version") or ""),
+        version=version,
         password=bool(details.get("password", False)),
         modded=bool(details.get("modded", False)),
         online=status == "online",
@@ -756,6 +769,23 @@ def discovered_server_from_battlemetrics_row(
 def _country_code(value) -> str:
     code = str(value or "").strip().upper()
     return code if len(code) == 2 and code.isalpha() else ""
+
+
+def _valid_provider_endpoint(host: str, game_port: int | None, query_port: int | None) -> bool:
+    return (
+        bool(host)
+        and len(host) <= MAX_PROVIDER_HOST_LENGTH
+        and ":" not in host
+        and game_port is not None
+        and query_port is not None
+        and 1 <= game_port <= 65535
+        and 1 <= query_port <= 65535
+    )
+
+
+def _provider_text(value, limit: int) -> str | None:
+    text = str(value or "").strip()
+    return text if len(text) <= limit else None
 
 
 def _host_port_from_addr(value: str) -> tuple[str, int | None]:
