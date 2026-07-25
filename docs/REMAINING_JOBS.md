@@ -88,8 +88,8 @@ This is a practical execution list. The authoritative ordered backlog remains
 
 - Decide whether PR-10 is formally complete beyond its delivered lifecycle and
   feature-extraction slices, or remains an ongoing incremental maintenance item.
-- Decide whether crash reporting remains local-only or gains opt-in upload. If
-  uploads are approved, choose a provider, retention period, consent wording and
+- Decided: crash reporting remains local-only. Revisit only if opt-in upload is
+  deliberately approved with a provider, retention period, consent wording and
   data-processing policy.
 - Approve release-scope waivers for any unavailable PR-08 desktop rows.
 - Choose release version/tag timing and the supported Linux distribution matrix.
