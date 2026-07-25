@@ -47,8 +47,9 @@ This is a practical execution list. The authoritative ordered backlog remains
 - Complete: keyboard-only checks across the main tabs, curated selection,
   Server Browser, Mods, Settings and dialogs.
 - Complete: high-contrast, large-text and reduced-motion review.
-- Complete: review 125%, 150% and 200% scaling.
-- Confirm status does not rely on colour alone.
+- Complete: review 75%, 100%, 125%, 150%, 175% and 200% scaling.
+- Complete: status meaning remains clear through text, icons and action state,
+  not colour alone.
 - Linux Mint validation passed at 75%, 100%, 125%, 150%, 175% and 200% after
   main workspaces gained an outer scroll boundary; previously unreachable
   controls at 175% and 200% are now reachable.
