@@ -29,12 +29,16 @@ This is a practical execution list. The authoritative ordered backlog remains
 
 ### PR-14 — External data and image bounds
 
-- Allow only safe thumbnail URL schemes.
-- Enforce thumbnail response content type, byte limit and decoded dimensions.
-- IPv6 is explicitly unsupported for this release; reject it consistently with
-  clear validation feedback rather than providing partial support.
-- Workshop previews remain automatic, but must use HTTPS and enforce strict
-  content type, download-size and decoded-dimension limits.
+- Complete: preview URLs accept HTTPS only, with recognised Steam CDN HTTP URLs
+  upgraded to HTTPS. Responses require an image content type, are bounded to
+  2 MiB, and decoded images are capped at 2048 pixels per side.
+- Complete: invalid provider rows are dropped individually while valid rows
+  remain available; provider endpoint, identity and metadata fields are bounded.
+- Complete: IPv6 is explicitly unsupported and rejected for curated input and
+  provider ingestion rather than appearing as a partial launch/search path.
+- Real Mint validation confirmed the safe preview path works with live Workshop
+  image traffic after retaining Qt's tolerant JPEG decoder for imperfect CDN
+  image data.
 
 ### PR-15 — Accessibility evidence
 
@@ -45,9 +49,9 @@ This is a practical execution list. The authoritative ordered backlog remains
 - Confirm status does not rely on colour alone.
 - Human desktop testing is required. Core accessible labels for the main
   navigation and key data tables are already implemented.
-- Linux Mint testing found all actions unreachable at 175% because the main
-  workspaces had no outer scroll boundary; add and verify workspace scrolling
-  before closing this item.
+- Linux Mint validation passed at 75%, 100%, 125%, 150%, 175% and 200% after
+  main workspaces gained an outer scroll boundary; previously unreachable
+  controls at 175% and 200% are now reachable.
 
 ### PR-16 — Remaining resilience and performance work
 
