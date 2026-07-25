@@ -31,9 +31,10 @@ This is a practical execution list. The authoritative ordered backlog remains
 
 - Allow only safe thumbnail URL schemes.
 - Enforce thumbnail response content type, byte limit and decoded dimensions.
-- Define and document the IPv6 policy: support it end-to-end or reject it
-  consistently with clear validation feedback.
-- Implementation is local work; the IPv6 product decision is required.
+- IPv6 is explicitly unsupported for this release; reject it consistently with
+  clear validation feedback rather than providing partial support.
+- Workshop previews remain automatic, but must use HTTPS and enforce strict
+  content type, download-size and decoded-dimension limits.
 
 ### PR-15 — Accessibility evidence
 
@@ -73,7 +74,6 @@ This is a practical execution list. The authoritative ordered backlog remains
 
 - Decide whether PR-10 is formally complete beyond its delivered lifecycle and
   feature-extraction slices, or remains an ongoing incremental maintenance item.
-- Decide whether IPv6 is supported now or explicitly unsupported.
 - Decide whether crash reporting remains local-only or gains opt-in upload. If
   uploads are approved, choose a provider, retention period, consent wording and
   data-processing policy.

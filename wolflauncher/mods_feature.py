@@ -1,7 +1,7 @@
 from dataclasses import replace
 
-from PySide6.QtCore import QPoint, Qt, QTimer, QUrl
-from PySide6.QtGui import QAction, QColor, QDesktopServices, QPixmap
+from PySide6.QtCore import QBuffer, QByteArray, QIODevice, QPoint, Qt, QTimer, QUrl
+from PySide6.QtGui import QAction, QColor, QDesktopServices, QImageReader, QPixmap
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWidgets import (
     QApplication,
@@ -51,6 +51,12 @@ from .platform_detection import (
 )
 from .settings import (
     server_key,
+)
+from .thumbnail_safety import (
+    MAX_THUMBNAIL_BYTES,
+    is_safe_thumbnail_content_type,
+    is_safe_thumbnail_dimensions,
+    is_safe_thumbnail_url,
 )
 from .theme import (
     configure_data_table,
@@ -474,13 +480,24 @@ class ModsFeatureMixin:
         self.mod_detail_card.style().polish(self.mod_detail_card)
 
     def load_mod_thumbnail(self, url: str):
-        self.mod_thumbnail_url = url
+        self.mod_thumbnail_url = url if is_safe_thumbnail_url(url) else ""
         self.mod_detail_thumbnail.setPixmap(QPixmap())
-        if not url:
+        if not self.mod_thumbnail_url:
             self.mod_detail_thumbnail.setText("No preview")
             return
         self.mod_detail_thumbnail.setText("Loading…")
-        self.mod_thumbnail_manager.get(QNetworkRequest(QUrl(url)))
+        request = QNetworkRequest(QUrl(self.mod_thumbnail_url))
+        reply = self.mod_thumbnail_manager.get(request)
+        reply.downloadProgress.connect(
+            lambda received, _total, active_reply=reply: self._abort_oversize_thumbnail(
+                active_reply, received
+            )
+        )
+
+    @staticmethod
+    def _abort_oversize_thumbnail(reply: QNetworkReply, received: int) -> None:
+        if received > MAX_THUMBNAIL_BYTES:
+            reply.abort()
 
     def resize_mod_detail_card(self):
         if not hasattr(self, "mod_detail_card"):
@@ -509,8 +526,19 @@ class ModsFeatureMixin:
             if reply.url().toString() != self.mod_thumbnail_url:
                 return
             pixmap = QPixmap()
-            if reply.error() == QNetworkReply.NoError:
-                pixmap.loadFromData(bytes(reply.readAll()))
+            content_type = reply.header(QNetworkRequest.ContentTypeHeader) or ""
+            payload = bytes(reply.readAll())
+            if (
+                reply.error() == QNetworkReply.NoError
+                and len(payload) <= MAX_THUMBNAIL_BYTES
+                and is_safe_thumbnail_content_type(str(content_type))
+            ):
+                buffer = QBuffer(QByteArray(payload))
+                buffer.open(QIODevice.ReadOnly)
+                reader = QImageReader(buffer)
+                size = reader.size()
+                if is_safe_thumbnail_dimensions(size.width(), size.height()):
+                    pixmap = QPixmap.fromImage(reader.read())
             if pixmap.isNull():
                 self.mod_detail_thumbnail.setText("Preview unavailable")
                 return

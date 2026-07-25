@@ -1,0 +1,22 @@
+import unittest
+
+from wolflauncher.thumbnail_safety import (
+    is_safe_thumbnail_content_type,
+    is_safe_thumbnail_dimensions,
+    is_safe_thumbnail_url,
+)
+
+
+class ThumbnailSafetyTests(unittest.TestCase):
+    def test_accepts_https_image_urls_only(self):
+        self.assertTrue(is_safe_thumbnail_url("https://cdn.example.test/preview.png"))
+        self.assertFalse(is_safe_thumbnail_url("http://cdn.example.test/preview.png"))
+        self.assertFalse(is_safe_thumbnail_url("file:///tmp/preview.png"))
+        self.assertFalse(is_safe_thumbnail_url("https:///missing-host"))
+
+    def test_accepts_image_content_types_and_bounded_dimensions(self):
+        self.assertTrue(is_safe_thumbnail_content_type("image/jpeg; charset=binary"))
+        self.assertFalse(is_safe_thumbnail_content_type("text/html"))
+        self.assertTrue(is_safe_thumbnail_dimensions(2048, 1))
+        self.assertFalse(is_safe_thumbnail_dimensions(2049, 1))
+        self.assertFalse(is_safe_thumbnail_dimensions(0, 200))
