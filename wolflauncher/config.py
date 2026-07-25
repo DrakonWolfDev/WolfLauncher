@@ -1,5 +1,6 @@
 import os
 import sys
+from ipaddress import IPv6Address, ip_address
 from pathlib import Path
 
 import yaml
@@ -60,6 +61,19 @@ def normalize_server_endpoint(host: str, game_port: int, query_port: int) -> tup
     return split_host, parsed_port, adjusted_query_port
 
 
+def validate_dayz_host(host: str) -> str:
+    """Reject IPv6 endpoints until DayZ support is deliberately validated."""
+    normalized = host.strip()
+    candidate = normalized.removeprefix("[").removesuffix("]")
+    try:
+        address = ip_address(candidate)
+    except ValueError:
+        return normalized
+    if isinstance(address, IPv6Address):
+        raise ValueError("IPv6 DayZ server endpoints are not supported.")
+    return normalized
+
+
 def ensure_servers_file(
     path: Path = CURATED_SERVERS_PATH,
     example_path: Path = EXAMPLE_SERVERS_PATH,
@@ -104,7 +118,7 @@ def load_servers(path: Path) -> list[Server]:
             Server(
                 name=str(item["name"]),
                 group=str(item.get("group", "Community")),
-                host=str(item["host"]),
+                host=validate_dayz_host(str(item["host"])),
                 game_port=int(item["game_port"]),
                 query_port=int(item["query_port"]),
                 favourite=bool(item.get("favourite", False)),
@@ -114,6 +128,7 @@ def load_servers(path: Path) -> list[Server]:
 
 
 def add_curated_server(path: Path, server: Server) -> None:
+    validate_dayz_host(server.host)
     data = _load_server_yaml(path)
     servers = data.setdefault("servers", [])
     if not isinstance(servers, list):
@@ -164,6 +179,7 @@ def remove_curated_server(path: Path, server: Server) -> bool:
 
 
 def update_curated_server(path: Path, original: Server, updated: Server) -> bool:
+    validate_dayz_host(updated.host)
     data = _load_server_yaml(path)
     servers = data.setdefault("servers", [])
     if not isinstance(servers, list):

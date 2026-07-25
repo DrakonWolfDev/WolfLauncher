@@ -85,6 +85,12 @@ servers:
 
 
 class NormalizeServerEndpointTests(unittest.TestCase):
+    def test_ipv6_endpoints_are_explicitly_unsupported(self):
+        with self.assertRaisesRegex(ValueError, "IPv6 DayZ"):
+            config.validate_dayz_host("2001:db8::1")
+        with self.assertRaisesRegex(ValueError, "IPv6 DayZ"):
+            config.validate_dayz_host("[2001:db8::1]")
+
     def test_normalize_server_endpoint_splits_host_and_port(self):
         self.assertEqual(
             config.normalize_server_endpoint(" dayz.example.test:2402 ", 2302, 2303),
