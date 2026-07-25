@@ -13,6 +13,10 @@ This is a practical execution list. The authoritative ordered backlog remains
   and Linux Mint 22.x. Flatpak is an experimental, separately validated lane
   and is not part of the v1.0 support promise.
 - Run or explicitly waive the applicable desktop rows for that matrix.
+- Use containers only for package/build/dependency smoke checks. Use QEMU/KVM
+  desktop VMs for the Debian/Ubuntu GUI and packaging rows. DayZ/Steam/Proton
+  launch and minimum-spec performance evidence require a real physical system;
+  VM vCPU/RAM limits do not faithfully model an older CPU clock or GPU.
 - Validate native Steam and Flatpak Steam where applicable.
 - Record clean install, upgrade, read-only resources, migration, offline cache,
   secondary-library, uninstall, checksum and provenance evidence.
