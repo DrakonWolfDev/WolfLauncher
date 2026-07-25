@@ -73,7 +73,9 @@ This is a practical execution list. The authoritative ordered backlog remains
 
 ### PR-17 — Updates and retention
 
-- Establish signing identities and protected CI signing boundaries.
+- Decided: public package signing identity is Wolf Systems (a trading name of
+  Emberline Technologies). Establish its certificates/keys and protected CI
+  signing boundaries.
 - Publish signed channel manifests and assets.
 - Implement an in-app availability notice.
 - Implement a signed Windows bootstrapper with prompted verified installer

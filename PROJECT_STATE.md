@@ -1,6 +1,6 @@
 # WolfLauncher Project State
 
-Updated: 2026-07-21
+Updated: 2026-07-25
 
 WolfLauncher is a Linux-primary DayZ launcher GUI built with Python and PySide6,
 with experimental portable and installed Windows builds.
@@ -74,11 +74,14 @@ vendored MIT shell launcher remains a visible compatibility fallback.
   starts the packaged application and uninstalls program files while preserving
   roaming configuration and local data. Both Windows artifacts remain unsigned
   and there is no updater yet.
-- The automated suite contains 496 tests at this snapshot. The Windows run
-  passes all applicable tests (437 passed, 59 Linux-only skipped), Ruff and
-  compilation. Windows CI repeats the portable and installer lifecycle builds
-  and produces checksums for both. The established Linux CI/release matrix
-  remains authoritative for Linux behavior.
+- The local automated suite contains 539 tests at this snapshot. The most recent
+  Windows run passes all then-applicable tests (437 passed, 59 Linux-only
+  skipped), Ruff and compilation. Windows CI repeats the portable and installer
+  lifecycle builds and produces checksums for both. The established Linux CI
+  release matrix remains authoritative for Linux behavior.
+- The public release signing identity is Wolf Systems, a trading name of
+  Emberline Technologies. Certificates/keys and protected CI signing boundaries
+  remain PR-17 release work; no signing secret is stored in the repository.
 
 ## Active release boundary
 

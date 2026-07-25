@@ -41,9 +41,10 @@ than binary deltas: the simpler recovery and verification model is worth the
 extra download while the user base is small. Preserve roaming configuration
 and local cache exactly as the current installer lifecycle does.
 
-Code-sign the bootstrapper, installer and shipped executables with one stable,
-trusted publisher identity before calling Windows supported. Do not embed a
-long-lived signing secret in the repository or application.
+Code-sign the bootstrapper, installer and shipped executables with the stable,
+trusted publisher identity **Wolf Systems** (a trading name of **Emberline
+Technologies**) before calling Windows supported. Do not embed a long-lived
+signing secret in the repository or application.
 
 ## Linux
 
@@ -74,7 +75,8 @@ never compete for the same installation.
 
 ## Implementation order
 
-1. Establish release signing identities and protected CI signing boundaries.
+1. Establish the Wolf Systems (Emberline Technologies) release signing
+   identities and protected CI signing boundaries.
 2. Publish versioned assets and the signed channel manifest.
 3. Add the in-app availability notice without automatic installation.
 4. Add the Windows bootstrapper and verified prompted installer handoff.
