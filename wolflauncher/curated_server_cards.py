@@ -19,6 +19,12 @@ class CuratedServerCard(QFrame):
         self.setProperty("uiRole", "serverCard")
         self.setProperty("onlineState", self._online_state(values[8]))
         self.setCursor(Qt.PointingHandCursor)
+        name = values[3] or values[2] or "Unnamed server"
+        status = values[8].lower() or "unknown"
+        self.setAccessibleName(f"{name}, {status}")
+        self.setAccessibleDescription(
+            "Favourite DayZ server card. Select it to inspect; use the Connect button to launch."
+        )
 
         layout = QHBoxLayout(self)
         layout.setContentsMargins(10, 8, 10, 8)
@@ -29,13 +35,13 @@ class CuratedServerCard(QFrame):
         self.favourite_button.setProperty("favourite", values[0] == "★")
         self.favourite_button.setFixedWidth(28)
         self.favourite_button.setToolTip("Toggle favourite")
-        self.favourite_button.setAccessibleName("Toggle favourite")
+        self.favourite_button.setAccessibleName(f"Toggle favourite for {name}")
         self.favourite_button.clicked.connect(lambda: self.favourite_requested.emit(self.row))
         layout.addWidget(self.favourite_button)
 
         text = QVBoxLayout()
         text.setSpacing(2)
-        self.name_label = QLabel(values[3] or values[2])
+        self.name_label = QLabel(name)
         set_ui_role(self.name_label, "cardTitle")
         self.metadata_label = QLabel(self._metadata(values))
         set_ui_role(self.metadata_label, "cardMetadata")
@@ -52,6 +58,7 @@ class CuratedServerCard(QFrame):
         layout.addWidget(self.stats_label)
 
         self.connect_button = QPushButton("Connect")
+        self.connect_button.setAccessibleName(f"Connect to {name}")
         set_ui_role(self.connect_button, "accent")
         self.connect_button.setMinimumWidth(82)
         self.connect_button.setEnabled(values[8] == "ONLINE")

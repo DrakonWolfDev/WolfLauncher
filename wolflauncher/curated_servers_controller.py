@@ -141,6 +141,10 @@ class CuratedServersMixin:
         if 0 <= last_row < len(self.servers):
             self.table.selectRow(last_row)
         self.server_cards = QListWidget()
+        self.server_cards.setAccessibleName("Favourite servers")
+        self.server_cards.setAccessibleDescription(
+            "Saved DayZ servers. Each card includes its status and a Connect action."
+        )
         set_ui_role(self.server_cards, "serverCards")
         self.server_cards.currentRowChanged.connect(self._select_curated_table_row)
         layout.addWidget(self.server_cards)
@@ -276,6 +280,7 @@ class CuratedServersMixin:
             card.context_requested.connect(self.show_server_card_context_menu)
             item = QListWidgetItem()
             item.setData(Qt.UserRole, row)
+            item.setText(card.accessibleName())
             item.setSizeHint(QSize(0, max(64, card.sizeHint().height() + 6)))
             self.server_cards.addItem(item)
             self.server_cards.setItemWidget(item, card)

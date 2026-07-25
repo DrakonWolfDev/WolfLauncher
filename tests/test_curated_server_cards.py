@@ -60,6 +60,13 @@ class CuratedServerCardTests(unittest.TestCase):
         self.assertIn("offline or no response", card.metadata_label.text())
         self.assertFalse(card.connect_button.isEnabled())
 
+    def test_card_exposes_server_specific_accessibility_labels(self):
+        card = CuratedServerCard(0, card_values())
+
+        self.assertIn("Live server name", card.accessibleName())
+        self.assertIn("Live server name", card.connect_button.accessibleName())
+        self.assertIn("Live server name", card.favourite_button.accessibleName())
+
 
 if __name__ == "__main__":
     unittest.main()
