@@ -1,7 +1,7 @@
 from dataclasses import replace
 
-from PySide6.QtCore import QBuffer, QByteArray, QIODevice, QPoint, Qt, QTimer, QUrl
-from PySide6.QtGui import QAction, QColor, QDesktopServices, QImageReader, QPixmap
+from PySide6.QtCore import QPoint, Qt, QTimer, QUrl
+from PySide6.QtGui import QAction, QColor, QDesktopServices, QPixmap
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWidgets import (
     QApplication,
@@ -535,12 +535,9 @@ class ModsFeatureMixin:
                 and len(payload) <= MAX_THUMBNAIL_BYTES
                 and is_safe_thumbnail_content_type(str(content_type))
             ):
-                buffer = QBuffer(QByteArray(payload))
-                buffer.open(QIODevice.ReadOnly)
-                reader = QImageReader(buffer)
-                size = reader.size()
-                if is_safe_thumbnail_dimensions(size.width(), size.height()):
-                    pixmap = QPixmap.fromImage(reader.read())
+                pixmap.loadFromData(payload)
+                if not is_safe_thumbnail_dimensions(pixmap.width(), pixmap.height()):
+                    pixmap = QPixmap()
             if pixmap.isNull():
                 self.mod_detail_thumbnail.setText("Preview unavailable")
                 return
