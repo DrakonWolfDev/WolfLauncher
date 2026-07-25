@@ -81,7 +81,8 @@ vendored MIT shell launcher remains a visible compatibility fallback.
   release matrix remains authoritative for Linux behavior.
 - The public release signing identity is Wolf Systems, a trading name of
   Emberline Technologies. Certificates/keys and protected CI signing boundaries
-  remain PR-17 release work; no signing secret is stored in the repository.
+  remain PR-17 release work; no signing certificate/key provider has been
+  acquired yet, and no signing secret is stored in the repository.
 
 ## Active release boundary
 

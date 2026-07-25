@@ -2,6 +2,11 @@
 
 Status: approved direction; implementation remains a release gate.
 
+Current signing status: Wolf Systems (a trading name of Emberline Technologies)
+is the selected public identity, but no signing certificate or key provider has
+yet been acquired. Do not publish a signed-update claim until that external
+setup and protected CI boundary exist.
+
 WolfLauncher should make updates easy to receive without allowing the running
 application to silently replace itself or system-owned files. Windows and
 Linux share release policy and metadata, while installation remains native to
