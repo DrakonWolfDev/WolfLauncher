@@ -10,8 +10,9 @@ from .server_display import ping_severity
 from .table_items import SortableTableWidgetItem
 from .theme import STATUS_COLOURS, monospace_font, time_icon
 
-BROWSER_COLUMN_COUNT = 16
+BROWSER_COLUMN_COUNT = 17
 BROWSER_GAME_TIME_COLUMN = 15
+BROWSER_FAVOURITE_COLUMN = 16
 
 
 def selected_browser_cache_key(table: QTableWidget) -> str:
@@ -24,13 +25,17 @@ def selected_browser_cache_key(table: QTableWidget) -> str:
     return str(item.data(Qt.UserRole) or "") if item else ""
 
 
-def populate_browser_table(table: QTableWidget, servers: Sequence[DiscoveredServer]) -> None:
+def populate_browser_table(
+    table: QTableWidget,
+    servers: Sequence[DiscoveredServer],
+    favourite_endpoints: set[tuple[str, int, int]] | None = None,
+) -> None:
     """Replace the discovered-server table rows while preserving sortable metadata."""
     table.setSortingEnabled(False)
     table.setIconSize(QSize(20, 20))
     table.setRowCount(len(servers))
     for row, server in enumerate(servers):
-        _set_browser_table_row(table, row, server)
+        _set_browser_table_row(table, row, server, favourite_endpoints or set())
 
     table.resizeColumnsToContents()
     table.setSortingEnabled(True)
@@ -93,6 +98,7 @@ def _set_browser_table_row(
     table: QTableWidget,
     row: int,
     server: DiscoveredServer,
+    favourite_endpoints: set[tuple[str, int, int]] | None = None,
 ) -> None:
     row_data = browser_row(server)
     for column, value in enumerate(row_data.values):
@@ -117,6 +123,16 @@ def _set_browser_table_row(
             if is_day is not None:
                 item.setIcon(time_icon(is_day))
         table.setItem(row, column, item)
+    favourite = SortableTableWidgetItem(
+        "★"
+        if (server.host, server.game_port, server.query_port) in (favourite_endpoints or set())
+        else "☆",
+        0,
+    )
+    favourite.setData(Qt.UserRole, server.cache_key)
+    favourite.setTextAlignment(Qt.AlignCenter)
+    favourite.setToolTip("Remove from Favourite Servers" if favourite.text() == "★" else "Add to Favourite Servers")
+    table.setItem(row, BROWSER_FAVOURITE_COLUMN, favourite)
 
 
 def _selected_cache_key(table: QTableWidget) -> str:

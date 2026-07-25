@@ -52,6 +52,7 @@ from .server_browser_presenter import (
 )
 from .server_browser_table import (
     BROWSER_COLUMN_COUNT,
+    BROWSER_FAVOURITE_COLUMN,
     populate_browser_table,
     selected_browser_cache_key,
     update_browser_mod_cell,
@@ -228,6 +229,7 @@ class ServerBrowserMixin:
                 "Last Seen",
                 "Source",
                 "Game Time",
+                "Fav",
             ]
         )
         for column in (7, 8):
@@ -246,6 +248,7 @@ class ServerBrowserMixin:
         self.browser_table.itemActivated.connect(
             lambda item: self.handle_browser_double_clicked(item.row(), item.column())
         )
+        self.browser_table.cellClicked.connect(self.handle_browser_cell_clicked)
         self.browser_table.itemSelectionChanged.connect(self.update_browser_selection_context)
         self.browser_table.verticalScrollBar().valueChanged.connect(
             self.schedule_browser_scroll_freshness_check
@@ -1382,7 +1385,11 @@ class ServerBrowserMixin:
         servers = snapshot.servers
         self.browser_servers = servers
 
-        populate_browser_table(self.browser_table, servers)
+        populate_browser_table(
+            self.browser_table,
+            servers,
+            {(server.host, server.game_port, server.query_port) for server in self.servers},
+        )
         if selected_key:
             for row in range(self.browser_table.rowCount()):
                 item = self.browser_table.item(row, 0)
@@ -1522,7 +1529,7 @@ class ServerBrowserMixin:
             )
         configure_priority_columns(
             self.browser_table,
-            (0, 5, 6, 15, 7, 8, 10, 11),
+            (0, 5, 6, 15, 7, 8, 10, 11, BROWSER_FAVOURITE_COLUMN),
             show_details=show_details,
             stretch_columns=(),
         )
@@ -1573,8 +1580,40 @@ class ServerBrowserMixin:
         self.refresh_server_browser()
 
     def handle_browser_double_clicked(self, row: int, column: int):
+        if column == BROWSER_FAVOURITE_COLUMN:
+            return
         self.browser_table.selectRow(row)
         self.inspect_selected_discovered_server()
+
+    def handle_browser_cell_clicked(self, row: int, column: int):
+        if column != BROWSER_FAVOURITE_COLUMN:
+            return
+        item = self.browser_table.item(row, 0)
+        cache_key = item.data(Qt.UserRole) if item else ""
+        discovered = server_cache.get_server(self.server_cache, str(cache_key)) if cache_key else None
+        if not discovered:
+            return
+        endpoint = (discovered.host, discovered.game_port, discovered.query_port)
+        for index, curated in enumerate(self.servers):
+            if (curated.host, curated.game_port, curated.query_port) == endpoint:
+                self.remove_curated_server_row(index, confirm=False)
+                self.refresh_server_browser()
+                return
+        curated = Server(
+            name=discovered.server_name or discovered.name or discovered.connect_target,
+            group="Favourites",
+            host=discovered.host,
+            game_port=discovered.game_port,
+            query_port=discovered.query_port,
+            favourite=True,
+        )
+        try:
+            add_curated_server(self.config_path, curated)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Could not add favourite", str(exc))
+            return
+        self.add_curated_server_row(curated)
+        self.refresh_server_browser()
 
     def show_browser_context_menu(self, pos: QPoint):
         row = self.browser_table.rowAt(pos.y())

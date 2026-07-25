@@ -89,7 +89,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertEqual(table.item(0, 7).text(), "12/60")
         self.assertIsInstance(table.item(0, 7), SortableTableWidgetItem)
         self.assertEqual(table.item(0, 7).sort_value, 12)
-        self.assertEqual(table.columnCount(), 16)
+        self.assertEqual(table.columnCount(), 17)
         self.assertEqual(table.item(0, 0).data(Qt.UserRole), server.cache_key)
         self.assertIn("Locally validated live name", table.item(0, 0).toolTip())
         self.assertEqual(
