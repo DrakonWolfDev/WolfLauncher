@@ -57,7 +57,13 @@ def update_browser_table_row(
             scroll_value = table.verticalScrollBar().value()
             with QSignalBlocker(table):
                 table.setSortingEnabled(False)
-                _set_browser_table_row(table, row, server)
+                favourite = table.item(row, BROWSER_FAVOURITE_COLUMN)
+                favourite_endpoints = (
+                    {(server.host, server.game_port, server.query_port)}
+                    if favourite and favourite.text() == "★"
+                    else set()
+                )
+                _set_browser_table_row(table, row, server, favourite_endpoints)
                 table.setSortingEnabled(sorting)
                 _restore_selection(table, selected_key or server.cache_key)
             table.verticalScrollBar().setValue(scroll_value)

@@ -1597,10 +1597,7 @@ class ServerBrowserMixin:
         endpoint = (discovered.host, discovered.game_port, discovered.query_port)
         for index, curated in enumerate(self.servers):
             if (curated.host, curated.game_port, curated.query_port) == endpoint:
-                before = len(self.servers)
                 self.remove_curated_server_row(index, confirm=False)
-                if len(self.servers) < before:
-                    self._set_browser_favourite_cell(row, True)
                 return
         curated = Server(
             name=discovered.server_name or discovered.name or discovered.connect_target,
@@ -1616,14 +1613,34 @@ class ServerBrowserMixin:
             QMessageBox.warning(self, "Could not add favourite", str(exc))
             return
         self.add_curated_server_row(curated)
-        self._set_browser_favourite_cell(row, False)
 
-    def _set_browser_favourite_cell(self, row: int, favourite: bool):
+    def sync_browser_favourite_endpoint(
+        self,
+        host: str,
+        game_port: int,
+        query_port: int,
+        *,
+        is_favourite: bool,
+    ):
+        """Reflect a curated change in the Browser without a cache reload."""
+        matching_keys = {
+            server.cache_key
+            for server in self.browser_servers
+            if (server.host, server.game_port, server.query_port) == (host, game_port, query_port)
+        }
+        for row in range(self.browser_table.rowCount()):
+            item = self.browser_table.item(row, BROWSER_NAME_COLUMN)
+            if item and item.data(Qt.UserRole) in matching_keys:
+                self._set_browser_favourite_cell(row, is_favourite=is_favourite)
+
+    def _set_browser_favourite_cell(self, row: int, *, is_favourite: bool):
         item = self.browser_table.item(row, BROWSER_FAVOURITE_COLUMN)
         if item is None:
             return
-        item.setText("☆" if favourite else "★")
-        item.setToolTip("Add to Favourite Servers" if favourite else "Remove from Favourite Servers")
+        item.setText("★" if is_favourite else "☆")
+        item.setToolTip(
+            "Remove from Favourite Servers" if is_favourite else "Add to Favourite Servers"
+        )
 
     def show_browser_context_menu(self, pos: QPoint):
         row = self.browser_table.rowAt(pos.y())

@@ -13,6 +13,7 @@ from wolflauncher.server_browser_feature import ServerBrowserMixin
 from wolflauncher.models import DiscoveredServer
 from wolflauncher.server_browser_table import (
     BROWSER_COLUMN_COUNT,
+    BROWSER_FAVOURITE_COLUMN,
     populate_browser_table,
     selected_browser_cache_key,
     update_browser_mod_cell,
@@ -627,6 +628,29 @@ class ServerBrowserTableTests(unittest.TestCase):
         selected_row = selected_items[0].row()
         self.assertEqual(table.item(selected_row, 6).text(), "ONLINE")
         self.assertEqual(table.item(selected_row, 9).text(), "42ms")
+
+    def test_enrichment_preserves_a_favourite_star(self):
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        original = DiscoveredServer(
+            name="Selected", host="203.0.113.11", game_port=2302, query_port=27016
+        )
+        populate_browser_table(
+            table,
+            [original],
+            {(original.host, original.game_port, original.query_port)},
+        )
+
+        enriched = DiscoveredServer(
+            name="Selected",
+            host="203.0.113.11",
+            game_port=2302,
+            query_port=27016,
+            online=True,
+            status_source="local",
+        )
+
+        self.assertTrue(update_browser_table_row(table, original.cache_key, enriched))
+        self.assertEqual(table.item(0, BROWSER_FAVOURITE_COLUMN).text(), "★")
 
     def test_local_mod_preview_replaces_only_the_matching_mods_cell(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)

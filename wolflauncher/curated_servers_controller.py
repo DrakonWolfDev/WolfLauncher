@@ -385,6 +385,13 @@ class CuratedServersMixin:
         self.table.resizeColumnsToContents()
         self.update_curated_status_summary()
         self.refresh_curated_server_cards()
+        if server.favourite and hasattr(self, "sync_browser_favourite_endpoint"):
+            self.sync_browser_favourite_endpoint(
+                server.host,
+                server.game_port,
+                server.query_port,
+                is_favourite=True,
+            )
 
     def remove_curated_server_row(self, row: int, confirm: bool = True):
         if row < 0 or row >= len(self.servers):
@@ -416,6 +423,13 @@ class CuratedServersMixin:
 
         self.favourites.discard(server_key(server))
         SettingsFeatureMixin._save_favourites_index(self)
+        if hasattr(self, "sync_browser_favourite_endpoint"):
+            self.sync_browser_favourite_endpoint(
+                server.host,
+                server.game_port,
+                server.query_port,
+                is_favourite=False,
+            )
         del self.servers[row]
         self.table.removeRow(row)
         self._reindex_server_rows()
