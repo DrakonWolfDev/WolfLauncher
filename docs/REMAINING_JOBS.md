@@ -42,13 +42,12 @@ This is a practical execution list. The authoritative ordered backlog remains
 
 ### PR-15 — Accessibility evidence
 
-- Complete screen-reader review.
+- Complete: screen-reader review, including named curated-server cards and
+  server-specific Connect/favourite actions.
 - Run keyboard-only checks across every tab and dialog.
-- Review high-contrast and reduced-motion behaviour.
-- Review 125%, 150% and 200% scaling.
+- Complete: high-contrast, large-text and reduced-motion review.
+- Complete: review 125%, 150% and 200% scaling.
 - Confirm status does not rely on colour alone.
-- Human desktop testing is required. Core accessible labels for the main
-  navigation and key data tables are already implemented.
 - Linux Mint validation passed at 75%, 100%, 125%, 150%, 175% and 200% after
   main workspaces gained an outer scroll boundary; previously unreachable
   controls at 175% and 200% are now reachable.
