@@ -8,6 +8,10 @@ The v0.8 native-launch baseline is validated and tagged; v0.9 production
 hardening is the active cycle. The native Python engine is the default and the
 vendored MIT shell launcher remains a visible compatibility fallback.
 
+The approved v1.0 Linux support contract is Debian 13, Ubuntu 24.04 LTS,
+Ubuntu 26.04 LTS and Linux Mint 22.x. Flatpak remains experimental pending
+separate Steam, DayZ and Workshop validation.
+
 ## Current truth
 
 - Native Steam handoff has passed real-desktop testing with Steam running and

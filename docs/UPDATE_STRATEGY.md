@@ -12,6 +12,10 @@ application to silently replace itself or system-owned files. Windows and
 Linux share release policy and metadata, while installation remains native to
 each platform.
 
+The v1.0 Linux support contract is Debian 13, Ubuntu 24.04 LTS, Ubuntu 26.04
+LTS and Linux Mint 22.x. Flatpak is experimental and requires separate Steam,
+DayZ and Workshop validation before it becomes a supported delivery lane.
+
 ## Shared release contract
 
 Publish stable and beta channels from a controlled HTTPS endpoint. Each channel

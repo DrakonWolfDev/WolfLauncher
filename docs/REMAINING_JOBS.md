@@ -9,8 +9,10 @@ This is a practical execution list. The authoritative ordered backlog remains
 
 ### PR-08 — Packaged-artifact desktop validation
 
-- Run or explicitly waive Mint 21, Mint 22, Ubuntu 22.04 and Ubuntu 24.04
-  desktop rows.
+- v1.0 supported Linux matrix: Debian 13, Ubuntu 24.04 LTS, Ubuntu 26.04 LTS
+  and Linux Mint 22.x. Flatpak is an experimental, separately validated lane
+  and is not part of the v1.0 support promise.
+- Run or explicitly waive the applicable desktop rows for that matrix.
 - Validate native Steam and Flatpak Steam where applicable.
 - Record clean install, upgrade, read-only resources, migration, offline cache,
   secondary-library, uninstall, checksum and provenance evidence.
@@ -99,4 +101,4 @@ This is a practical execution list. The authoritative ordered backlog remains
   deliberately approved with a provider, retention period, consent wording and
   data-processing policy.
 - Approve release-scope waivers for any unavailable PR-08 desktop rows.
-- Choose release version/tag timing and the supported Linux distribution matrix.
+- Choose release version/tag timing.
