@@ -57,6 +57,7 @@ from .thumbnail_safety import (
     is_safe_thumbnail_content_type,
     is_safe_thumbnail_dimensions,
     is_safe_thumbnail_url,
+    normalize_thumbnail_url,
 )
 from .theme import (
     configure_data_table,
@@ -480,7 +481,8 @@ class ModsFeatureMixin:
         self.mod_detail_card.style().polish(self.mod_detail_card)
 
     def load_mod_thumbnail(self, url: str):
-        self.mod_thumbnail_url = url if is_safe_thumbnail_url(url) else ""
+        normalized_url = normalize_thumbnail_url(url)
+        self.mod_thumbnail_url = normalized_url if is_safe_thumbnail_url(normalized_url) else ""
         self.mod_detail_thumbnail.setPixmap(QPixmap())
         if not self.mod_thumbnail_url:
             self.mod_detail_thumbnail.setText("No preview")

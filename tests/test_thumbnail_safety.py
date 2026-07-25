@@ -4,6 +4,7 @@ from wolflauncher.thumbnail_safety import (
     is_safe_thumbnail_content_type,
     is_safe_thumbnail_dimensions,
     is_safe_thumbnail_url,
+    normalize_thumbnail_url,
 )
 
 
@@ -13,6 +14,16 @@ class ThumbnailSafetyTests(unittest.TestCase):
         self.assertFalse(is_safe_thumbnail_url("http://cdn.example.test/preview.png"))
         self.assertFalse(is_safe_thumbnail_url("file:///tmp/preview.png"))
         self.assertFalse(is_safe_thumbnail_url("https:///missing-host"))
+
+    def test_upgrades_only_recognised_steam_cdn_urls_to_https(self):
+        self.assertEqual(
+            normalize_thumbnail_url("http://images.akamai.steamusercontent.com/ugc/preview.jpg"),
+            "https://images.akamai.steamusercontent.com/ugc/preview.jpg",
+        )
+        self.assertEqual(
+            normalize_thumbnail_url("http://cdn.example.test/preview.jpg"),
+            "http://cdn.example.test/preview.jpg",
+        )
 
     def test_accepts_image_content_types_and_bounded_dimensions(self):
         self.assertTrue(is_safe_thumbnail_content_type("image/jpeg; charset=binary"))
