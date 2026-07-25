@@ -44,7 +44,8 @@ This is a practical execution list. The authoritative ordered backlog remains
 
 - Complete: screen-reader review, including named curated-server cards and
   server-specific Connect/favourite actions.
-- Run keyboard-only checks across every tab and dialog.
+- Complete: keyboard-only checks across the main tabs, curated selection,
+  Server Browser, Mods, Settings and dialogs.
 - Complete: high-contrast, large-text and reduced-motion review.
 - Complete: review 125%, 150% and 200% scaling.
 - Confirm status does not rely on colour alone.
