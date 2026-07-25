@@ -45,6 +45,9 @@ This is a practical execution list. The authoritative ordered backlog remains
 - Confirm status does not rely on colour alone.
 - Human desktop testing is required. Core accessible labels for the main
   navigation and key data tables are already implemented.
+- Linux Mint testing found all actions unreachable at 175% because the main
+  workspaces had no outer scroll boundary; add and verify workspace scrolling
+  before closing this item.
 
 ### PR-16 — Remaining resilience and performance work
 

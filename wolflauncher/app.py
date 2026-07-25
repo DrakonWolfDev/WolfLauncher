@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QProgressDialog,
+    QScrollArea,
     QSpinBox,
     QTabWidget,
     QWidget,
@@ -213,12 +214,18 @@ class MainWindow(
         self.tabs.setAccessibleName("WolfLauncher main sections")
         self.tabs.tabBar().setAccessibleName("WolfLauncher main sections")
         self.tabs.setCornerWidget(self._build_brand_lockup(), Qt.TopRightCorner)
-        self.tabs.addTab(self._build_servers_tab(), theme_icon("servers"), "Servers")
+        self.tabs.addTab(self._scrollable_workspace(self._build_servers_tab()), theme_icon("servers"), "Servers")
         self.server_browser_tab_index = self.tabs.addTab(
-            self._build_server_browser_tab(), theme_icon("browser"), "Server Browser"
+            self._scrollable_workspace(self._build_server_browser_tab()),
+            theme_icon("browser"),
+            "Server Browser",
         )
-        self.mods_tab_index = self.tabs.addTab(self._build_mods_tab(), theme_icon("mods"), "Mods")
-        self.tabs.addTab(self._build_settings_tab(), theme_icon("settings"), "Settings")
+        self.mods_tab_index = self.tabs.addTab(
+            self._scrollable_workspace(self._build_mods_tab()), theme_icon("mods"), "Mods"
+        )
+        self.tabs.addTab(
+            self._scrollable_workspace(self._build_settings_tab()), theme_icon("settings"), "Settings"
+        )
         for index in range(self.tabs.count()):
             self.tabs.setTabToolTip(index, f"Open {self.tabs.tabText(index)}")
         self.active_main_tab_index = self.tabs.currentIndex()
@@ -232,6 +239,17 @@ class MainWindow(
         QTimer.singleShot(0, self.check_startup_steam_state)
         QTimer.singleShot(0, self.check_initial_server_mods)
         QTimer.singleShot(30000, self.maybe_auto_refresh_configured_provider)
+
+    @staticmethod
+    def _scrollable_workspace(content: QWidget) -> QScrollArea:
+        """Keep every main-tab action reachable when desktop scaling is high."""
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QScrollArea.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        scroll.setWidget(content)
+        return scroll
 
     def _build_brand_lockup(self) -> QWidget:
         lockup = QWidget()
