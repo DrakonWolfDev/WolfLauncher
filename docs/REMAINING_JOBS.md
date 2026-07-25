@@ -56,7 +56,10 @@ This is a practical execution list. The authoritative ordered backlog remains
 
 ### PR-16 — Remaining resilience and performance work
 
-- Add a deterministic hostile/truncated YAML and JSON parser corpus.
+- Complete: deterministic, synthetic hostile/truncated YAML and JSON corpus
+  covers curated YAML, discovered-server imports, raw HTTP JSON and each
+  discovery-provider parser. Invalid input fails with controlled errors or is
+  dropped per-row while a valid neighbour remains available.
 - Add property/fuzz coverage for provider parsing, endpoint normalization,
   cache migration and settings.
 - Measure startup, third-character remote search, large-table refresh and memory
