@@ -63,7 +63,8 @@ This is a practical execution list. The authoritative ordered backlog remains
   with a production-scale cache.
 - Set and document pass/fail performance budgets.
 - Fuzz coverage can be implemented locally; representative performance evidence
-  needs production-sized data and target hardware.
+  remains open until it can run on a DayZ minimum-spec system, which will define
+  the supported performance baseline.
 
 ### PR-17 — Updates and retention
 
