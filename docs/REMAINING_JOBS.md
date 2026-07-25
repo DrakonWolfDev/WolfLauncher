@@ -79,7 +79,9 @@ This is a practical execution list. The authoritative ordered backlog remains
 - Implement a signed Windows bootstrapper with prompted verified installer
   updates.
 - Publish a signed Linux APT repository and setup package.
-- Define retention for cache, logs, thumbnails and reports.
+- Complete: local retention runs at startup: 30 days for disposable cache and
+  thumbnails, 90 days for logs and local reports. Existing log rotation also
+  caps each log at 512 KiB with three backups.
 - Exercise update, interrupted-update, downgrade/recovery and user-data
   preservation on the desktop matrix.
 - Signing/repository decisions, credentials and desktop validation are required.

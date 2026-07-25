@@ -43,6 +43,7 @@ from .lifecycle import (
     RuntimeShutdownCoordinator,
 )
 from .platforms import current_platform
+from .retention import run_local_retention
 from .secret_store import (
     SecretStore,
     load_steam_api_key,
@@ -336,6 +337,7 @@ def configure_packaged_smoke_test(app, window, environ=None) -> bool:
 
 
 def main():
+    run_local_retention()
     log_path = configure_local_logging()
     app = QApplication(sys.argv)
     app.setApplicationName("WolfLauncher")
