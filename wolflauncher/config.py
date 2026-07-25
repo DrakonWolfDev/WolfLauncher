@@ -109,21 +109,28 @@ def find_default_launcher_path() -> str:
 
 
 def load_servers(path: Path) -> list[Server]:
-    with path.open("r", encoding="utf-8") as handle:
-        data = yaml.safe_load(handle) or {}
+    data = _load_server_yaml(path)
+    rows = data.get("servers", [])
+    if not isinstance(rows, list):
+        raise ValueError("servers.yaml must contain a 'servers' list.")
 
     servers = []
-    for item in data.get("servers", []):
-        servers.append(
-            Server(
-                name=str(item["name"]),
-                group=str(item.get("group", "Community")),
-                host=validate_dayz_host(str(item["host"])),
-                game_port=int(item["game_port"]),
-                query_port=int(item["query_port"]),
-                favourite=bool(item.get("favourite", False)),
+    for item in rows:
+        if not isinstance(item, dict):
+            raise ValueError("Each servers.yaml entry must be a mapping.")
+        try:
+            servers.append(
+                Server(
+                    name=str(item["name"]),
+                    group=str(item.get("group", "Community")),
+                    host=validate_dayz_host(str(item["host"])),
+                    game_port=int(item["game_port"]),
+                    query_port=int(item["query_port"]),
+                    favourite=bool(item.get("favourite", False)),
+                )
             )
-        )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError("Invalid servers.yaml server entry.") from exc
     return servers
 
 
@@ -227,8 +234,11 @@ def _same_server_entry(item: dict, server: Server) -> bool:
 def _load_server_yaml(path: Path) -> dict:
     if not path.exists():
         return {"servers": []}
-    with path.open("r", encoding="utf-8") as handle:
-        data = yaml.safe_load(handle) or {}
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            data = yaml.safe_load(handle) or {}
+    except yaml.YAMLError as exc:
+        raise ValueError("servers.yaml contains invalid YAML.") from exc
     if not isinstance(data, dict):
         raise ValueError("servers.yaml must contain a mapping.")
     return data
