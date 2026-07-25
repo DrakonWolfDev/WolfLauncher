@@ -60,8 +60,10 @@ This is a practical execution list. The authoritative ordered backlog remains
   covers curated YAML, discovered-server imports, raw HTTP JSON and each
   discovery-provider parser. Invalid input fails with controlled errors or is
   dropped per-row while a valid neighbour remains available.
-- Add property/fuzz coverage for provider parsing, endpoint normalization,
-  cache migration and settings.
+- Complete: seeded, dependency-free fuzz coverage for provider parsing,
+  endpoint normalization and settings migrations. Cache migrations retain their
+  versioned fixture coverage; each future schema migration must add its own
+  preservation fixture.
 - Measure startup, third-character remote search, large-table refresh and memory
   with a production-scale cache.
 - Set and document pass/fail performance budgets.
