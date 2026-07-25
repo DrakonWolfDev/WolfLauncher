@@ -407,11 +407,12 @@ not merely source changes.
 
 ### Hardening after the release gates
 
-- [ ] **PR-10 — Extract feature ownership from `app.py` incrementally**, starting
-  with the lifecycle coordinator needed by PR-04; preserve tested behavior and
-  the approved GUI hierarchy. The first slice is `RuntimeShutdownCoordinator`:
-  it now owns the bounded, non-blocking shutdown protocol while `MainWindow`
-  retains only its Qt dialog and close-event presentation.
+- [x] **PR-10 — Extract feature ownership from `app.py` incrementally.**
+  `MainWindow` is now composition, window lifecycle and small presentation
+  helpers; feature behavior is owned by the Servers, Server Browser, Mods,
+  Settings and Launch mixins plus dedicated shutdown, preflight, Workshop
+  resolution and settings-health coordinators. This preserves tested behavior
+  and the approved GUI hierarchy.
 - [ ] **PR-11 — Unify and bound network clients**, including response limits,
   versioned User-Agent, content validation, cancellation and structured errors.
 - [ ] **PR-12 — Harden disposable SQLite operation** with busy handling,

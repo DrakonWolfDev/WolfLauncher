@@ -86,11 +86,10 @@ This is a practical execution list. The authoritative ordered backlog remains
 
 ## Explicit decisions
 
-- Decide whether PR-10 is formally complete beyond its delivered lifecycle and
-  feature-extraction slices, or remains an ongoing incremental maintenance item.
-  PR-10 is the internal, behaviour-preserving extraction of feature ownership
-  from `app.py`; its delivered first slice moved bounded shutdown handling into
-  `RuntimeShutdownCoordinator`.
+- Decided: PR-10 is complete. `app.py` is limited to application composition,
+  window lifecycle and small presentation helpers; feature behavior is owned by
+  dedicated mixins and coordinators. Future refactoring is ordinary maintenance,
+  not release-gated PR-10 work.
 - Decided: crash reporting remains local-only. Revisit only if opt-in upload is
   deliberately approved with a provider, retention period, consent wording and
   data-processing policy.
