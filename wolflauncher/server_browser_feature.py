@@ -53,6 +53,7 @@ from .server_browser_presenter import (
 from .server_browser_table import (
     BROWSER_COLUMN_COUNT,
     BROWSER_FAVOURITE_COLUMN,
+    BROWSER_NAME_COLUMN,
     populate_browser_table,
     selected_browser_cache_key,
     update_browser_mod_cell,
@@ -213,6 +214,7 @@ class ServerBrowserMixin:
         )
         self.browser_table.setHorizontalHeaderLabels(
             [
+                "Fav",
                 "Server Name",
                 "Live Name",
                 "Host",
@@ -229,10 +231,9 @@ class ServerBrowserMixin:
                 "Last Seen",
                 "Source",
                 "Game Time",
-                "Fav",
             ]
         )
-        for column in (7, 8):
+        for column in (8, 9):
             self.browser_table.horizontalHeaderItem(column).setTextAlignment(
                 Qt.AlignRight | Qt.AlignVCenter
             )
@@ -999,7 +1000,7 @@ class ServerBrowserMixin:
         )
         ordered_servers = []
         for row in (*visible_rows, *remaining_rows):
-            item = self.browser_table.item(row, 0)
+            item = self.browser_table.item(row, BROWSER_NAME_COLUMN)
             cache_key = item.data(Qt.UserRole) if item is not None else ""
             server = servers_by_key.get(cache_key)
             if server is not None:
@@ -1392,7 +1393,7 @@ class ServerBrowserMixin:
         )
         if selected_key:
             for row in range(self.browser_table.rowCount()):
-                item = self.browser_table.item(row, 0)
+                item = self.browser_table.item(row, BROWSER_NAME_COLUMN)
                 if item and item.data(Qt.UserRole) == selected_key:
                     self.browser_table.selectRow(row)
                     break
@@ -1529,17 +1530,17 @@ class ServerBrowserMixin:
             )
         configure_priority_columns(
             self.browser_table,
-            (0, 5, 6, 15, 7, 8, 10, 11, BROWSER_FAVOURITE_COLUMN),
+            (BROWSER_FAVOURITE_COLUMN, 1, 6, 7, 16, 8, 9, 11, 12),
             show_details=show_details,
             stretch_columns=(),
         )
-        self.browser_table.setColumnHidden(1, True)
+        self.browser_table.setColumnHidden(2, True)
         if not show_details:
             header = self.browser_table.horizontalHeader()
             # Name flexes with the live viewport and yields when readiness text
             # makes Mods wider. This avoids stale startup widths and horizontal
             # overflow after background mod previews complete.
-            header.setSectionResizeMode(0, QHeaderView.Stretch)
+            header.setSectionResizeMode(BROWSER_NAME_COLUMN, QHeaderView.Stretch)
 
     def _refresh_browser_filter_options(self):
         options = browser_filter_options(self.server_cache)
@@ -1588,7 +1589,7 @@ class ServerBrowserMixin:
     def handle_browser_cell_clicked(self, row: int, column: int):
         if column != BROWSER_FAVOURITE_COLUMN:
             return
-        item = self.browser_table.item(row, 0)
+        item = self.browser_table.item(row, BROWSER_NAME_COLUMN)
         cache_key = item.data(Qt.UserRole) if item else ""
         discovered = server_cache.get_server(self.server_cache, str(cache_key)) if cache_key else None
         if not discovered:
@@ -1596,8 +1597,10 @@ class ServerBrowserMixin:
         endpoint = (discovered.host, discovered.game_port, discovered.query_port)
         for index, curated in enumerate(self.servers):
             if (curated.host, curated.game_port, curated.query_port) == endpoint:
+                before = len(self.servers)
                 self.remove_curated_server_row(index, confirm=False)
-                self.refresh_server_browser()
+                if len(self.servers) < before:
+                    self._set_browser_favourite_cell(row, True)
                 return
         curated = Server(
             name=discovered.server_name or discovered.name or discovered.connect_target,
@@ -1613,7 +1616,14 @@ class ServerBrowserMixin:
             QMessageBox.warning(self, "Could not add favourite", str(exc))
             return
         self.add_curated_server_row(curated)
-        self.refresh_server_browser()
+        self._set_browser_favourite_cell(row, False)
+
+    def _set_browser_favourite_cell(self, row: int, favourite: bool):
+        item = self.browser_table.item(row, BROWSER_FAVOURITE_COLUMN)
+        if item is None:
+            return
+        item.setText("☆" if favourite else "★")
+        item.setToolTip("Add to Favourite Servers" if favourite else "Remove from Favourite Servers")
 
     def show_browser_context_menu(self, pos: QPoint):
         row = self.browser_table.rowAt(pos.y())

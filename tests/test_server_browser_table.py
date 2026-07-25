@@ -85,15 +85,15 @@ class ServerBrowserTableTests(unittest.TestCase):
         populate_browser_table(table, [server])
 
         self.assertEqual(table.rowCount(), 1)
-        self.assertEqual(table.item(0, 1).text(), "Live Name")
-        self.assertEqual(table.item(0, 7).text(), "12/60")
-        self.assertIsInstance(table.item(0, 7), SortableTableWidgetItem)
-        self.assertEqual(table.item(0, 7).sort_value, 12)
+        self.assertEqual(table.item(0, 2).text(), "Live Name")
+        self.assertEqual(table.item(0, 8).text(), "12/60")
+        self.assertIsInstance(table.item(0, 8), SortableTableWidgetItem)
+        self.assertEqual(table.item(0, 8).sort_value, 12)
         self.assertEqual(table.columnCount(), 17)
-        self.assertEqual(table.item(0, 0).data(Qt.UserRole), server.cache_key)
-        self.assertIn("Locally validated live name", table.item(0, 0).toolTip())
+        self.assertEqual(table.item(0, 1).data(Qt.UserRole), server.cache_key)
+        self.assertIn("Locally validated live name", table.item(0, 1).toolTip())
         self.assertEqual(
-            table.item(0, 5).foreground().color().name(),
+            table.item(0, 6).foreground().color().name(),
             STATUS_COLOURS["positive"],
         )
         self.assertTrue(table.isSortingEnabled())
@@ -112,8 +112,8 @@ class ServerBrowserTableTests(unittest.TestCase):
         populate_browser_table(table, [server])
 
         self.assertEqual(table.iconSize(), QSize(20, 20))
-        self.assertFalse(table.item(0, 15).icon().isNull())
-        self.assertEqual(table.item(0, 15).text(), "17:07 · 3×")
+        self.assertFalse(table.item(0, 16).icon().isNull())
+        self.assertEqual(table.item(0, 16).text(), "17:07 · 3×")
 
     def test_visible_selection_wins_over_a_stale_current_row(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)
@@ -123,7 +123,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         first_row = next(
             row
             for row in range(table.rowCount())
-            if table.item(row, 0).data(Qt.UserRole) == first.cache_key
+            if table.item(row, 1).data(Qt.UserRole) == first.cache_key
         )
         second_row = 1 - first_row
         table.selectRow(first_row)
@@ -310,7 +310,7 @@ class ServerBrowserTableTests(unittest.TestCase):
 
         queued = worker_class.call_args.args[0]
         self.assertEqual(len(queued), 6)
-        visual_keys = [table.item(row, 0).data(Qt.UserRole) for row in range(6)]
+        visual_keys = [table.item(row, 1).data(Qt.UserRole) for row in range(6)]
         self.assertEqual([server.cache_key for server in queued], visual_keys)
         self.assertFalse(worker_class.call_args.kwargs["probe_fallbacks"])
         worker.start.assert_called_once_with()
@@ -537,10 +537,10 @@ class ServerBrowserTableTests(unittest.TestCase):
         )
 
         populate_browser_table(table, [unknown, known])
-        table.sortItems(11, Qt.AscendingOrder)
+        table.sortItems(12, Qt.AscendingOrder)
 
-        self.assertEqual(table.item(0, 11).text(), "17")
-        self.assertEqual(table.item(1, 11).text(), "–")
+        self.assertEqual(table.item(0, 12).text(), "17")
+        self.assertEqual(table.item(1, 12).text(), "–")
 
     def test_detailed_view_keeps_internal_live_name_hidden(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)
@@ -553,7 +553,7 @@ class ServerBrowserTableTests(unittest.TestCase):
 
         MainWindow.configure_browser_columns(window, True)
 
-        self.assertTrue(table.isColumnHidden(1))
+        self.assertTrue(table.isColumnHidden(2))
         self.assertFalse(table.isColumnHidden(3))
 
     def test_compact_columns_follow_the_requested_scan_order(self):
@@ -567,10 +567,10 @@ class ServerBrowserTableTests(unittest.TestCase):
         MainWindow.configure_browser_columns(window, False)
 
         header = table.horizontalHeader()
-        self.assertEqual(header.sectionResizeMode(0), QHeaderView.Stretch)
+        self.assertEqual(header.sectionResizeMode(1), QHeaderView.Stretch)
         self.assertEqual(
-            [header.logicalIndex(index) for index in range(8)],
-            [0, 5, 6, 15, 7, 8, 10, 11],
+            [header.logicalIndex(index) for index in range(9)],
+            [0, 1, 6, 7, 16, 8, 9, 11, 12],
         )
 
     def test_population_replaces_existing_rows_and_keeps_missing_ping_guidance(self):
@@ -586,9 +586,9 @@ class ServerBrowserTableTests(unittest.TestCase):
         populate_browser_table(table, [server])
 
         self.assertEqual(table.rowCount(), 1)
-        self.assertIn("when you select", table.item(0, 8).toolTip())
+        self.assertIn("when you select", table.item(0, 9).toolTip())
         self.assertEqual(
-            table.item(0, 5).foreground().color().name(),
+            table.item(0, 6).foreground().color().name(),
             STATUS_COLOURS["negative"],
         )
 
@@ -602,7 +602,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         )
         populate_browser_table(table, [original, neighbour])
         neighbour_item = (
-            table.item(0, 0) if table.item(0, 0).text() == "Neighbour" else table.item(1, 0)
+            table.item(0, 1) if table.item(0, 1).text() == "Neighbour" else table.item(1, 1)
         )
         enriched = DiscoveredServer(
             name="Selected",
@@ -619,14 +619,14 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertEqual(table.rowCount(), 2)
         self.assertEqual(neighbour_item.text(), "Neighbour")
         selected_items = [
-            table.item(row, 0)
+            table.item(row, 1)
             for row in range(table.rowCount())
-            if table.item(row, 0).data(Qt.UserRole) == enriched.cache_key
+            if table.item(row, 1).data(Qt.UserRole) == enriched.cache_key
         ]
         self.assertEqual(len(selected_items), 1)
         selected_row = selected_items[0].row()
-        self.assertEqual(table.item(selected_row, 5).text(), "ONLINE")
-        self.assertEqual(table.item(selected_row, 8).text(), "42ms")
+        self.assertEqual(table.item(selected_row, 6).text(), "ONLINE")
+        self.assertEqual(table.item(selected_row, 9).text(), "42ms")
 
     def test_local_mod_preview_replaces_only_the_matching_mods_cell(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)
@@ -645,8 +645,8 @@ class ServerBrowserTableTests(unittest.TestCase):
             )
         )
 
-        self.assertEqual(table.item(0, 11).text(), "3 MISSING")
-        self.assertIn("pre-flight", table.item(0, 11).toolTip())
+        self.assertEqual(table.item(0, 12).text(), "3 MISSING")
+        self.assertIn("pre-flight", table.item(0, 12).toolTip())
 
     def test_background_mod_preview_does_not_steal_visible_selection(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)
@@ -656,7 +656,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         selected_row = next(
             row
             for row in range(table.rowCount())
-            if table.item(row, 0).data(Qt.UserRole) == selected.cache_key
+            if table.item(row, 1).data(Qt.UserRole) == selected.cache_key
         )
         table.selectRow(selected_row)
 
@@ -668,7 +668,7 @@ class ServerBrowserTableTests(unittest.TestCase):
             STATUS_COLOURS["negative"],
         )
 
-        current = table.item(table.currentRow(), 0)
+        current = table.item(table.currentRow(), 1)
         self.assertEqual(current.data(Qt.UserRole), selected.cache_key)
 
     def test_dynamic_mod_text_yields_name_width_without_horizontal_overflow(self):
@@ -740,11 +740,11 @@ class ServerBrowserTableTests(unittest.TestCase):
         populate_browser_table(table, servers)
 
         self.assertEqual(
-            table.item(0, 8).foreground().color().name(),
+            table.item(0, 9).foreground().color().name(),
             STATUS_COLOURS["warning"],
         )
         self.assertEqual(
-            table.item(1, 8).foreground().color().name(),
+            table.item(1, 9).foreground().color().name(),
             STATUS_COLOURS["negative"],
         )
 

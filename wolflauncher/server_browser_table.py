@@ -11,8 +11,10 @@ from .table_items import SortableTableWidgetItem
 from .theme import STATUS_COLOURS, monospace_font, time_icon
 
 BROWSER_COLUMN_COUNT = 17
-BROWSER_GAME_TIME_COLUMN = 15
-BROWSER_FAVOURITE_COLUMN = 16
+BROWSER_FAVOURITE_COLUMN = 0
+BROWSER_NAME_COLUMN = 1
+BROWSER_MODS_COLUMN = 12
+BROWSER_GAME_TIME_COLUMN = 16
 
 
 def selected_browser_cache_key(table: QTableWidget) -> str:
@@ -21,7 +23,7 @@ def selected_browser_cache_key(table: QTableWidget) -> str:
     selected_rows = selection_model.selectedRows(0) if selection_model else []
     if not selected_rows:
         return ""
-    item = table.item(selected_rows[0].row(), 0)
+    item = table.item(selected_rows[0].row(), BROWSER_NAME_COLUMN)
     return str(item.data(Qt.UserRole) or "") if item else ""
 
 
@@ -48,7 +50,7 @@ def update_browser_table_row(
 ) -> bool:
     """Update one enriched result without rebuilding or scrolling the table."""
     for row in range(table.rowCount()):
-        item = table.item(row, 0)
+        item = table.item(row, BROWSER_NAME_COLUMN)
         if item and item.data(Qt.UserRole) == old_cache_key:
             selected_key = _selected_cache_key(table)
             sorting = table.isSortingEnabled()
@@ -72,7 +74,7 @@ def update_browser_mod_cell(
 ) -> bool:
     """Apply transient local readiness to the Mods cell for one cached row."""
     for row in range(table.rowCount()):
-        name_item = table.item(row, 0)
+        name_item = table.item(row, BROWSER_NAME_COLUMN)
         if not name_item or name_item.data(Qt.UserRole) != cache_key:
             continue
         selected_key = _selected_cache_key(table)
@@ -86,7 +88,7 @@ def update_browser_mod_cell(
             item.setFont(monospace_font())
             if colour:
                 item.setForeground(QColor(colour))
-            table.setItem(row, 11, item)
+            table.setItem(row, BROWSER_MODS_COLUMN, item)
             table.setSortingEnabled(sorting)
             _restore_selection(table, selected_key)
         table.verticalScrollBar().setValue(scroll_value)
@@ -101,24 +103,25 @@ def _set_browser_table_row(
     favourite_endpoints: set[tuple[str, int, int]] | None = None,
 ) -> None:
     row_data = browser_row(server)
-    for column, value in enumerate(row_data.values):
-        item = SortableTableWidgetItem(value, row_data.sort_values[column])
+    for data_column, value in enumerate(row_data.values):
+        column = data_column + 1
+        item = SortableTableWidgetItem(value, row_data.sort_values[data_column])
         item.setData(Qt.UserRole, server.cache_key)
-        if column in row_data.tooltips:
-            item.setToolTip(row_data.tooltips[column])
-        if column == 5:
+        if data_column in row_data.tooltips:
+            item.setToolTip(row_data.tooltips[data_column])
+        if data_column == 5:
             item.setForeground(QColor(row_data.status_colour))
-        if column == 8:
+        if data_column == 8:
             severity = ping_severity(server.ping_ms)
             if severity == "warning":
                 item.setForeground(QColor(STATUS_COLOURS["warning"]))
             elif severity == "critical":
                 item.setForeground(QColor(STATUS_COLOURS["negative"]))
-        if column in {7, 8}:
+        if data_column in {7, 8}:
             item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        if column in {2, 3, 4, 8, 9, 11, BROWSER_GAME_TIME_COLUMN}:
+        if data_column in {2, 3, 4, 8, 9, 11, 15}:
             item.setFont(monospace_font())
-        if column == BROWSER_GAME_TIME_COLUMN:
+        if data_column == 15:
             is_day = game_time_is_day(server)
             if is_day is not None:
                 item.setIcon(time_icon(is_day))
