@@ -51,6 +51,16 @@ remains only in the explicitly labelled legacy Linux shell-launcher fallback,
 not in the native Windows/Linux path. WolfAPI cached counts remain browse-time
 evidence and are not made authoritative by this launcher-only change.
 
+Direct-mod preview operating plan on 2026-07-26: WolfAPI will retain direct
+`A2S_RULES` manifests as advisory browse evidence on a target fourteen-day
+freshness window. The job will remain separately scheduled every six hours,
+with a staged target of 1,200 sequential known-reachable probes per run and
+phase-specific capacity: approximately 90% new coverage during the initial
+pass, then approximately 90% due refreshes after coverage is established.
+The live 100-server canary remains a checkpoint, not the final setting. This
+does not change Launcher parsing, UI semantics, or selected-server/launch-time
+truth: direct local inspection remains authoritative.
+
 Directory-count correction on 2026-07-21: WolfLauncher now carries
 `coverage.eligible` from every successful WolfAPI v1 list/search/resolve
 response through its background workers and persists the last known value for
