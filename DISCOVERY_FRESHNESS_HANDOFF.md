@@ -96,8 +96,8 @@ Current shared baseline:
 - WolfLauncher SQLite schema v7 persists count/status/timestamps/error/hash,
   advisory quality flags and nullable country provenance. API metadata remains browsing evidence; direct
   **Inspect mods** and launch-time lookup remain final truth. The advanced,
-  opt-in quality hide control filters cached rows and remote v1 list/name-search
-  calls without deleting data or changing the default;
+  default-on quality hide control filters cached rows and remote v1 list/name-search
+  calls without deleting data or changing exact-resolution truth;
 - four production metadata cycles completed 40/40 lookups without failure, but
   the six-hour TTL and strict unknown-first ordering yielded 10 ready and 30
   stale manifests among roughly 49,000 unknown eligible rows;
@@ -129,11 +129,20 @@ Production quality-filter evaluation on 2026-07-14 found 1,383 flagged rows in
 the current directory. Samples coherently showed impossible `bots=255`
 telemetry and dense same-host populations, while some names could still be
 legitimate communities with bad provider data. WolfLauncher therefore adds an
-explicit advanced **Hide listing data warnings** filter, off by default. SQLite
+explicit advanced **Hide listing data warnings** filter, on by default. SQLite
 schema v7 persists the advisory flags so cached/offline filtering agrees with
 v1 list and name-search requests. Exact resolution remains available, but the
 local visibility filter still applies. Visible flagged rows say the warning is
 advisory, not proof that a server is unsafe.
+
+Launcher safety-net update on 2026-07-28: while WolfAPI remains responsible for
+directory-wide quality classification, the Launcher additionally marks three or
+more distinct endpoints with the same whitespace-normalized, case-insensitive
+provider name as `duplicate_name_cluster` during WolfAPI ingestion. This
+conservative local flag flows through the existing advisory filter and is not a
+claim about server safety. WolfAPI should add an equivalent directory-wide rule
+with operator-visible telemetry and fixtures so it catches clusters outside a
+bounded Launcher response page.
 The user confirmed the advanced control works on the real desktop on
 2026-07-14.
 

@@ -39,6 +39,10 @@ release matrix.
   aliases, bounded pagination, indexed remote search/resolve, freshness,
   validation, quality, country and required-mod metadata are supported. Saved
   legacy selections and the explicit legacy fallback remain intact.
+- Listing-data warnings are hidden by default. The Launcher also flags an
+  obvious cluster of three or more exact normalized provider names across
+  different endpoints as advisory duplicate-directory data until WolfAPI
+  classifies it at directory scope.
 - Fixed startup probing of discovered rows is retired. Provider data is browsing
   evidence; selected-server inspection and launch-time checks remain local
   truth.

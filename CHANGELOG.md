@@ -11,6 +11,11 @@
 
 ## Unreleased
 
+- Enabled **Hide listing data warnings** by default and added a conservative
+  Launcher safety net: three or more distinct endpoints carrying the same
+  normalized provider name are marked as an advisory duplicate-name cluster.
+  WolfAPI remains responsible for directory-wide classification.
+
 - Established Ubuntu 24.04.4 LTS on an Intel Core i5-8250U with 8 GB RAM and
   Valve's native Steam download as the provisional minimum functional Linux
   baseline. The validated experience was slow, so this is not a recommended

@@ -649,6 +649,28 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         self.assertEqual(servers[0].name, "First")
         self.assertEqual(servers[0].last_checked, "2026-06-21T19:30:00+00:00")
 
+    def test_parse_wolfapi_response_flags_three_matching_names(self):
+        servers = parse_wolfapi_servers(
+            {
+                "servers": [
+                    {"addr": "203.0.113.10:27016", "game_port": 2302, "name": "Copied server"},
+                    {"addr": "203.0.113.20:27016", "game_port": 2302, "name": " copied   server "},
+                    {"addr": "203.0.113.30:27016", "game_port": 2302, "name": "COPIED SERVER"},
+                    {"addr": "203.0.113.40:27016", "game_port": 2302, "name": "Legitimate server"},
+                ]
+            }
+        )
+
+        self.assertEqual(
+            [server.quality_flags for server in servers],
+            [
+                ("duplicate_name_cluster",),
+                ("duplicate_name_cluster",),
+                ("duplicate_name_cluster",),
+                (),
+            ],
+        )
+
     def test_parse_wolfapi_response_accepts_raw_list(self):
         servers = parse_wolfapi_servers(
             [

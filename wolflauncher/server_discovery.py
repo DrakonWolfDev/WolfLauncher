@@ -4,7 +4,7 @@ import os
 import socket
 import time
 import urllib.parse
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 
 from .models import DiscoveredServer
@@ -566,9 +566,32 @@ def parse_wolfapi_servers(data, limit: int = 10000) -> list[DiscoveredServer]:
             continue
         seen.add(identity)
         servers.append(server)
-        if len(servers) >= limit:
-            break
-    return servers
+    return _flag_duplicate_name_clusters(servers)[:limit]
+
+
+def _flag_duplicate_name_clusters(servers: list[DiscoveredServer]) -> list[DiscoveredServer]:
+    """Flag repeated provider names that the API has not classified yet.
+
+    A single copied listing can be harmless, but three or more separate
+    endpoints advertising the exact same name is a strong directory-quality
+    signal.  This is deliberately conservative: it keeps similarly named
+    communities and legitimate numbered shards visible.
+    """
+    name_counts: dict[str, int] = {}
+    for server in servers:
+        canonical_name = " ".join(server.name.casefold().split())
+        if canonical_name:
+            name_counts[canonical_name] = name_counts.get(canonical_name, 0) + 1
+
+    flagged = []
+    for server in servers:
+        canonical_name = " ".join(server.name.casefold().split())
+        if name_counts.get(canonical_name, 0) < 3:
+            flagged.append(server)
+            continue
+        flags = tuple(dict.fromkeys((*server.quality_flags, "duplicate_name_cluster")))
+        flagged.append(replace(server, quality_flags=flags))
+    return flagged
 
 
 def discovered_server_from_wolfapi_row(row: dict, timestamp: str = "") -> DiscoveredServer | None:
