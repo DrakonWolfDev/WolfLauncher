@@ -7,6 +7,7 @@ from unittest.mock import patch
 from wolflauncher.models import Server
 from wolflauncher.status import (
     ServerStatus,
+    _hidden_process_kwargs,
     _run_cancellable,
     check_server,
     gamedig_command,
@@ -25,6 +26,11 @@ class ResolveHostTests(unittest.TestCase):
 
 
 class CancellableProcessTests(unittest.TestCase):
+    @patch("wolflauncher.status.os.name", "nt")
+    @patch("wolflauncher.status.subprocess.CREATE_NO_WINDOW", 0x08000000, create=True)
+    def test_windows_processes_are_started_without_console_windows(self):
+        self.assertEqual(_hidden_process_kwargs(), {"creationflags": 0x08000000})
+
     @patch("wolflauncher.status.subprocess.Popen")
     def test_cancel_terminates_an_inflight_gamedig_process(self, popen):
         process = popen.return_value

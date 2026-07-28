@@ -56,6 +56,12 @@ def gamedig_command() -> list[str] | None:
     return [gamedig] if gamedig else None
 
 
+def _hidden_process_kwargs() -> dict[str, int]:
+    if os.name != "nt":
+        return {}
+    return {"creationflags": getattr(subprocess, "CREATE_NO_WINDOW", 0)}
+
+
 def check_server(
     server: Server,
     *,
@@ -90,6 +96,7 @@ def check_server(
                 capture_output=True,
                 text=True,
                 timeout=process_timeout,
+                **_hidden_process_kwargs(),
             )
         else:
             result = _run_cancellable(arguments, process_timeout, cancel_event)
@@ -151,6 +158,7 @@ def _run_cancellable(arguments: list[str], timeout: float, cancel_event):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        **_hidden_process_kwargs(),
     )
     deadline = time.monotonic() + timeout
     while process.poll() is None:

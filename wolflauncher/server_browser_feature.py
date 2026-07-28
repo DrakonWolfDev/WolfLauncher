@@ -904,8 +904,8 @@ class ServerBrowserMixin:
             self.schedule_results_freshness_check()
 
     def schedule_results_freshness_check(self):
-        """Live-check only the small result set produced by an explicit user action."""
-        self.initial_results_freshness_batches_remaining = 0
+        """Live-check a bounded sample after an explicit discovery refresh."""
+        self.initial_results_freshness_batches_remaining = INITIAL_RESULTS_FRESHNESS_BATCHES
         self.results_freshness_visible_only = False
         ServerBrowserMixin._schedule_results_freshness_check(self)
 
