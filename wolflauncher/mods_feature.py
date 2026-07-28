@@ -113,11 +113,15 @@ class ModsFeatureMixin:
         self.subscribe_missing_button = QPushButton("Install/update missing mods")
         self.subscribe_missing_button.clicked.connect(self.subscribe_missing_workshop_mods)
         self.subscribe_missing_button.setEnabled(False)
+        self.force_update_button = QPushButton("Force Steam update selected mod")
+        self.force_update_button.clicked.connect(self.force_update_selected_mod)
+        self.force_update_button.setEnabled(False)
         buttons.addWidget(check)
         self.mod_filter = QComboBox()
         self.mod_filter.addItems(["All mods", "Missing only", "Installed only"])
         self.mod_filter.currentTextChanged.connect(self.apply_mod_filter)
         buttons.addWidget(self.subscribe_missing_button)
+        buttons.addWidget(self.force_update_button)
         buttons.addStretch(1)
         buttons.addWidget(QLabel("Filter"))
         buttons.addWidget(self.mod_filter)
@@ -243,7 +247,8 @@ class ModsFeatureMixin:
         layout.addLayout(advanced_toggle_row)
         layout.addWidget(self.mods_advanced_panel)
         QWidget.setTabOrder(check, self.subscribe_missing_button)
-        QWidget.setTabOrder(self.subscribe_missing_button, self.mod_filter)
+        QWidget.setTabOrder(self.subscribe_missing_button, self.force_update_button)
+        QWidget.setTabOrder(self.force_update_button, self.mod_filter)
         QWidget.setTabOrder(self.mod_filter, self.mods_table)
         QWidget.setTabOrder(self.mods_table, self.mods_advanced_toggle)
         QWidget.setTabOrder(self.mods_advanced_toggle, self.mods_back_to_browser_button)
@@ -292,6 +297,7 @@ class ModsFeatureMixin:
         )
         self.mod_readiness.setText("Checking required-mod readiness…")
         self.subscribe_missing_button.setEnabled(False)
+        self.force_update_button.setEnabled(False)
         install = (
             self.selected_steam_install()
             if self.launch_engine_key() == "native"
@@ -410,6 +416,7 @@ class ModsFeatureMixin:
             if missing_count
             else "Install/update required mods"
         )
+        self.force_update_button.setEnabled(False)
         if not result.ok:
             self.mods_table.setRowCount(0)
             self.mods_table.setSortingEnabled(True)
@@ -452,6 +459,8 @@ class ModsFeatureMixin:
         if not hasattr(self, "mod_detail_card"):
             return
         mod = self.selected_required_mod()
+        if hasattr(self, "force_update_button"):
+            self.force_update_button.setEnabled(mod is not None)
         if mod is None:
             self._set_mod_detail_status("warning")
             self.mod_detail_title.setText("Select a mod to see its Workshop details")
@@ -713,6 +722,13 @@ class ModsFeatureMixin:
 
     def force_update_mod_row(self, row: int):
         self.workshop_resolution.force_update_mod(row)
+
+    def force_update_selected_mod(self):
+        row = self.mods_table.currentRow()
+        if row < 0:
+            QMessageBox.warning(self, "No mod selected", "Select a mod to force its Steam update.")
+            return
+        self.force_update_mod_row(row)
 
     def start_workshop_resolution(self, mods, result, install):
         self.workshop_resolution.start_resolution(mods, result, install)

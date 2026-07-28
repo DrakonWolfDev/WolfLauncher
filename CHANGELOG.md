@@ -11,9 +11,10 @@
 
 ## Unreleased
 
-- Added **Force Steam update** to the Mods row menu. After confirmation, it
-  requests a high-priority Steam download check for that one subscribed mod,
-  keeps the subscription intact, and rechecks readiness when monitoring ends.
+- Added **Force Steam update** to the Mods row menu and beside the normal
+  install/update action. It acts on the selected mod after confirmation,
+  requests a high-priority Steam download check, keeps the subscription
+  intact, and rechecks readiness when monitoring ends.
 
 - Removed the remaining Flatpak Steam runtime probes, handoff branches and
   Steam API library candidates. WolfLauncher now only interacts with native
