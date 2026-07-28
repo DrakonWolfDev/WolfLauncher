@@ -1,9 +1,7 @@
-import json
-import sys
 import time
 from pathlib import Path
 
-from PySide6.QtCore import QPoint, QProcess, Qt, QTimer
+from PySide6.QtCore import QPoint, Qt, QTimer
 from PySide6.QtGui import QAction, QColor
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -83,6 +81,7 @@ from .workers import (
     SteamDiscoveryWorker,
     SteamWebApiDiscoveryWorker,
     WolfApiCacheMergeWorker,
+    WolfApiDiscoveryWorker,
     WolfApiSearchWorker,
 )
 
@@ -574,8 +573,8 @@ class ServerBrowserMixin:
 
     def refresh_from_wolfapi(self):
         if (
-            self.wolfapi_refresh_process
-            and self.wolfapi_refresh_process.state() != QProcess.NotRunning
+            self.wolfapi_worker
+            and self.wolfapi_worker.isRunning()
         ):
             return
         use_v1 = self.discovery_provider_key() == "wolfapi_v1"
@@ -590,46 +589,14 @@ class ServerBrowserMixin:
             label,
             "wolfapi_v1" if use_v1 else "wolfapi",
         )
-        process = QProcess(self)
-        self.wolfapi_refresh_process = process
-        process.setProgram(sys.executable)
-        arguments = [
-            "-m",
-            "wolflauncher.wolfapi_refresh_process",
-            "--cache",
-            str(server_cache.SERVER_CACHE_PATH),
-            "--limit",
-            str(self.discovery_limit.value()),
-        ]
-        if use_v1:
-            arguments.append("--v1")
-        if use_v1 and self.browser_hide_quality_flagged.isChecked():
-            arguments.append("--unflagged-only")
-        process.setArguments(arguments)
-        process.finished.connect(self.handle_wolfapi_refresh_process_finished)
-        process.start()
-
-    def handle_wolfapi_refresh_process_finished(self, _exit_code: int, _status):
-        process = self.wolfapi_refresh_process
-        automatic, label, provider = self.wolfapi_cache_context
-        self._set_database_refresh_enabled(True)
-        if process is None:
-            return
-        stdout = bytes(process.readAllStandardOutput()).decode("utf-8", errors="replace")
-        stderr = bytes(process.readAllStandardError()).decode("utf-8", errors="replace").strip()
-        try:
-            payload = json.loads(stdout.strip())
-            inserted = int(payload.get("inserted", 0))
-            removed = int(payload.get("removed", 0))
-            error = str(payload.get("error") or "")
-        except (ValueError, TypeError, json.JSONDecodeError):
-            inserted, removed = 0, 0
-            error = stderr or "WolfAPI refresh helper returned an invalid response."
-        if not error:
-            self.record_wolfapi_directory_total(payload.get("directory_total"))
-        if automatic:
-            self.mark_auto_refresh(provider)
-        self.handle_wolfapi_cache_ready(inserted, removed, error)
+        self.wolfapi_worker = WolfApiDiscoveryWorker(
+            limit=self.discovery_limit.value(),
+            automatic=automatic,
+            use_v1=use_v1,
+            unflagged_only=use_v1 and self.browser_hide_quality_flagged.isChecked(),
+        )
+        self.wolfapi_worker.discovery_ready.connect(self.handle_wolfapi_ready)
+        self.wolfapi_worker.start()
 
     def maybe_auto_refresh_configured_provider(self):
         if (
@@ -647,11 +614,6 @@ class ServerBrowserMixin:
         if self.battlemetrics_worker and self.battlemetrics_worker.isRunning():
             return
         if self.wolfapi_worker and self.wolfapi_worker.isRunning():
-            return
-        if (
-            self.wolfapi_refresh_process
-            and self.wolfapi_refresh_process.state() != QProcess.NotRunning
-        ):
             return
         if self.wolfapi_cache_worker and self.wolfapi_cache_worker.isRunning():
             return

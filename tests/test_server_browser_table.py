@@ -24,6 +24,32 @@ from wolflauncher.theme import STATUS_COLOURS
 
 
 class ServerBrowserTableTests(unittest.TestCase):
+    def test_wolfapi_refresh_uses_background_worker_not_child_process(self):
+        worker = Mock()
+        discovery_limit = Mock()
+        discovery_limit.value.return_value = 250
+        hide_quality_flagged = Mock()
+        hide_quality_flagged.isChecked.return_value = True
+        window = SimpleNamespace(
+            browser_summary=Mock(),
+            _set_database_refresh_enabled=Mock(),
+            discovery_limit=discovery_limit,
+            browser_hide_quality_flagged=hide_quality_flagged,
+            handle_wolfapi_ready=Mock(),
+        )
+
+        with patch("wolflauncher.server_browser_feature.WolfApiDiscoveryWorker", return_value=worker) as create_worker:
+            ServerBrowserMixin.start_wolfapi_refresh_process(window, automatic=True, use_v1=True)
+
+        create_worker.assert_called_once_with(
+            limit=250,
+            automatic=True,
+            use_v1=True,
+            unflagged_only=True,
+        )
+        worker.discovery_ready.connect.assert_called_once_with(window.handle_wolfapi_ready)
+        worker.start.assert_called_once_with()
+
     def test_manual_wolfapi_refresh_waits_to_start_freshness(self):
         window = SimpleNamespace(
             discovery_provider_key=Mock(return_value="wolfapi_v1"),
