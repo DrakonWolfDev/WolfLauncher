@@ -18,8 +18,8 @@ This is a practical execution list. The authoritative ordered backlog remains
   launch and minimum-spec performance evidence require a real physical system;
   VM vCPU/RAM limits do not faithfully model an older CPU clock or GPU.
 - Validate native Steam on each applicable system.
-- The next planned physical validation is Ubuntu 26.04 LTS, followed by the
-  experimental Windows 10 lane.
+- The Windows 10 functional baseline is complete. The next planned physical
+  validation is Ubuntu 26.04 LTS.
 - Record clean install, upgrade, read-only resources, migration, offline cache,
   secondary-library, uninstall, checksum and provenance evidence.
 - Human systems and dated validation evidence are required.

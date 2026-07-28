@@ -27,6 +27,10 @@ release matrix.
   current provisional minimum functional specification rather than a
   recommended specification. Distro overhead versus hardware limits has not
   yet been isolated.
+- Windows 10 completed the native Steam/DayZ launch handoff on an Intel Core
+  i5-8250U with 8 GB RAM. This is the Windows functional baseline; Windows
+  remains experimental pending signing, update delivery and broader
+  packaged-artifact validation.
 - On validated native Steam, Connect preflight can explicitly ask the signed-in
   Steam client to subscribe, download or update required Workshop items.
   Steamworks ownership is isolated in a spawned helper which must exit before

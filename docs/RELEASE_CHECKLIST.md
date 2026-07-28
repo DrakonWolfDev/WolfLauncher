@@ -90,6 +90,13 @@ LTS using native Steam; record an explicit waiver when a row cannot be run.
 - Flatpak and Snap Steam are now incompatible and excluded from the release
   matrix.
 
+### 2026-07-28 â€” Windows 10, native Steam, functional baseline
+
+- WolfLauncher successfully completed the DayZ launch handoff.
+- The physical system used an Intel Core i5-8250U and 8 GB RAM.
+- This establishes the Windows functional baseline only; it does not replace
+  the remaining signing, update-delivery or packaged-artifact validation gates.
+
 ### 2026-07-20 — Windows 11 Pro 24H2, native Steam, source checkout
 
 - A clean Python 3.12 virtual environment started the Qt desktop application

@@ -15,7 +15,7 @@ The upstream MIT-licensed shell launcher is vendored in `external/dayz-linux-cli
 Current baseline: v0.8 Linux native-launch parity validated, with the native
 launcher used by default and the external launcher retained as a Linux
 fallback. Windows detection, native Steam/DayZ handoff, confirmed Workshop
-resolution and portable packaging have been validated on Windows 11. The
+resolution and portable packaging have been validated on Windows 10 and Windows 11. The
 Windows build remains experimental until signing, update delivery and broader
 release-artifact desktop gates are exercised.
 
@@ -33,6 +33,13 @@ Steam. WolfLauncher and the DayZ handoff worked on that system, but performance
 was slow and unpleasant. Treat this as a provisional functional floor, not a
 recommended specification; the effect of Ubuntu versus the hardware has not
 yet been isolated.
+
+### Current Windows compatibility baseline
+
+The Windows functional baseline is Windows 10 on an Intel Core i5-8250U with
+8 GB RAM, using native Steam. WolfLauncher successfully completed the DayZ
+launch handoff on this system. Windows remains experimental while signing,
+update delivery and broader packaged-artifact validation are completed.
 
 | Steam installation | Status |
 |---|---|

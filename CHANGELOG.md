@@ -11,6 +11,10 @@
 
 ## Unreleased
 
+- Established the Windows functional baseline: Windows 10, native Steam, an
+  Intel Core i5-8250U and 8 GB RAM successfully completed the DayZ handoff.
+  Windows remains experimental pending release-artifact gates.
+
 - Added saved **Move up** and **Move down** controls for Favourite Servers.
 
 - Added **Force Steam update** to the Mods row menu and beside the normal

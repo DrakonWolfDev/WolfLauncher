@@ -342,6 +342,11 @@ Steam. It completed the launch path with poor performance, so it is a
 provisional floor rather than a recommended specification. Flatpak and Snap
 Steam are not compatible.
 
+The Windows functional baseline is Windows 10 on an Intel Core i5-8250U with
+8 GB RAM using native Steam. It has completed the WolfLauncher DayZ handoff,
+but Windows remains experimental until its signing, update and packaged-release
+gates are complete.
+
 Experimental target:
 
 - Windows source runtime
