@@ -1,3 +1,4 @@
+import sqlite3
 import time
 from pathlib import Path
 
@@ -98,6 +99,8 @@ def persist_enriched_server(connection, old_cache_key: str, server: DiscoveredSe
         server_cache.replace_server_key(connection, old_cache_key, server)
     except ValueError:
         connection.rollback()
+        return False
+    except sqlite3.ProgrammingError:
         return False
     return True
 
@@ -1000,6 +1003,8 @@ class ServerBrowserMixin:
         worker.start()
 
     def handle_results_freshness_progress(self, payload, _completed: int, _total: int):
+        if getattr(self, "_shutting_down", False):
+            return
         old_cache_key, server = payload
         if not persist_enriched_server(self.server_cache, old_cache_key, server):
             return

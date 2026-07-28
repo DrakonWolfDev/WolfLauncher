@@ -1,4 +1,5 @@
 import os
+import sqlite3
 import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, call, patch
@@ -524,6 +525,19 @@ class ServerBrowserTableTests(unittest.TestCase):
 
         self.assertFalse(persisted)
         connection.rollback.assert_called_once_with()
+
+    def test_enrichment_ignores_closed_cache_during_shutdown(self):
+        connection = Mock()
+        server = DiscoveredServer("Updated", "203.0.113.10", 2302, 27016)
+
+        with patch(
+            "wolflauncher.app.server_cache.replace_server_key",
+            side_effect=sqlite3.ProgrammingError("Cannot operate on a closed database."),
+        ):
+            persisted = persist_enriched_server(connection, "old-key", server)
+
+        self.assertFalse(persisted)
+        connection.rollback.assert_not_called()
 
     @patch("wolflauncher.server_browser_feature.QTimer.singleShot")
     def test_opening_browser_schedules_background_refresh_without_reloading_view(self, single_shot):
