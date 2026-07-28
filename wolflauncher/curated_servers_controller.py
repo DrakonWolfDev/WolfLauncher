@@ -27,6 +27,7 @@ from .config import (
 )
 from .curated_dialogs import EditCuratedServerDialog
 from .curated_server_cards import CuratedServerCard
+from .launch_history import load_recent_launches
 from .curated_server_presenter import curated_server_row
 from .curated_status_cache import (
     cached_status_for_server,
@@ -152,6 +153,14 @@ class CuratedServersMixin:
         layout.addWidget(self.table)
         self.table.hide()
 
+        self.recent_servers_panel = QWidget()
+        recent_layout = QVBoxLayout(self.recent_servers_panel)
+        recent_layout.setContentsMargins(0, 8, 0, 0)
+        recent_layout.addWidget(QLabel("Recent servers"))
+        self.recent_servers_list = QVBoxLayout()
+        recent_layout.addLayout(self.recent_servers_list)
+        layout.addWidget(self.recent_servers_panel)
+
         buttons = QHBoxLayout()
         add_server = QPushButton("Add a favourite server")
         add_server.setIcon(theme_icon("add"))
@@ -176,7 +185,36 @@ class CuratedServersMixin:
         layout.addLayout(buttons)
         self.update_curated_status_summary()
         self.refresh_curated_server_cards()
+        self.refresh_recent_servers()
         return widget
+
+    def refresh_recent_servers(self):
+        if not hasattr(self, "recent_servers_panel"):
+            return
+        while self.recent_servers_list.count():
+            item = self.recent_servers_list.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        favourite_keys = {server_key(server) for server in self.servers}
+        rows = [row for row in load_recent_launches() if row.get("key") not in favourite_keys][:3]
+        self.recent_servers_panel.setVisible(bool(rows))
+        for row in rows:
+            try:
+                server = Server(row["name"], row.get("group", "Recent"), row["host"], int(row["game_port"]), int(row["query_port"]))
+            except (KeyError, TypeError, ValueError):
+                continue
+            line = QHBoxLayout()
+            line.addWidget(QLabel(f"{server.name}  ·  {server.connect_target}"), 1)
+            launch = QPushButton("Launch")
+            launch.clicked.connect(lambda _checked=False, target=server: self.launch_recent_server(target))
+            line.addWidget(launch)
+            self.recent_servers_list.addLayout(line)
+
+    def launch_recent_server(self, server: Server):
+        self.active_discovered_server = server
+        self.active_discovered_cache_key = ""
+        self.update_launch_button_text()
+        self.launch_selected()
 
     def move_selected_curated_server(self, direction: int):
         row = self.table.currentRow()

@@ -11,6 +11,9 @@
 
 ## Unreleased
 
+- Added a hidden-until-needed Recent servers section beneath Favourite Servers.
+  It shows up to three launched servers that are not already favourites.
+
 - Established the Windows functional baseline: Windows 10, native Steam, an
   Intel Core i5-8250U and 8 GB RAM successfully completed the DayZ handoff.
   Windows remains experimental pending release-artifact gates.

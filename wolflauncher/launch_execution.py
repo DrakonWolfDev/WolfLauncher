@@ -14,6 +14,7 @@ from .native_launcher import (
     prepare_native_launch_parity_report,
 )
 from .settings import server_key
+from .launch_history import record_launch
 
 
 class LaunchExecutionCoordinator:
@@ -87,6 +88,12 @@ class LaunchExecutionCoordinator:
         )
         dialog = LaunchDialog(window, command, f"Launching {server.name}", handoff_label)
         dialog.exec()
+        try:
+            record_launch(server)
+            if hasattr(window, "refresh_recent_servers"):
+                window.refresh_recent_servers()
+        except OSError:
+            pass
         try:
             window.save_last_launch_report(dialog.copyable_output_text())
         except OSError as exc:
