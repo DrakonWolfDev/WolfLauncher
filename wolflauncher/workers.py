@@ -111,10 +111,11 @@ class WorkshopSubscriptionWorker(QThread):
     progress_ready = Signal(object)
     subscription_ready = Signal(object)
 
-    def __init__(self, workshop_ids: list[str], install):
+    def __init__(self, workshop_ids: list[str], install, *, force_update: bool = False):
         super().__init__()
         self.workshop_ids = list(workshop_ids)
         self.install = install
+        self.force_update = force_update
         self._cancelled = threading.Event()
 
     def cancel(self):
@@ -127,6 +128,7 @@ class WorkshopSubscriptionWorker(QThread):
                 self.install,
                 progress_callback=self.progress_ready.emit,
                 cancelled=self._cancelled,
+                force_update=self.force_update,
             )
         except Exception as exc:
             result = WorkshopSubscriptionResult((), tuple(self.workshop_ids), error=str(exc))

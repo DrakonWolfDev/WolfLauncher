@@ -645,6 +645,7 @@ class ModsFeatureMixin:
         copy_name_action = QAction("Copy mod name", self)
         copy_url_action = QAction("Copy Workshop URL", self)
         check_update_action = QAction("Check/update this mod", self)
+        force_update_action = QAction("Force Steam update", self)
         open_action.triggered.connect(lambda: self.open_workshop_page_for_mod_row(row))
         copy_id_action.triggered.connect(
             lambda: self.copy_to_clipboard(self._mods_cell(row, 2), "Workshop ID")
@@ -659,7 +660,9 @@ class ModsFeatureMixin:
             )
         )
         check_update_action.triggered.connect(lambda: self.check_update_mod_row(row))
+        force_update_action.triggered.connect(lambda: self.force_update_mod_row(row))
         menu.addAction(check_update_action)
+        menu.addAction(force_update_action)
         menu.addSeparator()
         menu.addAction(open_action)
         menu.addAction(copy_id_action)
@@ -707,6 +710,9 @@ class ModsFeatureMixin:
 
     def check_update_mod_row(self, row: int):
         self.workshop_resolution.check_update_mod(row)
+
+    def force_update_mod_row(self, row: int):
+        self.workshop_resolution.force_update_mod(row)
 
     def start_workshop_resolution(self, mods, result, install):
         self.workshop_resolution.start_resolution(mods, result, install)

@@ -118,19 +118,46 @@ class WorkshopResolutionCoordinator:
         if reply == QMessageBox.Yes:
             self.start_resolution([mod], result, install)
 
-    def start_resolution(self, mods, result, install):
+    def force_update_mod(self, row: int):
+        window = self.window
+        result = window._selected_mod_result(successful=True)
+        workshop_id = window._mods_cell(row, 2)
+        mod = next((item for item in result.required_mods if item.workshop_id == workshop_id), None) if result else None
+        if mod is None:
+            QMessageBox.warning(window, "Mod check unavailable", "Recheck the selected server before forcing an update.")
+            return
+        if window.workshop_subscription_worker and window.workshop_subscription_worker.isRunning():
+            self.subscribe_missing_mods()
+            return
+        install = self._install()
+        if not install or not install.workshop_dir or not install.running:
+            QMessageBox.warning(window, "Steam unavailable", "Start the selected Steam client and confirm its DayZ Workshop installation, then try again.")
+            return
+        reply = QMessageBox.question(
+            window,
+            "Force Steam update?",
+            f"Ask Steam to prioritise a fresh download check for {mod.name or mod.workshop_id}?\n\n"
+            "This keeps the subscription. Steam controls whether content needs downloading; "
+            "WolfLauncher will recheck the mod when the request finishes.",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if reply == QMessageBox.Yes:
+            self.start_resolution([mod], result, install, force_update=True)
+
+    def start_resolution(self, mods, result, install, *, force_update: bool = False):
         window = self.window
         window.workshop_subscription_names = {mod.workshop_id: (mod.name or mod.workshop_id) for mod in mods}
         window.workshop_subscription_server_key = server_key(result.server)
         window.workshop_subscription_server = result.server
-        dialog = QProgressDialog("Sending subscriptions to Steam...", "Hide monitor", 0, 100, window)
+        dialog = QProgressDialog("Requesting Steam Workshop update..." if force_update else "Sending subscriptions to Steam...", "Hide monitor", 0, 100, window)
         dialog.setWindowTitle("Steam Workshop")
         dialog.setMinimumDuration(0)
         dialog.setAutoClose(False)
         dialog.setAutoReset(False)
         window.workshop_subscription_dialog = dialog
         window.workshop_subscription_monitor_hidden = False
-        worker = WorkshopSubscriptionWorker([mod.workshop_id for mod in mods], install)
+        worker = WorkshopSubscriptionWorker([mod.workshop_id for mod in mods], install, force_update=force_update)
         window.workshop_subscription_worker = worker
         worker.progress_ready.connect(window.update_workshop_subscription_progress)
         worker.subscription_ready.connect(window.finish_workshop_subscription)

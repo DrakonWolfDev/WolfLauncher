@@ -306,11 +306,11 @@ class SteamWorkshopClient:
                 f"Steam rejected the subscription request for Workshop item {workshop_id}."
             )
 
-    def request_download(self, workshop_id: str) -> bool:
+    def request_download(self, workshop_id: str, *, high_priority: bool = False) -> bool:
         assert self._library is not None and self._ugc
         return bool(
             self._library.SteamAPI_ISteamUGC_DownloadItem(
-                self._ugc, ctypes.c_uint64(int(workshop_id)), False
+                self._ugc, ctypes.c_uint64(int(workshop_id)), high_priority
             )
         )
 
@@ -340,6 +340,7 @@ def subscribe_workshop_items(
     timeout_seconds: float = 1800,
     stall_timeout_seconds: float = WORKSHOP_STALL_TIMEOUT_SECONDS,
     poll_seconds: float = 0.5,
+    force_update: bool = False,
 ) -> WorkshopSubscriptionResult:
     """Subscribe through Steam and wait until local item directories are ready."""
     ids = tuple(dict.fromkeys(str(item).strip() for item in workshop_ids if str(item).strip()))
@@ -364,6 +365,8 @@ def subscribe_workshop_items(
     with SteamWorkshopClient(library_path) as client:
         for workshop_id in ids:
             client.subscribe(workshop_id)
+            if force_update:
+                client.request_download(workshop_id, high_priority=True)
 
         while True:
             client.run_callbacks()
@@ -507,6 +510,7 @@ def _subscription_process_main(
     timeout_seconds: float,
     stall_timeout_seconds: float,
     poll_seconds: float,
+    force_update: bool,
 ) -> None:
     """Own Steamworks in a disposable process so Steam sees a hard shutdown."""
     signal.signal(signal.SIGINT, signal.SIG_IGN)
@@ -520,6 +524,7 @@ def _subscription_process_main(
             timeout_seconds=timeout_seconds,
             stall_timeout_seconds=stall_timeout_seconds,
             poll_seconds=poll_seconds,
+            force_update=force_update,
         )
     except Exception as exc:
         result = WorkshopSubscriptionResult((), workshop_ids, error=str(exc))
@@ -535,6 +540,7 @@ def subscribe_workshop_items_isolated(
     timeout_seconds: float = 1800,
     stall_timeout_seconds: float = WORKSHOP_STALL_TIMEOUT_SECONDS,
     poll_seconds: float = 0.5,
+    force_update: bool = False,
 ) -> WorkshopSubscriptionResult:
     """Run the Steamworks session in a spawned process and wait for its exit.
 
@@ -563,6 +569,7 @@ def subscribe_workshop_items_isolated(
             timeout_seconds,
             stall_timeout_seconds,
             poll_seconds,
+            force_update,
         ),
         name="wolflauncher-steam-workshop",
     )
