@@ -6,7 +6,6 @@ from pathlib import Path
 from .platforms import current_platform
 
 STEAM_APP_ID_DAYZ = 221100
-FLATPAK_STEAM_ID = "com.valvesoftware.Steam"
 DAYZ_PROCESS_PATTERNS = (
     "DayZ_x64.exe",
     "DayZ_BE.exe",
@@ -42,19 +41,10 @@ class SteamSelectionReport:
 
 
 NATIVE_STEAM_ROOTS = list(current_platform().native_steam_roots())
-FLATPAK_STEAM_ROOT = current_platform().flatpak_steam_root()
 
 
 def _is_running(process_name: str) -> bool:
     return current_platform().process_running(process_name)
-
-
-def _flatpak_steam_running() -> bool:
-    return current_platform().flatpak_steam_running()
-
-
-def _flatpak_steam_installed() -> bool:
-    return current_platform().flatpak_steam_installed()
 
 
 def _matching_process_lines(patterns: tuple[str, ...]) -> list[str]:
@@ -199,25 +189,6 @@ def detect_steam() -> list[SteamInstall]:
         )
     )
 
-    if current_platform().capabilities.supports_flatpak:
-        flatpak_installed = _flatpak_steam_installed()
-        flatpak_root = FLATPAK_STEAM_ROOT if FLATPAK_STEAM_ROOT.exists() else None
-        flatpak_libraries = _library_steamapps_from_root(flatpak_root)
-        flatpak_steamapps = _select_visible_steamapps(flatpak_libraries)
-        installs.append(
-            SteamInstall(
-                mode="flatpak",
-                executable=FLATPAK_STEAM_ID if flatpak_installed else "",
-                running=_flatpak_steam_running() if flatpak_installed else False,
-                root=flatpak_root,
-                steamapps=flatpak_steamapps,
-                dayz_dir=_dayz_from_libraries(flatpak_libraries),
-                workshop_dir=_workshop_from_libraries(flatpak_libraries),
-                compatdata_dir=_compatdata_from_libraries(flatpak_libraries),
-                library_steamapps=flatpak_libraries,
-            )
-        )
-
     env_root = os.environ.get("STEAM_ROOT")
     if env_root:
         root = Path(env_root).expanduser()
@@ -258,7 +229,6 @@ def steam_mode_label(mode: str) -> str:
     labels = {
         "auto": "Auto",
         "native": "Native Steam",
-        "flatpak": "Flatpak Steam",
         "STEAM_ROOT env": "STEAM_ROOT Steam library",
     }
     return labels.get(mode, "Auto")
@@ -279,8 +249,6 @@ def select_steam_install(
 def install_label(install: SteamInstall) -> str:
     if install.mode == "native":
         return "Native Steam"
-    if install.mode == "flatpak":
-        return "Flatpak Steam"
     if install.mode == "STEAM_ROOT env":
         return "STEAM_ROOT Steam library"
     return f"{install.mode} Steam"
@@ -289,15 +257,11 @@ def install_label(install: SteamInstall) -> str:
 def steam_command_detail(install: SteamInstall | None) -> str:
     if not install or not install.executable:
         return "not detected"
-    if install.mode == "flatpak":
-        return f"flatpak run {FLATPAK_STEAM_ID}"
     return install.executable
 
 
 def build_steam_start_command(install: SteamInstall) -> list[str]:
     """Build the selected client's normal start command without launching a game."""
-    if install.mode == "flatpak":
-        return ["flatpak", "run", FLATPAK_STEAM_ID] if install.executable else []
     return [install.executable] if install.executable else []
 
 
@@ -361,7 +325,7 @@ def steam_selection_report(
 
 def steam_selection_candidates_detail(report: SteamSelectionReport) -> str:
     if not report.candidates:
-        return "No native, Flatpak or STEAM_ROOT Steam installs detected"
+        return "No native or STEAM_ROOT Steam installs detected"
     return "; ".join(report.candidates)
 
 

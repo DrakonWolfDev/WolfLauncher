@@ -7,16 +7,10 @@ from pathlib import Path
 
 from .base import PlatformCapabilities
 
-FLATPAK_STEAM_ID = "com.valvesoftware.Steam"
-
-
 class LinuxPlatformBackend:
     capabilities = PlatformCapabilities(
         platform_id="linux",
         display_name="Linux",
-        # Retain the backend probes for future investigation without exposing
-        # or auto-selecting the currently unsupported Flatpak Steam package.
-        supports_flatpak=False,
         uses_proton=True,
         supports_external_launcher=True,
         mod_link_strategy="relative_symlink",
@@ -36,9 +30,6 @@ class LinuxPlatformBackend:
             Path.home() / ".local/share/Steam",
             Path.home() / ".steam/steam",
         )
-
-    def flatpak_steam_root(self) -> Path:
-        return Path.home() / ".var/app" / FLATPAK_STEAM_ID / "data" / "Steam"
 
     def native_steam_executable(self) -> str:
         return shutil.which("steam") or ""
@@ -73,29 +64,6 @@ class LinuxPlatformBackend:
             if any(pattern.lower() in line.lower() for pattern in patterns)
         ]
 
-    def flatpak_steam_installed(self) -> bool:
-        if not shutil.which("flatpak"):
-            return False
-        try:
-            result = subprocess.run(
-                ["flatpak", "info", FLATPAK_STEAM_ID],
-                capture_output=True,
-                text=True,
-                timeout=3,
-            )
-            return result.returncode == 0
-        except Exception:
-            return False
-
-    def flatpak_steam_running(self) -> bool:
-        if not shutil.which("flatpak"):
-            return False
-        try:
-            result = subprocess.run(["flatpak", "ps"], capture_output=True, text=True, timeout=3)
-            return result.returncode == 0 and FLATPAK_STEAM_ID in result.stdout
-        except Exception:
-            return False
-
     def steam_api_library_candidates(
         self, steam_root: Path | None, _dayz_dir: Path | None
     ) -> tuple[Path, ...]:
@@ -106,10 +74,6 @@ class LinuxPlatformBackend:
             [
                 Path.home() / ".local/share/Steam/steamrt64/libsteam_api.so",
                 Path.home() / ".steam/steam/steamrt64/libsteam_api.so",
-                Path.home()
-                / ".var/app/com.valvesoftware.Steam/data/Steam/steamrt64/libsteam_api.so",
-                Path.home()
-                / ".var/app/com.valvesoftware.Steam/.local/share/Steam/steamrt64/libsteam_api.so",
             ]
         )
         return tuple(candidates)

@@ -11,6 +11,10 @@
 
 ## Unreleased
 
+- Removed the remaining Flatpak Steam runtime probes, handoff branches and
+  Steam API library candidates. WolfLauncher now only interacts with native
+  Steam installations and an explicitly supplied `STEAM_ROOT` library.
+
 - Enabled **Hide listing data warnings** by default and added a conservative
   Launcher safety net: three or more distinct endpoints carrying the same
   normalized provider name are marked as an advisory duplicate-name cluster.

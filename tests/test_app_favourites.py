@@ -26,13 +26,12 @@ class StartupSteamCheckTests(unittest.TestCase):
     def test_native_steam_start_command_uses_detected_executable(self):
         self.assertEqual(build_steam_start_command(stopped_install()), ["steam"])
 
-    def test_flatpak_steam_start_command_uses_application_id(self):
+    def test_native_steam_start_command_uses_selected_executable(self):
         install = stopped_install()
-        install.mode = "flatpak"
         install.executable = "com.valvesoftware.Steam"
         self.assertEqual(
             build_steam_start_command(install),
-            ["flatpak", "run", "com.valvesoftware.Steam"],
+            ["com.valvesoftware.Steam"],
         )
 
     @patch("wolflauncher.launch_feature.QMessageBox.warning")

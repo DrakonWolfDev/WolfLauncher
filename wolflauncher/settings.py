@@ -10,7 +10,7 @@ SETTINGS_PATH = APP_DIR / "settings.json"
 FAVOURITES_PATH = APP_DIR / "favourites.json"
 CURATED_SERVERS_PATH = APP_DIR / "servers.yaml"
 DEFAULT_DISCOVERY_PROVIDER = "wolfapi_v1"
-SETTINGS_SCHEMA_VERSION = 3
+SETTINGS_SCHEMA_VERSION = 4
 
 
 def ensure_app_dir() -> None:
@@ -56,11 +56,10 @@ def normalize_settings(data: Any) -> dict[str, Any]:
         version = 0
     if version < 0:
         version = 0
-    # Version 1 records the schema explicitly. Version 2 retires the exposed
-    # Flatpak/Snap Steam choices. Version 3 hides advisory listing warnings by
-    # default while preserving an opt-out setting.
+    # Version 4 removes legacy Flatpak/Snap Steam selections so an old setting
+    # cannot reactivate a retired installation path.
     if version <= SETTINGS_SCHEMA_VERSION:
-        if version < 2 and migrated.get("native_steam_mode") in {"flatpak", "snap"}:
+        if migrated.get("native_steam_mode") in {"flatpak", "snap"}:
             migrated["native_steam_mode"] = "auto"
         if version < 3:
             migrated.setdefault("hide_quality_flagged", True)

@@ -44,19 +44,19 @@ class DiagnosticsTests(unittest.TestCase):
         self.assertNotIn("PRIME status:", report)
         self.assertNotIn("Launch option environment:", report)
 
-    def test_launch_troubleshooting_reports_ready_flatpak_install(self):
+    def test_launch_troubleshooting_reports_ready_native_install(self):
         install = SteamInstall(
-            mode="flatpak", executable="com.valvesoftware.Steam", running=True,
+            mode="native", executable="steam", running=True,
             root=Path("/steam"), steamapps=Path("/steam/steamapps"),
             dayz_dir=Path("/steam/steamapps/common/DayZ"),
             workshop_dir=Path("/steam/steamapps/workshop/content/221100"),
             compatdata_dir=Path("/steam/steamapps/compatdata/221100"),
         )
         report = launch_troubleshooting_report(
-            "flatpak", [install], ProcessCheck(True, "Detected DayZ process")
+            "native", [install], ProcessCheck(True, "Detected DayZ process")
         )
         self.assertEqual("OK", report.status)
-        self.assertIn("Selected Steam mode: Flatpak Steam", report.details)
+        self.assertIn("Selected Steam mode: Native Steam", report.details)
 
 
 if __name__ == "__main__":

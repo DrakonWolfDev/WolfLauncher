@@ -2,10 +2,11 @@
 
 ## Release position
 
-Flatpak Steam is not currently compatible with WolfLauncher. It is excluded
-from Settings, Auto detection and launch handoff, along with Snap Steam. This
-document preserves the failed lifecycle evidence and the criteria that would
-be required before a future deliberate compatibility project could restore it.
+Flatpak Steam is not currently compatible with WolfLauncher. Its runtime
+detection and Steamworks integration have been removed, along with Snap Steam.
+This document preserves the failed lifecycle evidence and the criteria that
+would be required before a future deliberate compatibility project could add it
+back.
 
 During packaged testing on Linux Mint 22, a disposable helper that loaded
 Steamworks with DayZ's app ID could leave Steam reporting DayZ as running after

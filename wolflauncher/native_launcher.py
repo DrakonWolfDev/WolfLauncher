@@ -585,16 +585,6 @@ def prepare_mod_links(
 
 
 def _steam_command_prefix(install: SteamInstall) -> list[str]:
-    if install.mode == "flatpak":
-        raise NativeLaunchError(
-            "Flatpak Steam is not supported",
-            stage="Steam detection",
-            guidance=(
-                "Install Valve's native Steam package and select Auto or Native Steam. "
-                "Flatpak and Snap Steam packages are not currently compatible."
-            ),
-        )
-
     if not install.executable:
         if install.mode == "STEAM_ROOT env":
             guidance = (
@@ -646,7 +636,6 @@ def _selected_steam_mode_label(selected_steam_mode: str) -> str:
     labels = {
         "auto": "Auto",
         "native": "Native Steam",
-        "flatpak": "Flatpak Steam",
         "STEAM_ROOT env": "STEAM_ROOT Steam library",
         "steam_root": "STEAM_ROOT Steam library",
     }

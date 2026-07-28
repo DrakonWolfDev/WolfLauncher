@@ -327,29 +327,6 @@ class SubscribeWorkshopItemsTests(unittest.TestCase):
         self.assertIn("invalid Workshop ID", result.error)
         self.assertEqual(result.incomplete_ids, ("not-an-id",))
 
-    def test_flatpak_state_query_uses_safe_manual_fallback(self):
-        install = install_for(Path("/flatpak/Steam"), Path("/flatpak/Workshop"))
-        install.mode = "flatpak"
-
-        with patch("wolflauncher.workshop_subscription.multiprocessing.get_context") as context:
-            result = query_workshop_item_states_isolated(["111"], install)
-
-        context.assert_not_called()
-        self.assertIn("disabled for Flatpak Steam", result.error)
-        self.assertIn("Recheck mods", result.error)
-
-    def test_flatpak_subscription_uses_safe_manual_fallback(self):
-        install = install_for(Path("/flatpak/Steam"), Path("/flatpak/Workshop"))
-        install.mode = "flatpak"
-
-        with patch("wolflauncher.workshop_subscription.multiprocessing.get_context") as context:
-            result = subscribe_workshop_items_isolated(["111"], install)
-
-        context.assert_not_called()
-        self.assertEqual(result.incomplete_ids, ("111",))
-        self.assertIn("Open the missing items in Steam", result.error)
-        self.assertEqual(workshop_automation_unavailable_reason(install), result.error)
-
     def test_state_query_reads_items_without_changing_subscriptions(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

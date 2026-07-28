@@ -18,7 +18,6 @@ class WindowsPlatformTests(unittest.TestCase):
     def test_capabilities_use_native_paths_without_linux_fallbacks(self):
         capabilities = WindowsPlatformBackend.capabilities
 
-        self.assertFalse(capabilities.supports_flatpak)
         self.assertFalse(capabilities.uses_proton)
         self.assertFalse(capabilities.supports_external_launcher)
         self.assertEqual(capabilities.mod_link_strategy, "absolute_path")

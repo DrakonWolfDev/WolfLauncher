@@ -17,7 +17,6 @@ class WindowsPlatformBackend:
     capabilities = PlatformCapabilities(
         platform_id="windows",
         display_name="Windows",
-        supports_flatpak=False,
         uses_proton=False,
         supports_external_launcher=False,
         mod_link_strategy="absolute_path",
@@ -46,9 +45,6 @@ class WindowsPlatformBackend:
             candidates.append(Path(program_files) / "Steam")
         return tuple(dict.fromkeys(candidates))
 
-    def flatpak_steam_root(self) -> None:
-        return None
-
     def native_steam_executable(self) -> str:
         steam_exe = self._read_registry_string(
             self._hkey_current_user(), r"Software\Valve\Steam", "SteamExe"
@@ -68,12 +64,6 @@ class WindowsPlatformBackend:
     def matching_process_lines(self, patterns: tuple[str, ...]) -> list[str]:
         wanted = {self._exe_name(pattern).lower() for pattern in patterns}
         return [name for name in self._task_names() if name.lower() in wanted]
-
-    def flatpak_steam_installed(self) -> bool:
-        return False
-
-    def flatpak_steam_running(self) -> bool:
-        return False
 
     def steam_api_library_candidates(
         self, _steam_root: Path | None, dayz_dir: Path | None

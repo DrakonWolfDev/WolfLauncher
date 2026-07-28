@@ -174,8 +174,6 @@ class MainWindow(
         self.launch_engine.currentTextChanged.connect(self.handle_launch_engine_changed)
         self.native_steam_mode = QComboBox()
         steam_modes = ["Auto", "Native Steam"]
-        if current_platform().capabilities.supports_flatpak:
-            steam_modes.append("Flatpak Steam")
         steam_modes.append("STEAM_ROOT Steam library")
         self.native_steam_mode.addItems(steam_modes)
         if current_platform().capabilities.platform_id == "linux":

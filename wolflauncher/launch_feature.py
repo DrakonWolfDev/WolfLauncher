@@ -41,7 +41,6 @@ class LaunchFeatureMixin:
         keys = {
             "Auto": "auto",
             "Native Steam": "native",
-            "Flatpak Steam": "flatpak",
             "STEAM_ROOT Steam library": "STEAM_ROOT env",
         }
         return keys.get(self.native_steam_mode.currentText(), "auto")

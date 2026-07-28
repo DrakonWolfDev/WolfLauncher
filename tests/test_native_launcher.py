@@ -19,7 +19,7 @@ from wolflauncher.native_launcher import (
     prepare_native_launch_parity_report,
     prepare_native_launch_preview,
 )
-from wolflauncher.platform_detection import FLATPAK_STEAM_ID, SteamInstall
+from wolflauncher.platform_detection import SteamInstall
 
 
 def make_server(host: str = "dayz.example.test") -> Server:
@@ -42,7 +42,7 @@ def make_install(root: Path, mode: str = "native") -> SteamInstall:
     compatdata_dir.mkdir(parents=True)
     return SteamInstall(
         mode=mode,
-        executable=FLATPAK_STEAM_ID if mode == "flatpak" else "steam",
+        executable="steam",
         running=True,
         root=root,
         steamapps=steamapps,
@@ -188,24 +188,6 @@ class NativeLauncherTests(unittest.TestCase):
             ],
         )
 
-    def test_flatpak_steam_launch_is_rejected_as_unsupported(self):
-        install = SteamInstall(
-            mode="flatpak",
-            executable=FLATPAK_STEAM_ID,
-            running=True,
-            root=None,
-            steamapps=None,
-            dayz_dir=None,
-            workshop_dir=None,
-        )
-
-        with self.assertRaisesRegex(
-            NativeLaunchError, "Flatpak Steam is not supported"
-        ) as raised:
-            build_steam_launch_command(install, make_server("203.0.113.10"), "", [])
-
-        self.assertIn("Flatpak and Snap", raised.exception.user_message())
-
     def test_build_native_command_defaults_blank_player_name_to_external_launcher_default(self):
         install = SteamInstall(
             mode="native",
@@ -239,25 +221,6 @@ class NativeLauncherTests(unittest.TestCase):
 
         self.assertEqual(raised.exception.stage, "Steam detection")
         self.assertIn("steam command available on PATH", raised.exception.user_message())
-
-    def test_flatpak_steam_is_rejected_even_without_detected_command(self):
-        install = SteamInstall(
-            mode="flatpak",
-            executable="",
-            running=False,
-            root=Path("/flatpak/Steam"),
-            steamapps=Path("/flatpak/Steam/steamapps"),
-            dayz_dir=None,
-            workshop_dir=None,
-        )
-
-        with self.assertRaisesRegex(
-            NativeLaunchError, "Flatpak Steam is not supported"
-        ) as raised:
-            build_steam_launch_command(install, make_server("203.0.113.10"), "PlayerOne", [])
-
-        self.assertEqual(raised.exception.stage, "Steam detection")
-        self.assertIn("native Steam package", raised.exception.user_message())
 
     def test_build_steam_root_command_requires_native_steam_executable(self):
         install = SteamInstall(
@@ -534,8 +497,8 @@ class NativeLauncherTests(unittest.TestCase):
             dayz_dir = root / "steamapps" / "common" / "DayZ"
             dayz_dir.mkdir(parents=True)
             install = SteamInstall(
-                mode="flatpak",
-                executable=FLATPAK_STEAM_ID,
+                mode="native",
+                executable="steam",
                 running=True,
                 root=root,
                 steamapps=root / "steamapps",
@@ -572,11 +535,11 @@ class NativeLauncherTests(unittest.TestCase):
                 make_server("203.0.113.10"),
                 "PlayerOne",
                 [RequiredMod("256", "Example Mod")],
-                selected_steam_mode="flatpak",
+                selected_steam_mode="native",
             )
 
             self.assertTrue(report.preview.ready)
-            self.assertEqual(report.selected_steam_mode, "flatpak")
+            self.assertEqual(report.selected_steam_mode, "native")
             self.assertEqual(report.resolved_connect, "203.0.113.10:2302")
             self.assertEqual(report.required_mod_ids, ["256"])
             self.assertEqual(report.required_mod_labels, ["Example Mod (256)"])

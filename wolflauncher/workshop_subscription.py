@@ -28,16 +28,7 @@ ITEM_STATE_DOWNLOADING = 16
 ITEM_STATE_DOWNLOAD_PENDING = 32
 DOWNLOAD_REQUEST_RETRY_SECONDS = 15.0
 WORKSHOP_STALL_TIMEOUT_SECONDS = 120.0
-FLATPAK_WORKSHOP_AUTOMATION_UNAVAILABLE = (
-    "Automatic Workshop installation is disabled for Flatpak Steam because its isolated "
-    "Steamworks helper can leave DayZ marked as running. Open the missing items in Steam, "
-    "wait for its Downloads page to finish, then use Recheck mods."
-)
-
-
 def workshop_automation_unavailable_reason(install: SteamInstall | None) -> str:
-    if install and install.mode == "flatpak":
-        return FLATPAK_WORKSHOP_AUTOMATION_UNAVAILABLE
     return ""
 
 
