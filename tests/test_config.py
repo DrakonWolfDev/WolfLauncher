@@ -372,6 +372,33 @@ servers:
             self.assertEqual(len(config.load_servers(path)), 1)
 
 
+class ReorderCuratedServerTests(unittest.TestCase):
+    def test_reorder_curated_servers_persists_requested_order_and_extra_fields(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "servers.yaml"
+            path.write_text(
+                """
+servers:
+  - name: First
+    host: 203.0.113.10
+    game_port: 2302
+    query_port: 27016
+    note: preserve this
+  - name: Second
+    host: 203.0.113.20
+    game_port: 2402
+    query_port: 27017
+""",
+                encoding="utf-8",
+            )
+            first, second = config.load_servers(path)
+
+            config.reorder_curated_servers(path, [second, first])
+
+            self.assertEqual([server.name for server in config.load_servers(path)], ["Second", "First"])
+            self.assertIn("note: preserve this", path.read_text(encoding="utf-8"))
+
+
 class UpdateCuratedServerTests(unittest.TestCase):
     def test_update_curated_server_rewrites_matching_yaml_entry(self):
         with tempfile.TemporaryDirectory() as tmpdir:

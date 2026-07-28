@@ -223,6 +223,40 @@ def update_curated_server(path: Path, original: Server, updated: Server) -> bool
     return True
 
 
+def reorder_curated_servers(path: Path, ordered_servers: list[Server]) -> None:
+    """Persist an explicit curated-server order without dropping extra YAML fields."""
+    data = _load_server_yaml(path)
+    entries = data.setdefault("servers", [])
+    if not isinstance(entries, list):
+        raise ValueError("servers.yaml must contain a 'servers' list.")
+
+    by_endpoint = {}
+    for entry in entries:
+        if not isinstance(entry, dict):
+            raise ValueError("Each servers.yaml entry must be a mapping.")
+        key = (
+            str(entry.get("host", "")),
+            int(entry.get("game_port", 0)),
+            int(entry.get("query_port", 0)),
+        )
+        if key in by_endpoint:
+            raise ValueError("servers.yaml contains duplicate server endpoints.")
+        by_endpoint[key] = entry
+
+    reordered = []
+    for server in ordered_servers:
+        key = (server.host, server.game_port, server.query_port)
+        entry = by_endpoint.pop(key, None)
+        if entry is None:
+            raise ValueError("A favourite server was changed before its order could be saved.")
+        reordered.append(entry)
+    if by_endpoint:
+        raise ValueError("The saved favourite-server list changed before its order could be saved.")
+
+    data["servers"] = reordered
+    _write_server_yaml(path, data)
+
+
 def _same_server_entry(item: dict, server: Server) -> bool:
     return (
         str(item.get("host")) == server.host

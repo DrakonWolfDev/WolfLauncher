@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 from .config import (
     add_curated_server,
     remove_curated_server,
+    reorder_curated_servers,
     update_curated_server,
 )
 from .curated_dialogs import EditCuratedServerDialog
@@ -158,18 +159,54 @@ class CuratedServersMixin:
         self.refresh_status_button = QPushButton("Refresh status")
         self.refresh_status_button.setIcon(theme_icon("refresh"))
         self.refresh_status_button.clicked.connect(self.refresh_statuses)
+        self.move_server_up_button = QPushButton("Move up")
+        self.move_server_up_button.clicked.connect(lambda: self.move_selected_curated_server(-1))
+        self.move_server_down_button = QPushButton("Move down")
+        self.move_server_down_button.clicked.connect(lambda: self.move_selected_curated_server(1))
         self.launch_button = QPushButton("Launch selected server")
         self.launch_button.setIcon(theme_icon("launch"))
         set_ui_role(self.launch_button, "primary")
         self.launch_button.clicked.connect(self.launch_selected)
         buttons.addStretch(1)
         buttons.addWidget(add_server)
+        buttons.addWidget(self.move_server_up_button)
+        buttons.addWidget(self.move_server_down_button)
         buttons.addWidget(self.refresh_status_button)
         buttons.addWidget(self.launch_button)
         layout.addLayout(buttons)
         self.update_curated_status_summary()
         self.refresh_curated_server_cards()
         return widget
+
+    def move_selected_curated_server(self, direction: int):
+        row = self.table.currentRow()
+        target = row + direction
+        if row < 0 or target < 0 or target >= len(self.servers):
+            return
+        reordered = list(self.servers)
+        reordered[row], reordered[target] = reordered[target], reordered[row]
+        try:
+            reorder_curated_servers(self.config_path, reordered)
+        except (OSError, ValueError) as exc:
+            QMessageBox.warning(self, "Could not reorder favourite servers", str(exc))
+            return
+        self.servers = reordered
+        self._rebuild_curated_server_table(target)
+        self.statusBar().showMessage("Favourite-server order saved.", 5000)
+
+    def _rebuild_curated_server_table(self, selected_row: int):
+        self.table.blockSignals(True)
+        self.table.setRowCount(len(self.servers))
+        for row, server in enumerate(self.servers):
+            cached = cached_status_for_server(self.curated_status_cache, server)
+            for column, value in enumerate(curated_server_row(server, cached)):
+                self._set_curated_server_table_item(row, column, value, cached=bool(cached))
+        self.table.resizeColumnsToContents()
+        self.table.selectRow(selected_row)
+        self.table.blockSignals(False)
+        self._reindex_server_rows()
+        self.refresh_curated_server_cards()
+        self.update_launch_button_text()
 
     def refresh_statuses(self):
         self.refresh_status_rows(list(range(len(self.servers))), "Last updated: refreshing...")
