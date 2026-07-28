@@ -454,6 +454,9 @@ class SettingsFeatureMixin:
             "discovery_auto_refresh": self.discovery_auto_refresh.isChecked()
             if hasattr(self, "discovery_auto_refresh")
             else bool(self.settings.get("discovery_auto_refresh", False)),
+            "hide_quality_flagged": self.browser_hide_quality_flagged.isChecked()
+            if hasattr(self, "browser_hide_quality_flagged")
+            else bool(self.settings.get("hide_quality_flagged", True)),
             "steam_master_endpoints": self.steam_master_endpoints.text().strip()
             if hasattr(self, "steam_master_endpoints")
             else "",

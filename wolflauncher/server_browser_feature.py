@@ -194,7 +194,10 @@ class ServerBrowserMixin:
         self.browser_hide_quality_flagged = QCheckBox("Hide listing data warnings")
         self.browser_hide_quality_flagged.setToolTip(
             "Hide rows WolfAPI flags for suspicious provider telemetry or dense "
-            "same-host populations. Off by default; exact/local data is retained."
+            "same-host populations. Enabled by default; exact/local data is retained."
+        )
+        self.browser_hide_quality_flagged.setChecked(
+            bool(self.settings.get("hide_quality_flagged", True))
         )
         self.browser_hide_quality_flagged.stateChanged.connect(self.refresh_server_browser)
         self.browser_hide_quality_flagged.stateChanged.connect(
@@ -1543,7 +1546,7 @@ class ServerBrowserMixin:
         self.browser_source.setCurrentText("Any source")
         self.browser_sort.setCurrentText("Name")
         self.browser_descending.setChecked(False)
-        self.browser_hide_quality_flagged.setChecked(False)
+        self.browser_hide_quality_flagged.setChecked(True)
         self.browser_limit.setCurrentText("200")
         self.refresh_server_browser()
 

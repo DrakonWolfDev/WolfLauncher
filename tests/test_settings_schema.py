@@ -8,6 +8,7 @@ class SettingsSchemaTests(unittest.TestCase):
         settings = normalize_settings({"player_name": "Survivor", "future_setting": {"keep": True}})
 
         self.assertEqual(settings["schema_version"], SETTINGS_SCHEMA_VERSION)
+        self.assertTrue(settings["hide_quality_flagged"])
         self.assertEqual(settings["future_setting"], {"keep": True})
 
     def test_invalid_settings_are_replaced_with_a_minimal_valid_schema(self):
