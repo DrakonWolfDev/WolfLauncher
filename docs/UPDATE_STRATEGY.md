@@ -13,8 +13,8 @@ Linux share release policy and metadata, while installation remains native to
 each platform.
 
 The v1.0 Linux support contract is Debian 13, Ubuntu 24.04 LTS, Ubuntu 26.04
-LTS and Linux Mint 22.x. Flatpak is experimental and requires separate Steam,
-DayZ and Workshop validation before it becomes a supported delivery lane.
+LTS and Linux Mint 22.x through native Steam. Flatpak and Snap Steam are not
+compatible and are not release-delivery lanes.
 
 ## Shared release contract
 

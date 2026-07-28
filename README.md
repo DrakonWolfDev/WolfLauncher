@@ -3,7 +3,8 @@
 A Linux-primary DayZ launcher designed to remove the guesswork from joining
 modded servers, with an experimental portable Windows build.
 
-DayZ runs surprisingly well on Linux. The problem is everything around it: Steam setup, Proton behaviour, Workshop content, server mod requirements, and paths that vary between native Steam and Flatpak Steam.
+DayZ can run on Linux, but Steam setup, Proton behaviour, Workshop content and
+server mod requirements still make the launch path fragile.
 
 WolfLauncher checks those pieces before handing a native launch command to Steam. The existing `dayz-launcher.sh` workflow remains available as a fallback.
 
@@ -18,7 +19,26 @@ resolution and portable packaging have been validated on Windows 11. The
 Windows build remains experimental until signing, update delivery and broader
 release-artifact desktop gates are exercised.
 
-The server browser, settings health checks, diagnostics, mod checks and guarded launch handoff are working. The native engine has been validated with native and Flatpak Steam, Steam running and stopped, unmodded servers, fully installed mod sets and partially missing mod sets. Connect pre-flight asks the signed-in Steam client to subscribe, download or update required items and verifies them before launch; manual Workshop pages remain available as an advanced fallback. The external launcher remains available as a fallback.
+The server browser, settings health checks, diagnostics, mod checks and guarded
+launch handoff are working with native Steam. Connect pre-flight asks the
+signed-in Steam client to subscribe, download or update required items and
+verifies them before launch; manual Workshop pages remain available as an
+advanced fallback. The external launcher remains available as a fallback.
+
+### Current Linux compatibility baseline
+
+The minimum validated functional setup is Ubuntu 24.04.4 LTS, an Intel Core
+i5-8250U and 8 GB RAM, using the native Steam package downloaded directly from
+Steam. WolfLauncher and the DayZ handoff worked on that system, but performance
+was slow and unpleasant. Treat this as a provisional functional floor, not a
+recommended specification; the effect of Ubuntu versus the hardware has not
+yet been isolated.
+
+| Steam installation | Status |
+|---|---|
+| Native Steam downloaded directly from Steam | Supported and validated |
+| Flatpak Steam | Not compatible; hidden from detection and Settings |
+| Snap Steam | Not compatible; not detected or offered |
 
 ## Known external issues
 
@@ -78,7 +98,6 @@ verify DayZ directly from Steam before trying WolfLauncher again.
 ### Launch Integration
 
 - Native Steam support.
-- Flatpak Steam support.
 - Secondary Steam library detection for DayZ and Workshop folders.
 - DayZ installation detection.
 - Pre-launch validation checks.
@@ -89,9 +108,13 @@ verify DayZ directly from Steam before trying WolfLauncher again.
 
 ## Installation
 
-These instructions target Linux Mint 21/22 and Ubuntu 22.04/24.04 family systems.
+These instructions target Debian 13, Linux Mint 22 and Ubuntu 24.04/26.04 LTS
+family systems.
 
-Steam and DayZ should already be installed through native Steam or Flatpak Steam. WolfLauncher does not install DayZ or Proton. Workshop operations are delegated to the user's signed-in Steam client.
+Steam and DayZ should already be installed through Valve's native Steam package.
+Flatpak and Snap Steam are not currently compatible. WolfLauncher does not
+install DayZ or Proton. Workshop operations are delegated to the user's
+signed-in Steam client.
 
 On Windows, Steam and DayZ should already be installed through native Steam.
 The experimental Windows release produces both a per-user Setup executable and
@@ -228,7 +251,7 @@ Run the test suite:
 PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest discover
 ```
 
-If the app starts but launch preflight fails, open **Settings** and press **Check health**. That table reports the selected Steam install, the install Auto would choose, other detected Steam candidates, their launch command details, DayZ, Workshop and required tools. Use **Copy health** or the health-table right-click menu to copy a compact support snapshot, **Copy diagnostics** for the full diagnostics report, or **Copy last launch** to recover the most recent saved launch output report after closing the launch dialog. WolfLauncher reads Steam `libraryfolders.vdf` and DayZ's `appmanifest_221100.acf` for native and Flatpak Steam, so DayZ and Workshop can be detected from secondary Steam libraries as well as the primary Steam folder.
+If the app starts but launch preflight fails, open **Settings** and press **Check health**. That table reports the selected Steam install, the install Auto would choose, other detected Steam candidates, their launch command details, DayZ, Workshop and required tools. Use **Copy health** or the health-table right-click menu to copy a compact support snapshot, **Copy diagnostics** for the full diagnostics report, or **Copy last launch** to recover the most recent saved launch output report after closing the launch dialog. WolfLauncher reads native Steam's `libraryfolders.vdf` and DayZ's `appmanifest_221100.acf`, so DayZ and Workshop can be detected from secondary Steam libraries as well as the primary Steam folder.
 
 The selected install's DayZ Proton compatdata folder is reported when visible; if it is missing, Steam may create it on first Proton launch. For a never-launched Steam install, start DayZ once directly from Steam so Proton can create the prefix and show first-run prompts. Use the **Known external issues** disclosure in Settings for advisory Steam/Proton compatibility notes.
 
@@ -262,13 +285,12 @@ Recommended workflow:
 6. Launch.
 
 The native engine is selected by default for fresh installations; the external
-launcher remains selectable in **Settings** as a fallback. Use **Steam install
-mode** to choose Auto, Native Steam, Flatpak Steam or a
-`STEAM_ROOT` library explicitly. Mod checks, native preview and native launch
-preflight use that selected install so Flatpak testing does not accidentally
-read Workshop state from native Steam. The Mods summary and copied mod report
-show the Steam install context and Workshop path checked, which makes native,
-Flatpak and `STEAM_ROOT` parity snapshots easier to compare. `STEAM_ROOT` still
+launcher remains selectable in **Settings** as a fallback. Use **Steam
+installation** to choose Auto, Native Steam or a `STEAM_ROOT` library
+explicitly. Mod checks, native preview and native launch preflight use that
+selected install. The Mods summary and copied mod report show the Steam install
+context and Workshop path checked, which makes native and `STEAM_ROOT` parity
+snapshots easier to compare. `STEAM_ROOT` still
 needs the native `steam` command on `PATH` for launch handoff; Settings health
 reports when that command is missing. The native preview report includes a
 readiness comparison between the external launcher handoff and the native

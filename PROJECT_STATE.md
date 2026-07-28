@@ -1,6 +1,6 @@
 # WolfLauncher Project State
 
-Updated: 2026-07-25
+Updated: 2026-07-28
 
 WolfLauncher is a Linux-primary DayZ launcher GUI built with Python and PySide6,
 with experimental portable and installed Windows builds.
@@ -9,18 +9,24 @@ hardening is the active cycle. The native Python engine is the default and the
 vendored MIT shell launcher remains a visible compatibility fallback.
 
 The approved v1.0 Linux support contract is Debian 13, Ubuntu 24.04 LTS,
-Ubuntu 26.04 LTS and Linux Mint 22.x. Flatpak remains experimental pending
-separate Steam, DayZ and Workshop validation.
+Ubuntu 26.04 LTS and Linux Mint 22.x through native Steam. Flatpak and Snap
+Steam are not compatible and are excluded from detection, Settings and the
+release matrix.
 
 ## Current truth
 
 - Native Steam handoff has passed real-desktop testing with Steam running and
   stopped, unmodded servers, complete mod sets and missing/update flows.
-- Flatpak Steam packaged testing is currently a failed PR-08 row. Basic
-  detection works, but the isolated Steamworks Workshop helper could leave DayZ
-  marked as running after helper shutdown. Flatpak automatic Workshop handling
-  is therefore disabled and fails safe to manual Steam Workshop pages plus
-  **Recheck mods** until its lifecycle can be made reliable.
+- Flatpak Steam packaged testing failed PR-08 because its isolated Steamworks
+  Workshop helper could leave DayZ marked as running after helper shutdown.
+  Flatpak and Snap Steam are now explicitly incompatible: neither is exposed
+  in Settings or Auto detection, old saved choices migrate to Auto, and stale
+  Flatpak native-launch requests fail before handoff.
+- Ubuntu 24.04.4 LTS completed the native-Steam launch path on an Intel Core
+  i5-8250U with 8 GB RAM. The experience was slow and unpleasant, so this is the
+  current provisional minimum functional specification rather than a
+  recommended specification. Distro overhead versus hardware limits has not
+  yet been isolated.
 - On validated native Steam, Connect preflight can explicitly ask the signed-in
   Steam client to subscribe, download or update required Workshop items.
   Steamworks ownership is isolated in a spawned helper which must exit before
@@ -78,7 +84,7 @@ separate Steam, DayZ and Workshop validation.
   starts the packaged application and uninstalls program files while preserving
   roaming configuration and local data. Both Windows artifacts remain unsigned
   and there is no updater yet.
-- The local automated suite contains 539 tests at this snapshot. The most recent
+- The local automated suite contains 540 tests at this snapshot. The most recent
   Windows run passes all then-applicable tests (437 passed, 59 Linux-only
   skipped), Ruff and compilation. Windows CI repeats the portable and installer
   lifecycle builds and produces checksums for both. The established Linux CI
@@ -131,13 +137,13 @@ clean install, XDG migration, settings/cache preservation, native and external
 handoffs, Steam stopped/running, ready and missing Workshop flows, DNS/raw-IP
 targets, offline cache, redacted reports, responsive shutdown, uninstall and
 reinstall all passed. The second Mint 22 machine exposed the Flatpak Steamworks
-helper lifecycle failure described above; that row remains failed with a safe
-manual-Workshop fallback rather than release validation. Mint 21 and Ubuntu
-desktop rows remain unavailable and need evidence or an explicit release-scope
-waiver before PR-08 closes. Flatpak automatic Workshop automation has its own
-explicit scope waiver: Flatpak Steam may hand off DayZ and verify locally ready
-mods, but it must use manual Workshop links plus **Recheck mods** until the
-re-enable evidence in `docs/FLATPAK_WORKSHOP_INVESTIGATION.md` is complete.
+helper lifecycle failure described above; Flatpak and Snap Steam are now
+excluded as incompatible rather than retained as experimental release rows.
+Ubuntu 24.04.4 has native-Steam functional-floor evidence on physical hardware,
+but the remaining packaged-artifact checks must still be recorded separately.
+Ubuntu 26.04 is the next planned physical validation system, followed by the
+experimental Windows 10 lane. Debian 13 and the remaining required desktop
+rows need evidence or an explicit release-scope waiver before PR-08 closes.
 
 `ROADMAP.md` contains milestones only. `docs/RELEASE_CHECKLIST.md` records the
 checks to run against a release candidate; neither file is a second backlog.
@@ -156,10 +162,10 @@ one platform block all progress:
    exact-release-artifact evidence. A second machine running the same Mint
    version adds installation diversity but does not replace other-distribution
    evidence or explicit waivers.
-3. **Flatpak Steam is an experimental lane behind its safe fallback.** Keep
-   automatic Workshop helpers disabled until their lifecycle is proven; retain
-   manual Steam Workshop actions plus **Recheck mods**, and merge only changes
-   that cannot regress native Steam.
+3. **Unsupported Steam packages stay out of the product lane.** Do not expose,
+   auto-detect or launch Flatpak or Snap Steam. Historical Flatpak code and
+   investigation notes may remain dormant until a deliberate compatibility
+   project has new lifecycle evidence.
 4. **Windows is an experimental packaging lane.** Preserve direct absolute
    Workshop paths and native `steam.exe` handoff; do not introduce symlink or
    shell-launcher requirements. Handoff, confirmed Steamworks resolution and
@@ -174,8 +180,8 @@ CI pushes build and smoke-test artifacts without retaining them; tags and
 manual release-candidate runs perform artifact uploads.
 
 At each stable checkpoint, run the affected repository's complete checks,
-commit and push each repository independently, test native/Flatpak behavior
-when relevant, synchronize shared truth documents and remove merged experiment
+commit and push each repository independently, test native Steam behavior,
+synchronize shared truth documents and remove merged experiment
 branches. Windows work remains additive and must not weaken the supported Linux
 release gates.
 

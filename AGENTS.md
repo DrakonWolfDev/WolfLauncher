@@ -89,7 +89,7 @@ wolflauncher/models.py          shared dataclasses
 wolflauncher/mod_presenter.py   Mods-tab summary and row presentation
 wolflauncher/mods.py            required mod lookup and Workshop scan
 wolflauncher/platform_detection.py
-                                native/Flatpak Steam, DayZ and Workshop detection
+                                native Steam, DayZ and Workshop detection
 wolflauncher/platforms/         Linux and experimental Windows platform backends
 wolflauncher/native_launcher.py native Python launch engine
 wolflauncher/server_cache.py    SQLite discovered-server cache

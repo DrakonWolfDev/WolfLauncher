@@ -11,6 +11,13 @@
 
 ## Unreleased
 
+- Established Ubuntu 24.04.4 LTS on an Intel Core i5-8250U with 8 GB RAM and
+  Valve's native Steam download as the provisional minimum functional Linux
+  baseline. The validated experience was slow, so this is not a recommended
+  specification.
+- Marked Flatpak and Snap Steam incompatible. Removed Flatpak from Linux Auto
+  detection and Settings, migrated old packaged-Steam selections to Auto, and
+  made stale Flatpak native-launch requests fail before handoff.
 - Moved the NVIDIA PRIME Steam launch-option notice to a non-blocking **Known
   external issues** disclosure in Settings. WolfLauncher no longer inspects
   Linux PRIME environment values or presents them as launch-health warnings.

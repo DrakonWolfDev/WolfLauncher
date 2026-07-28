@@ -10,7 +10,6 @@ from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from .models import Server
 from .mods import RequiredMod, fetch_required_mods
 from .platform_detection import (
-    FLATPAK_STEAM_ID,
     STEAM_APP_ID_DAYZ,
     SteamInstall,
     install_label,
@@ -56,11 +55,6 @@ class NativeLaunchError(RuntimeError):
         )
 
 
-FLATPAK_STEAM_PARAMS = [
-    "--branch=stable",
-    "--arch=x86_64",
-    "--command=/app/bin/steam-wrapper",
-]
 MOD_NAME_RE = re.compile(r'name\s*=\s*"([^"]+)"')
 
 
@@ -592,16 +586,14 @@ def prepare_mod_links(
 
 def _steam_command_prefix(install: SteamInstall) -> list[str]:
     if install.mode == "flatpak":
-        if not install.executable:
-            raise NativeLaunchError(
-                "Flatpak Steam command not detected",
-                stage="Steam detection",
-                guidance=(
-                    "Install Flatpak Steam, confirm the flatpak command is available, "
-                    "or switch to a detected native Steam installation."
-                ),
-            )
-        return ["flatpak", "run", *FLATPAK_STEAM_PARAMS, FLATPAK_STEAM_ID]
+        raise NativeLaunchError(
+            "Flatpak Steam is not supported",
+            stage="Steam detection",
+            guidance=(
+                "Install Valve's native Steam package and select Auto or Native Steam. "
+                "Flatpak and Snap Steam packages are not currently compatible."
+            ),
+        )
 
     if not install.executable:
         if install.mode == "STEAM_ROOT env":
@@ -612,7 +604,7 @@ def _steam_command_prefix(install: SteamInstall) -> list[str]:
         else:
             guidance = (
                 "Install native Steam, make the steam command available on PATH, "
-                "or switch to a detected Flatpak Steam installation."
+                "then select Auto or Native Steam."
             )
         raise NativeLaunchError(
             f"{install.mode} Steam executable not detected",

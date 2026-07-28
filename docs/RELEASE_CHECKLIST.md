@@ -23,7 +23,8 @@ behavior that CI cannot reproduce.
 
 ## Native launch checks
 
-Run the applicable cases across native Steam and Flatpak Steam. Preserve a
+Run the applicable cases with native Steam downloaded directly from Steam.
+Flatpak and Snap Steam are incompatible and are not release rows. Preserve a
 diagnostics report, mod report and launch report for any failure.
 
 - [ ] Native launcher is selected for a fresh settings profile.
@@ -53,9 +54,8 @@ subscriptions.
 ## Packaged artifact checks
 
 Record the OS, package version, Steam client, Proton and `gamedig` versions for
-each run. Required release rows are Mint 21/22 and Ubuntu 22.04/24.04, covering
-native and Flatpak Steam where supported; record an explicit waiver when a row
-cannot be run.
+each run. Required release rows are Debian 13, Mint 22.x and Ubuntu 24.04/26.04
+LTS using native Steam; record an explicit waiver when a row cannot be run.
 
 - [ ] Clean install works without a repository checkout or global unversioned
       npm mutation.
@@ -77,6 +77,18 @@ cannot be run.
 - [ ] Confirm GitHub Actions passes for the tagged commit.
 
 ## Validation evidence
+
+### 2026-07-28 — Ubuntu 24.04.4 LTS, native Steam, minimum-spec hardware
+
+- WolfLauncher and the native Steam/DayZ launch path worked with Steam
+  downloaded directly from Steam.
+- The physical system used an Intel Core i5-8250U and 8 GB RAM.
+- Performance was slow and unpleasant. This is recorded as the provisional
+  minimum functional specification, not a recommended specification.
+- The test does not isolate Ubuntu overhead from the CPU/RAM limits and does
+  not replace the remaining packaged-artifact lifecycle checks for this row.
+- Flatpak and Snap Steam are now incompatible and excluded from the release
+  matrix.
 
 ### 2026-07-20 — Windows 11 Pro 24H2, native Steam, source checkout
 
@@ -166,21 +178,19 @@ cannot be run.
   the feedback, and the application closed automatically when the check
   finished.
 
-### 2026-07-18 — Linux Mint 22, Flatpak Steam
+### 2026-07-18 — Linux Mint 22, Flatpak Steam (historical failed row)
 
 - Independent packaged testing did not pass the Flatpak release row. Basic
   Steam detection worked, but the isolated Steamworks Workshop helper could
   leave DayZ marked as running after the helper should have released it.
-- Flatpak automatic Workshop state/subscription helpers are disabled pending a
-  reliable lifecycle design. Missing or outdated items fail safe to manual
-  Steam Workshop pages, completion through Steam Downloads and **Recheck
-  mods**. Native Steam retains its validated automatic helper.
-- This is failure evidence plus a safe fallback, not Flatpak release
-  certification. Automatic Flatpak Workshop automation has an explicit PR-08
-  release-scope waiver only; handoff and local readiness checks remain subject
-  to their normal validation. Re-run the complete Flatpak row after the helper
-  lifecycle is deliberately redesigned or replaced, following
-  `docs/FLATPAK_WORKSHOP_INVESTIGATION.md`.
-- Mint 21 and Ubuntu 22.04/24.04 real-desktop rows still require machines or
-  explicit release-scope waivers. CI package build/startup evidence alone is
-  not recorded as desktop certification.
+- At the time, Flatpak automatic Workshop state/subscription helpers were
+  disabled and missing or outdated items fell back to manual Steam Workshop
+  pages plus **Recheck mods**. Native Steam retained its validated automatic
+  helper.
+- This is failure evidence, not Flatpak release certification. Flatpak and Snap
+  Steam are now incompatible and no longer appear in Settings, Auto detection
+  or the release matrix. `docs/FLATPAK_WORKSHOP_INVESTIGATION.md` is retained
+  as historical evidence for any future deliberate compatibility project.
+- This historical failure does not replace any supported native-Steam
+  real-desktop row. CI package build/startup evidence alone is not recorded as
+  desktop certification.

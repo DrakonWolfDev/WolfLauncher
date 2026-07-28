@@ -253,9 +253,9 @@ remain off the Qt UI thread on both Windows and Linux.
 The native Python engine lives behind `wolflauncher.native_launcher`.
 It currently prepares the shell launcher's shortened `@base64modid` symlinks,
 checks installed Workshop mod directories and metadata, resolves the server host,
-and generates the native or Flatpak Steam `-applaunch 221100` command line.
-The GUI uses the native engine by default. Real-world native Steam and Flatpak
-Steam handoffs have reached DayZ process detection with Steam running and stopped,
+and generates the native Steam `-applaunch 221100` command line.
+The GUI uses the native engine by default. Real-world native Steam handoffs
+have reached DayZ process detection with Steam running and stopped,
 including unmodded, fully modded and partially missing-mod server cases. The
 external shell handoff remains selectable as a fallback.
 The Mods tab native preview produces a copyable parity report with a validation
@@ -270,10 +270,10 @@ keeping the full report copy action.
 Stale `@mod` symlink conflicts are reported with expected and actual targets so
 native failure reports remain easy to compare with filesystem state.
 
-When the native engine is selected, Settings can target Auto, Native Steam,
-Flatpak Steam or `STEAM_ROOT` for native-launch testing. Mod checks, preview and
-launch preflight should use that selected install so native and Flatpak parity
-testing cannot accidentally read Workshop state from a different Steam library.
+When the native engine is selected, Settings can target Auto, Native Steam or
+`STEAM_ROOT` for native-launch testing. Mod checks, preview and launch preflight
+use that selected install so a secondary library cannot be confused with the
+active native Steam installation.
 The Mods summary and copied mod report include the Steam install context and
 Workshop path checked so selected-mode mismatches are visible in support
 snapshots.
@@ -282,13 +282,14 @@ mode does not have a detected launch command, so users get Steam-mode-specific
 recovery guidance instead of a generic process-start failure.
 Settings health and diagnostics should show the selected Steam mode alongside
 the other detected install candidates and launch command details, making Auto
-selection explainable when native Steam, Flatpak Steam and `STEAM_ROOT`
-disagree.
+selection explainable when native Steam and `STEAM_ROOT` disagree.
 
-Native and Flatpak Steam detection reads `steamapps/libraryfolders.vdf` from the
-detected Steam root and scans secondary Steam libraries for DayZ and Workshop
-folders. `STEAM_ROOT` remains an explicit single-library override for targeted
-testing.
+Native Steam detection reads `steamapps/libraryfolders.vdf` from the detected
+Steam root and scans secondary Steam libraries for DayZ and Workshop folders.
+`STEAM_ROOT` remains an explicit single-library override for targeted testing.
+Flatpak and Snap Steam are outside the current compatibility contract: neither
+is offered in Settings or Auto detection, and stale Flatpak launch requests
+fail before handoff.
 
 ## Known External Issue
 
@@ -334,6 +335,12 @@ Primary target:
 
 - Linux Mint
 - Ubuntu/Debian family
+
+The minimum validated functional Linux baseline is Ubuntu 24.04.4 LTS on an
+Intel Core i5-8250U with 8 GB RAM and native Steam downloaded directly from
+Steam. It completed the launch path with poor performance, so it is a
+provisional floor rather than a recommended specification. Flatpak and Snap
+Steam are not compatible.
 
 Experimental target:
 

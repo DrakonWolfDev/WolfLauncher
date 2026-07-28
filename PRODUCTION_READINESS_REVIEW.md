@@ -184,7 +184,8 @@ Evidence:
 
 Recommended solution: define one release version source and derive package/UI
 metadata from it. Update the checklist to test the actual automatic Workshop
-flow, helper cancellation/stall behavior and Flatpak path. Perform a focused
+flow and helper cancellation/stall behavior through native Steam. Treat
+Flatpak and Snap Steam as incompatible release exclusions. Perform a focused
 truth-doc reconciliation before every release.
 
 Acceptance: version shown by package metadata and the application matches the
@@ -194,15 +195,16 @@ checklist describe the same behavior.
 #### 7. Complete release-grade real-system validation
 
 The unit suite mocks external services and Steam behavior effectively, but it
-cannot prove native/Flatpak Steam, Proton, Steamworks ABI, DayZ processes,
+cannot prove native Steam, Proton, Steamworks ABI, DayZ processes,
 network providers, permissions or packaging on a user's desktop.
 
-Recommended solution: maintain a release evidence matrix for Mint 21/22 and
-Ubuntu 22.04/24.04, native and Flatpak Steam, Steam running/stopped, no mods,
+Recommended solution: maintain a release evidence matrix for Debian 13, Mint
+22.x and Ubuntu 24.04/26.04 LTS, native Steam, Steam running/stopped, no mods,
 complete mods, missing/update/stalled mods, DNS and raw IP servers, secondary
 libraries, offline startup and upgrade from the prior data schema. Record the
 tested Steam client/Proton/gamedig versions and retain sanitized reports for
-failures.
+failures. Record Flatpak and Snap Steam as explicit incompatible exclusions,
+not untested release rows.
 
 Acceptance: every required matrix row has a dated pass or an explicit release
 waiver, performed against the packaged artifact rather than the source checkout.
@@ -395,12 +397,11 @@ not merely source changes.
   offscreen startup smoke checks while retaining the supported Python test
   matrix.
 - [ ] **PR-08 — Execute packaged-artifact validation.** Run the supported
-  Mint/Ubuntu, native/Flatpak Steam, Workshop, network, secondary-library,
+  Mint/Ubuntu native-Steam, Workshop, network, secondary-library,
   offline, clean-install and upgrade matrix in `docs/RELEASE_CHECKLIST.md`.
-  Record dated evidence or an explicit waiver for every required row. The
-  automatic Flatpak Workshop helper is manual-only under the scoped waiver and
-  may be re-enabled only through the evidence gates in
-  `docs/FLATPAK_WORKSHOP_INVESTIGATION.md`.
+  Record dated evidence or an explicit waiver for every required row. Flatpak
+  and Snap Steam remain incompatible; the archived Flatpak investigation
+  defines the evidence needed before any future compatibility project.
 - [ ] **PR-09 — Cut the production release.** Re-run all gates on the exact
   artifact and commit, synchronize the changelog/version/tag, publish checksums
   and installation guidance, and confirm CI on the tag.

@@ -1,24 +1,22 @@
-# Flatpak Steam Workshop Investigation
+# Flatpak Steam Workshop Investigation (Archived)
 
 ## Release position
 
-Flatpak Steam is supported for Steam handoff and local Workshop-directory
-verification. It is not certified for automatic Steamworks Workshop state
-queries, subscriptions or downloads.
+Flatpak Steam is not currently compatible with WolfLauncher. It is excluded
+from Settings, Auto detection and launch handoff, along with Snap Steam. This
+document preserves the failed lifecycle evidence and the criteria that would
+be required before a future deliberate compatibility project could restore it.
 
 During packaged testing on Linux Mint 22, a disposable helper that loaded
 Steamworks with DayZ's app ID could leave Steam reporting DayZ as running after
 both `SteamAPI_Shutdown()` and the helper's process exit. This blocks a later
 DayZ launch and is therefore a correctness failure, not a cosmetic one.
 
-Until the acceptance criteria below have passed, Flatpak users must use the
-manual workflow: open the required Workshop links in Steam, wait for Steam
-Downloads to finish, then select **Recheck mods**. WolfLauncher must continue
-to block launch until the normal local readiness check succeeds.
+Flatpak users must install Valve's native Steam package before using
+WolfLauncher. The historical acceptance criteria below remain the minimum
+evidence for reconsidering that decision.
 
-This is an explicit PR-08 release-scope waiver for *automatic Flatpak Workshop
-automation only*. It is not evidence that the full Flatpak Steam release row
-has passed. The release notes and support guidance must state this boundary.
+This is historical failure evidence, not release certification.
 
 ## Investigation protocol
 
@@ -55,10 +53,10 @@ runtime. Do not assume that this is feasible or safe: prove the runtime,
 library, permissions, Steam client visibility and shutdown semantics first.
 Do not mix this experiment with the supported native-Steam path.
 
-## Re-enable criteria
+## Reconsideration criteria
 
-Automatic Flatpak Workshop behavior may be reintroduced only when all of the
-following are true:
+Flatpak compatibility may be reconsidered only when all of the following are
+true:
 
 - the minimal probe has a documented explanation or a demonstrably reliable
   runtime boundary;
@@ -68,8 +66,8 @@ following are true:
   helper-close, Steam-stopped and Steam-running cases;
 - the normal DayZ handoff succeeds immediately after each completed or aborted
   helper session; and
-- the complete Flatpak row in `RELEASE_CHECKLIST.md` is rerun and recorded as
-  passed.
+- a complete Flatpak compatibility row is added back to
+  `RELEASE_CHECKLIST.md`, rerun and recorded as passed.
 
-Any failure restores the manual-only boundary. The helper exiting with a zero
-status is not sufficient evidence.
+Any failure keeps Flatpak excluded. The helper exiting with a zero status is
+not sufficient evidence.

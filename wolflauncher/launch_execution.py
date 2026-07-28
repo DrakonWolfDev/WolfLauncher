@@ -113,8 +113,8 @@ class LaunchExecutionCoordinator:
                 "Selected Steam installation not detected",
                 stage="Steam detection",
                 guidance=(
-                    "Open Settings health and confirm the selected native or Flatpak Steam "
-                    "install can be detected."
+                    "Open Settings health and confirm the selected native Steam install "
+                    "or STEAM_ROOT library can be detected."
                 ),
             )
         current_mod_result = usable_mod_result(server, window.last_mod_result, install.workshop_dir)

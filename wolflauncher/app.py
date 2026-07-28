@@ -178,6 +178,11 @@ class MainWindow(
             steam_modes.append("Flatpak Steam")
         steam_modes.append("STEAM_ROOT Steam library")
         self.native_steam_mode.addItems(steam_modes)
+        if current_platform().capabilities.platform_id == "linux":
+            self.native_steam_mode.setToolTip(
+                "Supported: native Steam downloaded directly from Steam. "
+                "Flatpak and Snap Steam packages are not compatible."
+            )
         self.native_steam_mode.setCurrentText(
             self._native_steam_mode_label(str(self.settings.get("native_steam_mode") or "auto"))
         )

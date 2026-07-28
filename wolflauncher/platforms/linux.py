@@ -14,7 +14,9 @@ class LinuxPlatformBackend:
     capabilities = PlatformCapabilities(
         platform_id="linux",
         display_name="Linux",
-        supports_flatpak=True,
+        # Retain the backend probes for future investigation without exposing
+        # or auto-selecting the currently unsupported Flatpak Steam package.
+        supports_flatpak=False,
         uses_proton=True,
         supports_external_launcher=True,
         mod_link_strategy="relative_symlink",

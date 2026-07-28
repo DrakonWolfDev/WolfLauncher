@@ -12,7 +12,8 @@ ordered implementation backlog is `PRODUCTION_READINESS_REVIEW.md`.
 - Established the guarded external-launch workflow, diagnostics, settings
   health, curated server management and SQLite public-server browser.
 - Added native/Flatpak Steam and secondary-library detection plus Linux desktop
-  troubleshooting.
+  troubleshooting. Flatpak was later retired from the current compatibility
+  contract after packaged validation failed.
 
 ### v0.8
 
@@ -47,8 +48,8 @@ Completion means:
 - persistence and shutdown are recoverable and race-safe;
 - credentials and support reports have an explicit secure policy;
 - a reproducible Linux artifact can install, upgrade and uninstall cleanly;
-- CI and the supported native/Flatpak Steam desktop matrix pass for that
-  artifact, or each exception has an explicit release waiver.
+- CI and the supported native-Steam desktop matrix pass for that artifact, or
+  each exception has an explicit release waiver.
 
 The experimental Windows lane now has validated unmodded and modded DayZ
 handoffs, confirmed Steamworks query/subscription lifecycle, a reproducible

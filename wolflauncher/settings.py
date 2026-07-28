@@ -10,7 +10,7 @@ SETTINGS_PATH = APP_DIR / "settings.json"
 FAVOURITES_PATH = APP_DIR / "favourites.json"
 CURATED_SERVERS_PATH = APP_DIR / "servers.yaml"
 DEFAULT_DISCOVERY_PROVIDER = "wolfapi_v1"
-SETTINGS_SCHEMA_VERSION = 1
+SETTINGS_SCHEMA_VERSION = 2
 
 
 def ensure_app_dir() -> None:
@@ -56,9 +56,11 @@ def normalize_settings(data: Any) -> dict[str, Any]:
         version = 0
     if version < 0:
         version = 0
-    # Version 1 records the schema explicitly; legacy settings are already
-    # compatible and unknown keys deliberately survive the migration.
+    # Version 1 records the schema explicitly. Version 2 retires the exposed
+    # Flatpak/Snap Steam choices while preserving unknown settings.
     if version <= SETTINGS_SCHEMA_VERSION:
+        if version < 2 and migrated.get("native_steam_mode") in {"flatpak", "snap"}:
+            migrated["native_steam_mode"] = "auto"
         migrated["schema_version"] = SETTINGS_SCHEMA_VERSION
     return migrated
 

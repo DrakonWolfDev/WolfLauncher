@@ -10,14 +10,16 @@ This is a practical execution list. The authoritative ordered backlog remains
 ### PR-08 — Packaged-artifact desktop validation
 
 - v1.0 supported Linux matrix: Debian 13, Ubuntu 24.04 LTS, Ubuntu 26.04 LTS
-  and Linux Mint 22.x. Flatpak is an experimental, separately validated lane
-  and is not part of the v1.0 support promise.
+  and Linux Mint 22.x through native Steam. Flatpak and Snap Steam are not
+  compatible and are excluded from the matrix.
 - Run or explicitly waive the applicable desktop rows for that matrix.
 - Use containers only for package/build/dependency smoke checks. Use QEMU/KVM
   desktop VMs for the Debian/Ubuntu GUI and packaging rows. DayZ/Steam/Proton
   launch and minimum-spec performance evidence require a real physical system;
   VM vCPU/RAM limits do not faithfully model an older CPU clock or GPU.
-- Validate native Steam and Flatpak Steam where applicable.
+- Validate native Steam on each applicable system.
+- The next planned physical validation is Ubuntu 26.04 LTS, followed by the
+  experimental Windows 10 lane.
 - Record clean install, upgrade, read-only resources, migration, offline cache,
   secondary-library, uninstall, checksum and provenance evidence.
 - Human systems and dated validation evidence are required.
