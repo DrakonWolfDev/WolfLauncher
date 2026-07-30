@@ -10,8 +10,10 @@ from .models import Server
 from .mods import (
     apply_workshop_item_states,
     apply_workshop_metadata,
+    apply_workshop_install_timestamps,
     check_server_mods,
     fetch_workshop_metadata,
+    workshop_install_timestamps,
 )
 from .server_discovery import (
     WolfApiServerList,
@@ -96,6 +98,8 @@ class ModWorker(QThread):
                 result,
                 fetch_workshop_metadata(mod.workshop_id for mod in result.required_mods),
             )
+            if self.workshop_install:
+                apply_workshop_install_timestamps(result, workshop_install_timestamps(self.workshop_install))
         if result.ok and result.required_mods and self.workshop_install:
             states = query_workshop_item_states_isolated(
                 (mod.workshop_id for mod in result.required_mods), self.workshop_install

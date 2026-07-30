@@ -44,6 +44,10 @@ class ModPresenterTests(unittest.TestCase):
             "warning",
         )
 
+    def test_row_warns_when_published_revision_is_newer_than_local_manifest(self):
+        stale = RequiredMod("111", installed=True, workshop_updated_at=200, installed_updated_at=100)
+        self.assertEqual(mod_row(stale).values[0], "! Workshop update available")
+
     def test_inspector_scale_grows_from_720p_and_is_bounded(self):
         self.assertEqual(mod_inspector_scale(600), 1.0)
         self.assertEqual(mod_inspector_scale(720), 1.0)

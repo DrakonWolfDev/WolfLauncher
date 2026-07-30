@@ -27,6 +27,8 @@ class RequiredMod:
     workshop_downloaded: int = 0
     workshop_total: int = 0
     workshop_file_size: int = 0
+    workshop_updated_at: int = 0
+    installed_updated_at: int = 0
     workshop_description: str = ""
     workshop_preview_url: str = ""
 
@@ -35,7 +37,7 @@ class RequiredMod:
         if not self.installed:
             return False
         if self.workshop_state is None:
-            return True
+            return not self.remote_update_available
         from .workshop_subscription import (
             ITEM_STATE_DOWNLOAD_PENDING,
             ITEM_STATE_DOWNLOADING,
@@ -43,7 +45,11 @@ class RequiredMod:
         )
 
         blocked = ITEM_STATE_NEEDS_UPDATE | ITEM_STATE_DOWNLOADING | ITEM_STATE_DOWNLOAD_PENDING
-        return not bool(self.workshop_state & blocked)
+        return not bool(self.workshop_state & blocked) and not self.remote_update_available
+
+    @property
+    def remote_update_available(self) -> bool:
+        return bool(self.workshop_updated_at and self.installed_updated_at and self.workshop_updated_at > self.installed_updated_at)
 
 
 @dataclass
@@ -131,6 +137,7 @@ def fetch_workshop_metadata(workshop_ids) -> dict[str, dict[str, Any]]:
             "file_size": max(0, int(detail.get("file_size") or 0)),
             "description": str(detail.get("description") or "").strip(),
             "preview_url": str(detail.get("preview_url") or "").strip(),
+            "time_updated": max(0, int(detail.get("time_updated") or 0)),
         }
     return metadata
 
@@ -149,6 +156,28 @@ def apply_workshop_metadata(
         mod.workshop_file_size = max(0, int(detail.get("file_size") or 0))
         mod.workshop_description = str(detail.get("description") or "").strip()
         mod.workshop_preview_url = str(detail.get("preview_url") or "").strip()
+        mod.workshop_updated_at = max(0, int(detail.get("time_updated") or 0))
+    return result
+
+
+def workshop_install_timestamps(install) -> dict[str, int]:
+    paths = [Path(item) / "workshop" / "appworkshop_221100.acf" for item in getattr(install, "library_steamapps", ())]
+    if getattr(install, "steamapps", None):
+        paths.append(Path(install.steamapps) / "workshop" / "appworkshop_221100.acf")
+    timestamps = {}
+    for path in dict.fromkeys(paths):
+        try:
+            text = path.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            continue
+        for match in re.finditer(r'"(\d+)"\s*\{\s*"manifest"\s*"[^"]*"\s*"timeupdated"\s*"(\d+)"', text):
+            timestamps[match.group(1)] = max(timestamps.get(match.group(1), 0), int(match.group(2)))
+    return timestamps
+
+
+def apply_workshop_install_timestamps(result: ModCheckResult, timestamps: dict[str, int]) -> ModCheckResult:
+    for mod in result.required_mods:
+        mod.installed_updated_at = max(0, int(timestamps.get(mod.workshop_id, 0)))
     return result
 
 

@@ -88,7 +88,7 @@ class WorkshopResolutionCoordinator:
             QMessageBox.No,
         )
         if reply == QMessageBox.Yes:
-            self.start_resolution(missing, result, install)
+            self.start_resolution(missing, result, install, force_update=any(mod.remote_update_available for mod in missing))
 
     def check_update_mod(self, row: int):
         window = self.window
@@ -116,7 +116,7 @@ class WorkshopResolutionCoordinator:
             QMessageBox.No,
         )
         if reply == QMessageBox.Yes:
-            self.start_resolution([mod], result, install)
+            self.start_resolution([mod], result, install, force_update=mod.remote_update_available)
 
     def force_update_mod(self, row: int):
         window = self.window

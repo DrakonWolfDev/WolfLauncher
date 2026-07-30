@@ -819,7 +819,7 @@ class ModsFeatureMixin:
             box = QMessageBox(self)
             box.setIcon(QMessageBox.Information)
             box.setWindowTitle("Mod download complete")
-            box.setText(f"{installed_count} required {noun} downloaded successfully.")
+            box.setText(f"Steam completed its Workshop check for {installed_count} required {noun}. WolfLauncher will now verify the local and published revisions.")
             launch_button = box.addButton("Launch server", QMessageBox.ButtonRole.AcceptRole)
             set_ui_role(launch_button, "primary")
             box.addButton("Close", QMessageBox.ButtonRole.RejectRole)

@@ -10,6 +10,7 @@ from wolflauncher.models import Server
 from wolflauncher.mods import (
     ModCheckResult,
     RequiredMod,
+    apply_workshop_install_timestamps,
     apply_workshop_metadata,
     check_server_mods,
     fetch_required_mods,
@@ -18,6 +19,7 @@ from wolflauncher.mods import (
     format_missing_workshop_links,
     format_mod_check_report,
     scan_installed_mods,
+    workshop_install_timestamps,
 )
 
 
@@ -36,6 +38,22 @@ class FakeResponse:
 
 
 class WorkshopFileSizeTests(unittest.TestCase):
+    def test_remote_workshop_revision_blocks_stale_local_mod(self):
+        result = ModCheckResult(True, make_server(), [RequiredMod("111", installed=True)])
+        apply_workshop_metadata(result, {"111": {"time_updated": 200}})
+        apply_workshop_install_timestamps(result, {"111": 100})
+        self.assertTrue(result.required_mods[0].remote_update_available)
+        self.assertFalse(result.required_mods[0].ready)
+
+    def test_reads_local_workshop_revision_from_steam_manifest(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            steamapps = Path(tmpdir)
+            manifest = steamapps / "workshop" / "appworkshop_221100.acf"
+            manifest.parent.mkdir()
+            manifest.write_text('"111" { "manifest" "abc" "timeupdated" "123" }', encoding="utf-8")
+            install = type("Install", (), {"steamapps": steamapps, "library_steamapps": []})()
+            self.assertEqual(workshop_install_timestamps(install), {"111": 123})
+
     def test_fetches_public_display_metadata_in_one_batch(self):
         payload = {
             "response": {

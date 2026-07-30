@@ -150,6 +150,9 @@ def mod_row(mod: RequiredMod) -> ModRow:
     elif mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_NEEDS_UPDATE:
         status = "! Update required"
         colour = STATUS_COLOURS["warning"]
+    elif mod.remote_update_available:
+        status = "! Workshop update available"
+        colour = STATUS_COLOURS["warning"]
     elif (
         mod.workshop_state is not None
         and mod.workshop_state & ITEM_STATE_INSTALLED
