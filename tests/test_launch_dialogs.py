@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import patch
 
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
@@ -10,6 +11,7 @@ from wolflauncher.launch_dialogs import (
     PreflightLaunchDialog,
     format_launch_command,
 )
+from wolflauncher.platform_detection import ProcessCheck
 
 
 class LaunchDialogModuleTests(unittest.TestCase):
@@ -51,3 +53,29 @@ class LaunchDialogModuleTests(unittest.TestCase):
         self.assertEqual(len(reports), 1)
         self.assertIn("Command: steam -applaunch 221100", reports[0])
         self.assertIn("Steam accepted the launch handoff.", reports[0])
+
+    def test_preflight_dialog_closes_and_minimizes_after_dayz_is_detected(self):
+        dialog = PreflightLaunchDialog(None, "Example")
+        scheduled = []
+        minimized = []
+        dialog.show()
+        dialog.launcher_minimize_requested.connect(lambda: minimized.append(True))
+
+        with (
+            patch(
+                "wolflauncher.launch_dialogs.dayz_process_check",
+                return_value=ProcessCheck(True, "Detected known DayZ process: DayZ_x64.exe"),
+            ),
+            patch("wolflauncher.launch_dialogs.QTimer.singleShot", side_effect=lambda ms, call: scheduled.append((ms, call))),
+        ):
+            dialog.check_dayz_process()
+
+        self.assertTrue(dialog.dayz_detected)
+        self.assertIn("will close and WolfLauncher will minimize in 3 seconds", dialog.detail.text())
+        self.assertEqual(len(scheduled), 1)
+        self.assertEqual(scheduled[0][0], dialog.SUCCESS_CLOSE_DELAY_MS)
+
+        scheduled[0][1]()
+
+        self.assertFalse(dialog.isVisible())
+        self.assertEqual(minimized, [True])

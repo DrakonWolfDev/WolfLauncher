@@ -25,6 +25,7 @@ class ConnectPreflightCoordinator:
         window.preflight_dialog = PreflightLaunchDialog(window, server.name)
         window.preflight_dialog.finished.connect(self.cancel)
         window.preflight_dialog.launch_report_ready.connect(window.persist_launch_report)
+        window.preflight_dialog.launcher_minimize_requested.connect(window.showMinimized)
         window.preflight_dialog.show()
         window.launch_button.setEnabled(False)
         self.ensure_steam()

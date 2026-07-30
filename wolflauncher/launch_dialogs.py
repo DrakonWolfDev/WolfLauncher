@@ -142,9 +142,11 @@ class PreflightLaunchDialog(QDialog):
     """Compact, live checklist for the automatic Connect workflow."""
 
     launch_report_ready = Signal(str)
+    launcher_minimize_requested = Signal()
 
     PROCESS_CHECK_INTERVAL_MS = 2000
     PROCESS_CHECK_ATTEMPTS = 30
+    SUCCESS_CLOSE_DELAY_MS = 3000
 
     def __init__(self, parent, server_name: str):
         super().__init__(parent)
@@ -156,6 +158,7 @@ class PreflightLaunchDialog(QDialog):
         self.process.finished.connect(self.handle_finished)
         self.process.errorOccurred.connect(self.handle_process_error)
         self.process_check_attempt = 0
+        self.dayz_detected = False
         self.command_text = ""
 
         layout = QVBoxLayout(self)
@@ -239,13 +242,21 @@ class PreflightLaunchDialog(QDialog):
         QTimer.singleShot(self.PROCESS_CHECK_INTERVAL_MS, self.check_dayz_process)
 
     def check_dayz_process(self):
+        if self.dayz_detected:
+            return
         self.process_check_attempt += 1
         check = dayz_process_check()
         if check.running:
+            self.dayz_detected = True
             self.output.append(f"DayZ process check: {check.detail}")
-            self.set_complete("game", check.detail)
-            self.close_button.setText("Close")
+            self.set_complete(
+                "game",
+                f"{check.detail}. DayZ is starting; this window will close and "
+                "WolfLauncher will minimize in 3 seconds.",
+            )
+            self.close_button.setEnabled(False)
             self.emit_launch_report()
+            QTimer.singleShot(self.SUCCESS_CLOSE_DELAY_MS, self.close_and_minimize_launcher)
             return
         if self.process_check_attempt < self.PROCESS_CHECK_ATTEMPTS:
             QTimer.singleShot(self.PROCESS_CHECK_INTERVAL_MS, self.check_dayz_process)
@@ -257,6 +268,13 @@ class PreflightLaunchDialog(QDialog):
         )
         self.output.append("No known DayZ process was detected within 60 seconds.")
         self.emit_launch_report()
+
+    def close_and_minimize_launcher(self):
+        """Complete a verified handoff without leaving an extra window on screen."""
+        if not self.dayz_detected or not self.isVisible():
+            return
+        self.close()
+        self.launcher_minimize_requested.emit()
 
     def handle_process_error(self, error):
         if error == QProcess.ProcessError.FailedToStart:
