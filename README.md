@@ -196,8 +196,15 @@ icon, curated template, legacy fallback and license notices. It writes the
 and smoke-tested in the release CI environment; a developer-machine build is a
 local validation artifact, not evidence for every supported distro.
 
-On Windows, install the pinned release tools and build the portable ZIP from
-PowerShell:
+On Windows, install the pinned release tools and the Node.js 24.14.0 Windows
+runtime (npm is included). Then build the portable ZIP from PowerShell:
+
+```powershell
+winget install OpenJS.NodeJS.LTS
+```
+
+Close and reopen PowerShell after installing Node.js so `node` and `npm` are on
+`PATH`, then run:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r requirements-windows-release.txt

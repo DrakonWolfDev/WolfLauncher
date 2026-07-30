@@ -36,6 +36,12 @@ foreach ($key in $environmentKeys) {
 
 Push-Location $projectRoot
 try {
+    foreach ($tool in @($Npm, $Node)) {
+        if (-not (Get-Command -Name $tool -CommandType Application -ErrorAction SilentlyContinue)) {
+            throw "Required Node.js build tool '$tool' was not found. Install the pinned Node.js 24.14.0 Windows runtime (which includes npm), reopen PowerShell, then rerun this command."
+        }
+    }
+
     & $Npm ci --prefix $npmProject --ignore-scripts
     if ($LASTEXITCODE -ne 0) {
         throw "npm ci failed."
