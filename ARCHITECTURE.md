@@ -218,6 +218,9 @@ fallback preserves this command contract:
 bash dayz-launcher.sh -s resolved_ip:game_port -p query_port -n player_name --launch
 ```
 
+On Windows, the native direct handoff adds `-useBE` before `-nolauncher` so the
+BattlEye service is explicitly requested when the official DayZ launcher is bypassed.
+
 Before launch, the GUI checks that:
 
 - DayZ is detected.

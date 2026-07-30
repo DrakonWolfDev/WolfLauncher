@@ -203,6 +203,17 @@ class NativeLauncherTests(unittest.TestCase):
 
         self.assertIn("-name=Survivor", command)
 
+    def test_windows_direct_handoff_explicitly_requests_battleye(self):
+        install = SteamInstall(
+            mode="native", executable=r"C:\\Program Files (x86)\\Steam\\steam.exe",
+            running=True, root=None, steamapps=None, dayz_dir=None, workshop_dir=None,
+        )
+
+        command = build_steam_launch_command(install, make_server("203.0.113.10"), "PlayerOne", [])
+
+        self.assertIn("-useBE", command)
+        self.assertLess(command.index("-useBE"), command.index("-nolauncher"))
+
     def test_build_native_command_requires_detected_steam_executable(self):
         install = SteamInstall(
             mode="native",

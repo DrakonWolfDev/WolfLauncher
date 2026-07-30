@@ -159,7 +159,12 @@ def build_steam_launch_command(
 
     if mod_links:
         command.append(f"-mod={';'.join(mod_links)}")
-    command.extend([f"-connect={server.host}:{server.game_port}", "-nolauncher", "-world=empty"])
+    command.append(f"-connect={server.host}:{server.game_port}")
+    # The official launcher normally starts BattlEye.  On Windows this direct
+    # handoff skips that launcher, so request its supported equivalent.
+    if Path(install.executable).suffix.lower() == ".exe":
+        command.append("-useBE")
+    command.extend(["-nolauncher", "-world=empty"])
     command.append(f"-name={safe_name}")
     if extra_params:
         command.extend(extra_params)
