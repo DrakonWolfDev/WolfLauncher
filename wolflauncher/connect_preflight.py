@@ -1,13 +1,14 @@
 """Qt coordination for the guarded connect-to-server workflow."""
 
 from PySide6.QtCore import QProcess, QTimer
+from PySide6.QtWidgets import QMessageBox
 
 from .launch_dialogs import PreflightLaunchDialog
 from .launcher import LaunchError
 from .models import Server
 from .mods import ModCheckResult
 from .native_launcher import NativeLaunchError
-from .platform_detection import best_install, build_steam_start_command, install_label
+from .platform_detection import best_install, build_steam_start_command, dayz_process_check, install_label
 from .settings import server_key
 from .workers import ModWorker, WorkshopSubscriptionWorker
 from .workshop_subscription import current_workshop_item, workshop_automation_unavailable_reason
@@ -21,6 +22,17 @@ class ConnectPreflightCoordinator:
 
     def start(self, server: Server):
         window = self.window
+        process = dayz_process_check()
+        if process.running:
+            QMessageBox.warning(
+                window,
+                "DayZ is already running",
+                f"{process.detail}.\n\n"
+                "Close DayZ completely before connecting to another server. "
+                "WolfLauncher will not send another Steam launch request while the existing "
+                "DayZ/BattlEye session is active.",
+            )
+            return
         window.preflight_server = server
         window.preflight_dialog = PreflightLaunchDialog(window, server.name)
         window.preflight_dialog.finished.connect(self.cancel)

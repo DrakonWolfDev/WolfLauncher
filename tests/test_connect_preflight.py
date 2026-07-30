@@ -1,13 +1,31 @@
 import unittest
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from wolflauncher.connect_preflight import ConnectPreflightCoordinator
 from wolflauncher.models import Server
 from wolflauncher.mods import ModCheckResult
+from wolflauncher.platform_detection import ProcessCheck
 
 
 class ConnectPreflightCoordinatorTests(unittest.TestCase):
+    def test_running_dayz_warns_and_does_not_start_connect_preflight(self):
+        server = Server("Example", "Tests", "dayz.test", 2302, 27016)
+        window = SimpleNamespace(preflight_server=None, preflight_dialog=None)
+
+        with (
+            patch(
+                "wolflauncher.connect_preflight.dayz_process_check",
+                return_value=ProcessCheck(True, "Detected known DayZ process: DayZ_x64.exe"),
+            ),
+            patch("wolflauncher.connect_preflight.QMessageBox.warning") as warning,
+        ):
+            ConnectPreflightCoordinator(window).start(server)
+
+        warning.assert_called_once()
+        self.assertIsNone(window.preflight_server)
+        self.assertIsNone(window.preflight_dialog)
+
     def test_successful_mod_check_completes_when_every_item_is_ready(self):
         server = Server("Example", "Tests", "dayz.test", 2302, 27016)
         dialog = Mock()
