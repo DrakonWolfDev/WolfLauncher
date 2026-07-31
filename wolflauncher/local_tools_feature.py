@@ -103,6 +103,12 @@ class LocalToolsFeatureMixin:
         browse_local_mod.clicked.connect(self._browse_local_profile_mod)
         local_mod_row.addWidget(browse_local_mod)
         form.addRow("Local mod folders", local_mod_row)
+        self.local_file_patching = QCheckBox("Source testing (enable file patching)")
+        self.local_file_patching.setChecked(bool(self.local_host_settings.get("file_patching")))
+        self.local_file_patching.setToolTip(
+            "Enable this only for unpacked source testing. Packed @mod folders do not need it."
+        )
+        form.addRow("Source testing", self.local_file_patching)
         profile_layout.addLayout(form)
         profile_actions = QHBoxLayout()
         save_profile = QPushButton("Save profile")
@@ -197,82 +203,6 @@ class LocalToolsFeatureMixin:
         local_layout.addWidget(local_detail)
         local_layout.addWidget(profile_card)
 
-        host_card = QFrame()
-        set_ui_role(host_card, "modDetail")
-        host_layout = QVBoxLayout(host_card)
-        host_title = QLabel("Local dedicated server")
-        set_ui_role(host_title, "cardTitle")
-        host_layout.addWidget(host_title)
-        host_detail = QLabel(
-            "Manage a server root available on this machine or mounted share. On Windows, Steam "
-            "installs the official DayZ Dedicated Server tool; SteamCMD remains for custom paths."
-        )
-        host_detail.setWordWrap(True)
-        set_ui_role(host_detail, "metadata")
-        host_layout.addWidget(host_detail)
-        host_form = QFormLayout()
-        self.local_server_root = QLineEdit(str(self.local_host_settings.get("server_root") or ""))
-        root_row = QHBoxLayout()
-        root_row.addWidget(self.local_server_root, 1)
-        root_browse = QPushButton("Browse")
-        root_browse.clicked.connect(lambda: self._browse_local_folder(self.local_server_root))
-        root_row.addWidget(root_browse)
-        host_form.addRow("Server root", root_row)
-        self.local_server_config = QLineEdit(str(self.local_host_settings.get("config") or ""))
-        host_form.addRow("Server config", self.local_server_config)
-        self.local_steamcmd = QLineEdit(str(self.local_host_settings.get("steamcmd") or ""))
-        steamcmd_row = QHBoxLayout()
-        steamcmd_row.addWidget(self.local_steamcmd, 1)
-        steamcmd_browse = QPushButton("Browse")
-        steamcmd_browse.clicked.connect(self._browse_steamcmd)
-        steamcmd_row.addWidget(steamcmd_browse)
-        host_form.addRow("SteamCMD", steamcmd_row)
-        self.local_client_mod_paths = QLineEdit(
-            str(self.local_host_settings.get("client_mod_paths") or "")
-        )
-        self.local_client_mod_paths.setPlaceholderText("Local packed/source folders, separated by ;")
-        host_form.addRow("Client local mods", self.local_client_mod_paths)
-        self.local_server_mod_paths = QLineEdit(
-            str(self.local_host_settings.get("server_mod_paths") or "")
-        )
-        self.local_server_mod_paths.setPlaceholderText("Local packed/source folders, separated by ;")
-        host_form.addRow("Server local mods", self.local_server_mod_paths)
-        self.local_file_patching = QCheckBox("Development source mode (enable file patching)")
-        self.local_file_patching.setChecked(bool(self.local_host_settings.get("file_patching")))
-        self.local_file_patching.setToolTip(
-            "For unpacked source testing only. Run a packed/signature test before release."
-        )
-        host_form.addRow("Source testing", self.local_file_patching)
-        host_layout.addLayout(host_form)
-        host_actions = QHBoxLayout()
-        self.steam_server_install = QPushButton("Install with Steam")
-        self.steam_server_install.clicked.connect(self._install_server_with_steam)
-        if current_platform().capabilities.platform_id != "windows":
-            self.steam_server_install.setVisible(False)
-        install_server = QPushButton("SteamCMD custom install")
-        install_server.clicked.connect(self._install_temporary_server)
-        sync_keys = QPushButton("Sync public keys")
-        sync_keys.clicked.connect(self._sync_local_server_keys)
-        self.local_server_start = QPushButton("Start local server")
-        set_ui_role(self.local_server_start, "primary")
-        self.local_server_start.clicked.connect(self._start_local_server)
-        self.local_server_stop = QPushButton("Stop server")
-        self.local_server_stop.setEnabled(False)
-        self.local_server_stop.clicked.connect(self._stop_local_server)
-        host_actions.addWidget(self.steam_server_install)
-        host_actions.addWidget(install_server)
-        host_actions.addWidget(sync_keys)
-        host_actions.addStretch(1)
-        host_actions.addWidget(self.local_server_stop)
-        host_actions.addWidget(self.local_server_start)
-        host_layout.addLayout(host_actions)
-        self.steam_server_progress = QProgressBar()
-        self.steam_server_progress.setVisible(False)
-        self.steam_server_progress.setTextVisible(True)
-        host_layout.addWidget(self.steam_server_progress)
-        self.steam_server_install_timer = QTimer(self)
-        self.steam_server_install_timer.setInterval(3000)
-        self.steam_server_install_timer.timeout.connect(self._poll_steam_server_install)
         local_actions = QHBoxLayout()
         verify_local = QPushButton("Verify profile mods")
         verify_local.clicked.connect(lambda: self._verify_local_tool_mods(editor=False))
@@ -295,8 +225,6 @@ class LocalToolsFeatureMixin:
         workspace_layout.addWidget(workflow_panel, 3)
         workspace_layout.addWidget(editor_mods_panel, 2)
         layout.addWidget(workspace)
-        layout.addSpacing(18)
-        layout.addWidget(host_card)
         layout.addWidget(self.local_tools_status)
         layout.addStretch(1)
         self._refresh_local_profile_picker()
@@ -352,7 +280,7 @@ class LocalToolsFeatureMixin:
             return
         install = self.selected_steam_install()
         installed = scan_installed_mods(install.workshop_dir if install else None)
-        fixed_ids = {workshop_id for workshop_id, _name in DAYZ_EDITOR_MODS}
+        fixed_ids = {DAYZ_EDITOR_MODS[0][0]}
         available = [
             (workshop_id, name)
             for workshop_id, name in installed.items()
@@ -736,8 +664,7 @@ class LocalToolsFeatureMixin:
         )
 
     def _with_local_client_mods(self, command: list[str]) -> list[str]:
-        profile_paths = self._local_path_list(self.local_profile_mods.text())
-        local_paths = profile_paths + self._local_path_list(self.local_client_mod_paths.text())
+        local_paths = self._local_path_list(self.local_profile_mods.text())
         missing = [str(path) for path in local_paths if not path.is_dir()]
         if missing:
             raise ValueError("Local client mod folder not found: " + ", ".join(missing))
