@@ -276,13 +276,10 @@ class LocalToolsFeatureMixin:
         local_actions = QHBoxLayout()
         verify_local = QPushButton("Verify profile mods")
         verify_local.clicked.connect(lambda: self._verify_local_tool_mods(editor=False))
-        open_local_missing = QPushButton("Open missing Workshop pages")
-        open_local_missing.clicked.connect(lambda: self._open_missing_local_tool_pages(editor=False))
         join_local = QPushButton("Join local test server")
         set_ui_role(join_local, "primary")
         join_local.clicked.connect(self._join_local_test_server)
         local_actions.addWidget(verify_local)
-        local_actions.addWidget(open_local_missing)
         local_actions.addStretch(1)
         local_actions.addWidget(join_local)
         local_layout.addLayout(local_actions)
@@ -767,6 +764,40 @@ class LocalToolsFeatureMixin:
         install = self._native_local_install()
         if not install:
             return
+        selected_ids = list(self._selected_editor_extra_mod_ids())
+        if not selected_ids:
+            self._launch_verified_local_test_server(install)
+            return
+        if self.workshop_subscription_worker and self.workshop_subscription_worker.isRunning():
+            QMessageBox.information(self, "Steam Workshop in progress", "WolfLauncher is already waiting for a Steam Workshop operation to finish.")
+            return
+        self.local_tools_status.setText("Checking selected Additional mods with Steam for updates…")
+        worker = WorkshopSubscriptionWorker(selected_ids, install, force_update=True)
+        self.workshop_subscription_worker = worker
+        worker.progress_ready.connect(self._update_local_workshop_progress)
+        worker.subscription_ready.connect(self._finish_local_workshop_resolution)
+        worker.finished.connect(self._clear_editor_workshop_worker)
+        worker.start()
+
+    def _update_local_workshop_progress(self, snapshots):
+        ready = sum(1 for item in snapshots if item.installed)
+        self.local_tools_status.setText(
+            f"Steam is preparing selected Additional mods: {ready} of {len(snapshots)} ready."
+        )
+
+    def _finish_local_workshop_resolution(self, result):
+        if not result.ok:
+            QMessageBox.warning(
+                self,
+                "Additional mods incomplete",
+                result.error or "Steam did not finish every selected Additional mod.",
+            )
+            return
+        install = self._native_local_install()
+        if install:
+            self._launch_verified_local_test_server(install)
+
+    def _launch_verified_local_test_server(self, install):
         profile = self._current_local_tool_profile()
         try:
             host, port = parse_local_endpoint(profile.endpoint)
