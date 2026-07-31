@@ -100,6 +100,7 @@ class LocalToolsFeatureMixin:
         editor_layout = QHBoxLayout(editor_card)
         editor_launch_panel = QWidget()
         editor_launch_layout = QHBoxLayout(editor_launch_panel)
+        editor_launch_layout.setSpacing(14)
         self.editor_workshop_image = QLabel("DayZ Editor Workshop image")
         self.editor_workshop_image.setFixedSize(180, 180)
         self.editor_workshop_image.setAlignment(Qt.AlignCenter)
