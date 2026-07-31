@@ -148,11 +148,15 @@ class LocalToolsFeatureMixin:
         editor_filter_row = QHBoxLayout()
         self.editor_mod_filter = QLineEdit()
         self.editor_mod_filter.setPlaceholderText("Filter installed mods")
+        self.editor_mod_filter.setClearButtonEnabled(True)
         self.editor_mod_filter.textChanged.connect(self._filter_editor_mod_picker)
         refresh_editor_mods = QPushButton("Refresh installed mods")
         refresh_editor_mods.clicked.connect(self._refresh_editor_mod_picker)
+        reset_editor_mods = QPushButton("Reset Editor mods")
+        reset_editor_mods.clicked.connect(self._reset_editor_mod_picker)
         editor_filter_row.addWidget(self.editor_mod_filter, 1)
         editor_filter_row.addWidget(refresh_editor_mods)
+        editor_filter_row.addWidget(reset_editor_mods)
         editor_mods_layout.addLayout(editor_filter_row)
         self.editor_mod_picker = QListWidget()
         self.editor_mod_picker.setAccessibleName("Installed extra Editor mods")
@@ -271,6 +275,14 @@ class LocalToolsFeatureMixin:
         for row in range(self.editor_mod_picker.count()):
             item = self.editor_mod_picker.item(row)
             item.setHidden(bool(needle and needle not in item.text().casefold()))
+
+    def _reset_editor_mod_picker(self):
+        self.editor_mod_filter.clear()
+        self.editor_extra_mod_ids.clear()
+        for row in range(self.editor_mod_picker.count()):
+            self.editor_mod_picker.item(row).setCheckState(Qt.Unchecked)
+        self.save_user_settings(silent=True)
+        self.local_tools_status.setText("Editor extra-mod selection cleared.")
 
     def _selected_editor_extra_mod_ids(self) -> tuple[str, ...]:
         selected = []
