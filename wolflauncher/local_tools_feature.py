@@ -1,6 +1,6 @@
 """Editor and local-development UI for explicit, user-owned mod profiles."""
 
-from PySide6.QtCore import QProcess, QTimer, QUrl
+from PySide6.QtCore import QProcess, QTimer, Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QPixmap
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWidgets import (
@@ -29,7 +29,7 @@ from .workers import WorkshopSubscriptionWorker
 
 DAYZ_EDITOR_IMAGE_URL = (
     "https://images.steamusercontent.com/ugc/11750326816948686244/"
-    "3C971A82DF39596395E37D2F4AD63354D45006ED/?imw=536&imh=302&impolicy=Letterbox"
+    "3C971A82DF39596395E37D2F4AD63354D45006ED/?imw=360&imh=360&impolicy=Letterbox"
 )
 
 
@@ -88,8 +88,8 @@ class LocalToolsFeatureMixin:
         set_ui_role(editor_card, "healthGroup")
         editor_layout = QHBoxLayout(editor_card)
         self.editor_workshop_image = QLabel("DayZ Editor Workshop image")
-        self.editor_workshop_image.setFixedSize(268, 151)
-        self.editor_workshop_image.setScaledContents(True)
+        self.editor_workshop_image.setFixedSize(180, 180)
+        self.editor_workshop_image.setAlignment(Qt.AlignCenter)
         set_ui_role(self.editor_workshop_image, "modThumbnail")
         editor_layout.addWidget(self.editor_workshop_image)
         editor_content = QVBoxLayout()
@@ -121,6 +121,7 @@ class LocalToolsFeatureMixin:
         self.editor_image_manager = QNetworkAccessManager(self)
         self.editor_image_manager.finished.connect(self._finish_editor_image_load)
         self.editor_image_manager.get(QNetworkRequest(QUrl(DAYZ_EDITOR_IMAGE_URL)))
+        layout.addSpacing(18)
         layout.addWidget(profile_card)
 
         local_card = QFrame()
@@ -326,7 +327,13 @@ class LocalToolsFeatureMixin:
             return
         image = QPixmap()
         if image.loadFromData(bytes(reply.readAll())):
-            self.editor_workshop_image.setPixmap(image)
+            self.editor_workshop_image.setPixmap(
+                image.scaled(
+                    self.editor_workshop_image.size(),
+                    Qt.KeepAspectRatio,
+                    Qt.SmoothTransformation,
+                )
+            )
         reply.deleteLater()
 
     def _join_local_test_server(self):
