@@ -464,7 +464,7 @@ class SettingsFeatureMixin:
             "local_tool_profiles": [
                 {
                     "name": profile.name,
-                    "workshop_ids": list(profile.workshop_ids),
+                    "mod_paths": list(profile.mod_paths),
                     "endpoint": profile.endpoint,
                 }
                 for profile in getattr(self, "local_tool_profiles", [])

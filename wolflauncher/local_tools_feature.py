@@ -92,12 +92,17 @@ class LocalToolsFeatureMixin:
         self.local_profile_name = QLineEdit()
         self.local_profile_mods = QLineEdit()
         set_monospace(self.local_profile_mods)
-        self.local_profile_mods.setPlaceholderText("Workshop IDs, separated by commas")
+        self.local_profile_mods.setPlaceholderText("Packed or unpacked local mod folders, separated by ;")
         self.local_profile_endpoint = QLineEdit()
         self.local_profile_endpoint.setPlaceholderText("192.168.1.25:2302")
         form.addRow("Name", self.local_profile_name)
-        form.addRow("Client Workshop IDs", self.local_profile_mods)
         form.addRow("LAN test server", self.local_profile_endpoint)
+        local_mod_row = QHBoxLayout()
+        local_mod_row.addWidget(self.local_profile_mods, 1)
+        browse_local_mod = QPushButton("Browse")
+        browse_local_mod.clicked.connect(self._browse_local_profile_mod)
+        local_mod_row.addWidget(browse_local_mod)
+        form.addRow("Local mod folders", local_mod_row)
         profile_layout.addLayout(form)
         profile_actions = QHBoxLayout()
         save_profile = QPushButton("Save profile")
@@ -151,11 +156,11 @@ class LocalToolsFeatureMixin:
         editor_mods_panel = QWidget()
         editor_mods_layout = QVBoxLayout(editor_mods_panel)
         editor_mods_layout.setContentsMargins(8, 0, 0, 0)
-        editor_mods_title = QLabel("Editor mods")
+        editor_mods_title = QLabel("Additional mods")
         set_ui_role(editor_mods_title, "cardTitle")
         editor_mods_layout.addWidget(editor_mods_title)
         editor_mods_detail = QLabel(
-            "Extra locally installed mods. Core Editor requirements are included automatically."
+            "Installed Workshop mods added to both DayZ Editor and Local Development. Editor requirements are included automatically."
         )
         editor_mods_detail.setWordWrap(True)
         set_ui_role(editor_mods_detail, "metadata")
@@ -174,15 +179,11 @@ class LocalToolsFeatureMixin:
         editor_filter_row.addWidget(reset_editor_mods)
         editor_mods_layout.addLayout(editor_filter_row)
         self.editor_mod_picker = QListWidget()
-        self.editor_mod_picker.setAccessibleName("Installed extra Editor mods")
-        self.editor_mod_picker.setMaximumHeight(154)
+        self.editor_mod_picker.setAccessibleName("Installed additional mods")
         editor_mods_layout.addWidget(self.editor_mod_picker)
-        editor_layout.addWidget(editor_mods_panel, 2)
-        layout.addWidget(editor_card)
         self.editor_image_manager = QNetworkAccessManager(self)
         self.editor_image_manager.finished.connect(self._finish_editor_image_load)
         self.editor_image_manager.get(QNetworkRequest(QUrl(DAYZ_EDITOR_IMAGE_URL)))
-        layout.addSpacing(18)
 
         local_card = QFrame()
         set_ui_role(local_card, "healthGroup")
@@ -272,7 +273,6 @@ class LocalToolsFeatureMixin:
         self.steam_server_install_timer = QTimer(self)
         self.steam_server_install_timer.setInterval(3000)
         self.steam_server_install_timer.timeout.connect(self._poll_steam_server_install)
-        local_layout.addWidget(host_card)
         local_actions = QHBoxLayout()
         verify_local = QPushButton("Verify profile mods")
         verify_local.clicked.connect(lambda: self._verify_local_tool_mods(editor=False))
@@ -286,7 +286,20 @@ class LocalToolsFeatureMixin:
         local_actions.addStretch(1)
         local_actions.addWidget(join_local)
         local_layout.addLayout(local_actions)
-        layout.addWidget(local_card)
+        workspace = QWidget()
+        workspace_layout = QHBoxLayout(workspace)
+        workspace_layout.setContentsMargins(0, 0, 0, 0)
+        workflow_panel = QWidget()
+        workflow_column = QVBoxLayout(workflow_panel)
+        workflow_column.setContentsMargins(0, 0, 0, 0)
+        workflow_column.addWidget(editor_card)
+        workflow_column.addSpacing(12)
+        workflow_column.addWidget(local_card)
+        workspace_layout.addWidget(workflow_panel, 3)
+        workspace_layout.addWidget(editor_mods_panel, 2)
+        layout.addWidget(workspace)
+        layout.addSpacing(18)
+        layout.addWidget(host_card)
         layout.addWidget(self.local_tools_status)
         layout.addStretch(1)
         self._refresh_local_profile_picker()
@@ -312,7 +325,7 @@ class LocalToolsFeatureMixin:
         self.local_tool_active_index = index
         profile = self.local_tool_profiles[index]
         self.local_profile_name.setText(profile.name)
-        self.local_profile_mods.setText(", ".join(profile.workshop_ids))
+        self.local_profile_mods.setText("; ".join(profile.mod_paths))
         self.local_profile_endpoint.setText(profile.endpoint)
 
     def _new_local_tool_profile(self):
@@ -324,7 +337,7 @@ class LocalToolsFeatureMixin:
 
     def _current_local_tool_profile(self) -> LocalToolProfile:
         name = self.local_profile_name.text().strip() or "Local development"
-        return LocalToolProfile(name, normalise_workshop_ids(self.local_profile_mods.text()), self.local_profile_endpoint.text().strip())
+        return LocalToolProfile(name, tuple(str(path) for path in self._local_path_list(self.local_profile_mods.text())), self.local_profile_endpoint.text().strip())
 
     def _save_local_tool_profile(self):
         profile = self._current_local_tool_profile()
@@ -375,7 +388,7 @@ class LocalToolsFeatureMixin:
         for row in range(self.editor_mod_picker.count()):
             self.editor_mod_picker.item(row).setCheckState(Qt.Unchecked)
         self.save_user_settings(silent=True)
-        self.local_tools_status.setText("Editor extra-mod selection cleared.")
+        self.local_tools_status.setText("Additional-mod selection cleared.")
 
     def _selected_editor_extra_mod_ids(self) -> tuple[str, ...]:
         selected = []
@@ -395,7 +408,7 @@ class LocalToolsFeatureMixin:
         else:
             profile = self._current_local_tool_profile()
             names = {}
-            ids = list(profile.workshop_ids)
+            ids = list(self._selected_editor_extra_mod_ids())
         return [RequiredMod(item, names.get(item, installed.get(item, "")), item in installed, installed.get(item, ""), WORKSHOP_URL.format(mod_id=item)) for item in ids]
 
     def _verify_local_tool_mods(self, *, editor: bool) -> list[RequiredMod]:
@@ -535,6 +548,15 @@ class LocalToolsFeatureMixin:
             target.setText(selected)
             if target is self.local_server_root and not self.local_server_config.text().strip():
                 self.local_server_config.setText(str(Path(selected) / "serverDZ.cfg"))
+
+    def _browse_local_profile_mod(self):
+        selected = QFileDialog.getExistingDirectory(self, "Select local DayZ mod folder")
+        if not selected:
+            return
+        existing = [part.strip() for part in self.local_profile_mods.text().split(";") if part.strip()]
+        if selected not in existing:
+            existing.append(selected)
+        self.local_profile_mods.setText("; ".join(existing))
 
     def _browse_steamcmd(self):
         path, _ = QFileDialog.getOpenFileName(self, "Select SteamCMD")
@@ -717,7 +739,8 @@ class LocalToolsFeatureMixin:
         )
 
     def _with_local_client_mods(self, command: list[str]) -> list[str]:
-        local_paths = self._local_path_list(self.local_client_mod_paths.text())
+        profile_paths = self._local_path_list(self.local_profile_mods.text())
+        local_paths = profile_paths + self._local_path_list(self.local_client_mod_paths.text())
         missing = [str(path) for path in local_paths if not path.is_dir()]
         if missing:
             raise ValueError("Local client mod folder not found: " + ", ".join(missing))

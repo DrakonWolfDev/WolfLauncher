@@ -13,7 +13,7 @@ DAYZ_EDITOR_MODS = (
 @dataclass(frozen=True)
 class LocalToolProfile:
     name: str
-    workshop_ids: tuple[str, ...]
+    mod_paths: tuple[str, ...] = ()
     endpoint: str = ""
 
 
@@ -49,7 +49,7 @@ def profile_from_data(data: object) -> LocalToolProfile | None:
         return None
     return LocalToolProfile(
         name=name,
-        workshop_ids=normalise_workshop_ids(data.get("workshop_ids", [])),
+        mod_paths=tuple(str(item).strip() for item in data.get("mod_paths", []) if str(item).strip()),
         endpoint=str(data.get("endpoint") or "").strip(),
     )
 
