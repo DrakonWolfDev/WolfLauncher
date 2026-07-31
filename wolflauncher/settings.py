@@ -10,7 +10,7 @@ SETTINGS_PATH = APP_DIR / "settings.json"
 FAVOURITES_PATH = APP_DIR / "favourites.json"
 CURATED_SERVERS_PATH = APP_DIR / "servers.yaml"
 DEFAULT_DISCOVERY_PROVIDER = "wolfapi_v1"
-SETTINGS_SCHEMA_VERSION = 4
+SETTINGS_SCHEMA_VERSION = 5
 
 
 def ensure_app_dir() -> None:
@@ -63,6 +63,8 @@ def normalize_settings(data: Any) -> dict[str, Any]:
             migrated["native_steam_mode"] = "auto"
         if version < 3:
             migrated.setdefault("hide_quality_flagged", True)
+        if version < 5:
+            migrated.setdefault("local_tool_profiles", [])
         migrated["schema_version"] = SETTINGS_SCHEMA_VERSION
     return migrated
 

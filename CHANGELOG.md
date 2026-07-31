@@ -11,6 +11,12 @@
 
 ## Unreleased
 
+- Added an **Editor / Local Tools** tab for advanced local development. It
+  saves client-mod profiles, opens offline DayZ Editor with DayZ Editor, CF and
+  Dabs Framework automatically included, and launches the native client into
+  an already-running LAN/test server. This first pass deliberately does not
+  install, host, expose or manage a dedicated server.
+
 - Added a hidden-until-needed Recent servers section beneath Favourite Servers.
   It shows up to three launched servers that are not already favourites.
 

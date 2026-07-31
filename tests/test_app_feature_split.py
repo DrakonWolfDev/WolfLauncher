@@ -3,20 +3,22 @@ import unittest
 from wolflauncher.app import MainWindow
 from wolflauncher.curated_servers_controller import CuratedServersMixin
 from wolflauncher.launch_feature import LaunchFeatureMixin
+from wolflauncher.local_tools_feature import LocalToolsFeatureMixin
 from wolflauncher.mods_feature import ModsFeatureMixin
 from wolflauncher.server_browser_feature import ServerBrowserMixin
 from wolflauncher.settings_feature import SettingsFeatureMixin
 
 
 class MainWindowFeatureSplitTests(unittest.TestCase):
-    def test_main_window_composes_the_five_feature_mixins(self):
+    def test_main_window_composes_the_six_feature_mixins(self):
         self.assertEqual(
-            MainWindow.__mro__[1:6],
+            MainWindow.__mro__[1:7],
             (
                 CuratedServersMixin,
                 ServerBrowserMixin,
                 ModsFeatureMixin,
                 SettingsFeatureMixin,
+                LocalToolsFeatureMixin,
                 LaunchFeatureMixin,
             ),
         )
@@ -27,6 +29,7 @@ class MainWindowFeatureSplitTests(unittest.TestCase):
             "_build_server_browser_tab": ServerBrowserMixin,
             "_build_mods_tab": ModsFeatureMixin,
             "_build_settings_tab": SettingsFeatureMixin,
+            "_build_local_tools_tab": LocalToolsFeatureMixin,
             "launch_selected": LaunchFeatureMixin,
         }
         for method_name, owner in expected_owners.items():

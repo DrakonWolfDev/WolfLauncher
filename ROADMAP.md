@@ -82,6 +82,11 @@ updates on Linux, sharing one release-channel manifest and policy.
   first supported Linux format is stable.
 - Promote Windows from experimental to supported only after its handoff,
   Steamworks, packaging, signing and update gates pass.
+- Evolve **Editor / Local Tools** for advanced mod development in stages:
+  v1 saved local client-mod profiles, offline DayZ Editor and joining existing
+  LAN/test servers; v2 explicitly configured local dedicated-server start/stop
+  and external-editor project opening; v3 bounded server/client log viewing and
+  export. This remains local development tooling, not public-server hosting.
 
 ## Known external issue
 

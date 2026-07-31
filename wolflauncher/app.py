@@ -68,6 +68,7 @@ from .server_browser_feature import (
     persist_enriched_server as persist_enriched_server,
 )
 from .settings_feature import SettingsFeatureMixin
+from .local_tools_feature import LocalToolsFeatureMixin
 
 
 class MainWindow(
@@ -75,6 +76,7 @@ class MainWindow(
     ServerBrowserMixin,
     ModsFeatureMixin,
     SettingsFeatureMixin,
+    LocalToolsFeatureMixin,
     LaunchFeatureMixin,
     QMainWindow,
 ):
@@ -226,6 +228,11 @@ class MainWindow(
         )
         self.mods_tab_index = self.tabs.addTab(
             self._scrollable_workspace(self._build_mods_tab()), theme_icon("mods"), "Mods"
+        )
+        self.local_tools_tab_index = self.tabs.addTab(
+            self._scrollable_workspace(self._build_local_tools_tab()),
+            theme_icon("mods"),
+            "Editor / Local Tools",
         )
         self.tabs.addTab(
             self._scrollable_workspace(self._build_settings_tab()), theme_icon("settings"), "Settings"

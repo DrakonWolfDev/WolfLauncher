@@ -83,6 +83,8 @@ wolflauncher/
     linux.py             Validated Linux paths, commands and process detection
     windows.py           Windows paths, registry discovery and process detection
   native_launcher.py     Native launch engine, parity and failure-report details
+  local_tools.py         Pure local profile parsing and DayZ Editor defaults
+  local_tools_feature.py Editor/local-LAN development workspace
   server_discovery.py    WolfAPI, BattleMetrics, Steam Web API and legacy master server candidate discovery
   server_enrichment.py   Maps live status results onto discovered cache rows
   server_cache.py        SQLite cache for discovered public servers
@@ -293,6 +295,25 @@ Steam root and scans secondary Steam libraries for DayZ and Workshop folders.
 Flatpak and Snap Steam are outside the current compatibility contract: neither
 is offered in Settings or Auto detection, and stale Flatpak launch requests
 fail before handoff.
+
+## Editor / Local Tools
+
+The Editor / Local Tools tab is an explicit advanced-development workspace,
+separate from curated YAML and the discovered-server cache. It persists small,
+user-owned local client-mod profiles in `settings.json`: a name, ordered
+Workshop IDs and optional existing LAN `host:game-port` endpoint. The offline
+Editor action combines the profile mods with DayZ Editor (`2250764298`), CF
+(`1559212036`) and Dabs Framework (`2545327648`), prepares normal native mod
+links/absolute paths, and hands DayZ to Steam without `-connect`. The Local
+Development action prepares the same explicit mod set and launches native DayZ
+into the configured, already-running LAN/test endpoint.
+
+Steam remains the only Workshop subscription/download owner. V1 can verify
+local directories and open missing Workshop pages; it does not start, stop,
+install, configure, expose or monitor a dedicated server. Future hosting must
+use an explicit configured server root (the dedicated-server app is separate
+from the DayZ client), with bounded process control and logs; it must not infer
+public-hosting scope from a local profile.
 
 ## Known External Issue
 

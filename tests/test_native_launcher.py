@@ -1028,6 +1028,16 @@ class NativeLauncherTests(unittest.TestCase):
         fetch.assert_not_called()
         self.assertNotIn("-mod=", prepared.command)
 
+    def test_prepare_native_local_launch_omits_connect_argument(self):
+        from wolflauncher.native_launcher import prepare_native_local_launch
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+            prepared = prepare_native_local_launch(install, "PlayerOne", [])
+
+        self.assertIn("-world=empty", prepared.command)
+        self.assertNotIn("-connect=", " ".join(prepared.command))
+
 
 if __name__ == "__main__":
     unittest.main()

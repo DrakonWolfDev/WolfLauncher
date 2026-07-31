@@ -171,6 +171,60 @@ def build_steam_launch_command(
     return command
 
 
+def build_steam_local_launch_command(
+    install: SteamInstall,
+    player_name: str,
+    mod_links: list[str],
+    extra_params: list[str] | None = None,
+) -> list[str]:
+    """Build a native DayZ handoff for an offline/local session.
+
+    Local tools intentionally share the normal mod handling and Steam command
+    prefix, but do not add a server ``-connect`` argument.
+    """
+    safe_name = player_name.strip() or DEFAULT_PLAYER_NAME
+    command = _steam_command_prefix(install)
+    command.extend(["-applaunch", str(STEAM_APP_ID_DAYZ)])
+    if mod_links:
+        command.append(f"-mod={';'.join(mod_links)}")
+    if Path(install.executable).suffix.lower() == ".exe":
+        command.append("-useBE")
+    command.extend(["-nolauncher", "-world=empty", f"-name={safe_name}"])
+    if extra_params:
+        command.extend(extra_params)
+    return command
+
+
+def prepare_native_local_launch(
+    install: SteamInstall,
+    player_name: str,
+    required_mods: list[RequiredMod],
+    extra_params: list[str] | None = None,
+) -> PreparedNativeLaunch:
+    """Prepare a native offline/local DayZ launch from an explicit mod set."""
+    dayz_dir = _require_dir(install.dayz_dir, "DayZ install")
+    workshop_dir = _require_dir(install.workshop_dir, "DayZ Workshop")
+    mod_setup = prepare_mod_links(dayz_dir, workshop_dir, required_mods)
+    if mod_setup.missing_mod_ids:
+        raise NativeLaunchError(
+            "Missing mod directories for: "
+            + ", ".join(_missing_mod_labels(required_mods, mod_setup.missing_mod_ids)),
+            stage="local mod setup",
+            guidance=(
+                "Open the missing Workshop pages, let Steam finish downloading them, "
+                "then verify the local profile again."
+            ),
+        )
+    return PreparedNativeLaunch(
+        command=build_steam_local_launch_command(
+            install, player_name, mod_setup.mod_links, extra_params
+        ),
+        mod_links=mod_setup.mod_links,
+        missing_mod_ids=mod_setup.missing_mod_ids,
+        prepared_mods=mod_setup.prepared_mods,
+    )
+
+
 def prepare_native_launch(
     install: SteamInstall,
     server: Server,

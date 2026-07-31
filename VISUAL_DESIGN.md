@@ -335,6 +335,15 @@ card-only layout, status edge, two-level metadata, player/ping block, favourite
 control and row-level Connect action unless later usage reveals a concrete
 problem.
 
+Editor / Local Tools is an intentionally separate advanced workspace and does
+not reopen the approved player-facing tabs. Keep its simple vertical rhythm:
+summary, one compact saved local-profile form, then two full-width cards in
+order—**DayZ Editor** followed by **Local Development**. Each card has one
+filled action at most; verification and missing-Workshop actions remain
+secondary. It must state plainly that v1 joins an existing LAN/test server and
+does not host or expose a server. Its initial layout requires a real-desktop
+review before it becomes a locked hierarchy.
+
 The settled cross-tab visual pattern is a dense operational surface paired
 with calm contextual grouping, restrained amber selection, semantic status
 edges and no decorative clutter. Carry that pattern into unfinished surfaces

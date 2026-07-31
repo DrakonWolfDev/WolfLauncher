@@ -113,6 +113,15 @@ verify DayZ directly from Steam before trying WolfLauncher again.
 - Experimental native Windows Steam/DayZ detection and absolute Workshop mod
   handoff without symlinks or the external shell launcher.
 
+### Editor / Local Tools
+
+- Saved local client-mod profiles for advanced users and mod developers.
+- Offline DayZ Editor launch, including its required DayZ Editor, CF and Dabs
+  Framework Workshop items.
+- Native launch into an already-running local or LAN test server.
+- This is not a public-hosting feature: WolfLauncher v1 does not install, start
+  or expose a dedicated server.
+
 ## Installation
 
 These instructions target Debian 13, Linux Mint 22 and Ubuntu 24.04/26.04 LTS
@@ -318,6 +327,20 @@ and actual symlink targets so the conflict can be compared or pasted into a
 support report. If a full parity report is unavailable, native failure details
 still include the selected Steam mode, detected install, Steam command,
 DayZ/Workshop paths and server target.
+
+## Editor / Local Tools
+
+The **Editor / Local Tools** tab is for advanced local development sessions.
+Save a named profile with the client Workshop IDs for a project and, optionally,
+an existing LAN endpoint such as `192.168.1.25:2302`. **Open DayZ Editor** adds
+DayZ Editor, CF and Dabs Framework automatically and starts offline without a
+server connection. **Join local test server** uses the same profile to launch
+the native Steam client directly into the saved endpoint.
+
+Verify profile mods before launching. Missing-item actions open the relevant
+Steam Workshop pages; Steam remains responsible for subscription and download.
+WolfLauncher does not yet start, stop or configure a dedicated server. Those
+local process controls and development logs are planned follow-on work.
 
 ## Server Configuration
 

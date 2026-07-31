@@ -1,0 +1,46 @@
+import unittest
+
+from wolflauncher.local_tools import (
+    DAYZ_EDITOR_MODS,
+    normalise_workshop_ids,
+    parse_local_endpoint,
+    profiles_from_settings,
+)
+
+
+class LocalToolsTests(unittest.TestCase):
+    def test_editor_defaults_are_the_documented_required_mods(self):
+        self.assertEqual(
+            DAYZ_EDITOR_MODS,
+            (
+                ("2250764298", "DayZ Editor"),
+                ("1559212036", "CF"),
+                ("2545327648", "Dabs Framework"),
+            ),
+        )
+
+    def test_normalise_workshop_ids_rejects_invalid_and_duplicate_entries(self):
+        self.assertEqual(
+            normalise_workshop_ids(" 123, no, 456\n123,  "),
+            ("123", "456"),
+        )
+
+    def test_parse_local_endpoint(self):
+        self.assertEqual(parse_local_endpoint("192.168.1.25:2302"), ("192.168.1.25", 2302))
+        with self.assertRaisesRegex(ValueError, "host:game-port"):
+            parse_local_endpoint("192.168.1.25")
+
+    def test_profiles_from_settings_discards_invalid_profiles(self):
+        profiles = profiles_from_settings(
+            [
+                {"name": "Weapons", "workshop_ids": ["123", "123", "bad"], "endpoint": "lan:2302"},
+                {"name": "", "workshop_ids": ["456"]},
+                "invalid",
+            ]
+        )
+        self.assertEqual(len(profiles), 1)
+        self.assertEqual(profiles[0].workshop_ids, ("123",))
+
+
+if __name__ == "__main__":
+    unittest.main()

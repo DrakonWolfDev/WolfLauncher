@@ -461,6 +461,14 @@ class SettingsFeatureMixin:
             if hasattr(self, "steam_master_endpoints")
             else "",
             "wolfapi_directory_total": self.wolfapi_directory_total,
+            "local_tool_profiles": [
+                {
+                    "name": profile.name,
+                    "workshop_ids": list(profile.workshop_ids),
+                    "endpoint": profile.endpoint,
+                }
+                for profile in getattr(self, "local_tool_profiles", [])
+            ],
         }
         api_key = (
             self.steam_web_api_key.text().strip()

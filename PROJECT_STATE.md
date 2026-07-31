@@ -55,6 +55,12 @@ release matrix.
   decoder rejects partial/overflow/ambiguous responses, while Steam remains
   the source for Workshop metadata and local install state. DZSA is retained
   only inside the visible legacy Linux shell-launcher fallback.
+- The Editor / Local Tools tab now provides saved, user-owned client-mod
+  profiles, offline DayZ Editor launch with its required framework mods, and
+  native joining of an already-running LAN/test server. It is advanced local
+  development tooling, not public hosting: dedicated-server installation,
+  start/stop control, project-editor opening and log views remain staged
+  follow-on work.
 - The Server Browser, Mods, Settings and Favourite Servers layouts have passed
   real-desktop review. Preserve their information-first hierarchy unless new
   evidence requires a change.
@@ -92,7 +98,7 @@ release matrix.
   starts the packaged application and uninstalls program files while preserving
   roaming configuration and local data. Both Windows artifacts remain unsigned
   and there is no updater yet.
-- The local automated suite contains 540 tests at this snapshot. The most recent
+- The local automated suite contains 545 tests at this snapshot. The most recent
   Windows run passes all then-applicable tests (437 passed, 59 Linux-only
   skipped), Ruff and compilation. Windows CI repeats the portable and installer
   lifecycle builds and produces checksums for both. The established Linux CI
@@ -203,6 +209,9 @@ release gates.
 - Successful command exit means handoff to Steam, not proof that Proton or DayZ
   reached the menu.
 - Launch stays guarded by Steam/DayZ/Workshop detection and fresh mod readiness.
+- Local development profiles stay separate from curated YAML and discovered
+  SQLite server data; they are additive settings data and never enter public
+  discovery or hosting flows.
 - Prefer a resolved IP for handoff when available.
 - Mod resolution is explicit and Steam-managed. Never auto-subscribe,
   auto-download or remove content without the user's confirmation.
