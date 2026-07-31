@@ -64,6 +64,11 @@ release matrix.
   locally and then minimizes after a detected DayZ handoff; dedicated-server
   installation, start/stop control, project-editor opening and log views remain
   staged follow-on work.
+- Local Development now has an initial host workspace for server roots visible
+  to the Launcher: managed start/stop, anonymous SteamCMD temporary setup,
+  explicit local client/server mod folders, file-patching source tests and
+  confirmed public-key-only sync. Remote machines without an accessible shared
+  root remain connect-only; remote process control is not inferred.
 - The Server Browser, Mods, Settings and Favourite Servers layouts have passed
   real-desktop review. Preserve their information-first hierarchy unless new
   evidence requires a change.
@@ -101,7 +106,7 @@ release matrix.
   starts the packaged application and uninstalls program files while preserving
   roaming configuration and local data. Both Windows artifacts remain unsigned
   and there is no updater yet.
-- The local automated suite contains 545 tests at this snapshot. The most recent
+- The local automated suite contains 548 tests at this snapshot. The most recent
   Windows run passes all then-applicable tests (437 passed, 59 Linux-only
   skipped), Ruff and compilation. Windows CI repeats the portable and installer
   lifecycle builds and produces checksums for both. The established Linux CI

@@ -472,6 +472,7 @@ class SettingsFeatureMixin:
             "editor_extra_mod_ids": sorted(
                 getattr(self, "editor_extra_mod_ids", set()), key=int
             ),
+            "local_host_settings": dict(getattr(self, "local_host_settings", {})),
         }
         api_key = (
             self.steam_web_api_key.text().strip()

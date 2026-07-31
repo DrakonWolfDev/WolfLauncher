@@ -1,12 +1,16 @@
 """Editor and local-development UI for explicit, user-owned mod profiles."""
 
+from pathlib import Path
+
 from PySide6.QtCore import QProcess, QTimer, Qt, QUrl
 from PySide6.QtGui import QDesktopServices, QPixmap
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QFormLayout,
     QFrame,
+    QFileDialog,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -19,6 +23,13 @@ from PySide6.QtWidgets import (
 )
 
 from .launcher import DEFAULT_PLAYER_NAME
+from .local_server import (
+    LocalServerLaunch,
+    build_local_server_command,
+    build_steamcmd_install_command,
+    server_executable,
+    sync_public_keys,
+)
 from .local_tools import (
     DAYZ_EDITOR_MODS,
     LocalToolProfile,
@@ -57,6 +68,7 @@ class LocalToolsFeatureMixin:
         layout.addWidget(intro)
 
         self.local_tool_profiles = profiles_from_settings(self.settings.get("local_tool_profiles"))
+        self.local_host_settings = dict(self.settings.get("local_host_settings") or {})
         self.local_tool_active_index = 0
         self.editor_extra_mod_ids = set(
             normalise_workshop_ids(self.settings.get("editor_extra_mod_ids", []))
@@ -180,6 +192,72 @@ class LocalToolsFeatureMixin:
         set_ui_role(local_detail, "metadata")
         local_layout.addWidget(local_detail)
         local_layout.addWidget(profile_card)
+
+        host_card = QFrame()
+        set_ui_role(host_card, "modDetail")
+        host_layout = QVBoxLayout(host_card)
+        host_title = QLabel("Local dedicated server")
+        set_ui_role(host_title, "cardTitle")
+        host_layout.addWidget(host_title)
+        host_detail = QLabel(
+            "Manage a server root available on this machine or mounted share. SteamCMD "
+            "creates a disposable clean server; local packed mod folders stay user-owned."
+        )
+        host_detail.setWordWrap(True)
+        set_ui_role(host_detail, "metadata")
+        host_layout.addWidget(host_detail)
+        host_form = QFormLayout()
+        self.local_server_root = QLineEdit(str(self.local_host_settings.get("server_root") or ""))
+        root_row = QHBoxLayout()
+        root_row.addWidget(self.local_server_root, 1)
+        root_browse = QPushButton("Browse")
+        root_browse.clicked.connect(lambda: self._browse_local_folder(self.local_server_root))
+        root_row.addWidget(root_browse)
+        host_form.addRow("Server root", root_row)
+        self.local_server_config = QLineEdit(str(self.local_host_settings.get("config") or ""))
+        host_form.addRow("Server config", self.local_server_config)
+        self.local_steamcmd = QLineEdit(str(self.local_host_settings.get("steamcmd") or ""))
+        steamcmd_row = QHBoxLayout()
+        steamcmd_row.addWidget(self.local_steamcmd, 1)
+        steamcmd_browse = QPushButton("Browse")
+        steamcmd_browse.clicked.connect(self._browse_steamcmd)
+        steamcmd_row.addWidget(steamcmd_browse)
+        host_form.addRow("SteamCMD", steamcmd_row)
+        self.local_client_mod_paths = QLineEdit(
+            str(self.local_host_settings.get("client_mod_paths") or "")
+        )
+        self.local_client_mod_paths.setPlaceholderText("Local packed/source folders, separated by ;")
+        host_form.addRow("Client local mods", self.local_client_mod_paths)
+        self.local_server_mod_paths = QLineEdit(
+            str(self.local_host_settings.get("server_mod_paths") or "")
+        )
+        self.local_server_mod_paths.setPlaceholderText("Local packed/source folders, separated by ;")
+        host_form.addRow("Server local mods", self.local_server_mod_paths)
+        self.local_file_patching = QCheckBox("Development source mode (enable file patching)")
+        self.local_file_patching.setChecked(bool(self.local_host_settings.get("file_patching")))
+        self.local_file_patching.setToolTip(
+            "For unpacked source testing only. Run a packed/signature test before release."
+        )
+        host_form.addRow("Source testing", self.local_file_patching)
+        host_layout.addLayout(host_form)
+        host_actions = QHBoxLayout()
+        install_server = QPushButton("Install temporary server")
+        install_server.clicked.connect(self._install_temporary_server)
+        sync_keys = QPushButton("Sync public keys")
+        sync_keys.clicked.connect(self._sync_local_server_keys)
+        self.local_server_start = QPushButton("Start local server")
+        set_ui_role(self.local_server_start, "primary")
+        self.local_server_start.clicked.connect(self._start_local_server)
+        self.local_server_stop = QPushButton("Stop server")
+        self.local_server_stop.setEnabled(False)
+        self.local_server_stop.clicked.connect(self._stop_local_server)
+        host_actions.addWidget(install_server)
+        host_actions.addWidget(sync_keys)
+        host_actions.addStretch(1)
+        host_actions.addWidget(self.local_server_stop)
+        host_actions.addWidget(self.local_server_start)
+        host_layout.addLayout(host_actions)
+        local_layout.addWidget(host_card)
         local_actions = QHBoxLayout()
         verify_local = QPushButton("Verify profile mods")
         verify_local.clicked.connect(lambda: self._verify_local_tool_mods(editor=False))
@@ -436,6 +514,180 @@ class LocalToolsFeatureMixin:
             )
         reply.deleteLater()
 
+    def _browse_local_folder(self, target: QLineEdit):
+        selected = QFileDialog.getExistingDirectory(self, "Select local DayZ folder")
+        if selected:
+            target.setText(selected)
+            if target is self.local_server_root and not self.local_server_config.text().strip():
+                self.local_server_config.setText(str(Path(selected) / "serverDZ.cfg"))
+
+    def _browse_steamcmd(self):
+        path, _ = QFileDialog.getOpenFileName(self, "Select SteamCMD")
+        if path:
+            self.local_steamcmd.setText(path)
+
+    @staticmethod
+    def _local_path_list(value: str) -> tuple[Path, ...]:
+        return tuple(Path(part.strip()) for part in value.split(";") if part.strip())
+
+    def _save_local_host_settings(self):
+        self.local_host_settings = {
+            "server_root": self.local_server_root.text().strip(),
+            "config": self.local_server_config.text().strip(),
+            "steamcmd": self.local_steamcmd.text().strip(),
+            "client_mod_paths": self.local_client_mod_paths.text().strip(),
+            "server_mod_paths": self.local_server_mod_paths.text().strip(),
+            "file_patching": self.local_file_patching.isChecked(),
+        }
+        self.save_user_settings(silent=True)
+
+    def _install_temporary_server(self):
+        root = Path(self.local_server_root.text().strip())
+        try:
+            command = build_steamcmd_install_command(Path(self.local_steamcmd.text().strip()), root)
+        except ValueError as exc:
+            QMessageBox.warning(self, "SteamCMD install unavailable", str(exc))
+            return
+        reply = QMessageBox.question(
+            self,
+            "Install temporary DayZ server?",
+            "SteamCMD will download or validate DayZ Dedicated Server into the selected server root. "
+            "Existing files in that folder may be updated. Continue?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if reply != QMessageBox.Yes:
+            return
+        self._save_local_host_settings()
+        process = QProcess(self)
+        process.setWorkingDirectory(str(root.parent))
+        process.finished.connect(lambda _code, _status: self._finish_temporary_server_install())
+        self.local_server_install_process = process
+        process.start(command[0], command[1:])
+        self.local_tools_status.setText("SteamCMD is preparing the temporary DayZ dedicated serverâ€¦")
+
+    def _finish_temporary_server_install(self):
+        process = getattr(self, "local_server_install_process", None)
+        if not process:
+            return
+        if process.exitCode() == 0:
+            root = Path(self.local_server_root.text().strip())
+            executable = server_executable(root)
+            if executable:
+                self.local_tools_status.setText("Temporary DayZ dedicated server is ready.")
+            else:
+                self.local_tools_status.setText(
+                    "SteamCMD completed, but the dedicated-server executable was not found. "
+                    "Check the selected server root."
+                )
+        else:
+            self.local_tools_status.setText(
+                "SteamCMD could not prepare the temporary server. Check SteamCMD's output and login state."
+            )
+        self.local_server_install_process = None
+
+    def _local_server_launch(self) -> LocalServerLaunch:
+        root = Path(self.local_server_root.text().strip())
+        executable = server_executable(root)
+        if executable is None:
+            raise ValueError("DayZ dedicated-server executable was not found in the selected server root.")
+        profile = self._current_local_tool_profile()
+        _host, port = parse_local_endpoint(profile.endpoint)
+        config = Path(self.local_server_config.text().strip() or root / "serverDZ.cfg")
+        return LocalServerLaunch(
+            root=root,
+            executable=executable,
+            config=config,
+            profiles=root / "profiles",
+            port=port,
+            mod_paths=self._local_path_list(self.local_client_mod_paths.text()),
+            server_mod_paths=self._local_path_list(self.local_server_mod_paths.text()),
+            file_patching=self.local_file_patching.isChecked(),
+        )
+
+    def _start_local_server(self):
+        process = getattr(self, "local_server_process", None)
+        if process and process.state() != QProcess.NotRunning:
+            QMessageBox.information(self, "Local server running", "Stop the managed local server before starting it again.")
+            return
+        try:
+            launch = self._local_server_launch()
+            command = build_local_server_command(launch)
+        except ValueError as exc:
+            QMessageBox.warning(self, "Local server cannot start", str(exc))
+            return
+        self._save_local_host_settings()
+        process = QProcess(self)
+        process.setWorkingDirectory(str(launch.root))
+        process.finished.connect(self._local_server_finished)
+        self.local_server_process = process
+        self.local_server_start.setEnabled(False)
+        self.local_server_stop.setEnabled(True)
+        process.start(command[0], command[1:])
+        self.local_tools_status.setText(f"Starting local DayZ server on port {launch.port}â€¦")
+
+    def _stop_local_server(self):
+        process = getattr(self, "local_server_process", None)
+        if process and process.state() != QProcess.NotRunning:
+            process.terminate()
+            self.local_tools_status.setText("Stopping the managed local DayZ serverâ€¦")
+
+    def _local_server_finished(self, _exit_code, _status):
+        self.local_server_process = None
+        self.local_server_start.setEnabled(True)
+        self.local_server_stop.setEnabled(False)
+        self.local_tools_status.setText("Managed local DayZ server stopped.")
+
+    def _sync_local_server_keys(self):
+        root = Path(self.local_server_root.text().strip())
+        paths = self._local_path_list(self.local_client_mod_paths.text()) + self._local_path_list(
+            self.local_server_mod_paths.text()
+        )
+        reply = QMessageBox.question(
+            self,
+            "Sync public mod keys?",
+            "WolfLauncher will copy public .bikey files from the selected packed local mod "
+            "folders into the server keys directory. Existing matching public keys may be replaced. "
+            "Private keys are never copied. Continue?",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if reply != QMessageBox.Yes:
+            return
+        try:
+            copied = sync_public_keys(paths, root)
+        except (OSError, ValueError) as exc:
+            QMessageBox.warning(self, "Could not sync public keys", str(exc))
+            return
+        self._save_local_host_settings()
+        self.local_tools_status.setText(
+            f"Synced {len(copied)} public mod key(s) to {root / 'keys'}."
+        )
+
+    def _with_local_client_mods(self, command: list[str]) -> list[str]:
+        local_paths = self._local_path_list(self.local_client_mod_paths.text())
+        missing = [str(path) for path in local_paths if not path.is_dir()]
+        if missing:
+            raise ValueError("Local client mod folder not found: " + ", ".join(missing))
+        if not local_paths:
+            return command
+        updated = list(command)
+        mod_index = next(
+            (index for index, value in enumerate(updated) if value.startswith("-mod=")), None
+        )
+        suffix = ";".join(str(path) for path in local_paths)
+        if mod_index is None:
+            connect_index = next(
+                (index for index, value in enumerate(updated) if value.startswith("-connect=")),
+                len(updated),
+            )
+            updated.insert(connect_index, f"-mod={suffix}")
+        else:
+            updated[mod_index] = updated[mod_index] + ";" + suffix
+        if self.local_file_patching.isChecked() and "-filePatching" not in updated:
+            updated.append("-filePatching")
+        return updated
+
     def _join_local_test_server(self):
         install = self._native_local_install()
         if not install:
@@ -453,10 +705,14 @@ class LocalToolsFeatureMixin:
         server = Server(profile.name, "Local development", host, port, port)
         try:
             prepared = prepare_native_launch(install, server, self.player_name.text().strip() or DEFAULT_PLAYER_NAME, mods)
+            command = self._with_local_client_mods(prepared.command)
         except NativeLaunchError as exc:
             QMessageBox.warning(self, f"Local launch blocked during {exc.stage}", exc.user_message())
             return
-        self._show_local_launch(prepared.command, f"Joining {server.connect_target}")
+        except ValueError as exc:
+            QMessageBox.warning(self, "Local launch blocked", str(exc))
+            return
+        self._show_local_launch(command, f"Joining {server.connect_target}")
 
     def _show_local_launch(self, command: list[str], title: str, *, minimize_on_handoff: bool = False):
         self._save_local_tool_profile()

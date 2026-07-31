@@ -25,6 +25,10 @@
   has a searchable picker containing only installed non-core Workshop mods;
   Local Development exclusively owns the persistent LAN endpoint and client
   mod profile.
+- Added initial Local Development hosting controls: existing-root start/stop,
+  anonymous SteamCMD temporary install, client/server local mod-folder fields,
+  development file-patching mode and explicit public-key-only sync into the
+  managed server's `keys` directory.
 
 - Added a hidden-until-needed Recent servers section beneath Favourite Servers.
   It shows up to three launched servers that are not already favourites.

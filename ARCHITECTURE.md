@@ -307,6 +307,14 @@ offline handoff without `-connect`. Local Development alone owns the saved
 profile data: name, ordered client Workshop IDs and existing LAN
 `host:game-port` endpoint, used to launch native DayZ into that test server.
 
+Local Development can also manage a dedicated-server root accessible to the
+running Launcher (same machine or mounted share). It starts/stops only its
+owned process, can invoke SteamCMD anonymously for a disposable App ID 223350
+installation, accepts explicit client/server local mod folders, and copies only
+public `.bikey` files into the server `keys` directory after confirmation.
+Private keys are never read or copied. Source-development mode enables
+`-filePatching` and is deliberately not a release/signature test.
+
 Steam remains the only Workshop subscription/download owner. When the Editor
 action is selected, WolfLauncher explicitly asks Steam to subscribe/update its
 three standard requirements, waits for the isolated helper to finish, rechecks

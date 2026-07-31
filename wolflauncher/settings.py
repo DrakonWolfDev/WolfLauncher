@@ -10,7 +10,7 @@ SETTINGS_PATH = APP_DIR / "settings.json"
 FAVOURITES_PATH = APP_DIR / "favourites.json"
 CURATED_SERVERS_PATH = APP_DIR / "servers.yaml"
 DEFAULT_DISCOVERY_PROVIDER = "wolfapi_v1"
-SETTINGS_SCHEMA_VERSION = 6
+SETTINGS_SCHEMA_VERSION = 7
 
 
 def ensure_app_dir() -> None:
@@ -67,6 +67,8 @@ def normalize_settings(data: Any) -> dict[str, Any]:
             migrated.setdefault("local_tool_profiles", [])
         if version < 6:
             migrated.setdefault("editor_extra_mod_ids", [])
+        if version < 7:
+            migrated.setdefault("local_host_settings", {})
         migrated["schema_version"] = SETTINGS_SCHEMA_VERSION
     return migrated
 
