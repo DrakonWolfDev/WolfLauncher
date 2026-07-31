@@ -308,11 +308,14 @@ links/absolute paths, and hands DayZ to Steam without `-connect`. The Local
 Development action prepares the same explicit mod set and launches native DayZ
 into the configured, already-running LAN/test endpoint.
 
-Steam remains the only Workshop subscription/download owner. V1 can verify
-local directories and open missing Workshop pages; it does not start, stop,
-install, configure, expose or monitor a dedicated server. Future hosting must
-use an explicit configured server root (the dedicated-server app is separate
-from the DayZ client), with bounded process control and logs; it must not infer
+Steam remains the only Workshop subscription/download owner. When the Editor
+action is selected, WolfLauncher explicitly asks Steam to subscribe/update its
+three standard requirements, waits for the isolated helper to finish, rechecks
+the local directories and only then launches. Its handoff dialog closes and the
+main window minimizes once DayZ is detected. V1 does not start, stop, install,
+configure, expose or monitor a dedicated server. Future hosting must use an
+explicit configured server root (the dedicated-server app is separate from the
+DayZ client), with bounded process control and logs; it must not infer
 public-hosting scope from a local profile.
 
 ## Known External Issue

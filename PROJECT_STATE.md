@@ -58,9 +58,11 @@ release matrix.
 - The Editor / Local Tools tab now provides saved, user-owned client-mod
   profiles, offline DayZ Editor launch with its required framework mods, and
   native joining of an already-running LAN/test server. It is advanced local
-  development tooling, not public hosting: dedicated-server installation,
-  start/stop control, project-editor opening and log views remain staged
-  follow-on work.
+  development tooling, not public hosting. The primary Editor action explicitly
+  asks Steam to subscribe/update its three standard requirements, verifies them
+  locally and then minimizes after a detected DayZ handoff; dedicated-server
+  installation, start/stop control, project-editor opening and log views remain
+  staged follow-on work.
 - The Server Browser, Mods, Settings and Favourite Servers layouts have passed
   real-desktop review. Preserve their information-first hierarchy unless new
   evidence requires a change.

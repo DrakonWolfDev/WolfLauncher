@@ -1,7 +1,8 @@
 """Editor and local-development UI for explicit, user-owned mod profiles."""
 
-from PySide6.QtCore import QUrl
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtCore import QProcess, QTimer, QUrl
+from PySide6.QtGui import QDesktopServices, QPixmap
+from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWidgets import (
     QComboBox,
     QFormLayout,
@@ -20,9 +21,16 @@ from .local_tools import DAYZ_EDITOR_MODS, LocalToolProfile, normalise_workshop_
 from .models import Server
 from .mods import RequiredMod, WORKSHOP_URL, scan_installed_mods
 from .native_launcher import NativeLaunchError, prepare_native_launch, prepare_native_local_launch
-from .platform_detection import install_label
+from .platform_detection import build_steam_start_command
 from .launch_dialogs import LaunchDialog
 from .theme import set_monospace, set_ui_role
+from .workers import WorkshopSubscriptionWorker
+
+
+DAYZ_EDITOR_IMAGE_URL = (
+    "https://images.steamusercontent.com/ugc/11750326816948686244/"
+    "3C971A82DF39596395E37D2F4AD63354D45006ED/?imw=536&imh=302&impolicy=Letterbox"
+)
 
 
 class LocalToolsFeatureMixin:
@@ -72,36 +80,48 @@ class LocalToolsFeatureMixin:
         profile_actions.addWidget(save_profile)
         profile_actions.addStretch(1)
         profile_layout.addLayout(profile_actions)
-        layout.addWidget(profile_card)
-
         self.local_tools_status = QLabel("Save a local mod profile, then verify its Workshop items before launching.")
         self.local_tools_status.setWordWrap(True)
         set_ui_role(self.local_tools_status, "metadata")
 
         editor_card = QFrame()
         set_ui_role(editor_card, "healthGroup")
-        editor_layout = QVBoxLayout(editor_card)
+        editor_layout = QHBoxLayout(editor_card)
+        self.editor_workshop_image = QLabel("DayZ Editor Workshop image")
+        self.editor_workshop_image.setFixedSize(268, 151)
+        self.editor_workshop_image.setScaledContents(True)
+        set_ui_role(self.editor_workshop_image, "modThumbnail")
+        editor_layout.addWidget(self.editor_workshop_image)
+        editor_content = QVBoxLayout()
         editor_title = QLabel("DayZ Editor")
         set_ui_role(editor_title, "cardTitle")
-        editor_layout.addWidget(editor_title)
-        editor_detail = QLabel("Launches an offline Editor session. DayZ Editor, CF and Dabs Framework are always included with the selected profile mods.")
+        editor_content.addWidget(editor_title)
+        editor_detail = QLabel(
+            "The DayZ Editor is an Open Source 3D Editing tool built to design new areas, "
+            "create vivid screenshots, and test game mechanics. Users can place any item "
+            "available in the game, import and export files from all types of mods, and brush "
+            "the landscape with your new ideas."
+        )
         editor_detail.setWordWrap(True)
         set_ui_role(editor_detail, "metadata")
-        editor_layout.addWidget(editor_detail)
+        editor_content.addWidget(editor_detail)
         editor_actions = QHBoxLayout()
         verify_editor = QPushButton("Verify Editor mods")
         verify_editor.clicked.connect(lambda: self._verify_local_tool_mods(editor=True))
-        open_editor_missing = QPushButton("Open missing Workshop pages")
-        open_editor_missing.clicked.connect(lambda: self._open_missing_local_tool_pages(editor=True))
         launch_editor = QPushButton("Open DayZ Editor")
         set_ui_role(launch_editor, "primary")
         launch_editor.clicked.connect(self._launch_local_editor)
         editor_actions.addWidget(verify_editor)
-        editor_actions.addWidget(open_editor_missing)
         editor_actions.addStretch(1)
         editor_actions.addWidget(launch_editor)
-        editor_layout.addLayout(editor_actions)
+        editor_content.addStretch(1)
+        editor_content.addLayout(editor_actions)
+        editor_layout.addLayout(editor_content, 1)
         layout.addWidget(editor_card)
+        self.editor_image_manager = QNetworkAccessManager(self)
+        self.editor_image_manager.finished.connect(self._finish_editor_image_load)
+        self.editor_image_manager.get(QNetworkRequest(QUrl(DAYZ_EDITOR_IMAGE_URL)))
+        layout.addWidget(profile_card)
 
         local_card = QFrame()
         set_ui_role(local_card, "healthGroup")
@@ -212,13 +232,102 @@ class LocalToolsFeatureMixin:
         install = self._native_local_install()
         if not install:
             return
+        self._save_local_tool_profile()
+        if not install.running:
+            command = build_steam_start_command(install)
+            if not command or not QProcess.startDetached(command[0], command[1:])[0]:
+                QMessageBox.warning(
+                    self,
+                    "Steam could not start",
+                    "Start the selected Steam client, sign in, then open DayZ Editor again.",
+                )
+                return
+            self.local_tools_status.setText("Starting Steam before preparing DayZ Editorâ€¦")
+            self.local_editor_steam_attempts = 0
+            QTimer.singleShot(1000, self._wait_for_editor_steam)
+            return
+        self._start_editor_workshop_resolution(install)
+
+    def _wait_for_editor_steam(self):
+        self.local_editor_steam_attempts += 1
+        install = self.selected_steam_install()
+        if install and install.running:
+            self._start_editor_workshop_resolution(install)
+            return
+        if self.local_editor_steam_attempts >= 60:
+            QMessageBox.warning(
+                self,
+                "Steam is not ready",
+                "Steam did not become ready within 60 seconds. Sign in, then open DayZ Editor again.",
+            )
+            return
+        QTimer.singleShot(1000, self._wait_for_editor_steam)
+
+    def _start_editor_workshop_resolution(self, install):
+        if self.workshop_subscription_worker and self.workshop_subscription_worker.isRunning():
+            QMessageBox.information(
+                self,
+                "Steam Workshop in progress",
+                "WolfLauncher is already waiting for a Steam Workshop operation to finish.",
+            )
+            return
+        mods = self._local_required_mods(editor=True)
+        editor_mods = mods[: len(DAYZ_EDITOR_MODS)]
+        self.local_tools_status.setText(
+            "Checking DayZ Editor, CF and Dabs Framework with Steam for updatesâ€¦"
+        )
+        worker = WorkshopSubscriptionWorker(
+            [mod.workshop_id for mod in editor_mods], install, force_update=True
+        )
+        self.workshop_subscription_worker = worker
+        worker.progress_ready.connect(self._update_editor_workshop_progress)
+        worker.subscription_ready.connect(self._finish_editor_workshop_resolution)
+        worker.finished.connect(self._clear_editor_workshop_worker)
+        worker.start()
+
+    def _update_editor_workshop_progress(self, snapshots):
+        installed = sum(1 for item in snapshots if item.installed)
+        self.local_tools_status.setText(
+            f"Steam is preparing DayZ Editor requirements: {installed} of {len(snapshots)} ready."
+        )
+
+    def _finish_editor_workshop_resolution(self, result):
+        if not result.ok:
+            QMessageBox.warning(
+                self,
+                "DayZ Editor requirements incomplete",
+                result.error or "Steam did not finish every required DayZ Editor item.",
+            )
+            return
+        install = self.selected_steam_install()
+        if not install:
+            QMessageBox.warning(
+                self,
+                "Steam not detected",
+                "The selected Steam installation is no longer available.",
+            )
+            return
         mods = self._verify_local_tool_mods(editor=True)
         try:
-            prepared = prepare_native_local_launch(install, self.player_name.text().strip() or DEFAULT_PLAYER_NAME, mods)
+            prepared = prepare_native_local_launch(
+                install, self.player_name.text().strip() or DEFAULT_PLAYER_NAME, mods
+            )
         except NativeLaunchError as exc:
             QMessageBox.warning(self, f"Editor launch blocked during {exc.stage}", exc.user_message())
             return
-        self._show_local_launch(prepared.command, "Opening DayZ Editor")
+        self._show_local_launch(prepared.command, "Opening DayZ Editor", minimize_on_handoff=True)
+
+    def _clear_editor_workshop_worker(self):
+        self.workshop_subscription_worker = None
+
+    def _finish_editor_image_load(self, reply):
+        if reply.error() != QNetworkReply.NoError:
+            reply.deleteLater()
+            return
+        image = QPixmap()
+        if image.loadFromData(bytes(reply.readAll())):
+            self.editor_workshop_image.setPixmap(image)
+        reply.deleteLater()
 
     def _join_local_test_server(self):
         install = self._native_local_install()
@@ -242,7 +351,13 @@ class LocalToolsFeatureMixin:
             return
         self._show_local_launch(prepared.command, f"Joining {server.connect_target}")
 
-    def _show_local_launch(self, command: list[str], title: str):
+    def _show_local_launch(self, command: list[str], title: str, *, minimize_on_handoff: bool = False):
         self._save_local_tool_profile()
-        dialog = LaunchDialog(self, command, title, "native local launch command")
+        dialog = LaunchDialog(
+            self,
+            command,
+            title,
+            "native local launch command",
+            minimize_on_handoff=minimize_on_handoff,
+        )
         dialog.exec()

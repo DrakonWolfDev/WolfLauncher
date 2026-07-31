@@ -337,10 +337,13 @@ DayZ Editor, CF and Dabs Framework automatically and starts offline without a
 server connection. **Join local test server** uses the same profile to launch
 the native Steam client directly into the saved endpoint.
 
-Verify profile mods before launching. Missing-item actions open the relevant
-Steam Workshop pages; Steam remains responsible for subscription and download.
-WolfLauncher does not yet start, stop or configure a dedicated server. Those
-local process controls and development logs are planned follow-on work.
+When **Open DayZ Editor** is used, WolfLauncher asks the signed-in Steam client
+to subscribe, download or update DayZ Editor, CF and Dabs Framework, then
+rechecks the local directories before it launches. The Editor launch dialog
+closes and WolfLauncher minimizes after DayZ is detected. Steam remains the
+Workshop owner. WolfLauncher does not yet start, stop or configure a dedicated
+server; those local process controls and development logs are planned follow-on
+work.
 
 ## Server Configuration
 

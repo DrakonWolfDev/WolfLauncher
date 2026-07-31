@@ -43,6 +43,7 @@ class PostHandoffProcessCheckMixin:
             self.output.append(
                 f"\nPost-handoff process check: {check.detail} after about {elapsed_seconds} seconds."
             )
+            self.handle_verified_handoff()
             return
 
         if self.post_handoff_check_attempt < POST_HANDOFF_PROCESS_CHECK_ATTEMPTS:
@@ -58,15 +59,24 @@ class PostHandoffProcessCheckMixin:
             "in Settings for advisory Steam/Proton compatibility notes."
         )
 
+    def handle_verified_handoff(self):
+        """Hook for launch surfaces that should return to the desktop on success."""
+
 
 class LaunchDialog(PostHandoffProcessCheckMixin, QDialog):
     def __init__(
-        self, parent, command: list[str], title: str, handoff_label: str = "launch command"
+        self,
+        parent,
+        command: list[str],
+        title: str,
+        handoff_label: str = "launch command",
+        minimize_on_handoff: bool = False,
     ):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.resize(820, 460)
         self.handoff_label = handoff_label
+        self.minimize_on_handoff = minimize_on_handoff
         self.command_text = format_launch_command(command)
         self.process = QProcess(self)
         self.process.setProcessChannelMode(QProcess.MergedChannels)
@@ -136,6 +146,14 @@ class LaunchDialog(PostHandoffProcessCheckMixin, QDialog):
                 "\nLaunch command could not start. Check that the configured launcher or Steam command exists."
             )
             self.close_button.setEnabled(True)
+
+    def handle_verified_handoff(self):
+        if not self.minimize_on_handoff:
+            return
+        parent = self.parentWidget()
+        self.close()
+        if parent:
+            parent.showMinimized()
 
 
 class PreflightLaunchDialog(QDialog):

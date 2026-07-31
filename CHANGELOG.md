@@ -16,6 +16,11 @@
   Dabs Framework automatically included, and launches the native client into
   an already-running LAN/test server. This first pass deliberately does not
   install, host, expose or manage a dedicated server.
+- Made **Open DayZ Editor** a fully confirmed Steam workflow: it starts Steam
+  when necessary, subscribes/checks updates for DayZ Editor, CF and Dabs
+  Framework, verifies their local directories, then launches and minimizes
+  WolfLauncher after DayZ is detected. The Editor card now uses its Workshop
+  artwork and official description as the top-of-page primary action.
 
 - Added a hidden-until-needed Recent servers section beneath Favourite Servers.
   It shows up to three launched servers that are not already favourites.
