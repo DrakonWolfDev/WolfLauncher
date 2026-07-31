@@ -118,8 +118,9 @@ verify DayZ directly from Steam before trying WolfLauncher again.
 - Offline DayZ Editor launch with a searchable picker for locally installed
   extra mods; its DayZ Editor, CF and Dabs Framework requirements are fixed.
 - Saved Local Development profiles for LAN endpoints and client-mod sets.
-- Local dedicated-server controls for an existing accessible server root or an
-  anonymous SteamCMD temporary install, explicit client/server local mod paths,
+- Local dedicated-server controls for an existing accessible server root, a
+  Steam-owned Windows install with completion detection, or an anonymous
+  SteamCMD custom-path install, explicit client/server local mod paths,
   and confirmation-only public-key sync.
 - Native launch into an already-running local or LAN test server.
 - This is not a public-hosting feature: WolfLauncher v1 does not install, start

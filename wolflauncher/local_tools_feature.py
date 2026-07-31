@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QMessageBox,
+    QProgressBar,
     QPushButton,
     QVBoxLayout,
     QWidget,
@@ -28,6 +29,7 @@ from .local_server import (
     build_local_server_command,
     build_steamcmd_install_command,
     server_executable,
+    steam_server_root,
     sync_public_keys,
 )
 from .local_tools import (
@@ -41,6 +43,7 @@ from .models import Server
 from .mods import RequiredMod, WORKSHOP_URL, scan_installed_mods
 from .native_launcher import NativeLaunchError, prepare_native_launch, prepare_native_local_launch
 from .platform_detection import build_steam_start_command
+from .platforms import current_platform
 from .launch_dialogs import LaunchDialog
 from .theme import set_monospace, set_ui_role
 from .workers import WorkshopSubscriptionWorker
@@ -200,8 +203,8 @@ class LocalToolsFeatureMixin:
         set_ui_role(host_title, "cardTitle")
         host_layout.addWidget(host_title)
         host_detail = QLabel(
-            "Manage a server root available on this machine or mounted share. SteamCMD "
-            "creates a disposable clean server; local packed mod folders stay user-owned."
+            "Manage a server root available on this machine or mounted share. On Windows, Steam "
+            "installs the official DayZ Dedicated Server tool; SteamCMD remains for custom paths."
         )
         host_detail.setWordWrap(True)
         set_ui_role(host_detail, "metadata")
@@ -241,7 +244,11 @@ class LocalToolsFeatureMixin:
         host_form.addRow("Source testing", self.local_file_patching)
         host_layout.addLayout(host_form)
         host_actions = QHBoxLayout()
-        install_server = QPushButton("Install temporary server")
+        self.steam_server_install = QPushButton("Install with Steam")
+        self.steam_server_install.clicked.connect(self._install_server_with_steam)
+        if current_platform().capabilities.platform_id != "windows":
+            self.steam_server_install.setVisible(False)
+        install_server = QPushButton("SteamCMD custom install")
         install_server.clicked.connect(self._install_temporary_server)
         sync_keys = QPushButton("Sync public keys")
         sync_keys.clicked.connect(self._sync_local_server_keys)
@@ -251,12 +258,20 @@ class LocalToolsFeatureMixin:
         self.local_server_stop = QPushButton("Stop server")
         self.local_server_stop.setEnabled(False)
         self.local_server_stop.clicked.connect(self._stop_local_server)
+        host_actions.addWidget(self.steam_server_install)
         host_actions.addWidget(install_server)
         host_actions.addWidget(sync_keys)
         host_actions.addStretch(1)
         host_actions.addWidget(self.local_server_stop)
         host_actions.addWidget(self.local_server_start)
         host_layout.addLayout(host_actions)
+        self.steam_server_progress = QProgressBar()
+        self.steam_server_progress.setVisible(False)
+        self.steam_server_progress.setTextVisible(True)
+        host_layout.addWidget(self.steam_server_progress)
+        self.steam_server_install_timer = QTimer(self)
+        self.steam_server_install_timer.setInterval(3000)
+        self.steam_server_install_timer.timeout.connect(self._poll_steam_server_install)
         local_layout.addWidget(host_card)
         local_actions = QHBoxLayout()
         verify_local = QPushButton("Verify profile mods")
@@ -585,6 +600,43 @@ class LocalToolsFeatureMixin:
                 "SteamCMD could not prepare the temporary server. Check SteamCMD's output and login state."
             )
         self.local_server_install_process = None
+
+    def _install_server_with_steam(self):
+        if current_platform().capabilities.platform_id != "windows":
+            return
+        install = self.selected_steam_install()
+        if not install or not install.root:
+            QMessageBox.warning(self, "Steam not detected", "Open Steam, then try the Steam-owned install again.")
+            return
+        if not QDesktopServices.openUrl(QUrl("steam://install/223350")):
+            QMessageBox.warning(self, "Steam install unavailable", "WolfLauncher could not ask Steam to install DayZ Dedicated Server.")
+            return
+        self.steam_server_progress.setRange(0, 0)
+        self.steam_server_progress.setFormat("Waiting for Steam to finish DayZ Dedicated Server…")
+        self.steam_server_progress.setVisible(True)
+        self.steam_server_install.setEnabled(False)
+        self.steam_server_install_timer.start()
+        self.local_tools_status.setText(
+            "Steam is managing the DayZ Dedicated Server download. WolfLauncher will detect it when installation completes."
+        )
+
+    def _poll_steam_server_install(self):
+        install = self.selected_steam_install()
+        libraries = list(getattr(install, "library_steamapps", []) or []) if install else []
+        if install and install.steamapps and install.steamapps not in libraries:
+            libraries.append(install.steamapps)
+        root = steam_server_root(libraries)
+        if not root:
+            return
+        self.steam_server_install_timer.stop()
+        self.steam_server_install.setEnabled(True)
+        self.steam_server_progress.setRange(0, 100)
+        self.steam_server_progress.setValue(100)
+        self.steam_server_progress.setFormat("Steam installation detected")
+        self.local_server_root.setText(str(root))
+        self.local_server_config.setText(str(root / "serverDZ.cfg"))
+        self._save_local_host_settings()
+        self.local_tools_status.setText("Steam-installed DayZ Dedicated Server is ready to configure and start.")
 
     def _local_server_launch(self) -> LocalServerLaunch:
         root = Path(self.local_server_root.text().strip())

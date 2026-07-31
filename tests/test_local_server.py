@@ -7,6 +7,7 @@ from wolflauncher.local_server import (
     build_local_server_command,
     build_steamcmd_install_command,
     public_key_files,
+    steam_server_root,
 )
 
 
@@ -45,6 +46,15 @@ class LocalServerTests(unittest.TestCase):
             command = build_steamcmd_install_command(steamcmd, root / "server")
         self.assertIn("223350", command)
         self.assertIn("+login", command)
+
+    def test_finds_completed_steam_owned_server(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            steamapps = Path(tmpdir) / "steamapps"
+            root = steamapps / "common" / "Dedicated DayZ"
+            root.mkdir(parents=True)
+            (root / "DayZServer_x64.exe").touch()
+            (steamapps / "appmanifest_223350.acf").write_text('"installdir" "Dedicated DayZ"')
+            self.assertEqual(steam_server_root([steamapps]), root)
 
 
 if __name__ == "__main__":

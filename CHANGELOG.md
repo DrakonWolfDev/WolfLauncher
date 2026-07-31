@@ -11,6 +11,10 @@
 
 ## Unreleased
 
+- Windows local dedicated-server setup now asks the installed Steam client to own
+  the DayZ Dedicated Server tool install and shows an activity bar until the
+  completed server is detected; SteamCMD remains the custom-path alternative.
+
 - Added an **Editor / Local Tools** tab for advanced local development. It
   saves client-mod profiles, opens offline DayZ Editor with DayZ Editor, CF and
   Dabs Framework automatically included, and launches the native client into

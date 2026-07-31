@@ -309,8 +309,9 @@ profile data: name, ordered client Workshop IDs and existing LAN
 
 Local Development can also manage a dedicated-server root accessible to the
 running Launcher (same machine or mounted share). It starts/stops only its
-owned process, can invoke SteamCMD anonymously for a disposable App ID 223350
-installation, accepts explicit client/server local mod folders, and copies only
+owned process, asks the Windows Steam client to install its App ID 223350 tool
+and detects completion from Steam library manifests; SteamCMD remains available
+for an anonymous custom-path installation. It accepts explicit client/server local mod folders, and copies only
 public `.bikey` files into the server `keys` directory after confirmation.
 Private keys are never read or copied. Source-development mode enables
 `-filePatching` and is deliberately not a release/signature test.

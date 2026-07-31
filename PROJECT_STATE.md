@@ -65,7 +65,7 @@ release matrix.
   installation, start/stop control, project-editor opening and log views remain
   staged follow-on work.
 - Local Development now has an initial host workspace for server roots visible
-  to the Launcher: managed start/stop, anonymous SteamCMD temporary setup,
+  to the Launcher: managed start/stop, Steam-owned Windows setup with completed-install detection, and anonymous SteamCMD custom-path setup,
   explicit local client/server mod folders, file-patching source tests and
   confirmed public-key-only sync. Remote machines without an accessible shared
   root remain connect-only; remote process control is not inferred.

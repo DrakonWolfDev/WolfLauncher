@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
 
 DAYZ_SERVER_APP_ID = "223350"
+_INSTALLDIR_RE = re.compile(r'"installdir"\s+"((?:\\.|[^"\\])*)"', re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -27,6 +29,21 @@ def server_executable(root: Path) -> Path | None:
         candidate = root / name
         if candidate.is_file():
             return candidate
+    return None
+
+
+def steam_server_root(library_steamapps: tuple[Path, ...] | list[Path]) -> Path | None:
+    """Find a completed Steam-owned dedicated-server installation."""
+    for steamapps in library_steamapps:
+        manifest = steamapps / f"appmanifest_{DAYZ_SERVER_APP_ID}.acf"
+        try:
+            match = _INSTALLDIR_RE.search(manifest.read_text(errors="ignore"))
+        except OSError:
+            match = None
+        install_dir = match.group(1).replace(r"\\", "\\").replace(r'\\"', '"') if match else "DayZServer"
+        root = steamapps / "common" / install_dir
+        if server_executable(root):
+            return root
     return None
 
 

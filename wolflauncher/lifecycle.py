@@ -30,6 +30,7 @@ TIMER_ATTRIBUTES = (
     "remote_search_timer",
     "browser_filter_timer",
     "browser_selection_timer",
+    "steam_server_install_timer",
 )
 
 
