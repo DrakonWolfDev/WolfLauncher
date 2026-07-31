@@ -469,6 +469,9 @@ class SettingsFeatureMixin:
                 }
                 for profile in getattr(self, "local_tool_profiles", [])
             ],
+            "editor_extra_mod_ids": sorted(
+                getattr(self, "editor_extra_mod_ids", set()), key=int
+            ),
         }
         api_key = (
             self.steam_web_api_key.text().strip()

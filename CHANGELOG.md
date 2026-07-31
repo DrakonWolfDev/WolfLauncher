@@ -21,6 +21,10 @@
   Framework, verifies their local directories, then launches and minimizes
   WolfLauncher after DayZ is detected. The Editor card now uses its Workshop
   artwork and official description as the top-of-page primary action.
+- Split Editor extra-mod selection from Local Development profiles. Editor now
+  has a searchable picker containing only installed non-core Workshop mods;
+  Local Development exclusively owns the persistent LAN endpoint and client
+  mod profile.
 
 - Added a hidden-until-needed Recent servers section beneath Favourite Servers.
   It shows up to three launched servers that are not already favourites.

@@ -115,9 +115,9 @@ verify DayZ directly from Steam before trying WolfLauncher again.
 
 ### Editor / Local Tools
 
-- Saved local client-mod profiles for advanced users and mod developers.
-- Offline DayZ Editor launch, including its required DayZ Editor, CF and Dabs
-  Framework Workshop items.
+- Offline DayZ Editor launch with a searchable picker for locally installed
+  extra mods; its DayZ Editor, CF and Dabs Framework requirements are fixed.
+- Saved Local Development profiles for LAN endpoints and client-mod sets.
 - Native launch into an already-running local or LAN test server.
 - This is not a public-hosting feature: WolfLauncher v1 does not install, start
   or expose a dedicated server.
@@ -331,11 +331,11 @@ DayZ/Workshop paths and server target.
 ## Editor / Local Tools
 
 The **Editor / Local Tools** tab is for advanced local development sessions.
-Save a named profile with the client Workshop IDs for a project and, optionally,
-an existing LAN endpoint such as `192.168.1.25:2302`. **Open DayZ Editor** adds
-DayZ Editor, CF and Dabs Framework automatically and starts offline without a
-server connection. **Join local test server** uses the same profile to launch
-the native Steam client directly into the saved endpoint.
+**DayZ Editor** is independent from server work: choose extra mods only from
+locally installed Workshop folders, while DayZ Editor, CF and Dabs Framework
+are included automatically for each offline launch. **Local Development** owns
+the saved profile: a named client-mod list and an existing LAN endpoint such as
+`192.168.1.25:2302`, used to launch the native Steam client into that server.
 
 When **Open DayZ Editor** is used, WolfLauncher asks the signed-in Steam client
 to subscribe, download or update DayZ Editor, CF and Dabs Framework, then

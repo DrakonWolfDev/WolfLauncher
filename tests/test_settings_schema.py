@@ -9,6 +9,7 @@ class SettingsSchemaTests(unittest.TestCase):
 
         self.assertEqual(settings["schema_version"], SETTINGS_SCHEMA_VERSION)
         self.assertEqual(settings["local_tool_profiles"], [])
+        self.assertEqual(settings["editor_extra_mod_ids"], [])
         self.assertTrue(settings["hide_quality_flagged"])
         self.assertEqual(settings["future_setting"], {"keep": True})
 

@@ -299,14 +299,13 @@ fail before handoff.
 ## Editor / Local Tools
 
 The Editor / Local Tools tab is an explicit advanced-development workspace,
-separate from curated YAML and the discovered-server cache. It persists small,
-user-owned local client-mod profiles in `settings.json`: a name, ordered
-Workshop IDs and optional existing LAN `host:game-port` endpoint. The offline
-Editor action combines the profile mods with DayZ Editor (`2250764298`), CF
-(`1559212036`) and Dabs Framework (`2545327648`), prepares normal native mod
-links/absolute paths, and hands DayZ to Steam without `-connect`. The Local
-Development action prepares the same explicit mod set and launches native DayZ
-into the configured, already-running LAN/test endpoint.
+separate from curated YAML and the discovered-server cache. Editor selections
+are a separate locally installed-only checklist persisted as
+`editor_extra_mod_ids` in `settings.json`; they are combined with DayZ Editor
+(`2250764298`), CF (`1559212036`) and Dabs Framework (`2545327648`) for an
+offline handoff without `-connect`. Local Development alone owns the saved
+profile data: name, ordered client Workshop IDs and existing LAN
+`host:game-port` endpoint, used to launch native DayZ into that test server.
 
 Steam remains the only Workshop subscription/download owner. When the Editor
 action is selected, WolfLauncher explicitly asks Steam to subscribe/update its

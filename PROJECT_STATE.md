@@ -55,9 +55,10 @@ release matrix.
   decoder rejects partial/overflow/ambiguous responses, while Steam remains
   the source for Workshop metadata and local install state. DZSA is retained
   only inside the visible legacy Linux shell-launcher fallback.
-- The Editor / Local Tools tab now provides saved, user-owned client-mod
-  profiles, offline DayZ Editor launch with its required framework mods, and
-  native joining of an already-running LAN/test server. It is advanced local
+- The Editor / Local Tools tab now provides an offline Editor-only picker of
+  locally installed extra mods alongside its required framework mods, plus
+  saved Local Development profiles for native joining of an already-running
+  LAN/test server. It is advanced local
   development tooling, not public hosting. The primary Editor action explicitly
   asks Steam to subscribe/update its three standard requirements, verifies them
   locally and then minimizes after a detected DayZ handoff; dedicated-server

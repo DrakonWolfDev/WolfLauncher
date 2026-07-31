@@ -10,6 +10,8 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
     QMessageBox,
     QPushButton,
     QVBoxLayout,
@@ -17,7 +19,13 @@ from PySide6.QtWidgets import (
 )
 
 from .launcher import DEFAULT_PLAYER_NAME
-from .local_tools import DAYZ_EDITOR_MODS, LocalToolProfile, normalise_workshop_ids, parse_local_endpoint, profiles_from_settings
+from .local_tools import (
+    DAYZ_EDITOR_MODS,
+    LocalToolProfile,
+    normalise_workshop_ids,
+    parse_local_endpoint,
+    profiles_from_settings,
+)
 from .models import Server
 from .mods import RequiredMod, WORKSHOP_URL, scan_installed_mods
 from .native_launcher import NativeLaunchError, prepare_native_launch, prepare_native_local_launch
@@ -50,10 +58,13 @@ class LocalToolsFeatureMixin:
 
         self.local_tool_profiles = profiles_from_settings(self.settings.get("local_tool_profiles"))
         self.local_tool_active_index = 0
+        self.editor_extra_mod_ids = set(
+            normalise_workshop_ids(self.settings.get("editor_extra_mod_ids", []))
+        )
         profile_card = QFrame()
         set_ui_role(profile_card, "healthGroup")
         profile_layout = QVBoxLayout(profile_card)
-        profile_layout.addWidget(QLabel("Local mod profile"))
+        profile_layout.addWidget(QLabel("Local development profile"))
         picker_row = QHBoxLayout()
         self.local_profile_picker = QComboBox()
         self.local_profile_picker.currentIndexChanged.connect(self._load_local_tool_profile)
@@ -68,7 +79,7 @@ class LocalToolsFeatureMixin:
         set_monospace(self.local_profile_mods)
         self.local_profile_mods.setPlaceholderText("Workshop IDs, separated by commas")
         self.local_profile_endpoint = QLineEdit()
-        self.local_profile_endpoint.setPlaceholderText("192.168.1.25:2302 (optional for Editor)")
+        self.local_profile_endpoint.setPlaceholderText("192.168.1.25:2302")
         form.addRow("Name", self.local_profile_name)
         form.addRow("Client Workshop IDs", self.local_profile_mods)
         form.addRow("LAN test server", self.local_profile_endpoint)
@@ -121,8 +132,34 @@ class LocalToolsFeatureMixin:
         self.editor_image_manager = QNetworkAccessManager(self)
         self.editor_image_manager.finished.connect(self._finish_editor_image_load)
         self.editor_image_manager.get(QNetworkRequest(QUrl(DAYZ_EDITOR_IMAGE_URL)))
+        editor_mods_card = QFrame()
+        set_ui_role(editor_mods_card, "healthGroup")
+        editor_mods_layout = QVBoxLayout(editor_mods_card)
+        editor_mods_title = QLabel("Editor mods")
+        set_ui_role(editor_mods_title, "cardTitle")
+        editor_mods_layout.addWidget(editor_mods_title)
+        editor_mods_detail = QLabel(
+            "Choose extra Workshop mods already installed locally. DayZ Editor, CF and "
+            "Dabs Framework are always included and are not shown here."
+        )
+        editor_mods_detail.setWordWrap(True)
+        set_ui_role(editor_mods_detail, "metadata")
+        editor_mods_layout.addWidget(editor_mods_detail)
+        editor_filter_row = QHBoxLayout()
+        self.editor_mod_filter = QLineEdit()
+        self.editor_mod_filter.setPlaceholderText("Filter installed mods")
+        self.editor_mod_filter.textChanged.connect(self._filter_editor_mod_picker)
+        refresh_editor_mods = QPushButton("Refresh installed mods")
+        refresh_editor_mods.clicked.connect(self._refresh_editor_mod_picker)
+        editor_filter_row.addWidget(self.editor_mod_filter, 1)
+        editor_filter_row.addWidget(refresh_editor_mods)
+        editor_mods_layout.addLayout(editor_filter_row)
+        self.editor_mod_picker = QListWidget()
+        self.editor_mod_picker.setAccessibleName("Installed extra Editor mods")
+        self.editor_mod_picker.setMaximumHeight(190)
+        editor_mods_layout.addWidget(self.editor_mod_picker)
+        layout.addWidget(editor_mods_card)
         layout.addSpacing(18)
-        layout.addWidget(profile_card)
 
         local_card = QFrame()
         set_ui_role(local_card, "healthGroup")
@@ -134,6 +171,7 @@ class LocalToolsFeatureMixin:
         local_detail.setWordWrap(True)
         set_ui_role(local_detail, "metadata")
         local_layout.addWidget(local_detail)
+        local_layout.addWidget(profile_card)
         local_actions = QHBoxLayout()
         verify_local = QPushButton("Verify profile mods")
         verify_local.clicked.connect(lambda: self._verify_local_tool_mods(editor=False))
@@ -151,6 +189,7 @@ class LocalToolsFeatureMixin:
         layout.addWidget(self.local_tools_status)
         layout.addStretch(1)
         self._refresh_local_profile_picker()
+        self._refresh_editor_mod_picker()
         return widget
 
     def _refresh_local_profile_picker(self):
@@ -197,12 +236,57 @@ class LocalToolsFeatureMixin:
         self.save_user_settings(silent=True)
         self.local_tools_status.setText(f"Saved local profile: {profile.name}.")
 
-    def _local_required_mods(self, *, editor: bool) -> list[RequiredMod]:
-        profile = self._current_local_tool_profile()
-        names = dict(DAYZ_EDITOR_MODS) if editor else {}
-        ids = list(names) + [item for item in profile.workshop_ids if item not in names]
+    def _refresh_editor_mod_picker(self):
+        if not hasattr(self, "editor_mod_picker"):
+            return
         install = self.selected_steam_install()
         installed = scan_installed_mods(install.workshop_dir if install else None)
+        fixed_ids = {workshop_id for workshop_id, _name in DAYZ_EDITOR_MODS}
+        available = [
+            (workshop_id, name)
+            for workshop_id, name in installed.items()
+            if workshop_id not in fixed_ids
+        ]
+        available.sort(key=lambda entry: ((entry[1] or entry[0]).casefold(), entry[0]))
+        self.editor_mod_picker.clear()
+        available_ids = set()
+        for workshop_id, name in available:
+            available_ids.add(workshop_id)
+            item = QListWidgetItem(f"{name or workshop_id}  ({workshop_id})")
+            item.setData(Qt.UserRole, workshop_id)
+            item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
+            item.setCheckState(
+                Qt.Checked if workshop_id in self.editor_extra_mod_ids else Qt.Unchecked
+            )
+            self.editor_mod_picker.addItem(item)
+        self.editor_extra_mod_ids.intersection_update(available_ids)
+        self._filter_editor_mod_picker(self.editor_mod_filter.text())
+
+    def _filter_editor_mod_picker(self, text: str):
+        needle = text.strip().casefold()
+        for row in range(self.editor_mod_picker.count()):
+            item = self.editor_mod_picker.item(row)
+            item.setHidden(bool(needle and needle not in item.text().casefold()))
+
+    def _selected_editor_extra_mod_ids(self) -> tuple[str, ...]:
+        selected = []
+        for row in range(self.editor_mod_picker.count()):
+            item = self.editor_mod_picker.item(row)
+            if item.checkState() == Qt.Checked:
+                selected.append(str(item.data(Qt.UserRole)))
+        self.editor_extra_mod_ids = set(selected)
+        return tuple(selected)
+
+    def _local_required_mods(self, *, editor: bool) -> list[RequiredMod]:
+        install = self.selected_steam_install()
+        installed = scan_installed_mods(install.workshop_dir if install else None)
+        if editor:
+            names = dict(DAYZ_EDITOR_MODS)
+            ids = list(names) + list(self._selected_editor_extra_mod_ids())
+        else:
+            profile = self._current_local_tool_profile()
+            names = {}
+            ids = list(profile.workshop_ids)
         return [RequiredMod(item, names.get(item, installed.get(item, "")), item in installed, installed.get(item, ""), WORKSHOP_URL.format(mod_id=item)) for item in ids]
 
     def _verify_local_tool_mods(self, *, editor: bool) -> list[RequiredMod]:
@@ -233,7 +317,7 @@ class LocalToolsFeatureMixin:
         install = self._native_local_install()
         if not install:
             return
-        self._save_local_tool_profile()
+        self.save_user_settings(silent=True)
         if not install.running:
             command = build_steam_start_command(install)
             if not command or not QProcess.startDetached(command[0], command[1:])[0]:
