@@ -61,6 +61,7 @@ from .thumbnail_safety import (
     normalize_thumbnail_url,
 )
 from .theme import (
+    ASSETS_DIR,
     configure_data_table,
     monospace_font,
     set_ui_role,
@@ -76,6 +77,9 @@ from .workshop_subscription import (
     launch_block_reason,
     workshop_recovery_state,
 )
+
+
+WORKSHOP_PREVIEW_PLACEHOLDER_PATH = ASSETS_DIR / "workshop-preview-unavailable.svg"
 
 
 class ModsFeatureMixin:
@@ -245,6 +249,7 @@ class ModsFeatureMixin:
         self.mod_thumbnail_manager.finished.connect(self.finish_mod_thumbnail_load)
         self.mod_thumbnail_url = ""
         self.mod_thumbnail_reply = None
+        self.mod_thumbnail_placeholder = QPixmap(str(WORKSHOP_PREVIEW_PLACEHOLDER_PATH))
         self.resize_mod_detail_card()
         layout.addLayout(advanced_toggle_row)
         layout.addWidget(self.mods_advanced_panel)
@@ -499,7 +504,7 @@ class ModsFeatureMixin:
             self.mod_thumbnail_reply = None
         self.mod_detail_thumbnail.setPixmap(QPixmap())
         if not self.mod_thumbnail_url:
-            self.mod_detail_thumbnail.setText("No preview")
+            self._show_mod_thumbnail_placeholder()
             return
         self.mod_detail_thumbnail.setText("Loading…")
         request = QNetworkRequest(QUrl(self.mod_thumbnail_url))
@@ -526,6 +531,18 @@ class ModsFeatureMixin:
     def _abort_thumbnail_if_active(self, reply: QNetworkReply) -> None:
         if reply is self.mod_thumbnail_reply and not reply.isFinished():
             reply.abort()
+
+    def _show_mod_thumbnail_placeholder(self) -> None:
+        if self.mod_thumbnail_placeholder.isNull():
+            self.mod_detail_thumbnail.setPixmap(QPixmap())
+            self.mod_detail_thumbnail.setText("Preview unavailable")
+            return
+        self.mod_detail_thumbnail.setText("")
+        self.mod_detail_thumbnail.setPixmap(
+            self.mod_thumbnail_placeholder.scaled(
+                self.mod_detail_thumbnail.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
+            )
+        )
 
     def resize_mod_detail_card(self):
         if not hasattr(self, "mod_detail_card"):
@@ -568,7 +585,7 @@ class ModsFeatureMixin:
                 if not is_safe_thumbnail_dimensions(pixmap.width(), pixmap.height()):
                     pixmap = QPixmap()
             if pixmap.isNull():
-                self.mod_detail_thumbnail.setText("Preview unavailable")
+                self._show_mod_thumbnail_placeholder()
                 return
             self.mod_detail_thumbnail.setText("")
             self.mod_detail_thumbnail.setPixmap(

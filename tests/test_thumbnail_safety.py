@@ -1,3 +1,4 @@
+from pathlib import Path
 import unittest
 
 from wolflauncher.thumbnail_safety import (
@@ -10,6 +11,10 @@ from wolflauncher.thumbnail_safety import (
 
 
 class ThumbnailSafetyTests(unittest.TestCase):
+    def test_builtin_workshop_placeholder_is_packaged_asset(self):
+        asset = Path(__file__).parents[1] / "wolflauncher" / "assets" / "workshop-preview-unavailable.svg"
+        self.assertTrue(asset.is_file())
+
     def test_accepts_https_image_urls_only(self):
         self.assertTrue(is_safe_thumbnail_url("https://cdn.example.test/preview.png"))
         self.assertFalse(is_safe_thumbnail_url("http://cdn.example.test/preview.png"))
