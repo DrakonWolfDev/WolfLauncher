@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QMenu,
     QMessageBox,
     QPushButton,
+    QStackedWidget,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -168,9 +169,11 @@ class CuratedServersMixin:
         set_ui_role(browse_servers, "primary")
         browse_servers.clicked.connect(self.open_server_browser_from_empty_state)
         empty_layout.addWidget(browse_servers, 0, Qt.AlignLeft)
-        layout.addWidget(self.empty_favourites_card)
-        layout.addWidget(self.server_cards)
-        layout.addWidget(self.table)
+        self.favourites_content = QStackedWidget()
+        self.favourites_content.addWidget(self.empty_favourites_card)
+        self.favourites_content.addWidget(self.server_cards)
+        layout.addWidget(self.favourites_content, 1)
+        self.table.setParent(widget)
         self.table.hide()
 
         self.recent_servers_panel = QWidget()
@@ -389,8 +392,13 @@ class CuratedServersMixin:
         if not hasattr(self, "empty_favourites_card"):
             return
         empty = not any(server.favourite for server in self.servers)
-        self.empty_favourites_card.setVisible(empty)
-        self.server_cards.setVisible(not empty)
+        if hasattr(self, "favourites_content"):
+            self.favourites_content.setCurrentWidget(
+                self.empty_favourites_card if empty else self.server_cards
+            )
+        else:
+            self.empty_favourites_card.setVisible(empty)
+            self.server_cards.setVisible(not empty)
         self.table.setVisible(False)
         if hasattr(self, "move_server_up_button"):
             self.move_server_up_button.setEnabled(not empty)
