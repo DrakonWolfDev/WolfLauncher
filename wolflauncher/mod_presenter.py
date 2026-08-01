@@ -63,6 +63,22 @@ def mod_detail_status(mod: RequiredMod) -> str:
     return "warning"
 
 
+def mod_default_sort_key(mod: RequiredMod) -> tuple[int, str, str]:
+    """Keep actionable required mods at the top of the initial table view."""
+    from .workshop_subscription import (
+        ITEM_STATE_DOWNLOAD_PENDING,
+        ITEM_STATE_DOWNLOADING,
+        ITEM_STATE_NEEDS_UPDATE,
+    )
+
+    state = mod.workshop_state or 0
+    needs_update = mod.remote_update_available or bool(
+        state & (ITEM_STATE_NEEDS_UPDATE | ITEM_STATE_DOWNLOADING | ITEM_STATE_DOWNLOAD_PENDING)
+    )
+    priority = 0 if needs_update else 1 if not mod.installed else 2
+    return (priority, (mod.name or mod.installed_name).casefold(), mod.workshop_id)
+
+
 def combined_download_estimate(mods: list[RequiredMod]) -> str:
     known = [mod for mod in mods if mod.workshop_total > 0 or mod.workshop_file_size > 0]
     unknown = len(mods) - len(known)

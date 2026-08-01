@@ -32,6 +32,7 @@ from .mod_presenter import (
     mod_file_size,
     mod_inspector_scale,
     mod_inspector_type_scale,
+    mod_default_sort_key,
     mod_readiness_text,
     mod_row,
     mod_server_heading,
@@ -429,7 +430,10 @@ class ModsFeatureMixin:
             self.mods_table.setSortingEnabled(True)
             return
 
-        required = result.required_mods
+        # Do not derive the initial ordering from the visible status text: its
+        # lexical order can bury an update behind ready items. Header sorting
+        # stays enabled for an explicit user choice after this useful default.
+        required = sorted(result.required_mods, key=mod_default_sort_key)
         self.mods_table.setRowCount(len(required))
         for row, mod in enumerate(required):
             row_data = mod_row(mod)
@@ -446,7 +450,6 @@ class ModsFeatureMixin:
         self.mods_table.resizeColumnsToContents()
         self.mods_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         self.mods_table.setSortingEnabled(True)
-        self.mods_table.sortItems(0, Qt.DescendingOrder)
         self.apply_mod_filter()
         if self.mods_table.rowCount() > 0:
             self.mods_table.selectRow(0)
