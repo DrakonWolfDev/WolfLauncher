@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QMenu,
     QMessageBox,
     QPushButton,
+    QSizePolicy,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -152,22 +153,27 @@ class CuratedServersMixin:
         self.server_cards.currentRowChanged.connect(self._select_curated_table_row)
         self.empty_favourites_card = QFrame()
         set_ui_role(self.empty_favourites_card, "emptyState")
-        empty_layout = QVBoxLayout(self.empty_favourites_card)
-        empty_layout.setContentsMargins(22, 22, 22, 22)
+        self.empty_favourites_card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        empty_layout = QHBoxLayout(self.empty_favourites_card)
+        empty_layout.setContentsMargins(22, 12, 12, 12)
+        empty_layout.setSpacing(12)
+        empty_text = QVBoxLayout()
+        empty_text.setSpacing(3)
         title = QLabel("Your favourite servers are empty")
         set_ui_role(title, "cardTitle")
-        empty_layout.addWidget(title)
+        empty_text.addWidget(title)
         message = QLabel(
             "Use Server Browser to find your next adventure, then add a server to your favourites."
         )
         message.setWordWrap(True)
         set_ui_role(message, "metadata")
-        empty_layout.addWidget(message)
+        empty_text.addWidget(message)
+        empty_layout.addLayout(empty_text, 1)
         browse_servers = QPushButton("Browse servers")
         browse_servers.setIcon(theme_icon("browser"))
         set_ui_role(browse_servers, "primary")
         browse_servers.clicked.connect(self.open_server_browser_from_empty_state)
-        empty_layout.addWidget(browse_servers, 0, Qt.AlignLeft)
+        empty_layout.addWidget(browse_servers, 0, Qt.AlignVCenter)
         layout.addWidget(self.empty_favourites_card)
         layout.addWidget(self.server_cards, 1)
         self.table.setParent(widget)
