@@ -10,6 +10,16 @@ from typing import Any
 
 from .models import Server
 
+SOURCE_GAMEDIG_SCRIPT = (
+    Path(__file__).resolve().parents[1]
+    / "packaging"
+    / "npm"
+    / "node_modules"
+    / "gamedig"
+    / "bin"
+    / "gamedig.js"
+)
+
 
 @dataclass
 class ServerStatus:
@@ -52,6 +62,9 @@ def gamedig_command() -> list[str] | None:
         node = shutil.which("node")
         if node:
             return [node, bundled_script]
+    node = shutil.which("node")
+    if node and SOURCE_GAMEDIG_SCRIPT.is_file():
+        return [node, str(SOURCE_GAMEDIG_SCRIPT)]
     gamedig = shutil.which("gamedig")
     return [gamedig] if gamedig else None
 

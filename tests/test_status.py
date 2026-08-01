@@ -2,7 +2,7 @@ import json
 import subprocess
 import threading
 import unittest
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 from wolflauncher.models import Server
 from wolflauncher.status import (
@@ -61,16 +61,38 @@ class GameDigCommandTests(unittest.TestCase):
         which.assert_called_once_with("node")
         is_file.assert_called_once()
 
+    @patch("wolflauncher.status.SOURCE_GAMEDIG_SCRIPT")
     @patch("wolflauncher.status.shutil.which", return_value="/usr/bin/gamedig")
-    def test_path_gamedig_remains_the_source_runtime_fallback(self, which):
+    def test_path_gamedig_remains_the_source_runtime_fallback(self, which, source_script):
+        source_script.is_file.return_value = False
         with patch.dict("wolflauncher.status.os.environ", {}, clear=True):
             command = gamedig_command()
 
         self.assertEqual(command, ["/usr/bin/gamedig"])
-        which.assert_called_once_with("gamedig")
+        which.assert_has_calls([call("node"), call("gamedig")])
+
+    @patch("wolflauncher.status.SOURCE_GAMEDIG_SCRIPT")
+    @patch("wolflauncher.status.shutil.which", return_value=r"C:\\Program Files\\nodejs\\node.exe")
+    def test_source_checkout_uses_lockfile_pinned_gamedig(self, which, source_script):
+        source_script.is_file.return_value = True
+        source_script.__str__.return_value = r"C:\\repo\\packaging\\npm\\node_modules\\gamedig\\bin\\gamedig.js"
+        with patch.dict("wolflauncher.status.os.environ", {}, clear=True):
+            command = gamedig_command()
+
+        self.assertEqual(
+            command,
+            [r"C:\\Program Files\\nodejs\\node.exe", str(source_script)],
+        )
+        which.assert_called_once_with("node")
 
 
 class CheckServerTests(unittest.TestCase):
+    def setUp(self):
+        source_patcher = patch("wolflauncher.status.SOURCE_GAMEDIG_SCRIPT")
+        source_script = source_patcher.start()
+        source_script.is_file.return_value = False
+        self.addCleanup(source_patcher.stop)
+
     def make_server(self) -> Server:
         return Server(
             name="Example",
@@ -129,7 +151,7 @@ class CheckServerTests(unittest.TestCase):
             ),
         )
         resolve_host_mock.assert_called_once_with("dayz.example.test")
-        which.assert_called_once_with("gamedig")
+        which.assert_has_calls([call("node"), call("gamedig")])
         run.assert_called_once()
 
     @patch("wolflauncher.status.resolve_host", return_value="203.0.113.10")

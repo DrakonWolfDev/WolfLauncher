@@ -165,8 +165,13 @@ From PowerShell in the repository root:
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt -r requirements-quality.txt
+npm.cmd ci --prefix .\packaging\npm --ignore-scripts
 .\.venv\Scripts\python.exe main.py
 ```
+
+The source checkout uses the lockfile-pinned GameDig runtime under
+`packaging\npm`; do not install a separate global `gamedig` package. If PowerShell
+blocks `npm.ps1`, use `npm.cmd` as shown above.
 
 WolfLauncher reads Steam's registry location and library manifests. Windows
 uses native `steam.exe`, direct absolute Workshop paths and the DayZ
