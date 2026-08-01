@@ -187,7 +187,11 @@ class ModsFeatureMixin:
         )
         self.mods_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.mods_table.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.mods_table.setSortingEnabled(True)
+        # Required-mod checks have an intentional action-first order. Sorting
+        # is enabled only after the user clicks a header, so a remembered Qt
+        # sort indicator cannot immediately override that order.
+        self.mods_table.setSortingEnabled(False)
+        self.mods_table.horizontalHeader().sectionClicked.connect(self.sort_mod_table_by_column)
         self.mods_table.setTabKeyNavigation(False)
         configure_data_table(self.mods_table)
         self.mods_table.itemActivated.connect(
@@ -427,7 +431,7 @@ class ModsFeatureMixin:
         self.force_update_button.setEnabled(False)
         if not result.ok:
             self.mods_table.setRowCount(0)
-            self.mods_table.setSortingEnabled(True)
+            self.mods_table.setSortingEnabled(False)
             return
 
         # Do not derive the initial ordering from the visible status text: its
@@ -449,10 +453,22 @@ class ModsFeatureMixin:
                 self.mods_table.setItem(row, column, item)
         self.mods_table.resizeColumnsToContents()
         self.mods_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        self.mods_table.setSortingEnabled(True)
+        self.mods_table.setSortingEnabled(False)
         self.apply_mod_filter()
         if self.mods_table.rowCount() > 0:
             self.mods_table.selectRow(0)
+
+    def sort_mod_table_by_column(self, column: int):
+        """Allow an explicit header sort without changing the useful default."""
+        header = self.mods_table.horizontalHeader()
+        order = (
+            Qt.DescendingOrder
+            if header.sortIndicatorSection() == column
+            and header.sortIndicatorOrder() == Qt.AscendingOrder
+            else Qt.AscendingOrder
+        )
+        self.mods_table.setSortingEnabled(True)
+        self.mods_table.sortItems(column, order)
 
     def selected_required_mod(self):
         result = self.last_mod_result
