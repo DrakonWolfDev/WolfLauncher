@@ -51,6 +51,7 @@ class CuratedServerCard(QFrame):
         markers.addWidget(self.favourite_button)
         markers.addWidget(self.password_lock)
         layout.addLayout(markers)
+        layout.addSpacing(6)
 
         text = QVBoxLayout()
         text.setSpacing(2)
