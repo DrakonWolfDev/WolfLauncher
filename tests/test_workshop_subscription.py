@@ -231,6 +231,27 @@ class SubscribeWorkshopItemsTests(unittest.TestCase):
         self.assertTrue(result.ok)
         self.assertEqual(FakeWorkshopClient.high_priority_downloads, ["111"])
 
+    def test_installed_library_update_does_not_change_subscriptions(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workshop = root / "workshop"
+            workshop.mkdir()
+            (workshop / "111").mkdir()
+            install = install_for(root, workshop)
+            FakeWorkshopClient.snapshots = [{"111": WorkshopItemProgress("111", ITEM_STATE_INSTALLED)}]
+
+            with (
+                patch("wolflauncher.workshop_subscription.find_steam_api_library", return_value=root / "libsteam_api.so"),
+                patch("wolflauncher.workshop_subscription.SteamWorkshopClient", FakeWorkshopClient),
+            ):
+                result = subscribe_workshop_items(
+                    ["111"], install, poll_seconds=0, force_update=True, subscribe_missing=False
+                )
+
+        self.assertTrue(result.ok)
+        self.assertEqual(FakeWorkshopClient.subscribed, [])
+        self.assertEqual(FakeWorkshopClient.high_priority_downloads, ["111"])
+
     def test_cancel_does_not_unsubscribe(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

@@ -341,6 +341,7 @@ def subscribe_workshop_items(
     stall_timeout_seconds: float = WORKSHOP_STALL_TIMEOUT_SECONDS,
     poll_seconds: float = 0.5,
     force_update: bool = False,
+    subscribe_missing: bool = True,
 ) -> WorkshopSubscriptionResult:
     """Subscribe through Steam and wait until local item directories are ready."""
     ids = tuple(dict.fromkeys(str(item).strip() for item in workshop_ids if str(item).strip()))
@@ -364,7 +365,8 @@ def subscribe_workshop_items(
     download_requested_at: dict[str, float] = {}
     with SteamWorkshopClient(library_path) as client:
         for workshop_id in ids:
-            client.subscribe(workshop_id)
+            if subscribe_missing:
+                client.subscribe(workshop_id)
             if force_update:
                 client.request_download(workshop_id, high_priority=True)
 
@@ -511,6 +513,7 @@ def _subscription_process_main(
     stall_timeout_seconds: float,
     poll_seconds: float,
     force_update: bool,
+    subscribe_missing: bool,
 ) -> None:
     """Own Steamworks in a disposable process so Steam sees a hard shutdown."""
     signal.signal(signal.SIGINT, signal.SIG_IGN)
@@ -525,6 +528,7 @@ def _subscription_process_main(
             stall_timeout_seconds=stall_timeout_seconds,
             poll_seconds=poll_seconds,
             force_update=force_update,
+            subscribe_missing=subscribe_missing,
         )
     except Exception as exc:
         result = WorkshopSubscriptionResult((), workshop_ids, error=str(exc))
@@ -541,6 +545,7 @@ def subscribe_workshop_items_isolated(
     stall_timeout_seconds: float = WORKSHOP_STALL_TIMEOUT_SECONDS,
     poll_seconds: float = 0.5,
     force_update: bool = False,
+    subscribe_missing: bool = True,
 ) -> WorkshopSubscriptionResult:
     """Run the Steamworks session in a spawned process and wait for its exit.
 
@@ -570,6 +575,7 @@ def subscribe_workshop_items_isolated(
             stall_timeout_seconds,
             poll_seconds,
             force_update,
+            subscribe_missing,
         ),
         name="wolflauncher-steam-workshop",
     )

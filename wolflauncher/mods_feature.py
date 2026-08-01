@@ -41,9 +41,12 @@ from .mod_presenter import (
 from .models import Server
 from .mods import (
     ModCheckResult,
+    RequiredMod,
+    WORKSHOP_URL,
     apply_workshop_item_states,
     format_missing_workshop_links,
     format_mod_check_report,
+    scan_installed_mods,
 )
 from .platform_detection import (
     SteamInstall,
@@ -71,6 +74,7 @@ from .theme import (
 from .ui_sections import set_disclosure_state
 from .workers import (
     ModWorker,
+    WorkshopSubscriptionWorker,
 )
 from .workshop_subscription import (
     ITEM_STATE_DOWNLOADING,
@@ -123,6 +127,15 @@ class ModsFeatureMixin:
         self.force_update_button.clicked.connect(self.force_update_selected_mod)
         self.force_update_button.setEnabled(False)
         buttons.addWidget(check)
+        self.mod_view = QComboBox()
+        self.mod_view.addItems(["Required for selected server", "Installed Workshop library"])
+        self.mod_view.currentIndexChanged.connect(self.change_mod_view)
+        buttons.addWidget(QLabel("View"))
+        buttons.addWidget(self.mod_view)
+        self.update_installed_mods_button = QPushButton("Update all installed mods")
+        self.update_installed_mods_button.clicked.connect(self.update_all_installed_mods)
+        self.update_installed_mods_button.setVisible(False)
+        buttons.addWidget(self.update_installed_mods_button)
         self.mod_filter = QComboBox()
         self.mod_filter.addItems(["All mods", "Missing only", "Installed only"])
         self.mod_filter.currentTextChanged.connect(self.apply_mod_filter)
@@ -266,7 +279,61 @@ class ModsFeatureMixin:
         QWidget.setTabOrder(self.mods_advanced_toggle, self.mods_back_to_browser_button)
         QWidget.setTabOrder(self.mods_back_to_browser_button, self.mods_launch_button)
         self.update_launch_button_text()
+        self.installed_workshop_mods = []
         return widget
+
+    def viewing_installed_workshop_library(self) -> bool:
+        return self.mod_view.currentIndex() == 1
+
+    def change_mod_view(self, _index: int):
+        if self.viewing_installed_workshop_library():
+            self.show_installed_workshop_library()
+        elif self.last_mod_result:
+            self.display_mods_result(self.last_mod_result)
+        self.update_installed_mods_button.setVisible(self.viewing_installed_workshop_library())
+
+    def show_installed_workshop_library(self):
+        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        workshop_dir = install.workshop_dir if install else None
+        installed = scan_installed_mods(workshop_dir)
+        self.installed_workshop_mods = [
+            RequiredMod(
+                workshop_id=workshop_id,
+                name=name,
+                installed=True,
+                installed_name=name,
+                workshop_url=WORKSHOP_URL.format(mod_id=workshop_id),
+            )
+            for workshop_id, name in sorted(installed.items(), key=lambda item: item[1].casefold())
+        ]
+        self.mod_server_title.setText("Installed DayZ Workshop library")
+        self.mod_readiness.setText("Local installed Workshop content. Steam subscriptions are never changed here.")
+        self.mod_summary.setText(f"Installed {len(self.installed_workshop_mods)} mod(s).")
+        self.subscribe_missing_button.setEnabled(False)
+        self.force_update_button.setEnabled(False)
+        self._display_mod_rows(self.installed_workshop_mods)
+
+    def _display_mod_rows(self, mods):
+        self.mods_table.setSortingEnabled(False)
+        self.mods_table.setRowCount(len(mods))
+        for row, mod in enumerate(mods):
+            row_data = mod_row(mod)
+            for column, value in enumerate(row_data.values):
+                item = QTableWidgetItem(value)
+                item.setData(Qt.UserRole, row_data.workshop_id)
+                if column in {2, 3}:
+                    item.setFont(monospace_font())
+                if column in {0, 2, 3}:
+                    item.setTextAlignment(Qt.AlignCenter)
+                if column == 0:
+                    item.setForeground(QColor(row_data.status_colour))
+                self.mods_table.setItem(row, column, item)
+        self.mods_table.resizeColumnsToContents()
+        self.mods_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+        self.mods_table.setSortingEnabled(False)
+        self.apply_mod_filter()
+        if self.mods_table.rowCount() > 0:
+            self.mods_table.selectRow(0)
 
     def check_initial_server_mods(self):
         if self.servers and self.table.currentRow() < 0:
@@ -379,7 +446,8 @@ class ModsFeatureMixin:
 
         self.last_mod_result = result
         self.update_discovered_required_mod_count(result)
-        self.display_mods_result(result)
+        if not self.viewing_installed_workshop_library():
+            self.display_mods_result(result)
         self.update_workshop_recovery_state(result, install)
 
     def update_discovered_required_mod_count(self, result: ModCheckResult):
@@ -471,6 +539,13 @@ class ModsFeatureMixin:
         self.mods_table.sortItems(column, order)
 
     def selected_required_mod(self):
+        if self.viewing_installed_workshop_library():
+            row = self.mods_table.currentRow()
+            workshop_id = self._mods_cell(row, 2) if row >= 0 else ""
+            return next(
+                (mod for mod in self.installed_workshop_mods if mod.workshop_id == workshop_id),
+                None,
+            )
         result = self.last_mod_result
         if not result or not result.ok:
             return None
@@ -785,6 +860,66 @@ class ModsFeatureMixin:
             QMessageBox.warning(self, "No mod selected", "Select a mod to force its Steam update.")
             return
         self.force_update_mod_row(row)
+
+    def update_all_installed_mods(self):
+        if not self.viewing_installed_workshop_library():
+            return
+        mods = self.installed_workshop_mods
+        if not mods:
+            QMessageBox.information(self, "No installed mods", "No local DayZ Workshop mods were found.")
+            return
+        if self.workshop_subscription_worker and self.workshop_subscription_worker.isRunning():
+            QMessageBox.information(self, "Steam Workshop in progress", "Wait for the current Steam Workshop operation to finish.")
+            return
+        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        if not install or not install.workshop_dir or not install.running:
+            QMessageBox.warning(self, "Steam unavailable", "Start the selected Steam client and try again.")
+            return
+        reply = QMessageBox.question(
+            self,
+            "Update all installed mods?",
+            f"Ask Steam to check {len(mods)} locally installed DayZ Workshop mod(s) for updates?\n\n"
+            "This does not add or remove any Workshop subscriptions.",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if reply != QMessageBox.Yes:
+            return
+        self.workshop_subscription_names = {mod.workshop_id: (mod.name or mod.workshop_id) for mod in mods}
+        dialog = QProgressDialog("Requesting Steam Workshop updates...", "Hide monitor", 0, 100, self)
+        dialog.setWindowTitle("Steam Workshop")
+        dialog.setMinimumDuration(0)
+        dialog.setAutoClose(False)
+        dialog.setAutoReset(False)
+        self.workshop_subscription_dialog = dialog
+        self.workshop_subscription_monitor_hidden = False
+        worker = WorkshopSubscriptionWorker(
+            [mod.workshop_id for mod in mods], install, force_update=True, subscribe_missing=False
+        )
+        self.workshop_subscription_worker = worker
+        worker.progress_ready.connect(self.update_workshop_subscription_progress)
+        worker.subscription_ready.connect(self.finish_installed_workshop_update)
+        worker.finished.connect(self.clear_workshop_subscription_worker)
+        dialog.canceled.connect(self.stop_workshop_subscription_monitoring)
+        worker.start()
+
+    def finish_installed_workshop_update(self, result):
+        if self.workshop_subscription_dialog:
+            self.workshop_subscription_dialog.close()
+            self.workshop_subscription_dialog = None
+        self.workshop_subscription_monitor_hidden = False
+        if result.ok:
+            QMessageBox.information(
+                self, "Workshop update check complete",
+                "Steam completed its update check. The installed Workshop library will now refresh.",
+            )
+        else:
+            QMessageBox.warning(
+                self, "Workshop update incomplete",
+                result.error or "Steam did not finish checking every installed Workshop item.",
+            )
+        if self.viewing_installed_workshop_library():
+            self.show_installed_workshop_library()
 
     def start_workshop_resolution(self, mods, result, install):
         self.workshop_resolution.start_resolution(mods, result, install)
