@@ -241,13 +241,16 @@ class ServerBrowserMixin:
                 "Last Seen",
                 "Source",
                 "Game Time",
-                "Lock",
+                "",
             ]
         )
         for column in (8, 9):
             self.browser_table.horizontalHeaderItem(column).setTextAlignment(
                 Qt.AlignRight | Qt.AlignVCenter
             )
+        self.browser_table.horizontalHeaderItem(BROWSER_PASSWORD_COLUMN).setToolTip(
+            "Password required"
+        )
         self.browser_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.browser_table.setSelectionMode(QTableWidget.SingleSelection)
         self.browser_table.setEditTriggers(QTableWidget.NoEditTriggers)
@@ -1519,7 +1522,7 @@ class ServerBrowserMixin:
             stretch_columns=(),
         )
         header = self.browser_table.horizontalHeader()
-        for column, width in ((BROWSER_FAVOURITE_COLUMN, 64), (BROWSER_PASSWORD_COLUMN, 46)):
+        for column, width in ((BROWSER_FAVOURITE_COLUMN, 64), (BROWSER_PASSWORD_COLUMN, 26)):
             header.setSectionResizeMode(column, QHeaderView.Fixed)
             self.browser_table.setColumnWidth(column, width)
         self.browser_table.setColumnHidden(2, True)

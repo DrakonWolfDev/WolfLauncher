@@ -624,7 +624,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertEqual(header.sectionResizeMode(BROWSER_FAVOURITE_COLUMN), QHeaderView.Fixed)
         self.assertEqual(header.sectionResizeMode(BROWSER_PASSWORD_COLUMN), QHeaderView.Fixed)
         self.assertEqual(table.columnWidth(BROWSER_FAVOURITE_COLUMN), 64)
-        self.assertEqual(table.columnWidth(BROWSER_PASSWORD_COLUMN), 46)
+        self.assertEqual(table.columnWidth(BROWSER_PASSWORD_COLUMN), 26)
         self.assertEqual(
             [header.logicalIndex(index) for index in range(10)],
             [0, 17, 1, 6, 7, 16, 8, 9, 11, 12],
