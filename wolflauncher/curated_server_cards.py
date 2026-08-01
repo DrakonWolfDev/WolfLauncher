@@ -41,10 +41,11 @@ class CuratedServerCard(QFrame):
 
         self.password_lock = QLabel()
         set_ui_role(self.password_lock, "passwordLock")
-        self.password_lock.setPixmap(theme_icon("lock").pixmap(QSize(15, 15)))
-        self.password_lock.setVisible("Password" in values[14])
-        self.password_lock.setToolTip("This server requires a password to join.")
-        self.password_lock.setAccessibleName("Password required")
+        self.password_lock.setFixedWidth(15)
+        if "Password" in values[14]:
+            self.password_lock.setPixmap(theme_icon("lock").pixmap(QSize(15, 15)))
+            self.password_lock.setToolTip("This server requires a password to join.")
+            self.password_lock.setAccessibleName("Password required")
         layout.addWidget(self.password_lock)
 
         text = QVBoxLayout()
