@@ -106,6 +106,10 @@ def persist_enriched_server(connection, old_cache_key: str, server: DiscoveredSe
 
 
 class ServerBrowserMixin:
+    def discovery_source_name(self, source: str) -> str:
+        """Keep disposable discovered-server cache rows isolated by game product."""
+        return source if self.dayz_product_key() == "stable" else f"{source}_{self.dayz_product_key()}"
+
     def _build_server_browser_tab(self) -> QWidget:
         widget = QWidget()
         set_ui_role(widget, "workspace")
@@ -500,7 +504,8 @@ class ServerBrowserMixin:
             QMessageBox.warning(self, "Invalid Steam master endpoints", str(exc))
             return
         self.discovery_worker = SteamDiscoveryWorker(
-            max_batches=1, master_addresses=master_addresses
+            max_batches=1, master_addresses=master_addresses,
+            app_id=self.dayz_product().client_app_id,
         )
         self.discovery_worker.discovery_ready.connect(self.handle_steam_discovery_ready)
         self.discovery_worker.start()
@@ -522,7 +527,7 @@ class ServerBrowserMixin:
             )
             return
         inserted, removed = server_cache.sync_source_servers(
-            self.server_cache, "steam_master", servers
+            self.server_cache, self.discovery_source_name("steam_master"), servers
         )
         self.refresh_server_browser()
         self.schedule_results_freshness_check()
@@ -543,7 +548,8 @@ class ServerBrowserMixin:
         self.browser_summary.setText("Cached discovered servers: querying Steam Web API...")
         self._set_database_refresh_enabled(False)
         self.web_api_worker = SteamWebApiDiscoveryWorker(
-            api_key=api_key, limit=self.discovery_limit.value()
+            api_key=api_key, limit=self.discovery_limit.value(),
+            app_id=self.dayz_product().client_app_id,
         )
         self.web_api_worker.discovery_ready.connect(self.handle_steam_web_api_ready)
         self.web_api_worker.start()
@@ -559,7 +565,7 @@ class ServerBrowserMixin:
             )
             return
         inserted, removed = server_cache.sync_source_servers(
-            self.server_cache, "steam_web_api", servers
+            self.server_cache, self.discovery_source_name("steam_web_api"), servers
         )
         self.refresh_server_browser()
         self.schedule_results_freshness_check()
@@ -647,6 +653,7 @@ class ServerBrowserMixin:
             self.web_api_worker = SteamWebApiDiscoveryWorker(
                 api_key=api_key,
                 limit=self.discovery_limit.value(),
+                app_id=self.dayz_product().client_app_id,
             )
             self.web_api_worker.discovery_ready.connect(self.handle_auto_web_api_ready)
             self.web_api_worker.start()
@@ -658,7 +665,8 @@ class ServerBrowserMixin:
                 self.statusBar().showMessage(f"Steam master auto-refresh skipped: {exc}", 7000)
                 return
             self.discovery_worker = SteamDiscoveryWorker(
-                max_batches=1, master_addresses=master_addresses
+                max_batches=1, master_addresses=master_addresses,
+                app_id=self.dayz_product().client_app_id,
             )
             self.discovery_worker.discovery_ready.connect(self.handle_auto_steam_discovery_ready)
             self.discovery_worker.start()
@@ -714,7 +722,7 @@ class ServerBrowserMixin:
             )
             return
         inserted, removed = server_cache.sync_source_servers(
-            self.server_cache, "steam_master", servers
+            self.server_cache, self.discovery_source_name("steam_master"), servers
         )
         self.refresh_server_browser()
         self.statusBar().showMessage(
@@ -733,7 +741,7 @@ class ServerBrowserMixin:
             )
             return
         inserted, removed = server_cache.sync_source_servers(
-            self.server_cache, "steam_web_api", servers
+            self.server_cache, self.discovery_source_name("steam_web_api"), servers
         )
         self.refresh_server_browser()
         self.statusBar().showMessage(
@@ -1334,6 +1342,10 @@ class ServerBrowserMixin:
         map_name = self._combo_filter_value(self.browser_map, "Any map")
         version = self._combo_filter_value(self.browser_version, "Any version")
         source = self._combo_filter_value(self.browser_source, "Any source")
+        if self.dayz_product().experimental:
+            # WolfAPI/BattleMetrics cache rows are Stable data today.  Experimental
+            # rows come from the selected Steam source and must never mix with it.
+            source = self.discovery_source_name("steam_master") if not source else self.discovery_source_name(source)
         style_terms = browser_style_terms(self.browser_style.currentText())
         limit = int(self.browser_limit.currentText())
 

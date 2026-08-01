@@ -60,6 +60,11 @@ class SteamMasterServerProtocolTests(unittest.TestCase):
         self.assertIn(f"\\appid\\{DAYZ_APP_ID}".encode("ascii"), request)
         self.assertTrue(request.endswith(b"\0"))
 
+    def test_build_master_server_request_accepts_experimental_app_id(self):
+        request = build_master_server_request(app_id=1024020)
+
+        self.assertIn(b"\\appid\\1024020", request)
+
     def test_parse_master_server_response_reads_endpoints_until_terminator(self):
         packet = (
             b"\xff\xff\xff\xfff\n"

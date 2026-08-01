@@ -112,6 +112,10 @@ verify DayZ directly from Steam before trying WolfLauncher again.
 - External `dayz-launcher.sh` handoff using resolved IP addresses where available.
 - Experimental native Windows Steam/DayZ detection and absolute Workshop mod
   handoff without symlinks or the external shell launcher.
+- A persistent **DayZ Stable / DayZ Experimental** setting. Experimental keeps
+  favourites and Steam discovery separate, reads Stable's `DayZ\!Workshop`
+  junctions as local mod sources, and uses the verified BattlEye direct launch
+  path. Linux Experimental launch remains unavailable pending validation.
 
 ### Editor / Local Tools
 

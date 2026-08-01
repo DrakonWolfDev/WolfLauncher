@@ -11,6 +11,7 @@ class SettingsSchemaTests(unittest.TestCase):
         self.assertEqual(settings["local_tool_profiles"], [])
         self.assertEqual(settings["editor_extra_mod_ids"], [])
         self.assertEqual(settings["local_host_settings"], {})
+        self.assertEqual(settings["dayz_product"], "stable")
         self.assertTrue(settings["hide_quality_flagged"])
         self.assertEqual(settings["future_setting"], {"keep": True})
 

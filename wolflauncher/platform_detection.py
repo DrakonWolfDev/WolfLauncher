@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from .platforms import current_platform
+from .dayz_product import DayZProduct, STABLE
 
 STEAM_APP_ID_DAYZ = 221100
 DAYZ_PROCESS_PATTERNS = (
@@ -24,6 +25,7 @@ class SteamInstall:
     workshop_dir: Path | None
     compatdata_dir: Path | None = None
     library_steamapps: list[Path] = field(default_factory=list)
+    product: DayZProduct = STABLE
 
 
 @dataclass
@@ -99,10 +101,10 @@ def _library_steamapps_from_root(root: Path | None) -> list[Path]:
     return libraries
 
 
-def _dayz_from_steamapps(steamapps: Path | None) -> Path | None:
+def _dayz_from_steamapps(steamapps: Path | None, product: DayZProduct = STABLE) -> Path | None:
     if not steamapps:
         return None
-    manifest = steamapps / f"appmanifest_{STEAM_APP_ID_DAYZ}.acf"
+    manifest = steamapps / f"appmanifest_{product.client_app_id}.acf"
     try:
         installdir = parse_appmanifest_installdir(manifest.read_text(errors="ignore"))
     except OSError:
@@ -111,7 +113,7 @@ def _dayz_from_steamapps(steamapps: Path | None) -> Path | None:
         dayz = steamapps / "common" / installdir
         if dayz.exists():
             return dayz
-    dayz = steamapps / "common" / "DayZ"
+    dayz = steamapps / "common" / ("DayZ Exp" if product.experimental else "DayZ")
     return dayz if dayz.exists() else None
 
 
@@ -129,9 +131,9 @@ def _compatdata_from_steamapps(steamapps: Path | None) -> Path | None:
     return compatdata if compatdata.exists() else None
 
 
-def _dayz_from_libraries(libraries: list[Path]) -> Path | None:
+def _dayz_from_libraries(libraries: list[Path], product: DayZProduct = STABLE) -> Path | None:
     for steamapps in libraries:
-        dayz = _dayz_from_steamapps(steamapps)
+        dayz = _dayz_from_steamapps(steamapps, product)
         if dayz:
             return dayz
     return None
@@ -153,9 +155,9 @@ def _compatdata_from_libraries(libraries: list[Path]) -> Path | None:
     return None
 
 
-def _select_visible_steamapps(libraries: list[Path]) -> Path | None:
+def _select_visible_steamapps(libraries: list[Path], product: DayZProduct = STABLE) -> Path | None:
     for steamapps in libraries:
-        if _dayz_from_steamapps(steamapps) or _workshop_from_steamapps(steamapps):
+        if _dayz_from_steamapps(steamapps, product) or _workshop_from_steamapps(steamapps):
             return steamapps
     return libraries[0] if libraries else None
 
@@ -167,14 +169,14 @@ def _first_existing(paths: list[Path]) -> Path | None:
     return None
 
 
-def detect_steam() -> list[SteamInstall]:
+def detect_steam(product: DayZProduct = STABLE) -> list[SteamInstall]:
     installs: list[SteamInstall] = []
 
     native_root = _first_existing(NATIVE_STEAM_ROOTS)
     native_executable = current_platform().native_steam_executable()
     native_running = _is_running("steam")
     native_libraries = _library_steamapps_from_root(native_root)
-    native_steamapps = _select_visible_steamapps(native_libraries)
+    native_steamapps = _select_visible_steamapps(native_libraries, product)
     installs.append(
         SteamInstall(
             mode="native",
@@ -182,10 +184,11 @@ def detect_steam() -> list[SteamInstall]:
             running=native_running,
             root=native_root,
             steamapps=native_steamapps,
-            dayz_dir=_dayz_from_libraries(native_libraries),
+            dayz_dir=_dayz_from_libraries(native_libraries, product),
             workshop_dir=_workshop_from_libraries(native_libraries),
             compatdata_dir=_compatdata_from_libraries(native_libraries),
             library_steamapps=native_libraries,
+            product=product,
         )
     )
 
@@ -200,19 +203,20 @@ def detect_steam() -> list[SteamInstall]:
                 executable=native_executable,
                 running=native_running,
                 root=root,
-                steamapps=_select_visible_steamapps(env_libraries),
-                dayz_dir=_dayz_from_libraries(env_libraries),
+                steamapps=_select_visible_steamapps(env_libraries, product),
+                dayz_dir=_dayz_from_libraries(env_libraries, product),
                 workshop_dir=_workshop_from_libraries(env_libraries),
                 compatdata_dir=_compatdata_from_libraries(env_libraries),
                 library_steamapps=env_libraries,
+                product=product,
             )
         )
 
     return installs
 
 
-def best_install() -> SteamInstall | None:
-    return best_install_from(detect_steam())
+def best_install(product: DayZProduct = STABLE) -> SteamInstall | None:
+    return best_install_from(detect_steam(product))
 
 
 def best_install_from(installs: list[SteamInstall]) -> SteamInstall | None:

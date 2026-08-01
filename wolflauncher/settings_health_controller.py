@@ -18,7 +18,7 @@ class SettingsHealthCoordinator:
         window = self.window
         if not hasattr(window, "health_table"):
             return
-        install_rows = detect_steam()
+        install_rows = detect_steam(window.dayz_product())
         window.detected_steam_installs = install_rows
         provider_status, provider_detail = self._provider_health()
         snapshot = build_settings_health_snapshot(

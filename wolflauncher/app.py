@@ -49,10 +49,12 @@ from .secret_store import (
     load_steam_api_key,
 )
 from .settings import (
+    curated_servers_path,
     load_favourites,
     load_settings,
     server_key,
 )
+from .dayz_product import product_from_key, product_warning
 from .theme import (
     WOLF_MARK_PATH,
     apply_application_theme,
@@ -93,13 +95,17 @@ class MainWindow(
         self.settings_health = SettingsHealthCoordinator(self)
         self.workshop_resolution = WorkshopResolutionCoordinator(self)
         self._shutdown_dialog = None
+        self.settings = load_settings()
+        self.product = product_from_key(self.settings.get("dayz_product", "stable"))
+        self.config_path = curated_servers_path(self.product.key)
         ensure_servers_file(self.config_path)
         self.servers = load_servers(self.config_path)
         self.curated_status_cache = load_status_cache()
-        self.settings = load_settings()
+        if self.product.experimental:
+            self.setWindowTitle("WolfLauncher — DayZ Experimental")
         self.secret_store = SecretStore()
         self.steam_api_key = load_steam_api_key(self.settings, self.secret_store)
-        self.favourites = load_favourites()
+        self.favourites = load_favourites(self.product.key)
         self.detected_steam_installs = []
         self.worker = None
         self.mod_worker = None
@@ -162,6 +168,10 @@ class MainWindow(
         )
         set_monospace(self.launcher_path)
         self.player_name = QLineEdit(str(self.settings.get("player_name") or DEFAULT_PLAYER_NAME))
+        self.experimental_notice = QLabel(product_warning(self.product))
+        self.experimental_notice.setWordWrap(True)
+        set_ui_role(self.experimental_notice, "experimentalWarning")
+        self.experimental_notice.setVisible(self.product.experimental)
         self.launch_engine = QComboBox()
         self.launch_engine.addItem("Native launcher")
         if current_platform().capabilities.supports_external_launcher:
@@ -173,6 +183,9 @@ class MainWindow(
             or not current_platform().capabilities.supports_external_launcher
             else "External launcher"
         )
+        if self.product.experimental:
+            self.launch_engine.setCurrentText("Native launcher")
+            self.launch_engine.setEnabled(False)
         self.launch_engine.currentTextChanged.connect(self.handle_launch_engine_changed)
         self.native_steam_mode = QComboBox()
         steam_modes = ["Auto", "Native Steam"]
@@ -242,6 +255,7 @@ class MainWindow(
         self.active_main_tab_index = self.tabs.currentIndex()
         self.tabs.currentChanged.connect(self.handle_main_tab_changed)
         self.setCentralWidget(self.tabs)
+        self.statusBar().addPermanentWidget(self.experimental_notice, 1)
 
         self.apply_refresh_timer()
         self.refresh_statuses()

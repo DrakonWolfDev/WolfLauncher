@@ -138,6 +138,7 @@ def discover_dayz_servers(
     master_port: int = MASTER_SERVER_PORT,
     master_addresses: list[MasterServerAddress] | None = None,
     extra_filter: str = "",
+    app_id: int = DAYZ_APP_ID,
 ) -> list[DiscoveredServer]:
     addresses = _configured_master_addresses(master_host, master_port, master_addresses)
     errors = []
@@ -149,6 +150,7 @@ def discover_dayz_servers(
                 master_host=address.host,
                 master_port=address.port,
                 extra_filter=extra_filter,
+                app_id=app_id,
             )
         except OSError as exc:
             errors.append(f"{address.address} -> {exc}")
@@ -205,6 +207,7 @@ def _discover_dayz_servers_from_master(
     master_host: str = MASTER_SERVER_HOST,
     master_port: int = MASTER_SERVER_PORT,
     extra_filter: str = "",
+    app_id: int = DAYZ_APP_ID,
 ) -> list[DiscoveredServer]:
     endpoints: list[MasterServerEndpoint] = []
     start_address = "0.0.0.0:0"
@@ -216,6 +219,7 @@ def _discover_dayz_servers_from_master(
             master_host=master_host,
             master_port=master_port,
             extra_filter=extra_filter,
+            app_id=app_id,
         )
         if not batch:
             break
@@ -262,6 +266,7 @@ def discover_dayz_servers_web_api(
     limit: int = 5000,
     timeout: float = 15.0,
     filter_text: str = "",
+    app_id: int = DAYZ_APP_ID,
 ) -> list[DiscoveredServer]:
     api_key = (
         api_key
@@ -274,7 +279,7 @@ def discover_dayz_servers_web_api(
     params = {
         "key": api_key,
         "limit": str(limit),
-        "filter": filter_text or f"\\appid\\{DAYZ_APP_ID}",
+        "filter": filter_text or f"\\appid\\{app_id}",
     }
     url = f"{STEAM_WEB_API_SERVER_LIST_URL}?{urllib.parse.urlencode(params)}"
     try:

@@ -62,6 +62,7 @@ QWidget[uiRole="workspace"] {{ background-color: transparent; }}
 QLabel {{ background-color: transparent; }}
 QLabel:disabled {{ color: {c["text_muted"]}; }}
 QLabel[uiRole="summary"] {{ color: {c["text"]}; font-weight: 600; padding: 2px 0 4px 0; }}
+QLabel[uiRole="experimentalWarning"] {{ color: {c["warning"]}; background-color: #3a301e; border: 1px solid {c["warning"]}; border-radius: {s["radius"]}px; padding: 5px 8px; font-weight: 600; }}
 QLabel[uiRole="metadata"] {{ color: {c["text_muted"]}; }}
 QLabel[uiRole="statusPositive"] {{ color: {c["positive"]}; background-color: #1e3a2e; border-radius: 9px; padding: 3px 9px; }}
 QLabel[uiRole="statusNegative"] {{ color: {c["negative"]}; background-color: #3a1e1e; border-radius: 9px; padding: 3px 9px; }}

@@ -21,6 +21,7 @@ from .platform_detection import (
     install_label,
     select_steam_install,
 )
+from .dayz_product import product_from_key
 from .settings import (
     server_key,
 )
@@ -30,7 +31,16 @@ from .theme import (
 
 
 class LaunchFeatureMixin:
+    def dayz_product(self):
+        return product_from_key(self.settings.get("dayz_product", "stable"))
+
+    def dayz_product_key(self) -> str:
+        return self.dayz_product().key
+
     def launch_engine_key(self) -> str:
+        if self.dayz_product().experimental:
+            # The vendored shell launcher only understands Stable DayZ.
+            return "native"
         if not hasattr(self, "launch_engine"):
             return str(self.settings.get("launch_engine") or "native")
         return "native" if self.launch_engine.currentText() == "Native launcher" else "external"
@@ -46,7 +56,11 @@ class LaunchFeatureMixin:
         return keys.get(self.native_steam_mode.currentText(), "auto")
 
     def selected_steam_install(self) -> SteamInstall | None:
-        return select_steam_install(self.native_steam_mode_key())
+        from .platform_detection import detect_steam
+
+        return select_steam_install(
+            self.native_steam_mode_key(), detect_steam(self.dayz_product())
+        )
 
     def selected_browser_preview_install(self) -> SteamInstall | None:
         """Reuse the latest health snapshot so browsing never scans Steam on the UI thread."""

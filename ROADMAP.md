@@ -1,6 +1,6 @@
 # WolfLauncher Roadmap
 
-Updated: 2026-07-20
+Updated: 2026-08-01
 
 This file records milestones, not individual engineering jobs. The single
 ordered implementation backlog is `PRODUCTION_READINESS_REVIEW.md`.
@@ -82,6 +82,10 @@ updates on Linux, sharing one release-channel manifest and policy.
   first supported Linux format is stable.
 - Promote Windows from experimental to supported only after its handoff,
   Steamworks, packaging, signing and update gates pass.
+- Validate the Linux DayZ Experimental handoff before enabling its native
+  launcher. The Windows Experimental profile is intentionally distinct from
+  Stable: it uses Steam app ID 1024020, local mod sources and BattlEye's direct
+  launcher path; do not add an Experimental Workshop subscription flow.
 - Evolve **Editor / Local Tools** for advanced mod development in stages:
   v1 saved local client-mod profiles, offline DayZ Editor and joining existing
   LAN/test servers; v2 explicitly configured local dedicated-server start/stop

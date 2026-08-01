@@ -3,6 +3,7 @@ import tempfile
 import unittest
 from datetime import datetime, timezone
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from wolflauncher.models import Server
@@ -20,6 +21,7 @@ from wolflauncher.native_launcher import (
     prepare_native_launch_preview,
 )
 from wolflauncher.platform_detection import SteamInstall
+from wolflauncher.dayz_product import EXPERIMENTAL
 
 
 def make_server(host: str = "dayz.example.test") -> Server:
@@ -1037,6 +1039,36 @@ class NativeLauncherTests(unittest.TestCase):
 
         self.assertIn("-world=empty", prepared.command)
         self.assertNotIn("-connect=", " ".join(prepared.command))
+
+class ExperimentalNativeLauncherTests(unittest.TestCase):
+    def test_windows_experimental_launch_uses_battleye_and_local_workshop_path(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            install = make_install(root)
+            exp_dir = root / "steamapps" / "common" / "DayZ Exp"
+            exp_dir.mkdir()
+            (exp_dir / "DayZ_BE.exe").write_text("")
+            install.dayz_dir = exp_dir
+            install.product = EXPERIMENTAL
+            workshop_mod = install.workshop_dir / "123"
+            workshop_mod.mkdir()
+            fake_platform = SimpleNamespace(
+                capabilities=SimpleNamespace(platform_id="windows")
+            )
+            with patch("wolflauncher.native_launcher.current_platform", return_value=fake_platform):
+                prepared = prepare_native_launch(
+                    install, make_server("203.0.113.10"), "PlayerOne", [RequiredMod("123")]
+                )
+                preview = prepare_native_launch_preview(
+                    install, make_server("203.0.113.10"), "PlayerOne", [RequiredMod("123")]
+                )
+
+        self.assertEqual(prepared.command[:6], [
+            str(exp_dir / "DayZ_BE.exe"), "0", "1", "1", "-exe", "DayZ_x64.exe",
+        ])
+        self.assertIn(f"-mod={workshop_mod}", prepared.command)
+        self.assertIn("-connect=203.0.113.10:2302:27016", prepared.command)
+        self.assertEqual(preview.command, prepared.command)
 
 
 if __name__ == "__main__":

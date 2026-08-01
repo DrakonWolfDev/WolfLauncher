@@ -43,7 +43,9 @@ from .settings import (
     DEFAULT_DISCOVERY_PROVIDER,
     save_favourites,
     save_settings,
+    server_key,
 )
+from .dayz_product import product_from_key, product_warning
 from .settings_health_presenter import GROUP_SPECS, settings_health_groups
 from .theme import (
     configure_data_table,
@@ -64,6 +66,20 @@ class SettingsFeatureMixin:
 
         capabilities = current_platform().capabilities
         launcher_settings = QFormLayout()
+        self.dayz_product_selector = QComboBox()
+        self.dayz_product_selector.addItem("DayZ Stable", "stable")
+        self.dayz_product_selector.addItem("DayZ Experimental", "experimental")
+        current_product = product_from_key(self.settings.get("dayz_product", "stable"))
+        self.dayz_product_selector.setCurrentIndex(
+            self.dayz_product_selector.findData(current_product.key)
+        )
+        self.dayz_product_selector.currentIndexChanged.connect(self.handle_dayz_product_changed)
+        launcher_settings.addRow("Game version", self.dayz_product_selector)
+        self.experimental_settings_notice = QLabel(product_warning(current_product))
+        self.experimental_settings_notice.setWordWrap(True)
+        self.experimental_settings_notice.setVisible(current_product.experimental)
+        set_ui_role(self.experimental_settings_notice, "experimentalWarning")
+        launcher_settings.addRow("", self.experimental_settings_notice)
         if capabilities.supports_external_launcher:
             launcher_controls = QWidget()
             launcher_controls_layout = QHBoxLayout(launcher_controls)
@@ -394,6 +410,56 @@ class SettingsFeatureMixin:
             self, "Launch engine changed. Rechecking selected server mods..."
         )
 
+    def handle_dayz_product_changed(self, *_args):
+        product = product_from_key(self.dayz_product_selector.currentData())
+        if self.dayz_product_key() == product.key:
+            return
+        self.settings["dayz_product"] = product.key
+        self.product = product
+        self.setWindowTitle("WolfLauncher — DayZ Experimental" if product.experimental else "WolfLauncher")
+        self.experimental_notice.setText(product_warning(product))
+        self.experimental_notice.setVisible(product.experimental)
+        self.experimental_settings_notice.setText(product_warning(product))
+        self.experimental_settings_notice.setVisible(product.experimental)
+        if product.experimental and hasattr(self, "discovery_provider"):
+            # Hosted providers currently index Stable only.  Steam's app-id
+            # filter is the verified Experimental discovery route.
+            self.discovery_provider.setCurrentText("Steam Master")
+        if product.experimental and hasattr(self, "launch_engine"):
+            self.launch_engine.setCurrentText("Native launcher")
+            self.launch_engine.setEnabled(False)
+        elif hasattr(self, "launch_engine"):
+            self.launch_engine.setEnabled(True)
+        if hasattr(self, "mod_view"):
+            self.mod_view.setItemText(
+                1,
+                "Available local mods" if product.experimental else "Installed Workshop library",
+            )
+            for name in (
+                "subscribe_missing_button",
+                "force_update_button",
+                "update_installed_mods_button",
+            ):
+                if hasattr(self, name):
+                    getattr(self, name).setVisible(not product.experimental)
+        from .settings import load_favourites
+        from .settings import curated_servers_path
+
+        self.favourites = load_favourites(product.key)
+        self.config_path = curated_servers_path(product.key)
+        from .config import ensure_servers_file, load_servers
+
+        ensure_servers_file(self.config_path)
+        self.servers = load_servers(self.config_path)
+        for server in self.servers:
+            server.favourite = server_key(server) in self.favourites
+        if hasattr(self, "refresh_curated_server_cards"):
+            self.refresh_curated_server_cards()
+        SettingsFeatureMixin._recheck_after_mod_context_change(
+            self,
+            f"{product.label} selected. Rechecking the selected server in the new game context...",
+        )
+
     def handle_native_steam_mode_changed(self, *_args):
         SettingsFeatureMixin._recheck_after_mod_context_change(
             self, "Steam install changed. Rechecking selected server mods..."
@@ -444,6 +510,7 @@ class SettingsFeatureMixin:
             "launcher_path": self.launcher_path.text(),
             "player_name": self.player_name.text(),
             "launch_engine": self.launch_engine_key(),
+            "dayz_product": self.dayz_product_key(),
             "native_steam_mode": self.native_steam_mode_key(),
             "refresh_seconds": self.refresh_seconds.value(),
             "last_selected_row": self.table.currentRow(),
@@ -502,7 +569,12 @@ class SettingsFeatureMixin:
 
     def _save_favourites_index(self) -> bool:
         try:
-            save_favourites(self.favourites)
+            product_key = (
+                self.dayz_product_key()
+                if hasattr(self, "dayz_product_key")
+                else str(getattr(self, "settings", {}).get("dayz_product", "stable"))
+            )
+            save_favourites(self.favourites, product_key)
         except OSError as exc:
             QMessageBox.warning(
                 self,

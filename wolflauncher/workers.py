@@ -217,16 +217,18 @@ class WorkshopStateWorker(QThread):
 class SteamDiscoveryWorker(QThread):
     discovery_ready = Signal(object, str)
 
-    def __init__(self, max_batches: int = 1, master_addresses=None):
+    def __init__(self, max_batches: int = 1, master_addresses=None, app_id: int = 221100):
         super().__init__()
         self.max_batches = max_batches
         self.master_addresses = master_addresses
+        self.app_id = app_id
 
     def run(self):
         try:
             servers = discover_dayz_servers(
                 max_batches=self.max_batches,
                 master_addresses=self.master_addresses,
+                app_id=self.app_id,
             )
         except (OSError, ValueError) as exc:
             self.discovery_ready.emit([], str(exc))
@@ -237,14 +239,15 @@ class SteamDiscoveryWorker(QThread):
 class SteamWebApiDiscoveryWorker(QThread):
     discovery_ready = Signal(object, str)
 
-    def __init__(self, api_key: str, limit: int = 5000):
+    def __init__(self, api_key: str, limit: int = 5000, app_id: int = 221100):
         super().__init__()
         self.api_key = api_key
         self.limit = limit
+        self.app_id = app_id
 
     def run(self):
         try:
-            servers = discover_dayz_servers_web_api(api_key=self.api_key, limit=self.limit)
+            servers = discover_dayz_servers_web_api(api_key=self.api_key, limit=self.limit, app_id=self.app_id)
         except Exception as exc:
             self.discovery_ready.emit([], str(exc))
         else:

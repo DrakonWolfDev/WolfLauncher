@@ -1,6 +1,6 @@
 # WolfLauncher Project State
 
-Updated: 2026-07-28
+Updated: 2026-08-01
 
 WolfLauncher is a Linux-primary DayZ launcher GUI built with Python and PySide6,
 with experimental portable and installed Windows builds.
@@ -115,6 +115,15 @@ release matrix.
   Emberline Technologies. Certificates/keys and protected CI signing boundaries
   remain PR-17 release work; no signing certificate/key provider has been
   acquired yet, and no signing secret is stored in the repository.
+- Settings now provide a persistent Stable/Experimental game-version profile.
+  Experimental has an always-visible warning, isolated curated-server and
+  favourites files, and isolated Steam discovery cache sources. On Windows it detects Steam App ID
+  1024020 and uses the observed official BattlEye handoff: `DayZ_BE.exe 0 1 1
+  -exe DayZ_x64.exe`, absolute local-mod paths and `-connect=ip:game:query`.
+  Experimental has no separate Workshop application: Stable's `DayZ\!Workshop`
+  junction collection is read as a local source and Workshop mutation controls
+  are hidden. Linux Experimental native launch remains deliberately blocked
+  until its handoff is validated.
 
 ## Active release boundary
 

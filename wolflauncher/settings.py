@@ -10,7 +10,7 @@ SETTINGS_PATH = APP_DIR / "settings.json"
 FAVOURITES_PATH = APP_DIR / "favourites.json"
 CURATED_SERVERS_PATH = APP_DIR / "servers.yaml"
 DEFAULT_DISCOVERY_PROVIDER = "wolfapi_v1"
-SETTINGS_SCHEMA_VERSION = 7
+SETTINGS_SCHEMA_VERSION = 8
 
 
 def ensure_app_dir() -> None:
@@ -69,6 +69,8 @@ def normalize_settings(data: Any) -> dict[str, Any]:
             migrated.setdefault("editor_extra_mod_ids", [])
         if version < 7:
             migrated.setdefault("local_host_settings", {})
+        if version < 8:
+            migrated.setdefault("dayz_product", "stable")
         migrated["schema_version"] = SETTINGS_SCHEMA_VERSION
     return migrated
 
@@ -77,12 +79,20 @@ def server_key(server) -> str:
     return f"{server.host}:{server.game_port}:{server.query_port}:{server.name}"
 
 
-def load_favourites() -> set[str]:
-    data = load_json(FAVOURITES_PATH, [])
+def favourites_path(product_key: str = "stable") -> Path:
+    return FAVOURITES_PATH if product_key == "stable" else APP_DIR / f"favourites-{product_key}.json"
+
+
+def curated_servers_path(product_key: str = "stable") -> Path:
+    return CURATED_SERVERS_PATH if product_key == "stable" else APP_DIR / f"servers-{product_key}.yaml"
+
+
+def load_favourites(product_key: str = "stable") -> set[str]:
+    data = load_json(favourites_path(product_key), [])
     if isinstance(data, list):
         return {str(item) for item in data}
     return set()
 
 
-def save_favourites(keys: set[str]) -> None:
-    save_json(FAVOURITES_PATH, sorted(keys))
+def save_favourites(keys: set[str], product_key: str = "stable") -> None:
+    save_json(favourites_path(product_key), sorted(keys))

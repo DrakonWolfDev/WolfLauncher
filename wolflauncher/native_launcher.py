@@ -257,6 +257,9 @@ def prepare_native_launch(
     else:
         mods = required_mods
 
+    if install.product.experimental:
+        return _prepare_experimental_native_launch(install, launch_server, mods, extra_params)
+
     mod_setup = prepare_mod_links(dayz_dir, workshop_dir, mods)
 
     if mod_setup.missing_mod_ids:
@@ -280,6 +283,65 @@ def prepare_native_launch(
     )
 
 
+def _prepare_experimental_native_launch(
+    install: SteamInstall,
+    server: Server,
+    mods: list[RequiredMod],
+    extra_params: list[str] | None,
+) -> PreparedNativeLaunch:
+    """Build the observed Windows DayZ Experimental BattlEye handoff.
+
+    Experimental has no Workshop app. Its official launcher uses local paths,
+    commonly the Stable launcher's ``DayZ/!Workshop`` junction collection.
+    WolfLauncher only reads those locations; it does not copy, subscribe, or
+    mutate Workshop content.
+    """
+    if current_platform().capabilities.platform_id != "windows":
+        raise NativeLaunchError(
+            "DayZ Experimental native launch is not validated on this platform yet",
+            stage="Experimental launch",
+            guidance="Use Steam's DayZ Experimental launcher until the Linux Experimental handoff is verified.",
+        )
+    dayz_dir = _require_dir(install.dayz_dir, "DayZ Experimental install")
+    executable = dayz_dir / "DayZ_BE.exe"
+    if not executable.is_file():
+        raise NativeLaunchError(
+            "DayZ Experimental BattlEye launcher was not detected",
+            stage="Experimental launch",
+            guidance="Launch DayZ Experimental once through Steam and complete BattlEye setup, then retry.",
+        )
+    workshop_dir = _require_dir(install.workshop_dir, "Stable DayZ Workshop")
+    missing = [str(mod.workshop_id) for mod in mods if not (workshop_dir / str(mod.workshop_id)).is_dir()]
+    if missing:
+        raise NativeLaunchError(
+            "Missing local mod directories for: " + ", ".join(_missing_mod_labels(mods, missing)),
+            stage="Experimental local mods",
+            guidance="Add the Stable DayZ !Workshop folder as an Experimental local-mod source, then retry.",
+        )
+    links = _experimental_mod_paths(dayz_dir, workshop_dir, mods)
+    command = [str(executable), "0", "1", "1", "-exe", "DayZ_x64.exe"]
+    if links:
+        command.append(f"-mod={';'.join(links)}")
+    command.append(f"-connect={server.host}:{server.game_port}:{server.query_port}")
+    if extra_params:
+        command.extend(extra_params)
+    return PreparedNativeLaunch(command=command, mod_links=links)
+
+
+def _experimental_mod_paths(dayz_dir: Path, workshop_dir: Path, mods: list[RequiredMod]) -> list[str]:
+    """Prefer the official launcher-compatible Stable ``!Workshop`` junction names."""
+    by_id = {}
+    local_source = dayz_dir.parent / "DayZ" / "!Workshop"
+    if local_source.is_dir():
+        for child in local_source.iterdir():
+            try:
+                if child.resolve().name.isdigit():
+                    by_id[child.resolve().name] = child
+            except OSError:
+                continue
+    return [str(by_id.get(str(mod.workshop_id), workshop_dir / str(mod.workshop_id))) for mod in mods]
+
+
 def prepare_native_launch_preview(
     install: SteamInstall,
     server: Server,
@@ -288,9 +350,18 @@ def prepare_native_launch_preview(
     extra_params: list[str] | None = None,
 ) -> NativeLaunchPreview:
     """Prepare installed mod links and return a non-executing launch preview."""
+    launch_server = _resolved_server(server)
+    if install.product.experimental:
+        prepared = _prepare_experimental_native_launch(
+            install, launch_server, required_mods, extra_params
+        )
+        return NativeLaunchPreview(
+            server=launch_server,
+            command=prepared.command,
+            mod_setup=NativeModSetup(mod_links=prepared.mod_links),
+        )
     dayz_dir = _require_dir(install.dayz_dir, "DayZ install")
     workshop_dir = _require_dir(install.workshop_dir, "DayZ Workshop")
-    launch_server = _resolved_server(server)
     mod_setup = prepare_mod_links(dayz_dir, workshop_dir, required_mods)
     command = []
     if not mod_setup.missing_mod_ids:
