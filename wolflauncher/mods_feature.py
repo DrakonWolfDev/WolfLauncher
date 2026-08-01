@@ -41,12 +41,9 @@ from .mod_presenter import (
 from .models import Server
 from .mods import (
     ModCheckResult,
-    RequiredMod,
-    WORKSHOP_URL,
     apply_workshop_item_states,
     format_missing_workshop_links,
     format_mod_check_report,
-    scan_installed_mods,
 )
 from .platform_detection import (
     SteamInstall,
@@ -74,6 +71,7 @@ from .theme import (
 from .ui_sections import set_disclosure_state
 from .workers import (
     ModWorker,
+    WorkshopLibraryWorker,
     WorkshopSubscriptionWorker,
 )
 from .workshop_subscription import (
@@ -294,24 +292,42 @@ class ModsFeatureMixin:
 
     def show_installed_workshop_library(self):
         install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
-        workshop_dir = install.workshop_dir if install else None
-        installed = scan_installed_mods(workshop_dir)
-        self.installed_workshop_mods = [
-            RequiredMod(
-                workshop_id=workshop_id,
-                name=name,
-                installed=True,
-                installed_name=name,
-                workshop_url=WORKSHOP_URL.format(mod_id=workshop_id),
-            )
-            for workshop_id, name in sorted(installed.items(), key=lambda item: item[1].casefold())
-        ]
         self.mod_server_title.setText("Installed DayZ Workshop library")
-        self.mod_readiness.setText("Local installed Workshop content. Steam subscriptions are never changed here.")
-        self.mod_summary.setText(f"Installed {len(self.installed_workshop_mods)} mod(s).")
+        self.mod_readiness.setText("Checking local Workshop content against Steam's current item state…")
+        self.mod_summary.setText("")
         self.subscribe_missing_button.setEnabled(False)
         self.force_update_button.setEnabled(False)
+        if not install or not install.workshop_dir:
+            self.installed_workshop_mods = []
+            self.mod_readiness.setText("DayZ Workshop folder not detected for the selected Steam installation.")
+            self._display_mod_rows([])
+            return
+        if getattr(self, "workshop_library_worker", None) and self.workshop_library_worker.isRunning():
+            return
+        worker = WorkshopLibraryWorker(install)
+        self.workshop_library_worker = worker
+        worker.library_ready.connect(self.finish_installed_workshop_library_load)
+        worker.finished.connect(self.clear_installed_workshop_library_worker)
+        worker.start()
+
+    def finish_installed_workshop_library_load(self, mods, state_error: str):
+        if not self.viewing_installed_workshop_library():
+            return
+        self.installed_workshop_mods = sorted(mods, key=mod_default_sort_key)
+        self.mod_readiness.setText(
+            "Local installed Workshop content. Steam subscriptions are never changed here."
+        )
+        summary = f"Installed {len(mods)} mod(s)."
+        if state_error:
+            summary += f" Live Steam state unavailable: {state_error}"
+        else:
+            updates = sum(1 for mod in mods if not mod.ready)
+            summary += f" Update/pending {updates}."
+        self.mod_summary.setText(summary)
         self._display_mod_rows(self.installed_workshop_mods)
+
+    def clear_installed_workshop_library_worker(self):
+        self.workshop_library_worker = None
 
     def _display_mod_rows(self, mods):
         self.mods_table.setSortingEnabled(False)

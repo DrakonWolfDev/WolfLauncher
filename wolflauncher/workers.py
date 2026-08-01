@@ -8,11 +8,14 @@ from PySide6.QtCore import QThread, Signal
 from . import server_cache
 from .models import Server
 from .mods import (
+    RequiredMod,
+    WORKSHOP_URL,
     apply_workshop_item_states,
     apply_workshop_metadata,
     apply_workshop_install_timestamps,
     check_server_mods,
     fetch_workshop_metadata,
+    scan_installed_mods,
     workshop_install_timestamps,
 )
 from .server_discovery import (
@@ -109,6 +112,61 @@ class ModWorker(QThread):
             else:
                 apply_workshop_item_states(result, states.items)
         self.mods_ready.emit(result)
+
+
+def load_installed_workshop_library(install) -> tuple[list[RequiredMod], str]:
+    """Read local DayZ Workshop items and compare them with Steam's current state."""
+    workshop_dir = getattr(install, "workshop_dir", None)
+    installed = scan_installed_mods(workshop_dir)
+    mods = [
+        RequiredMod(
+            workshop_id=workshop_id,
+            name=name,
+            installed=True,
+            installed_name=name,
+            workshop_url=WORKSHOP_URL.format(mod_id=workshop_id),
+        )
+        for workshop_id, name in installed.items()
+    ]
+    if not mods:
+        return [], ""
+    metadata = fetch_workshop_metadata(mod.workshop_id for mod in mods)
+    timestamps = workshop_install_timestamps(install)
+    for mod in mods:
+        detail = metadata.get(mod.workshop_id, {})
+        mod.workshop_file_size = max(0, int(detail.get("file_size") or 0))
+        mod.workshop_description = str(detail.get("description") or "").strip()
+        mod.workshop_preview_url = str(detail.get("preview_url") or "").strip()
+        mod.workshop_updated_at = max(0, int(detail.get("time_updated") or 0))
+        mod.installed_updated_at = max(0, int(timestamps.get(mod.workshop_id, 0)))
+    if not getattr(install, "running", False):
+        return mods, "Start Steam to check live Workshop update/download state."
+    states = query_workshop_item_states_isolated((mod.workshop_id for mod in mods), install)
+    if states.error:
+        return mods, states.error
+    by_id = {item.workshop_id: item for item in states.items}
+    for mod in mods:
+        item = by_id.get(mod.workshop_id)
+        if item:
+            mod.workshop_state = item.state
+            mod.workshop_downloaded = item.downloaded
+            mod.workshop_total = item.total
+    return mods, ""
+
+
+class WorkshopLibraryWorker(QThread):
+    library_ready = Signal(object, str)
+
+    def __init__(self, install):
+        super().__init__()
+        self.install = install
+
+    def run(self):
+        try:
+            mods, error = load_installed_workshop_library(self.install)
+        except Exception as exc:
+            mods, error = [], str(exc)
+        self.library_ready.emit(mods, error)
 
 
 class WorkshopSubscriptionWorker(QThread):
