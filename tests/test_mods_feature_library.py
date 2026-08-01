@@ -9,6 +9,25 @@ from wolflauncher.workshop_subscription import ITEM_STATE_NEEDS_UPDATE
 
 
 class InstalledWorkshopLibraryTests(unittest.TestCase):
+    def test_recheck_follows_the_active_mod_view(self):
+        library_window = SimpleNamespace(
+            viewing_installed_workshop_library=Mock(return_value=True),
+            show_installed_workshop_library=Mock(),
+            check_selected_server_mods=Mock(),
+        )
+        ModsFeatureMixin.recheck_current_mod_view(library_window)
+        library_window.show_installed_workshop_library.assert_called_once_with()
+        library_window.check_selected_server_mods.assert_not_called()
+
+        server_window = SimpleNamespace(
+            viewing_installed_workshop_library=Mock(return_value=False),
+            show_installed_workshop_library=Mock(),
+            check_selected_server_mods=Mock(),
+        )
+        ModsFeatureMixin.recheck_current_mod_view(server_window)
+        server_window.show_installed_workshop_library.assert_not_called()
+        server_window.check_selected_server_mods.assert_called_once_with(force=True)
+
     @patch("wolflauncher.mods_feature.WorkshopSubscriptionWorker")
     @patch("wolflauncher.mods_feature.QProgressDialog")
     @patch("wolflauncher.mods_feature.QMessageBox.question", return_value=QMessageBox.Yes)

@@ -106,10 +106,10 @@ class ModsFeatureMixin:
         layout.addWidget(self.mod_summary)
 
         buttons = QHBoxLayout()
-        check = QPushButton("Recheck selected server mods")
-        check.setIcon(theme_icon("recheck"))
-        set_ui_role(check, "accent")
-        check.clicked.connect(lambda _checked=False: self.check_selected_server_mods(force=True))
+        self.recheck_mods_button = QPushButton("Recheck selected server mods")
+        self.recheck_mods_button.setIcon(theme_icon("recheck"))
+        set_ui_role(self.recheck_mods_button, "accent")
+        self.recheck_mods_button.clicked.connect(self.recheck_current_mod_view)
         native_preview = QPushButton("Native launch preview")
         native_preview.clicked.connect(self.launch_execution.preview_native)
         copy_report = QPushButton("Copy mod report")
@@ -126,7 +126,7 @@ class ModsFeatureMixin:
         self.force_update_button = QPushButton("Force Steam update selected mod")
         self.force_update_button.clicked.connect(self.force_update_selected_mod)
         self.force_update_button.setEnabled(False)
-        buttons.addWidget(check)
+        buttons.addWidget(self.recheck_mods_button)
         self.mod_view = QComboBox()
         self.mod_view.addItems(["Required for selected server", "Installed Workshop library"])
         self.mod_view.currentIndexChanged.connect(self.change_mod_view)
@@ -271,7 +271,7 @@ class ModsFeatureMixin:
         self.resize_mod_detail_card()
         layout.addLayout(advanced_toggle_row)
         layout.addWidget(self.mods_advanced_panel)
-        QWidget.setTabOrder(check, self.subscribe_missing_button)
+        QWidget.setTabOrder(self.recheck_mods_button, self.subscribe_missing_button)
         QWidget.setTabOrder(self.subscribe_missing_button, self.force_update_button)
         QWidget.setTabOrder(self.force_update_button, self.mod_filter)
         QWidget.setTabOrder(self.mod_filter, self.mods_table)
@@ -282,6 +282,12 @@ class ModsFeatureMixin:
         self.installed_workshop_mods = []
         return widget
 
+    def recheck_current_mod_view(self):
+        if self.viewing_installed_workshop_library():
+            self.show_installed_workshop_library()
+            return
+        self.check_selected_server_mods(force=True)
+
     def viewing_installed_workshop_library(self) -> bool:
         return self.mod_view.currentIndex() == 1
 
@@ -291,6 +297,11 @@ class ModsFeatureMixin:
         elif self.last_mod_result:
             self.display_mods_result(self.last_mod_result)
         self.update_installed_mods_button.setVisible(self.viewing_installed_workshop_library())
+        self.recheck_mods_button.setText(
+            "Recheck installed Workshop mods"
+            if self.viewing_installed_workshop_library()
+            else "Recheck selected server mods"
+        )
 
     def show_installed_workshop_library(self):
         install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
