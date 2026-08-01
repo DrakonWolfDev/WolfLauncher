@@ -1518,9 +1518,12 @@ class ServerBrowserMixin:
             show_details=show_details,
             stretch_columns=(),
         )
+        header = self.browser_table.horizontalHeader()
+        for column, width in ((BROWSER_FAVOURITE_COLUMN, 64), (BROWSER_PASSWORD_COLUMN, 46)):
+            header.setSectionResizeMode(column, QHeaderView.Fixed)
+            self.browser_table.setColumnWidth(column, width)
         self.browser_table.setColumnHidden(2, True)
         if not show_details:
-            header = self.browser_table.horizontalHeader()
             # Name flexes with the live viewport and yields when readiness text
             # makes Mods wider. This avoids stale startup widths and horizontal
             # overflow after background mod previews complete.
