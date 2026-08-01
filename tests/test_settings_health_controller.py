@@ -31,6 +31,19 @@ class SettingsHealthCoordinatorTests(unittest.TestCase):
         self.assertEqual(status, "WARN")
         self.assertEqual(detail, "Invalid endpoint")
 
+    def test_steam_master_default_endpoints_are_healthy(self):
+        window = SimpleNamespace(
+            discovery_provider_key=Mock(return_value="steam_master"),
+            discovery_provider=Mock(),
+            steam_master_addresses=Mock(return_value=None),
+        )
+        window.discovery_provider.currentText.return_value = "Steam master"
+
+        status, detail = SettingsHealthCoordinator(window)._provider_health()
+
+        self.assertEqual(status, "OK")
+        self.assertEqual(detail, "Default Steam masters")
+
 
 if __name__ == "__main__":
     unittest.main()
