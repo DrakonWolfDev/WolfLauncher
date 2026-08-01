@@ -43,6 +43,8 @@ def owner_with(**overrides):
         "pending_results_freshness": True,
         "results_freshness_attempted_keys": {"three"},
         "wolfapi_refresh_process": None,
+        "mod_thumbnail_reply": None,
+        "editor_image_reply": None,
     }
     values.update(overrides)
     return SimpleNamespace(**values)
@@ -135,6 +137,15 @@ class LifecycleTests(unittest.TestCase):
         self.assertFalse(owner.pending_results_freshness)
         self.assertEqual(owner.results_freshness_attempted_keys, set())
         self.assertTrue(owner._shutting_down)
+
+    def test_stop_runtime_aborts_active_thumbnail_requests(self):
+        reply = Mock()
+        reply.isFinished.return_value = False
+        owner = owner_with(mod_thumbnail_reply=reply)
+
+        self.assertTrue(stop_runtime(owner, timeout_ms=100))
+
+        reply.abort.assert_called_once_with()
 
     def test_stop_runtime_reports_worker_that_outlives_deadline(self):
         worker = Mock()

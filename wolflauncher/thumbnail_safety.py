@@ -6,8 +6,10 @@ from urllib.parse import urlparse, urlunparse
 
 MAX_THUMBNAIL_BYTES = 2 * 1024 * 1024
 MAX_THUMBNAIL_DIMENSION = 2048
+THUMBNAIL_REQUEST_TIMEOUT_MS = 10_000
 STEAM_ASSET_HOST_SUFFIXES = ("steamusercontent.com", "steamstatic.com")
 STEAM_ASSET_HOSTS = {"steamcommunity-a.akamaihd.net"}
+RASTER_THUMBNAIL_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
 
 def is_safe_thumbnail_url(value: str) -> bool:
@@ -28,7 +30,7 @@ def normalize_thumbnail_url(value: str) -> str:
 
 
 def is_safe_thumbnail_content_type(value: str) -> bool:
-    return str(value).split(";", 1)[0].strip().lower().startswith("image/")
+    return str(value).split(";", 1)[0].strip().lower() in RASTER_THUMBNAIL_CONTENT_TYPES
 
 
 def is_safe_thumbnail_dimensions(width: int, height: int) -> bool:

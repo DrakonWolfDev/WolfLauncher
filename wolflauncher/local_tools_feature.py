@@ -46,6 +46,13 @@ from .platform_detection import build_steam_start_command
 from .platforms import current_platform
 from .launch_dialogs import LaunchDialog
 from .theme import set_monospace, set_ui_role
+from .thumbnail_safety import (
+    MAX_THUMBNAIL_BYTES,
+    THUMBNAIL_REQUEST_TIMEOUT_MS,
+    is_safe_thumbnail_content_type,
+    is_safe_thumbnail_dimensions,
+    is_safe_thumbnail_url,
+)
 from .workers import WorkshopSubscriptionWorker
 
 
@@ -189,7 +196,8 @@ class LocalToolsFeatureMixin:
         editor_mods_layout.addWidget(self.editor_mod_picker)
         self.editor_image_manager = QNetworkAccessManager(self)
         self.editor_image_manager.finished.connect(self._finish_editor_image_load)
-        self.editor_image_manager.get(QNetworkRequest(QUrl(DAYZ_EDITOR_IMAGE_URL)))
+        self.editor_image_reply = None
+        self._load_editor_image()
 
         local_card = QFrame()
         set_ui_role(local_card, "healthGroup")
@@ -452,20 +460,57 @@ class LocalToolsFeatureMixin:
     def _clear_editor_workshop_worker(self):
         self.workshop_subscription_worker = None
 
-    def _finish_editor_image_load(self, reply):
-        if reply.error() != QNetworkReply.NoError:
-            reply.deleteLater()
-            return
-        image = QPixmap()
-        if image.loadFromData(bytes(reply.readAll())):
-            self.editor_workshop_image.setPixmap(
-                image.scaled(
-                    self.editor_workshop_image.size(),
-                    Qt.KeepAspectRatio,
-                    Qt.SmoothTransformation,
-                )
+    def _load_editor_image(self):
+        request = QNetworkRequest(QUrl(DAYZ_EDITOR_IMAGE_URL))
+        request.setAttribute(
+            QNetworkRequest.RedirectPolicyAttribute, QNetworkRequest.NoLessSafeRedirectPolicy
+        )
+        reply = self.editor_image_manager.get(request)
+        self.editor_image_reply = reply
+        reply.downloadProgress.connect(
+            lambda received, _total, active_reply=reply: self._abort_editor_image_if_oversize(
+                active_reply, received
             )
-        reply.deleteLater()
+        )
+        QTimer.singleShot(
+            THUMBNAIL_REQUEST_TIMEOUT_MS,
+            lambda active_reply=reply: self._abort_editor_image_if_active(active_reply),
+        )
+
+    @staticmethod
+    def _abort_editor_image_if_oversize(reply: QNetworkReply, received: int) -> None:
+        if received > MAX_THUMBNAIL_BYTES:
+            reply.abort()
+
+    def _abort_editor_image_if_active(self, reply: QNetworkReply) -> None:
+        if reply is self.editor_image_reply and not reply.isFinished():
+            reply.abort()
+
+    def _finish_editor_image_load(self, reply):
+        try:
+            if reply is not self.editor_image_reply:
+                return
+            self.editor_image_reply = None
+            content_type = reply.header(QNetworkRequest.ContentTypeHeader) or ""
+            payload = bytes(reply.readAll())
+            image = QPixmap()
+            if (
+                reply.error() == QNetworkReply.NoError
+                and is_safe_thumbnail_url(reply.url().toString())
+                and len(payload) <= MAX_THUMBNAIL_BYTES
+                and is_safe_thumbnail_content_type(str(content_type))
+                and image.loadFromData(payload)
+                and is_safe_thumbnail_dimensions(image.width(), image.height())
+            ):
+                self.editor_workshop_image.setPixmap(
+                    image.scaled(
+                        self.editor_workshop_image.size(),
+                        Qt.KeepAspectRatio,
+                        Qt.SmoothTransformation,
+                    )
+                )
+        finally:
+            reply.deleteLater()
 
     def _browse_local_folder(self, target: QLineEdit):
         selected = QFileDialog.getExistingDirectory(self, "Select local DayZ folder")

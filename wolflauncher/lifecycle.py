@@ -33,6 +33,11 @@ TIMER_ATTRIBUTES = (
     "steam_server_install_timer",
 )
 
+NETWORK_REPLY_ATTRIBUTES = (
+    "mod_thumbnail_reply",
+    "editor_image_reply",
+)
+
 
 class RuntimeShutdownCoordinator:
     """Own the bounded, non-blocking shutdown protocol for one Qt window."""
@@ -70,6 +75,10 @@ def stop_runtime_scheduling(owner) -> None:
         timer = getattr(owner, name, None)
         if timer is not None:
             timer.stop()
+    for name in NETWORK_REPLY_ATTRIBUTES:
+        reply = getattr(owner, name, None)
+        if reply is not None and not reply.isFinished():
+            reply.abort()
     for name in (
         "pending_selection_checks",
         "pending_browser_mod_previews",

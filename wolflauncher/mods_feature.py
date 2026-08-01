@@ -54,6 +54,7 @@ from .settings import (
 )
 from .thumbnail_safety import (
     MAX_THUMBNAIL_BYTES,
+    THUMBNAIL_REQUEST_TIMEOUT_MS,
     is_safe_thumbnail_content_type,
     is_safe_thumbnail_dimensions,
     is_safe_thumbnail_url,
@@ -243,6 +244,7 @@ class ModsFeatureMixin:
         self.mod_thumbnail_manager = QNetworkAccessManager(self)
         self.mod_thumbnail_manager.finished.connect(self.finish_mod_thumbnail_load)
         self.mod_thumbnail_url = ""
+        self.mod_thumbnail_reply = None
         self.resize_mod_detail_card()
         layout.addLayout(advanced_toggle_row)
         layout.addWidget(self.mods_advanced_panel)
@@ -492,22 +494,37 @@ class ModsFeatureMixin:
     def load_mod_thumbnail(self, url: str):
         normalized_url = normalize_thumbnail_url(url)
         self.mod_thumbnail_url = normalized_url if is_safe_thumbnail_url(normalized_url) else ""
+        if self.mod_thumbnail_reply is not None:
+            self.mod_thumbnail_reply.abort()
+            self.mod_thumbnail_reply = None
         self.mod_detail_thumbnail.setPixmap(QPixmap())
         if not self.mod_thumbnail_url:
             self.mod_detail_thumbnail.setText("No preview")
             return
         self.mod_detail_thumbnail.setText("Loading…")
         request = QNetworkRequest(QUrl(self.mod_thumbnail_url))
+        request.setAttribute(
+            QNetworkRequest.RedirectPolicyAttribute, QNetworkRequest.NoLessSafeRedirectPolicy
+        )
         reply = self.mod_thumbnail_manager.get(request)
+        self.mod_thumbnail_reply = reply
         reply.downloadProgress.connect(
             lambda received, _total, active_reply=reply: self._abort_oversize_thumbnail(
                 active_reply, received
             )
         )
+        QTimer.singleShot(
+            THUMBNAIL_REQUEST_TIMEOUT_MS,
+            lambda active_reply=reply: self._abort_thumbnail_if_active(active_reply),
+        )
 
     @staticmethod
     def _abort_oversize_thumbnail(reply: QNetworkReply, received: int) -> None:
         if received > MAX_THUMBNAIL_BYTES:
+            reply.abort()
+
+    def _abort_thumbnail_if_active(self, reply: QNetworkReply) -> None:
+        if reply is self.mod_thumbnail_reply and not reply.isFinished():
             reply.abort()
 
     def resize_mod_detail_card(self):
@@ -534,7 +551,10 @@ class ModsFeatureMixin:
 
     def finish_mod_thumbnail_load(self, reply: QNetworkReply):
         try:
-            if reply.url().toString() != self.mod_thumbnail_url:
+            if reply is not self.mod_thumbnail_reply:
+                return
+            self.mod_thumbnail_reply = None
+            if not is_safe_thumbnail_url(reply.url().toString()):
                 return
             pixmap = QPixmap()
             content_type = reply.header(QNetworkRequest.ContentTypeHeader) or ""
