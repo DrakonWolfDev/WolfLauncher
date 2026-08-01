@@ -111,7 +111,9 @@ class FavouriteEmptyStateTests(unittest.TestCase):
         return SimpleNamespace(
             servers=[Server("Example", "Community", "dayz.test", 2302, 27016, favourite)],
             empty_favourites_card=Mock(),
+            empty_favourites_page=Mock(),
             server_cards=Mock(),
+            favourites_content=Mock(),
             table=Mock(),
             move_server_up_button=Mock(),
             move_server_down_button=Mock(),
@@ -124,8 +126,9 @@ class FavouriteEmptyStateTests(unittest.TestCase):
 
         MainWindow._update_empty_favourites_state(window)
 
-        window.empty_favourites_card.setVisible.assert_called_once_with(True)
-        window.server_cards.setVisible.assert_called_once_with(False)
+        window.favourites_content.setCurrentWidget.assert_called_once_with(
+            window.empty_favourites_page
+        )
         window.launch_button.setEnabled.assert_called_once_with(False)
 
     def test_empty_state_is_hidden_when_a_server_is_favourited(self):
@@ -133,8 +136,7 @@ class FavouriteEmptyStateTests(unittest.TestCase):
 
         MainWindow._update_empty_favourites_state(window)
 
-        window.empty_favourites_card.setVisible.assert_called_once_with(False)
-        window.server_cards.setVisible.assert_called_once_with(True)
+        window.favourites_content.setCurrentWidget.assert_called_once_with(window.server_cards)
         window.launch_button.setEnabled.assert_called_once_with(True)
 
 
