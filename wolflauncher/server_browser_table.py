@@ -147,7 +147,7 @@ def _set_browser_table_row(
     password.setData(Qt.UserRole, server.cache_key)
     password.setTextAlignment(Qt.AlignCenter)
     if server.password:
-        password.setIcon(theme_icon("lock"))
+        password.setIcon(theme_icon("lock-table"))
         password.setForeground(QColor(STATUS_COLOURS["negative"]))
         password.setToolTip("Password required to join this server")
     table.setItem(row, BROWSER_PASSWORD_COLUMN, password)
