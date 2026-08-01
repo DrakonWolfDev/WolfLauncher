@@ -169,11 +169,12 @@ class LocalToolsFeatureMixin:
         editor_mods_panel = QWidget()
         editor_mods_layout = QVBoxLayout(editor_mods_panel)
         editor_mods_layout.setContentsMargins(8, 0, 0, 0)
-        editor_mods_title = QLabel("Additional mods")
+        editor_mods_title = QLabel("DayZ Editor")
         set_ui_role(editor_mods_title, "cardTitle")
         editor_mods_layout.addWidget(editor_mods_title)
         editor_mods_detail = QLabel(
-            "Installed Workshop mods added to both DayZ Editor and Local Development. Editor requirements are included automatically."
+            "The required Editor mods (CF, Dabs Framework and DayZ Editor) are included automatically. "
+            "Add any extra installed Workshop mods you want to use in your project."
         )
         editor_mods_detail.setWordWrap(True)
         set_ui_role(editor_mods_detail, "metadata")
@@ -205,7 +206,11 @@ class LocalToolsFeatureMixin:
         local_title = QLabel("Local Development")
         set_ui_role(local_title, "cardTitle")
         local_layout.addWidget(local_title)
-        local_detail = QLabel("Launch DayZ with this profile and connect to an already-running local or LAN test server. Local server hosting, process control and logs are planned follow-on work.")
+        local_detail = QLabel(
+            "Select the installed Workshop mods required for this local development profile, then launch DayZ "
+            "and connect to an already-running local or LAN test server. Local server hosting, process control "
+            "and logs are planned follow-on work."
+        )
         local_detail.setWordWrap(True)
         set_ui_role(local_detail, "metadata")
         local_layout.addWidget(local_detail)
