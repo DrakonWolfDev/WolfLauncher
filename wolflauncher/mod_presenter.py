@@ -79,6 +79,11 @@ def mod_default_sort_key(mod: RequiredMod) -> tuple[int, str, str]:
     return (priority, (mod.name or mod.installed_name).casefold(), mod.workshop_id)
 
 
+def mods_needing_workshop_update(mods: list[RequiredMod]) -> list[RequiredMod]:
+    """Return only installed items Steam or revision metadata says need attention."""
+    return [mod for mod in mods if mod.installed and not mod.ready]
+
+
 def combined_download_estimate(mods: list[RequiredMod]) -> str:
     known = [mod for mod in mods if mod.workshop_total > 0 or mod.workshop_file_size > 0]
     unknown = len(mods) - len(known)

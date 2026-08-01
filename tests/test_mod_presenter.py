@@ -5,6 +5,7 @@ from wolflauncher.mod_presenter import (
     mod_description_preview,
     mod_detail_status,
     mod_default_sort_key,
+    mods_needing_workshop_update,
     mod_download_size,
     mod_file_size,
     mod_inspector_scale,
@@ -45,6 +46,16 @@ class ModPresenterTests(unittest.TestCase):
         ordered = sorted([ready, missing, update], key=mod_default_sort_key)
 
         self.assertEqual([mod.workshop_id for mod in ordered], ["100", "200", "300"])
+
+    def test_update_candidates_exclude_ready_installed_mods(self):
+        ready = RequiredMod("100", installed=True)
+        update = RequiredMod("200", installed=True, workshop_state=ITEM_STATE_NEEDS_UPDATE)
+        missing = RequiredMod("300")
+
+        self.assertEqual(
+            [mod.workshop_id for mod in mods_needing_workshop_update([ready, update, missing])],
+            ["200"],
+        )
 
     def test_mod_detail_status_drives_semantic_inspector_edge(self):
         self.assertEqual(mod_detail_status(RequiredMod("1", installed=True)), "ready")

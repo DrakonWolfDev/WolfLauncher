@@ -33,6 +33,7 @@ from .mod_presenter import (
     mod_inspector_scale,
     mod_inspector_type_scale,
     mod_default_sort_key,
+    mods_needing_workshop_update,
     mod_readiness_text,
     mod_row,
     mod_server_heading,
@@ -880,9 +881,12 @@ class ModsFeatureMixin:
     def update_all_installed_mods(self):
         if not self.viewing_installed_workshop_library():
             return
-        mods = self.installed_workshop_mods
+        mods = mods_needing_workshop_update(self.installed_workshop_mods)
         if not mods:
-            QMessageBox.information(self, "No installed mods", "No local DayZ Workshop mods were found.")
+            QMessageBox.information(
+                self, "No Workshop updates pending",
+                "Steam reports no installed DayZ Workshop mods that need an update or download.",
+            )
             return
         if self.workshop_subscription_worker and self.workshop_subscription_worker.isRunning():
             QMessageBox.information(self, "Steam Workshop in progress", "Wait for the current Steam Workshop operation to finish.")
@@ -894,7 +898,7 @@ class ModsFeatureMixin:
         reply = QMessageBox.question(
             self,
             "Update all installed mods?",
-            f"Ask Steam to check {len(mods)} locally installed DayZ Workshop mod(s) for updates?\n\n"
+            f"Ask Steam to update {len(mods)} installed DayZ Workshop mod(s) currently marked update/pending?\n\n"
             "This does not add or remove any Workshop subscriptions.",
             QMessageBox.Yes | QMessageBox.No,
             QMessageBox.No,
