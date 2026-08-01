@@ -1522,7 +1522,7 @@ class ServerBrowserMixin:
             stretch_columns=(),
         )
         header = self.browser_table.horizontalHeader()
-        for column, width in ((BROWSER_FAVOURITE_COLUMN, 64), (BROWSER_PASSWORD_COLUMN, 26)):
+        for column, width in ((BROWSER_FAVOURITE_COLUMN, 40), (BROWSER_PASSWORD_COLUMN, 32)):
             header.setSectionResizeMode(column, QHeaderView.Fixed)
             self.browser_table.setColumnWidth(column, width)
         self.browser_table.setColumnHidden(2, True)
