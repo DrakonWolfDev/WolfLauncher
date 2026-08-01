@@ -138,10 +138,17 @@ def _set_browser_table_row(
     favourite.setData(Qt.UserRole, server.cache_key)
     favourite.setToolTip("Remove from Favourite Servers" if is_favourite else "Add to Favourite Servers")
     table.setItem(row, BROWSER_FAVOURITE_COLUMN, favourite)
-    table.setCellWidget(row, BROWSER_FAVOURITE_COLUMN, _browser_marker(is_favourite, server.password))
+    table.setCellWidget(row, BROWSER_FAVOURITE_COLUMN, _browser_marker(is_favourite))
+    password = SortableTableWidgetItem("", int(server.password))
+    password.setData(Qt.UserRole, server.cache_key)
+    password.setTextAlignment(Qt.AlignCenter)
+    if server.password:
+        password.setIcon(theme_icon("lock-table"))
+        password.setToolTip("Password required to join this server")
+    table.setItem(row, BROWSER_PASSWORD_COLUMN, password)
 
 
-def _browser_marker(is_favourite: bool, password: bool) -> QWidget:
+def _browser_marker(is_favourite: bool) -> QWidget:
     marker = QWidget()
     marker.setAttribute(Qt.WA_TransparentForMouseEvents)
     layout = QHBoxLayout(marker)
@@ -152,13 +159,7 @@ def _browser_marker(is_favourite: bool, password: bool) -> QWidget:
     star.setProperty("favourite", is_favourite)
     star.setFixedWidth(28)
     star.setAlignment(Qt.AlignCenter)
-    lock = QLabel()
-    set_ui_role(lock, "passwordLock")
-    lock.setFixedWidth(15)
-    if password:
-        lock.setPixmap(theme_icon("lock").pixmap(QSize(15, 15)))
     layout.addWidget(star)
-    layout.addWidget(lock)
     layout.addStretch(1)
     return marker
 

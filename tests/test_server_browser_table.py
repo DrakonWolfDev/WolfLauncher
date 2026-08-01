@@ -620,11 +620,13 @@ class ServerBrowserTableTests(unittest.TestCase):
         header = table.horizontalHeader()
         self.assertEqual(header.sectionResizeMode(1), QHeaderView.Stretch)
         self.assertEqual(header.sectionResizeMode(BROWSER_FAVOURITE_COLUMN), QHeaderView.Fixed)
-        self.assertTrue(table.isColumnHidden(BROWSER_PASSWORD_COLUMN))
-        self.assertEqual(table.columnWidth(BROWSER_FAVOURITE_COLUMN), 74)
+        self.assertFalse(table.isColumnHidden(BROWSER_PASSWORD_COLUMN))
+        self.assertEqual(header.sectionResizeMode(BROWSER_PASSWORD_COLUMN), QHeaderView.Fixed)
+        self.assertEqual(table.columnWidth(BROWSER_FAVOURITE_COLUMN), 48)
+        self.assertEqual(table.columnWidth(BROWSER_PASSWORD_COLUMN), 32)
         self.assertEqual(
             [header.logicalIndex(index) for index in range(10)],
-            [0, 1, 6, 7, 16, 8, 9, 11, 12, 2],
+            [0, 1, 17, 6, 7, 16, 8, 9, 11, 12],
         )
 
     def test_population_replaces_existing_rows_and_keeps_missing_ping_guidance(self):
