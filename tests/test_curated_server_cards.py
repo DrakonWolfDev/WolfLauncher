@@ -67,6 +67,15 @@ class CuratedServerCardTests(unittest.TestCase):
         self.assertIn("Live server name", card.connect_button.accessibleName())
         self.assertIn("Live server name", card.favourite_button.accessibleName())
 
+    def test_password_protection_is_visible_on_the_card(self):
+        values = card_values()
+        values[14] = "Password, Mods"
+
+        card = CuratedServerCard(0, values)
+
+        self.assertFalse(card.password_badge.isHidden())
+        self.assertEqual(card.password_badge.text(), "Password")
+
 
 if __name__ == "__main__":
     unittest.main()

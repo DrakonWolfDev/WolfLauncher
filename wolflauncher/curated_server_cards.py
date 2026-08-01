@@ -51,6 +51,12 @@ class CuratedServerCard(QFrame):
         text.addWidget(self.metadata_label)
         layout.addLayout(text, 1)
 
+        self.password_badge = QLabel("Password")
+        set_ui_role(self.password_badge, "passwordRequired")
+        self.password_badge.setVisible("Password" in values[14])
+        self.password_badge.setToolTip("This server requires a password to join.")
+        layout.addWidget(self.password_badge)
+
         self.stats_label = QLabel(self._stats(values))
         set_ui_role(self.stats_label, self._ping_role(values[12]))
         self.stats_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
