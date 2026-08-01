@@ -169,9 +169,12 @@ class LocalToolsFeatureMixin:
         editor_mods_panel = QWidget()
         editor_mods_layout = QVBoxLayout(editor_mods_panel)
         editor_mods_layout.setContentsMargins(8, 0, 0, 0)
-        editor_mods_title = QLabel("DayZ Editor")
+        editor_mods_title = QLabel("Additional Workshop mods")
         set_ui_role(editor_mods_title, "cardTitle")
         editor_mods_layout.addWidget(editor_mods_title)
+        editor_mods_section = QLabel("DayZ Editor")
+        set_ui_role(editor_mods_section, "cardTitle")
+        editor_mods_layout.addWidget(editor_mods_section)
         editor_mods_detail = QLabel(
             "The required Editor mods (CF, Dabs Framework and DayZ Editor) are included automatically. "
             "Add any extra installed Workshop mods you want to use in your project."
