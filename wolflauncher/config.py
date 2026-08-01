@@ -101,6 +101,15 @@ def ensure_servers_file(
     return "created"
 
 
+def ensure_empty_servers_file(path: Path) -> str:
+    """Create an empty profile-scoped curated list without inheriting examples."""
+    if path.exists():
+        ensure_private_file(path)
+        return "existing"
+    atomic_write_text(path, "servers: []\n")
+    return "created"
+
+
 def find_default_launcher_path() -> str:
     for path in DEFAULT_LAUNCHER_PATHS:
         if path.exists():

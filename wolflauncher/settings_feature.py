@@ -447,9 +447,11 @@ class SettingsFeatureMixin:
 
         self.favourites = load_favourites(product.key)
         self.config_path = curated_servers_path(product.key)
-        from .config import ensure_servers_file, load_servers
+        from .config import ensure_empty_servers_file, ensure_servers_file, load_servers
 
-        ensure_servers_file(self.config_path)
+        (
+            ensure_empty_servers_file if product.experimental else ensure_servers_file
+        )(self.config_path)
         self.servers = load_servers(self.config_path)
         for server in self.servers:
             server.favourite = server_key(server) in self.favourites

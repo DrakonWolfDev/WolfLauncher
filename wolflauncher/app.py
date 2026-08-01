@@ -23,6 +23,7 @@ from .logging_setup import configure_local_logging, install_exception_hook
 from .config import (
     CURATED_SERVERS_PATH,
     ensure_servers_file,
+    ensure_empty_servers_file,
     find_default_launcher_path,
     load_servers,
 )
@@ -98,7 +99,9 @@ class MainWindow(
         self.settings = load_settings()
         self.product = product_from_key(self.settings.get("dayz_product", "stable"))
         self.config_path = curated_servers_path(self.product.key)
-        ensure_servers_file(self.config_path)
+        (
+            ensure_empty_servers_file if self.product.experimental else ensure_servers_file
+        )(self.config_path)
         self.servers = load_servers(self.config_path)
         self.curated_status_cache = load_status_cache()
         if self.product.experimental:
