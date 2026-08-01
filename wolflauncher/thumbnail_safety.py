@@ -8,7 +8,10 @@ MAX_THUMBNAIL_BYTES = 2 * 1024 * 1024
 MAX_THUMBNAIL_DIMENSION = 2048
 THUMBNAIL_REQUEST_TIMEOUT_MS = 10_000
 STEAM_ASSET_HOST_SUFFIXES = ("steamusercontent.com", "steamstatic.com")
-STEAM_ASSET_HOSTS = {"steamcommunity-a.akamaihd.net"}
+STEAM_ASSET_HOSTS = {
+    "steamcommunity-a.akamaihd.net",
+    "steamuserimages-a.akamaihd.net",
+}
 RASTER_THUMBNAIL_CONTENT_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
 

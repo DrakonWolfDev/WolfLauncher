@@ -22,6 +22,10 @@ class ThumbnailSafetyTests(unittest.TestCase):
             "https://images.akamai.steamusercontent.com/ugc/preview.jpg",
         )
         self.assertEqual(
+            normalize_thumbnail_url("http://steamuserimages-a.akamaihd.net/ugc/preview.jpg"),
+            "https://steamuserimages-a.akamaihd.net/ugc/preview.jpg",
+        )
+        self.assertEqual(
             normalize_thumbnail_url("http://cdn.example.test/preview.jpg"),
             "http://cdn.example.test/preview.jpg",
         )
