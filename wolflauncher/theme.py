@@ -103,6 +103,7 @@ QFrame[uiRole="serverCard"] {{ background-color: {c["surface"]}; border: 1px sol
 QFrame[uiRole="serverCard"][onlineState="online"] {{ border-left-color: {c["positive"]}; }}
 QFrame[uiRole="serverCard"][onlineState="offline"] {{ border-left-color: {c["negative"]}; }}
 QFrame[uiRole="serverCard"][selected="true"] {{ background-color: {c["table_selection"]}; border-color: {c["accent"]}; }}
+QFrame[uiRole="emptyState"] {{ background-color: #0e0d0b; border: 1px solid {c["border"]}; border-left: 3px solid {c["accent_pressed"]}; border-radius: 7px; }}
 QFrame[uiRole="modDetail"] {{ background-color: {c["surface"]}; border: 1px solid {c["border"]}; border-left: 3px solid {c["accent_pressed"]}; border-radius: 7px; }}
 QFrame[uiRole="modDetail"][modStatus="ready"] {{ border-left-color: {c["positive"]}; }}
 QFrame[uiRole="modDetail"][modStatus="missing"] {{ border-left-color: {c["negative"]}; }}

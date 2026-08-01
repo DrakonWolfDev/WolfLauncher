@@ -106,5 +106,37 @@ class FavouriteRemovalChoiceTests(unittest.TestCase):
         window.remove_curated_server_row.assert_not_called()
 
 
+class FavouriteEmptyStateTests(unittest.TestCase):
+    def window(self, favourite: bool):
+        return SimpleNamespace(
+            servers=[Server("Example", "Community", "dayz.test", 2302, 27016, favourite)],
+            empty_favourites_card=Mock(),
+            server_cards=Mock(),
+            table=Mock(),
+            move_server_up_button=Mock(),
+            move_server_down_button=Mock(),
+            refresh_status_button=Mock(),
+            launch_button=Mock(),
+        )
+
+    def test_empty_state_is_shown_when_no_servers_are_favourited(self):
+        window = self.window(favourite=False)
+
+        MainWindow._update_empty_favourites_state(window)
+
+        window.empty_favourites_card.setVisible.assert_called_once_with(True)
+        window.server_cards.setVisible.assert_called_once_with(False)
+        window.launch_button.setEnabled.assert_called_once_with(False)
+
+    def test_empty_state_is_hidden_when_a_server_is_favourited(self):
+        window = self.window(favourite=True)
+
+        MainWindow._update_empty_favourites_state(window)
+
+        window.empty_favourites_card.setVisible.assert_called_once_with(False)
+        window.server_cards.setVisible.assert_called_once_with(True)
+        window.launch_button.setEnabled.assert_called_once_with(True)
+
+
 if __name__ == "__main__":
     unittest.main()

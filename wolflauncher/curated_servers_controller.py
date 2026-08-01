@@ -6,6 +6,7 @@ from PySide6.QtGui import QAction, QColor
 from PySide6.QtWidgets import (
     QDialog,
     QFormLayout,
+    QFrame,
     QHBoxLayout,
     QLabel,
     QListWidget,
@@ -149,6 +150,25 @@ class CuratedServersMixin:
         )
         set_ui_role(self.server_cards, "serverCards")
         self.server_cards.currentRowChanged.connect(self._select_curated_table_row)
+        self.empty_favourites_card = QFrame()
+        set_ui_role(self.empty_favourites_card, "emptyState")
+        empty_layout = QVBoxLayout(self.empty_favourites_card)
+        empty_layout.setContentsMargins(22, 22, 22, 22)
+        title = QLabel("Your favourite servers are empty")
+        set_ui_role(title, "cardTitle")
+        empty_layout.addWidget(title)
+        message = QLabel(
+            "Use Server Browser to find your next adventure, then add a server to your favourites."
+        )
+        message.setWordWrap(True)
+        set_ui_role(message, "metadata")
+        empty_layout.addWidget(message)
+        browse_servers = QPushButton("Browse servers")
+        browse_servers.setIcon(theme_icon("browser"))
+        set_ui_role(browse_servers, "primary")
+        browse_servers.clicked.connect(self.open_server_browser_from_empty_state)
+        empty_layout.addWidget(browse_servers, 0, Qt.AlignLeft)
+        layout.addWidget(self.empty_favourites_card)
         layout.addWidget(self.server_cards)
         layout.addWidget(self.table)
         self.table.hide()
@@ -363,6 +383,23 @@ class CuratedServersMixin:
             self.server_cards.setCurrentRow(selected_row)
         self.server_cards.blockSignals(False)
         self._sync_curated_card_selection()
+        self._update_empty_favourites_state()
+
+    def _update_empty_favourites_state(self):
+        if not hasattr(self, "empty_favourites_card"):
+            return
+        empty = not any(server.favourite for server in self.servers)
+        self.empty_favourites_card.setVisible(empty)
+        self.server_cards.setVisible(not empty)
+        self.table.setVisible(False)
+        if hasattr(self, "move_server_up_button"):
+            self.move_server_up_button.setEnabled(not empty)
+            self.move_server_down_button.setEnabled(not empty)
+            self.refresh_status_button.setEnabled(not empty)
+            self.launch_button.setEnabled(not empty)
+
+    def open_server_browser_from_empty_state(self):
+        self.tabs.setCurrentIndex(self.server_browser_tab_index)
 
     def _select_curated_table_row(self, row: int):
         if 0 <= row < self.table.rowCount() and self.table.currentRow() != row:
