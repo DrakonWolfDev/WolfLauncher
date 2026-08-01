@@ -247,6 +247,7 @@ class MainWindow(
         self.refresh_statuses()
         self.refresh_server_browser()
         self.update_settings_health()
+        QTimer.singleShot(0, self.show_server_cache_recovery_notice)
         QTimer.singleShot(0, self.check_startup_steam_state)
         QTimer.singleShot(0, self.check_initial_server_mods)
         QTimer.singleShot(30000, self.maybe_auto_refresh_configured_provider)
@@ -261,6 +262,18 @@ class MainWindow(
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         scroll.setWidget(content)
         return scroll
+
+    def show_server_cache_recovery_notice(self):
+        quarantined = self.recovered_server_cache_path
+        if quarantined is None:
+            return
+        QMessageBox.information(
+            self,
+            "Discovered-server cache rebuilt",
+            "WolfLauncher found a damaged discovered-server cache and rebuilt it. "
+            "Your curated servers and settings were not changed.\n\n"
+            f"A copy of the old disposable cache was saved at:\n{quarantined}",
+        )
 
     def _build_brand_lockup(self) -> QWidget:
         lockup = QWidget()

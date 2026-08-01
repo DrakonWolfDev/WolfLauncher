@@ -1,7 +1,9 @@
 import unittest
 from unittest.mock import Mock, patch
 
-from wolflauncher.app import configure_packaged_smoke_test
+from pathlib import Path
+
+from wolflauncher.app import MainWindow, configure_packaged_smoke_test
 
 
 class PackagedSmokeTestConfigurationTests(unittest.TestCase):
@@ -46,3 +48,24 @@ class PackagedSmokeTestConfigurationTests(unittest.TestCase):
         single_shot.assert_called_once()
         single_shot.call_args.args[1]()
         app.exit.assert_called_once_with(125)
+
+
+class ServerCacheRecoveryNoticeTests(unittest.TestCase):
+    @patch("wolflauncher.app.QMessageBox.information")
+    def test_recovery_notice_explains_what_was_preserved(self, information):
+        window = Mock(recovered_server_cache_path=Path("C:/cache/server_cache.corrupt.sqlite3"))
+
+        MainWindow.show_server_cache_recovery_notice(window)
+
+        information.assert_called_once()
+        message = information.call_args.args[2]
+        self.assertIn("curated servers and settings were not changed", message)
+        self.assertIn("server_cache.corrupt.sqlite3", message)
+
+    @patch("wolflauncher.app.QMessageBox.information")
+    def test_no_notice_without_cache_recovery(self, information):
+        window = Mock(recovered_server_cache_path=None)
+
+        MainWindow.show_server_cache_recovery_notice(window)
+
+        information.assert_not_called()
