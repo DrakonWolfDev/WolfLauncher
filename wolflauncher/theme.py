@@ -59,6 +59,7 @@ def _build_stylesheet() -> str:
 QWidget {{ background-color: {c["background"]}; color: {c["text"]}; selection-background-color: {c["accent"]}; selection-color: {c["background"]}; }}
 QMainWindow, QDialog, QMessageBox {{ background-color: {c["background"]}; }}
 QWidget[uiRole="workspace"] {{ background-color: transparent; }}
+QScrollArea[uiRole="workspaceScroll"], QWidget[uiRole="workspaceViewport"] {{ background-color: transparent; border: 0; }}
 QLabel {{ background-color: transparent; }}
 QLabel:disabled {{ color: {c["text_muted"]}; }}
 QLabel[uiRole="summary"] {{ color: {c["text"]}; font-weight: 600; padding: 2px 0 4px 0; }}

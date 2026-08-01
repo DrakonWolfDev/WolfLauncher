@@ -273,6 +273,8 @@ class MainWindow(
     def _scrollable_workspace(content: QWidget) -> QScrollArea:
         """Keep every main-tab action reachable when desktop scaling is high."""
         scroll = QScrollArea()
+        set_ui_role(scroll, "workspaceScroll")
+        set_ui_role(scroll.viewport(), "workspaceViewport")
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QScrollArea.NoFrame)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)

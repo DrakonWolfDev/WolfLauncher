@@ -176,6 +176,7 @@ class CuratedServersMixin:
         browse_servers.clicked.connect(self.open_server_browser_from_empty_state)
         empty_layout.addWidget(browse_servers, 0, Qt.AlignVCenter)
         self.empty_favourites_page = QWidget()
+        set_ui_role(self.empty_favourites_page, "workspace")
         empty_page_layout = QVBoxLayout(self.empty_favourites_page)
         empty_page_layout.setContentsMargins(0, 0, 0, 0)
         empty_page_layout.addWidget(self.empty_favourites_card)
