@@ -68,6 +68,8 @@ QLabel[uiRole="metadata"] {{ color: {c["text_muted"]}; }}
 QLabel[uiRole="statusPositive"] {{ color: {c["positive"]}; background-color: #1e3a2e; border-radius: 9px; padding: 3px 9px; }}
 QLabel[uiRole="statusNegative"] {{ color: {c["negative"]}; background-color: #3a1e1e; border-radius: 9px; padding: 3px 9px; }}
 QLabel[uiRole="passwordLock"] {{ color: {c["negative"]}; font-size: 15px; }}
+QLabel[uiRole="browserStar"] {{ color: {c["text_muted"]}; font-size: 15px; }}
+QLabel[uiRole="browserStar"][favourite="true"] {{ color: {c["accent"]}; }}
 QLabel[uiRole="cardTitle"] {{ color: {c["text"]}; font-weight: 600; }}
 QWidget[uiRole="brandLockup"] {{ background-color: transparent; }}
 QLabel[uiRole="brandWordmark"] {{ color: {c["text_muted"]}; font-weight: 600; letter-spacing: 1px; }}

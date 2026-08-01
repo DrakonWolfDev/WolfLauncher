@@ -150,10 +150,8 @@ class ServerBrowserTableTests(unittest.TestCase):
 
         populate_browser_table(table, [server])
 
-        lock = table.item(0, BROWSER_PASSWORD_COLUMN)
-        self.assertFalse(lock.icon().isNull())
-        self.assertEqual(lock.foreground().color().name(), STATUS_COLOURS["negative"])
-        self.assertIn("Password required", lock.toolTip())
+        marker = table.cellWidget(0, BROWSER_FAVOURITE_COLUMN)
+        self.assertIsNotNone(marker)
 
     def test_visible_selection_wins_over_a_stale_current_row(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)
@@ -622,12 +620,11 @@ class ServerBrowserTableTests(unittest.TestCase):
         header = table.horizontalHeader()
         self.assertEqual(header.sectionResizeMode(1), QHeaderView.Stretch)
         self.assertEqual(header.sectionResizeMode(BROWSER_FAVOURITE_COLUMN), QHeaderView.Fixed)
-        self.assertEqual(header.sectionResizeMode(BROWSER_PASSWORD_COLUMN), QHeaderView.Fixed)
-        self.assertEqual(table.columnWidth(BROWSER_FAVOURITE_COLUMN), 40)
-        self.assertEqual(table.columnWidth(BROWSER_PASSWORD_COLUMN), 32)
+        self.assertTrue(table.isColumnHidden(BROWSER_PASSWORD_COLUMN))
+        self.assertEqual(table.columnWidth(BROWSER_FAVOURITE_COLUMN), 74)
         self.assertEqual(
             [header.logicalIndex(index) for index in range(10)],
-            [0, 17, 1, 6, 7, 16, 8, 9, 11, 12],
+            [0, 1, 6, 7, 16, 8, 9, 11, 12, 2],
         )
 
     def test_population_replaces_existing_rows_and_keeps_missing_ping_guidance(self):
@@ -706,7 +703,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         )
 
         self.assertTrue(update_browser_table_row(table, original.cache_key, enriched))
-        self.assertEqual(table.item(0, BROWSER_FAVOURITE_COLUMN).text(), "★")
+        self.assertEqual(table.item(0, BROWSER_FAVOURITE_COLUMN).text(), "")
 
     def test_local_mod_preview_replaces_only_the_matching_mods_cell(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)

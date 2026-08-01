@@ -2,13 +2,13 @@ from collections.abc import Sequence
 
 from PySide6.QtCore import QSignalBlocker, QSize, Qt
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QTableWidget
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QTableWidget, QWidget
 
 from .models import DiscoveredServer
 from .server_browser_presenter import browser_row, game_time_is_day
 from .server_display import ping_severity
 from .table_items import SortableTableWidgetItem
-from .theme import STATUS_COLOURS, monospace_font, theme_icon, time_icon
+from .theme import STATUS_COLOURS, monospace_font, set_ui_role, theme_icon, time_icon
 
 BROWSER_COLUMN_COUNT = 18
 BROWSER_FAVOURITE_COLUMN = 0
@@ -133,24 +133,34 @@ def _set_browser_table_row(
             if is_day is not None:
                 item.setIcon(time_icon(is_day))
         table.setItem(row, column, item)
-    favourite = SortableTableWidgetItem(
-        "★"
-        if (server.host, server.game_port, server.query_port) in (favourite_endpoints or set())
-        else "☆",
-        0,
-    )
+    is_favourite = (server.host, server.game_port, server.query_port) in (favourite_endpoints or set())
+    favourite = SortableTableWidgetItem("", 0)
     favourite.setData(Qt.UserRole, server.cache_key)
-    favourite.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
-    favourite.setToolTip("Remove from Favourite Servers" if favourite.text() == "★" else "Add to Favourite Servers")
+    favourite.setToolTip("Remove from Favourite Servers" if is_favourite else "Add to Favourite Servers")
     table.setItem(row, BROWSER_FAVOURITE_COLUMN, favourite)
-    password = SortableTableWidgetItem("", int(server.password))
-    password.setData(Qt.UserRole, server.cache_key)
-    password.setTextAlignment(Qt.AlignCenter)
-    if server.password:
-        password.setIcon(theme_icon("lock-table"))
-        password.setForeground(QColor(STATUS_COLOURS["negative"]))
-        password.setToolTip("Password required to join this server")
-    table.setItem(row, BROWSER_PASSWORD_COLUMN, password)
+    table.setCellWidget(row, BROWSER_FAVOURITE_COLUMN, _browser_marker(is_favourite, server.password))
+
+
+def _browser_marker(is_favourite: bool, password: bool) -> QWidget:
+    marker = QWidget()
+    marker.setAttribute(Qt.WA_TransparentForMouseEvents)
+    layout = QHBoxLayout(marker)
+    layout.setContentsMargins(10, 0, 0, 0)
+    layout.setSpacing(4)
+    star = QLabel("★" if is_favourite else "☆")
+    set_ui_role(star, "browserStar")
+    star.setProperty("favourite", is_favourite)
+    star.setFixedWidth(28)
+    star.setAlignment(Qt.AlignCenter)
+    lock = QLabel()
+    set_ui_role(lock, "passwordLock")
+    lock.setFixedWidth(15)
+    if password:
+        lock.setPixmap(theme_icon("lock").pixmap(QSize(15, 15)))
+    layout.addWidget(star)
+    layout.addWidget(lock)
+    layout.addStretch(1)
+    return marker
 
 
 def _selected_cache_key(table: QTableWidget) -> str:

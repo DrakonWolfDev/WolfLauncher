@@ -1517,14 +1517,14 @@ class ServerBrowserMixin:
             )
         configure_priority_columns(
             self.browser_table,
-            (BROWSER_FAVOURITE_COLUMN, BROWSER_PASSWORD_COLUMN, 1, 6, 7, 16, 8, 9, 11, 12),
+            (BROWSER_FAVOURITE_COLUMN, 1, 6, 7, 16, 8, 9, 11, 12),
             show_details=show_details,
             stretch_columns=(),
         )
         header = self.browser_table.horizontalHeader()
-        for column, width in ((BROWSER_FAVOURITE_COLUMN, 40), (BROWSER_PASSWORD_COLUMN, 32)):
-            header.setSectionResizeMode(column, QHeaderView.Fixed)
-            self.browser_table.setColumnWidth(column, width)
+        header.setSectionResizeMode(BROWSER_FAVOURITE_COLUMN, QHeaderView.Fixed)
+        self.browser_table.setColumnWidth(BROWSER_FAVOURITE_COLUMN, 74)
+        self.browser_table.setColumnHidden(BROWSER_PASSWORD_COLUMN, True)
         self.browser_table.setColumnHidden(2, True)
         if not show_details:
             # Name flexes with the live viewport and yields when readiness text
