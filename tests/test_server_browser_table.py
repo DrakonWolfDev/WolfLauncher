@@ -15,6 +15,7 @@ from wolflauncher.models import DiscoveredServer
 from wolflauncher.server_browser_table import (
     BROWSER_COLUMN_COUNT,
     BROWSER_FAVOURITE_COLUMN,
+    BROWSER_PASSWORD_COLUMN,
     populate_browser_table,
     selected_browser_cache_key,
     update_browser_mod_cell,
@@ -117,7 +118,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertEqual(table.item(0, 8).text(), "12/60")
         self.assertIsInstance(table.item(0, 8), SortableTableWidgetItem)
         self.assertEqual(table.item(0, 8).sort_value, 12)
-        self.assertEqual(table.columnCount(), 17)
+        self.assertEqual(table.columnCount(), 18)
         self.assertEqual(table.item(0, 1).data(Qt.UserRole), server.cache_key)
         self.assertIn("Locally validated live name", table.item(0, 1).toolTip())
         self.assertEqual(
@@ -142,6 +143,17 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertEqual(table.iconSize(), QSize(20, 20))
         self.assertFalse(table.item(0, 16).icon().isNull())
         self.assertEqual(table.item(0, 16).text(), "17:07 · 3×")
+
+    def test_password_protection_has_a_lock_next_to_the_favourite_column(self):
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        server = DiscoveredServer("Locked", "host", 2302, 27016, password=True)
+
+        populate_browser_table(table, [server])
+
+        lock = table.item(0, BROWSER_PASSWORD_COLUMN)
+        self.assertFalse(lock.icon().isNull())
+        self.assertEqual(lock.foreground().color().name(), STATUS_COLOURS["negative"])
+        self.assertIn("Password required", lock.toolTip())
 
     def test_visible_selection_wins_over_a_stale_current_row(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)
@@ -610,8 +622,8 @@ class ServerBrowserTableTests(unittest.TestCase):
         header = table.horizontalHeader()
         self.assertEqual(header.sectionResizeMode(1), QHeaderView.Stretch)
         self.assertEqual(
-            [header.logicalIndex(index) for index in range(9)],
-            [0, 1, 6, 7, 16, 8, 9, 11, 12],
+            [header.logicalIndex(index) for index in range(10)],
+            [0, 17, 1, 6, 7, 16, 8, 9, 11, 12],
         )
 
     def test_population_replaces_existing_rows_and_keeps_missing_ping_guidance(self):

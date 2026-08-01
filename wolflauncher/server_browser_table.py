@@ -8,13 +8,14 @@ from .models import DiscoveredServer
 from .server_browser_presenter import browser_row, game_time_is_day
 from .server_display import ping_severity
 from .table_items import SortableTableWidgetItem
-from .theme import STATUS_COLOURS, monospace_font, time_icon
+from .theme import STATUS_COLOURS, monospace_font, theme_icon, time_icon
 
-BROWSER_COLUMN_COUNT = 17
+BROWSER_COLUMN_COUNT = 18
 BROWSER_FAVOURITE_COLUMN = 0
 BROWSER_NAME_COLUMN = 1
 BROWSER_MODS_COLUMN = 12
 BROWSER_GAME_TIME_COLUMN = 16
+BROWSER_PASSWORD_COLUMN = 17
 
 
 def selected_browser_cache_key(table: QTableWidget) -> str:
@@ -142,6 +143,14 @@ def _set_browser_table_row(
     favourite.setTextAlignment(Qt.AlignCenter)
     favourite.setToolTip("Remove from Favourite Servers" if favourite.text() == "★" else "Add to Favourite Servers")
     table.setItem(row, BROWSER_FAVOURITE_COLUMN, favourite)
+    password = SortableTableWidgetItem("🔒" if server.password else "", int(server.password))
+    password.setData(Qt.UserRole, server.cache_key)
+    password.setTextAlignment(Qt.AlignCenter)
+    if server.password:
+        password.setIcon(theme_icon("lock"))
+        password.setForeground(QColor(STATUS_COLOURS["negative"]))
+        password.setToolTip("Password required to join this server")
+    table.setItem(row, BROWSER_PASSWORD_COLUMN, password)
 
 
 def _selected_cache_key(table: QTableWidget) -> str:

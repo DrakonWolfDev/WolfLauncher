@@ -1,10 +1,10 @@
 """Native card-style presentation for the small curated server list."""
 
-from PySide6.QtCore import QPoint, Qt, Signal
+from PySide6.QtCore import QPoint, QSize, Qt, Signal
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from .server_display import ping_severity
-from .theme import set_monospace, set_ui_role
+from .theme import set_monospace, set_ui_role, theme_icon
 
 
 class CuratedServerCard(QFrame):
@@ -51,11 +51,13 @@ class CuratedServerCard(QFrame):
         text.addWidget(self.metadata_label)
         layout.addLayout(text, 1)
 
-        self.password_badge = QLabel("Password")
-        set_ui_role(self.password_badge, "passwordRequired")
-        self.password_badge.setVisible("Password" in values[14])
-        self.password_badge.setToolTip("This server requires a password to join.")
-        layout.addWidget(self.password_badge)
+        self.password_lock = QLabel()
+        set_ui_role(self.password_lock, "passwordLock")
+        self.password_lock.setPixmap(theme_icon("lock").pixmap(QSize(15, 15)))
+        self.password_lock.setVisible("Password" in values[14])
+        self.password_lock.setToolTip("This server requires a password to join.")
+        self.password_lock.setAccessibleName("Password required")
+        layout.addWidget(self.password_lock)
 
         self.stats_label = QLabel(self._stats(values))
         set_ui_role(self.stats_label, self._ping_role(values[12]))

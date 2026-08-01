@@ -73,8 +73,8 @@ class CuratedServerCardTests(unittest.TestCase):
 
         card = CuratedServerCard(0, values)
 
-        self.assertFalse(card.password_badge.isHidden())
-        self.assertEqual(card.password_badge.text(), "Password")
+        self.assertFalse(card.password_lock.isHidden())
+        self.assertFalse(card.password_lock.pixmap().isNull())
 
 
 if __name__ == "__main__":

@@ -52,6 +52,7 @@ from .server_browser_presenter import (
 from .server_browser_table import (
     BROWSER_COLUMN_COUNT,
     BROWSER_FAVOURITE_COLUMN,
+    BROWSER_PASSWORD_COLUMN,
     BROWSER_NAME_COLUMN,
     populate_browser_table,
     selected_browser_cache_key,
@@ -240,6 +241,7 @@ class ServerBrowserMixin:
                 "Last Seen",
                 "Source",
                 "Game Time",
+                "Lock",
             ]
         )
         for column in (8, 9):
@@ -1512,7 +1514,7 @@ class ServerBrowserMixin:
             )
         configure_priority_columns(
             self.browser_table,
-            (BROWSER_FAVOURITE_COLUMN, 1, 6, 7, 16, 8, 9, 11, 12),
+            (BROWSER_FAVOURITE_COLUMN, BROWSER_PASSWORD_COLUMN, 1, 6, 7, 16, 8, 9, 11, 12),
             show_details=show_details,
             stretch_columns=(),
         )
