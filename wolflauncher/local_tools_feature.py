@@ -182,6 +182,17 @@ class LocalToolsFeatureMixin:
         editor_mods_detail.setWordWrap(True)
         set_ui_role(editor_mods_detail, "metadata")
         editor_mods_layout.addWidget(editor_mods_detail)
+        editor_mods_layout.addSpacing(8)
+        local_mods_section = QLabel("Local Development")
+        set_ui_role(local_mods_section, "cardTitle")
+        editor_mods_layout.addWidget(local_mods_section)
+        local_mods_detail = QLabel(
+            "Select the installed Workshop mods required for this local development profile."
+        )
+        local_mods_detail.setWordWrap(True)
+        set_ui_role(local_mods_detail, "metadata")
+        editor_mods_layout.addWidget(local_mods_detail)
+        editor_mods_layout.addSpacing(8)
         editor_filter_row = QHBoxLayout()
         self.editor_mod_filter = QLineEdit()
         self.editor_mod_filter.setPlaceholderText("Filter installed mods")
