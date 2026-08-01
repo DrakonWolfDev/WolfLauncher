@@ -37,7 +37,6 @@ class CuratedServerCard(QFrame):
         self.favourite_button.setToolTip("Toggle favourite")
         self.favourite_button.setAccessibleName(f"Toggle favourite for {name}")
         self.favourite_button.clicked.connect(lambda: self.favourite_requested.emit(self.row))
-        layout.addWidget(self.favourite_button)
 
         self.password_lock = QLabel()
         set_ui_role(self.password_lock, "passwordLock")
@@ -46,7 +45,12 @@ class CuratedServerCard(QFrame):
             self.password_lock.setPixmap(theme_icon("lock").pixmap(QSize(15, 15)))
             self.password_lock.setToolTip("This server requires a password to join.")
             self.password_lock.setAccessibleName("Password required")
-        layout.addWidget(self.password_lock)
+        markers = QHBoxLayout()
+        markers.setContentsMargins(0, 0, 0, 0)
+        markers.setSpacing(4)
+        markers.addWidget(self.favourite_button)
+        markers.addWidget(self.password_lock)
+        layout.addLayout(markers)
 
         text = QVBoxLayout()
         text.setSpacing(2)
