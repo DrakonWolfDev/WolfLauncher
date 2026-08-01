@@ -112,7 +112,6 @@ class FavouriteEmptyStateTests(unittest.TestCase):
             servers=[Server("Example", "Community", "dayz.test", 2302, 27016, favourite)],
             empty_favourites_card=Mock(),
             server_cards=Mock(),
-            favourites_content=Mock(),
             table=Mock(),
             move_server_up_button=Mock(),
             move_server_down_button=Mock(),
@@ -125,9 +124,8 @@ class FavouriteEmptyStateTests(unittest.TestCase):
 
         MainWindow._update_empty_favourites_state(window)
 
-        window.favourites_content.setCurrentWidget.assert_called_once_with(
-            window.empty_favourites_card
-        )
+        window.empty_favourites_card.setVisible.assert_called_once_with(True)
+        window.server_cards.setVisible.assert_called_once_with(False)
         window.launch_button.setEnabled.assert_called_once_with(False)
 
     def test_empty_state_is_hidden_when_a_server_is_favourited(self):
@@ -135,8 +133,32 @@ class FavouriteEmptyStateTests(unittest.TestCase):
 
         MainWindow._update_empty_favourites_state(window)
 
-        window.favourites_content.setCurrentWidget.assert_called_once_with(window.server_cards)
+        window.empty_favourites_card.setVisible.assert_called_once_with(False)
+        window.server_cards.setVisible.assert_called_once_with(True)
         window.launch_button.setEnabled.assert_called_once_with(True)
+
+
+class FavouriteProfileReloadTests(unittest.TestCase):
+    def test_profile_reload_rebuilds_the_visible_curated_rows(self):
+        server = Server("Experimental", "Community", "dayz.test", 2302, 27016, True)
+        window = SimpleNamespace(
+            table=Mock(),
+            servers=[server],
+            curated_status_cache={},
+            _set_curated_server_table_item=Mock(),
+            saved_selected_row=Mock(return_value=-1),
+            update_curated_status_summary=Mock(),
+            refresh_curated_server_cards=Mock(),
+            refresh_recent_servers=Mock(),
+            update_launch_button_text=Mock(),
+        )
+
+        MainWindow.reload_curated_servers(window)
+
+        window.table.clearContents.assert_called_once()
+        window.table.setRowCount.assert_called_once_with(1)
+        window.refresh_curated_server_cards.assert_called_once()
+        window.refresh_recent_servers.assert_called_once()
 
 
 if __name__ == "__main__":

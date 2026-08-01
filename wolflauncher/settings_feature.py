@@ -455,8 +455,13 @@ class SettingsFeatureMixin:
         self.servers = load_servers(self.config_path)
         for server in self.servers:
             server.favourite = server_key(server) in self.favourites
-        if hasattr(self, "refresh_curated_server_cards"):
-            self.refresh_curated_server_cards()
+        if hasattr(self, "reload_curated_servers"):
+            self.reload_curated_servers()
+        if hasattr(self, "browser_servers"):
+            self.browser_servers = []
+            self.active_discovered_server = None
+            self.active_discovered_cache_key = ""
+            self.refresh_server_browser()
         SettingsFeatureMixin._recheck_after_mod_context_change(
             self,
             f"{product.label} selected. Rechecking the selected server in the new game context...",

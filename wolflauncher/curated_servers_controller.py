@@ -14,7 +14,6 @@ from PySide6.QtWidgets import (
     QMenu,
     QMessageBox,
     QPushButton,
-    QStackedWidget,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -169,10 +168,8 @@ class CuratedServersMixin:
         set_ui_role(browse_servers, "primary")
         browse_servers.clicked.connect(self.open_server_browser_from_empty_state)
         empty_layout.addWidget(browse_servers, 0, Qt.AlignLeft)
-        self.favourites_content = QStackedWidget()
-        self.favourites_content.addWidget(self.empty_favourites_card)
-        self.favourites_content.addWidget(self.server_cards)
-        layout.addWidget(self.favourites_content, 1)
+        layout.addWidget(self.empty_favourites_card)
+        layout.addWidget(self.server_cards, 1)
         self.table.setParent(widget)
         self.table.hide()
 
@@ -392,13 +389,8 @@ class CuratedServersMixin:
         if not hasattr(self, "empty_favourites_card"):
             return
         empty = not any(server.favourite for server in self.servers)
-        if hasattr(self, "favourites_content"):
-            self.favourites_content.setCurrentWidget(
-                self.empty_favourites_card if empty else self.server_cards
-            )
-        else:
-            self.empty_favourites_card.setVisible(empty)
-            self.server_cards.setVisible(not empty)
+        self.empty_favourites_card.setVisible(empty)
+        self.server_cards.setVisible(not empty)
         self.table.setVisible(False)
         if hasattr(self, "move_server_up_button"):
             self.move_server_up_button.setEnabled(not empty)
@@ -408,6 +400,25 @@ class CuratedServersMixin:
 
     def open_server_browser_from_empty_state(self):
         self.tabs.setCurrentIndex(self.server_browser_tab_index)
+
+    def reload_curated_servers(self):
+        """Rebuild the saved-server view after changing DayZ product profiles."""
+        if not hasattr(self, "table"):
+            return
+        self.table.clearContents()
+        self.table.setRowCount(len(self.servers))
+        for row, server in enumerate(self.servers):
+            cached = cached_status_for_server(self.curated_status_cache, server)
+            for column, value in enumerate(curated_server_row(server, cached)):
+                self._set_curated_server_table_item(row, column, value, cached=bool(cached))
+        self.table.resizeColumnsToContents()
+        last_row = self.saved_selected_row()
+        if 0 <= last_row < len(self.servers):
+            self.table.selectRow(last_row)
+        self.update_curated_status_summary()
+        self.refresh_curated_server_cards()
+        self.refresh_recent_servers()
+        self.update_launch_button_text()
 
     def _select_curated_table_row(self, row: int):
         if 0 <= row < self.table.rowCount() and self.table.currentRow() != row:
