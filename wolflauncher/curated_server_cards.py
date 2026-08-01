@@ -39,6 +39,14 @@ class CuratedServerCard(QFrame):
         self.favourite_button.clicked.connect(lambda: self.favourite_requested.emit(self.row))
         layout.addWidget(self.favourite_button)
 
+        self.password_lock = QLabel()
+        set_ui_role(self.password_lock, "passwordLock")
+        self.password_lock.setPixmap(theme_icon("lock").pixmap(QSize(15, 15)))
+        self.password_lock.setVisible("Password" in values[14])
+        self.password_lock.setToolTip("This server requires a password to join.")
+        self.password_lock.setAccessibleName("Password required")
+        layout.addWidget(self.password_lock)
+
         text = QVBoxLayout()
         text.setSpacing(2)
         self.name_label = QLabel(name)
@@ -50,14 +58,6 @@ class CuratedServerCard(QFrame):
         text.addWidget(self.name_label)
         text.addWidget(self.metadata_label)
         layout.addLayout(text, 1)
-
-        self.password_lock = QLabel()
-        set_ui_role(self.password_lock, "passwordLock")
-        self.password_lock.setPixmap(theme_icon("lock").pixmap(QSize(15, 15)))
-        self.password_lock.setVisible("Password" in values[14])
-        self.password_lock.setToolTip("This server requires a password to join.")
-        self.password_lock.setAccessibleName("Password required")
-        layout.addWidget(self.password_lock)
 
         self.stats_label = QLabel(self._stats(values))
         set_ui_role(self.stats_label, self._ping_role(values[12]))

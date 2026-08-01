@@ -143,7 +143,7 @@ def _set_browser_table_row(
     favourite.setTextAlignment(Qt.AlignCenter)
     favourite.setToolTip("Remove from Favourite Servers" if favourite.text() == "★" else "Add to Favourite Servers")
     table.setItem(row, BROWSER_FAVOURITE_COLUMN, favourite)
-    password = SortableTableWidgetItem("🔒" if server.password else "", int(server.password))
+    password = SortableTableWidgetItem("", int(server.password))
     password.setData(Qt.UserRole, server.cache_key)
     password.setTextAlignment(Qt.AlignCenter)
     if server.password:
