@@ -79,7 +79,7 @@ from .workshop_subscription import (
 )
 
 
-WORKSHOP_PREVIEW_PLACEHOLDER_PATH = ASSETS_DIR / "workshop-preview-unavailable.svg"
+WORKSHOP_PREVIEW_PLACEHOLDER_PATH = ASSETS_DIR / "workshop-preview-unavailable.jpg"
 
 
 class ModsFeatureMixin:
