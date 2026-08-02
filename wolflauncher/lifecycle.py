@@ -105,16 +105,13 @@ def active_workers(owner) -> list:
         if worker is None or id(worker) in seen:
             continue
         seen.add(id(worker))
-        if worker.isRunning():
+        try:
+            running = worker.isRunning()
+        except RuntimeError:
+            continue
+        if running:
             unique.append(worker)
     return unique
-
-
-def retain_worker(owner, worker):
-    """Keep a Qt worker alive until it has stopped and Qt can delete it safely."""
-    worker.setParent(owner)
-    worker.finished.connect(worker.deleteLater)
-    return worker
 
 
 def begin_runtime_shutdown(owner) -> None:

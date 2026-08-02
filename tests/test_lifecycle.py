@@ -117,6 +117,13 @@ class LifecycleTests(unittest.TestCase):
 
         self.assertEqual(active_workers(owner), [worker])
 
+    def test_active_workers_ignores_an_already_deleted_qt_wrapper(self):
+        worker = Mock()
+        worker.isRunning.side_effect = RuntimeError("Internal C++ object already deleted")
+        owner = owner_with(worker=worker)
+
+        self.assertEqual(active_workers(owner), [])
+
     def test_stop_runtime_stops_timers_clears_queues_and_waits_for_workers(self):
         worker = Mock()
         worker.isRunning.side_effect = [True, True, True, False]

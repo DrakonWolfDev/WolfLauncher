@@ -55,7 +55,6 @@ from .platform_detection import (
 from .settings import (
     server_key,
 )
-from .lifecycle import retain_worker
 from .thumbnail_safety import (
     MAX_THUMBNAIL_BYTES,
     THUMBNAIL_REQUEST_TIMEOUT_MS,
@@ -331,7 +330,7 @@ class ModsFeatureMixin:
             return
         if getattr(self, "workshop_library_worker", None) and self.workshop_library_worker.isRunning():
             return
-        worker = retain_worker(self, WorkshopLibraryWorker(install))
+        worker = WorkshopLibraryWorker(install)
         self.workshop_library_worker = worker
         worker.library_ready.connect(self.finish_installed_workshop_library_load)
         worker.finished.connect(self.clear_installed_workshop_library_worker)
@@ -465,8 +464,8 @@ class ModsFeatureMixin:
         self.pending_mod_check_row = None
         self.pending_mod_server = None
         workshop_install = install
-        self.mod_worker = retain_worker(
-            self, ModWorker(server, workshop_dir, steam_context, workshop_install=workshop_install)
+        self.mod_worker = ModWorker(
+            server, workshop_dir, steam_context, workshop_install=workshop_install
         )
         self.mod_worker.mods_ready.connect(self.update_mods_table)
         self.mod_worker.finished.connect(self.handle_mod_worker_finished)

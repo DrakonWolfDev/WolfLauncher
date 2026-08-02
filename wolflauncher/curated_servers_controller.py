@@ -45,7 +45,6 @@ from .settings import (
     server_key,
 )
 from .settings_feature import SettingsFeatureMixin
-from .lifecycle import retain_worker
 from .status import ServerStatus
 from .theme import (
     COLOURS,
@@ -293,16 +292,23 @@ class CuratedServersMixin:
         self.refresh_status_rows([row], f"Last updated: refreshing {self.servers[row].name}...")
 
     def refresh_status_rows(self, rows: list[int], label: str):
-        if self.worker and self.worker.isRunning():
+        if self.worker and self._status_worker_running():
             return
         if not rows:
             return
         self._set_status_refresh_enabled(False)
         self.last_refresh_label.setText(label)
-        self.worker = retain_worker(self, StatusWorker(self.servers, rows))
+        self.worker = StatusWorker(self.servers, rows)
         self.worker.status_ready.connect(self.update_status_row)
         self.worker.finished_all.connect(self.handle_refresh_finished)
         self.worker.start()
+
+    def _status_worker_running(self) -> bool:
+        try:
+            return bool(self.worker and self.worker.isRunning())
+        except RuntimeError:
+            self.worker = None
+            return False
 
     def _set_status_refresh_enabled(self, enabled: bool):
         if hasattr(self, "refresh_status_button"):
