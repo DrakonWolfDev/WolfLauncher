@@ -4,7 +4,7 @@ from PySide6.QtCore import QPoint, QSize, Qt, Signal
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from .server_display import ping_severity
-from .theme import set_monospace, set_ui_role, theme_icon, time_icon
+from .theme import server_name_font, set_monospace, set_ui_role, theme_icon, time_icon
 
 
 class CuratedServerCard(QFrame):
@@ -59,6 +59,9 @@ class CuratedServerCard(QFrame):
         text = QVBoxLayout()
         text.setSpacing(2)
         self.name_label = QLabel(name)
+        name_font = server_name_font(name)
+        if name_font is not None:
+            self.name_label.setFont(name_font)
         set_ui_role(self.name_label, "cardTitle")
         self.metadata_label = QLabel(self._metadata(values))
         set_ui_role(self.metadata_label, "cardMetadata")

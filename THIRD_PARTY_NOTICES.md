@@ -2,6 +2,15 @@
 
 WolfLauncher includes third-party open-source software.
 
+## Noto Sans CJK SC
+
+- Use: Bundled fallback font for CJK server names in the Server Browser.
+- Version: Regular OTF from the Noto CJK repository.
+- License: SIL Open Font License, Version 1.1.
+- Copyright: Copyright 2014-2021 Adobe (http://www.adobe.com/).
+- Source: https://github.com/notofonts/noto-cjk
+- License text: `wolflauncher/assets/fonts/NotoSansCJK-LICENSE`.
+
 ## dayz-linux-cli-launcher
 
 - Path: `external/dayz-linux-cli-launcher/`
