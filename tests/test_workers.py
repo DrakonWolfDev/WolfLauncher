@@ -29,7 +29,9 @@ class WorkerTests(unittest.TestCase):
         results = []
         with TemporaryDirectory() as directory:
             path = Path(directory) / "servers.sqlite3"
-            worker = WolfApiCacheMergeWorker(path, [server], bounded_v1=True)
+            worker = WolfApiCacheMergeWorker(
+                path, [server], bounded_v1=True, source="wolfapi_experimental"
+            )
             worker.merge_ready.connect(
                 lambda inserted, removed, error: results.append((inserted, removed, error))
             )
@@ -45,6 +47,7 @@ class WorkerTests(unittest.TestCase):
                 connection.close()
         self.assertEqual(results, [(1, 0, "")])
         self.assertIsNotNone(stored)
+        self.assertEqual(stored.source, "wolfapi_experimental")
 
     def test_status_worker_filters_invalid_requested_rows(self):
         servers = [sample_server("One"), sample_server("Two")]

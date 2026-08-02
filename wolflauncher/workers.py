@@ -325,22 +325,23 @@ class WolfApiDiscoveryWorker(QThread):
 class WolfApiCacheMergeWorker(QThread):
     merge_ready = Signal(int, int, str)
 
-    def __init__(self, cache_path: Path, servers, bounded_v1: bool):
+    def __init__(self, cache_path: Path, servers, bounded_v1: bool, source: str = "wolfapi"):
         super().__init__()
         self.cache_path = Path(cache_path)
         self.servers = list(servers)
         self.bounded_v1 = bounded_v1
+        self.source = source
 
     def run(self):
         connection = None
         try:
             connection = server_cache.connect(self.cache_path)
             if self.bounded_v1:
-                inserted = server_cache.merge_source_servers(connection, "wolfapi", self.servers)
+                inserted = server_cache.merge_source_servers(connection, self.source, self.servers)
                 removed = 0
             else:
                 inserted, removed = server_cache.sync_source_servers(
-                    connection, "wolfapi", self.servers
+                    connection, self.source, self.servers
                 )
         except Exception as exc:
             self.merge_ready.emit(0, 0, str(exc))

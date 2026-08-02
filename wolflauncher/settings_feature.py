@@ -477,9 +477,9 @@ class SettingsFeatureMixin:
         self.experimental_settings_notice.setText(product_warning(product))
         self.experimental_settings_notice.setVisible(product.experimental)
         if product.experimental and hasattr(self, "discovery_provider"):
-            # Hosted providers currently index Stable only.  Steam's app-id
-            # filter is the verified Experimental discovery route.
-            self.discovery_provider.setCurrentText("Steam Master")
+            # WolfAPI now serves Experimental rows. Keep this profile on the
+            # normal hosted directory while retaining Steam Master as a manual fallback.
+            self.discovery_provider.setCurrentText("WolfAPI")
         if product.experimental and hasattr(self, "launch_engine"):
             self.launch_engine.setCurrentText("Native launcher")
             self.launch_engine.setEnabled(False)

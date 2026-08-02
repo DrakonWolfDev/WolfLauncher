@@ -817,6 +817,7 @@ class ServerBrowserMixin:
             server_cache.SERVER_CACHE_PATH,
             servers,
             bounded_v1=provider == "wolfapi_v1",
+            source=self.discovery_source_name("wolfapi"),
         )
         self.wolfapi_cache_worker.merge_ready.connect(self.handle_wolfapi_cache_ready)
         self.wolfapi_cache_worker.start()
@@ -904,7 +905,9 @@ class ServerBrowserMixin:
                 )
             return
         self.record_wolfapi_directory_total(getattr(servers, "directory_total", None))
-        merged = server_cache.merge_source_servers(self.server_cache, "wolfapi", servers)
+        merged = server_cache.merge_source_servers(
+            self.server_cache, self.discovery_source_name("wolfapi"), servers
+        )
         if query == current_query and self.discovery_provider_key() == "wolfapi_v1":
             self.refresh_server_browser()
             self.statusBar().showMessage(
@@ -1348,9 +1351,9 @@ class ServerBrowserMixin:
         version = self._combo_filter_value(self.browser_version, "Any version")
         source = self._combo_filter_value(self.browser_source, "Any source")
         if self.dayz_product().experimental:
-            # WolfAPI/BattleMetrics cache rows are Stable data today.  Experimental
-            # rows come from the selected Steam source and must never mix with it.
-            source = self.discovery_source_name("steam_master") if not source else self.discovery_source_name(source)
+            # Hosted Experimental rows use their own disposable cache namespace,
+            # keeping them separate from the Stable WolfAPI directory.
+            source = self.discovery_source_name("wolfapi") if not source else source
         style_terms = browser_style_terms(self.browser_style.currentText())
         limit = int(self.browser_limit.currentText())
 
