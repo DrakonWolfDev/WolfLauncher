@@ -717,6 +717,8 @@ def _search_where(
     if hide_malformed_names:
         clauses.append("INSTR(display_name, ?) = 0")
         params.append("\ufffd")
+        clauses.append("display_name NOT GLOB ?")
+        params.append(f"*[{chr(1)}-{chr(31)}]*")
 
     where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
     return where_sql, params

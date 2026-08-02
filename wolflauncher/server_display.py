@@ -5,8 +5,10 @@ PING_CRITICAL_MS = 250
 
 
 def is_displayable_server_name(value: str) -> bool:
-    """Reject names already damaged by an upstream byte decoding failure."""
-    return bool(value.strip()) and "\ufffd" not in value
+    """Reject names already damaged by upstream decoding or binary data."""
+    return bool(value.strip()) and "\ufffd" not in value and not any(
+        ord(character) < 32 for character in value
+    )
 
 
 def display_map_name(map_name: str) -> str:
