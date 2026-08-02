@@ -1148,7 +1148,7 @@ class ServerBrowserMixin:
             self.discovered_server_context(discovered),
             install.workshop_dir,
             self.mod_check_steam_context(install),
-            workshop_install=install if install.running else None,
+            workshop_install=install,
             include_metadata=False,
         )
         self.browser_mod_workers[cache_key] = worker

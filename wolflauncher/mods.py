@@ -207,6 +207,38 @@ def scan_installed_mods(workshop_dir: Path | None) -> dict[str, str]:
     return mods
 
 
+def scan_experimental_local_mods(
+    dayz_dir: Path | None, workshop_dir: Path | None
+) -> dict[str, str]:
+    """Return Experimental's available Stable Workshop and ``!Workshop`` mods.
+
+    DayZ Experimental uses Stable DayZ Workshop content as read-only local mods.
+    Steam's raw numeric folders are the primary source, while the official
+    Stable ``DayZ\\!Workshop`` junction collection supplies the paths selected
+    by the DayZ launcher.  A junction name is not reliably the Workshop ID, so
+    identify it from its resolved numeric target.
+    """
+    mods = scan_installed_mods(workshop_dir)
+    if not dayz_dir:
+        return mods
+
+    local_source = dayz_dir.parent / "DayZ" / "!Workshop"
+    try:
+        children = tuple(local_source.iterdir())
+    except OSError:
+        return mods
+    for child in children:
+        try:
+            target = child.resolve()
+        except OSError:
+            continue
+        workshop_id = target.name if target.is_dir() and target.name.isdigit() else ""
+        if not workshop_id:
+            continue
+        mods.setdefault(workshop_id, _read_mod_name(target / "meta.cpp") or target.name)
+    return mods
+
+
 def fetch_required_mods(server: Server) -> list[RequiredMod]:
     """Query the game server directly for its required Steam Workshop mods."""
     address = resolve_host(server.host)
@@ -224,8 +256,9 @@ def check_server_mods(
     server: Server,
     workshop_dir: Path | None,
     steam_context: str = "",
+    installed_mods: dict[str, str] | None = None,
 ) -> ModCheckResult:
-    installed = scan_installed_mods(workshop_dir)
+    installed = installed_mods if installed_mods is not None else scan_installed_mods(workshop_dir)
     workshop_dir_text = str(workshop_dir) if workshop_dir else ""
     try:
         required = fetch_required_mods(server)

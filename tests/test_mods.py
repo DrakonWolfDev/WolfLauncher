@@ -18,6 +18,7 @@ from wolflauncher.mods import (
     fetch_workshop_metadata,
     format_missing_workshop_links,
     format_mod_check_report,
+    scan_experimental_local_mods,
     scan_installed_mods,
     workshop_install_timestamps,
 )
@@ -147,6 +148,22 @@ class ScanInstalledModsTests(unittest.TestCase):
         self.assertEqual(scan_installed_mods(None), {})
         self.assertEqual(scan_installed_mods(Path("/definitely/not/wolflauncher/workshop")), {})
 
+    def test_scan_experimental_local_mods_includes_official_workshop_local_source(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            stable = root / "DayZ"
+            links = stable / "!Workshop"
+            target = links / "2464526692"
+            target.mkdir(parents=True)
+            (target / "meta.cpp").write_text('name = "GameLabs";\n', encoding="utf-8")
+            experimental = root / "DayZ Exp"
+            experimental.mkdir()
+
+            self.assertEqual(
+                scan_experimental_local_mods(experimental, None),
+                {"2464526692": "GameLabs"},
+            )
+
 
 class FetchRequiredModsTests(unittest.TestCase):
     @patch("wolflauncher.mods.resolve_host", return_value="203.0.113.10")
@@ -203,6 +220,21 @@ class CheckServerModsTests(unittest.TestCase):
         self.assertTrue(result.required_mods[0].installed)
         self.assertEqual(result.required_mods[0].installed_name, "CF Local")
         self.assertEqual(result.required_mods[1].name, "")
+
+    @patch(
+        "wolflauncher.mods.fetch_required_mods",
+        return_value=[RequiredMod("2464526692", "GameLabs")],
+    )
+    def test_check_server_mods_accepts_experimental_local_source(self, fetch_required):
+        result = check_server_mods(
+            make_server(),
+            None,
+            installed_mods={"2464526692": "GameLabs"},
+        )
+
+        self.assertTrue(result.ok)
+        self.assertTrue(result.required_mods[0].installed)
+        self.assertEqual(result.required_mods[0].installed_name, "GameLabs")
 
     @patch("wolflauncher.mods.fetch_required_mods", return_value=[])
     def test_check_server_mods_records_selected_steam_context(self, fetch_required):

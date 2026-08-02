@@ -15,6 +15,7 @@ from .mods import (
     apply_workshop_install_timestamps,
     check_server_mods,
     fetch_workshop_metadata,
+    scan_experimental_local_mods,
     scan_installed_mods,
     workshop_install_timestamps,
 )
@@ -95,17 +96,25 @@ class ModWorker(QThread):
         self.include_metadata = include_metadata
 
     def run(self):
-        result = check_server_mods(self.server, self.workshop_dir, self.steam_context)
+        install = self.workshop_install
+        installed_mods = (
+            scan_experimental_local_mods(install.dayz_dir, self.workshop_dir)
+            if install and install.product.experimental
+            else None
+        )
+        result = check_server_mods(
+            self.server, self.workshop_dir, self.steam_context, installed_mods
+        )
         if self.include_metadata and result.ok and result.required_mods:
             apply_workshop_metadata(
                 result,
                 fetch_workshop_metadata(mod.workshop_id for mod in result.required_mods),
             )
-            if self.workshop_install:
-                apply_workshop_install_timestamps(result, workshop_install_timestamps(self.workshop_install))
-        if result.ok and result.required_mods and self.workshop_install:
+            if install:
+                apply_workshop_install_timestamps(result, workshop_install_timestamps(install))
+        if result.ok and result.required_mods and install and install.running:
             states = query_workshop_item_states_isolated(
-                (mod.workshop_id for mod in result.required_mods), self.workshop_install
+                (mod.workshop_id for mod in result.required_mods), install
             )
             if states.error:
                 result.workshop_state_error = states.error
@@ -117,7 +126,11 @@ class ModWorker(QThread):
 def load_installed_workshop_library(install) -> tuple[list[RequiredMod], str]:
     """Read local DayZ Workshop items and compare them with Steam's current state."""
     workshop_dir = getattr(install, "workshop_dir", None)
-    installed = scan_installed_mods(workshop_dir)
+    installed = (
+        scan_experimental_local_mods(getattr(install, "dayz_dir", None), workshop_dir)
+        if getattr(getattr(install, "product", None), "experimental", False)
+        else scan_installed_mods(workshop_dir)
+    )
     mods = [
         RequiredMod(
             workshop_id=workshop_id,

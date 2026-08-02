@@ -311,14 +311,19 @@ def _prepare_experimental_native_launch(
             guidance="Launch DayZ Experimental once through Steam and complete BattlEye setup, then retry.",
         )
     workshop_dir = _require_dir(install.workshop_dir, "Stable DayZ Workshop")
-    missing = [str(mod.workshop_id) for mod in mods if not (workshop_dir / str(mod.workshop_id)).is_dir()]
+    local_paths = _experimental_mod_paths(dayz_dir, workshop_dir, mods)
+    missing = [
+        str(mod.workshop_id)
+        for mod, path in zip(mods, local_paths)
+        if not path.is_dir()
+    ]
     if missing:
         raise NativeLaunchError(
             "Missing local mod directories for: " + ", ".join(_missing_mod_labels(mods, missing)),
             stage="Experimental local mods",
             guidance="Add the Stable DayZ !Workshop folder as an Experimental local-mod source, then retry.",
         )
-    links = _experimental_mod_paths(dayz_dir, workshop_dir, mods)
+    links = [str(path) for path in local_paths]
     command = [str(executable), "0", "1", "1", "-exe", "DayZ_x64.exe"]
     if links:
         command.append(f"-mod={';'.join(links)}")
@@ -328,18 +333,19 @@ def _prepare_experimental_native_launch(
     return PreparedNativeLaunch(command=command, mod_links=links)
 
 
-def _experimental_mod_paths(dayz_dir: Path, workshop_dir: Path, mods: list[RequiredMod]) -> list[str]:
+def _experimental_mod_paths(dayz_dir: Path, workshop_dir: Path, mods: list[RequiredMod]) -> list[Path]:
     """Prefer the official launcher-compatible Stable ``!Workshop`` junction names."""
-    by_id = {}
+    by_id: dict[str, Path] = {}
     local_source = dayz_dir.parent / "DayZ" / "!Workshop"
     if local_source.is_dir():
         for child in local_source.iterdir():
             try:
-                if child.resolve().name.isdigit():
-                    by_id[child.resolve().name] = child
+                target = child.resolve()
+                if target.is_dir() and target.name.isdigit():
+                    by_id[target.name] = child
             except OSError:
                 continue
-    return [str(by_id.get(str(mod.workshop_id), workshop_dir / str(mod.workshop_id))) for mod in mods]
+    return [by_id.get(str(mod.workshop_id), workshop_dir / str(mod.workshop_id)) for mod in mods]
 
 
 def prepare_native_launch_preview(

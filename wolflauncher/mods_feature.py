@@ -466,7 +466,7 @@ class ModsFeatureMixin:
         self.active_mod_server_key = selected_key
         self.pending_mod_check_row = None
         self.pending_mod_server = None
-        workshop_install = install if install and install.running else None
+        workshop_install = install
         self.mod_worker = ModWorker(
             server, workshop_dir, steam_context, workshop_install=workshop_install
         )
