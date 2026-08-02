@@ -87,6 +87,20 @@ class CuratedServerCardTests(unittest.TestCase):
         self.assertEqual(card.time_icon_label.toolTip(), "Night-time: 23:10")
         self.assertFalse(card.time_icon_label.pixmap().isNull())
 
+    def test_time_and_stats_columns_keep_fixed_widths(self):
+        single_digit = card_values()
+        single_digit[10] = "3/20"
+        double_digit = card_values()
+        double_digit[10] = "10/20"
+
+        first_card = CuratedServerCard(0, single_digit)
+        second_card = CuratedServerCard(1, double_digit)
+
+        self.assertEqual(first_card.time_label.width(), CuratedServerCard.TIME_COLUMN_WIDTH)
+        self.assertEqual(second_card.time_label.width(), CuratedServerCard.TIME_COLUMN_WIDTH)
+        self.assertEqual(first_card.stats_label.width(), CuratedServerCard.STATS_COLUMN_WIDTH)
+        self.assertEqual(second_card.stats_label.width(), CuratedServerCard.STATS_COLUMN_WIDTH)
+
 
 if __name__ == "__main__":
     unittest.main()

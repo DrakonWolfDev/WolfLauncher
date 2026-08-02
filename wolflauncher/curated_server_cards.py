@@ -8,6 +8,9 @@ from .theme import set_monospace, set_ui_role, theme_icon, time_icon
 
 
 class CuratedServerCard(QFrame):
+    TIME_COLUMN_WIDTH = 42
+    STATS_COLUMN_WIDTH = 44
+
     selected = Signal(int)
     activated = Signal(int)
     favourite_requested = Signal(int)
@@ -68,8 +71,10 @@ class CuratedServerCard(QFrame):
         self.time_icon_label = QLabel()
         self.time_icon_label.setAlignment(Qt.AlignHCenter | Qt.AlignBottom)
         self.time_icon_label.setFixedHeight(20)
+        self.time_icon_label.setFixedWidth(self.TIME_COLUMN_WIDTH)
         self.time_label = QLabel(values[11])
         self.time_label.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+        self.time_label.setFixedWidth(self.TIME_COLUMN_WIDTH)
         set_ui_role(self.time_label, "cardStats")
         set_monospace(self.time_label)
         is_day = self._game_time_is_day(values[11])
@@ -88,6 +93,7 @@ class CuratedServerCard(QFrame):
         self.stats_label = QLabel(self._stats(values))
         set_ui_role(self.stats_label, self._ping_role(values[12]))
         self.stats_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+        self.stats_label.setFixedWidth(self.STATS_COLUMN_WIDTH)
         set_monospace(self.stats_label)
         layout.addWidget(self.stats_label)
 
