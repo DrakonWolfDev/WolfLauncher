@@ -52,7 +52,12 @@ class SettingsHealthCoordinator:
                 addresses = window.steam_master_addresses()
             except (OSError, ValueError) as exc:
                 return "WARN", str(exc)
-            detail = ", ".join(address.address for address in (addresses or ()))
+            if addresses is None:
+                return "OK", "Default Steam masters"
+            try:
+                detail = ", ".join(address.address for address in addresses)
+            except TypeError:
+                return "WARN", "Steam master endpoints could not be read"
             return "OK", detail or "Default Steam masters"
         details = {
             "wolfapi_v1": "WolfAPI server discovery",
