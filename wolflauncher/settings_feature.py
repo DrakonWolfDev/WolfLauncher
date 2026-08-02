@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMenu,
     QMessageBox,
+    QProgressDialog,
     QPushButton,
     QSizePolicy,
     QSpinBox,
@@ -415,7 +416,22 @@ class SettingsFeatureMixin:
         product = product_from_key(self.dayz_product_selector.currentData())
         if self.dayz_product_key() == product.key:
             return
-        self._apply_dayz_product_switch(product)
+        dialog = QProgressDialog(
+            f"Switching to {product.label}…", "", 0, 0, self
+        )
+        dialog.setWindowTitle("Switching game version")
+        dialog.setCancelButton(None)
+        dialog.setWindowModality(Qt.WindowModal)
+        dialog.setMinimumDuration(0)
+        dialog.setAutoClose(False)
+        dialog.setAutoReset(False)
+        dialog.show()
+        QApplication.processEvents()
+        try:
+            self._apply_dayz_product_switch(product)
+        finally:
+            dialog.close()
+            dialog.deleteLater()
 
     def _defer_dayz_product_switch(self, product) -> bool:
         """Keep profile-owned worker references alive before replacing their context."""
