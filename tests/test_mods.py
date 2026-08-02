@@ -62,6 +62,7 @@ class WorkshopFileSizeTests(unittest.TestCase):
                     {
                         "publishedfileid": "111",
                         "result": 1,
+                        "title": "GameLabs-Experimental",
                         "file_size": "1048576",
                         "description": "A useful mod",
                         "preview_url": "https://cdn.example.test/preview.jpg",
@@ -76,6 +77,7 @@ class WorkshopFileSizeTests(unittest.TestCase):
             metadata = fetch_workshop_metadata(["111"])
 
         self.assertEqual(metadata["111"]["file_size"], 1048576)
+        self.assertEqual(metadata["111"]["title"], "GameLabs-Experimental")
         self.assertEqual(metadata["111"]["description"], "A useful mod")
         result = ModCheckResult(True, make_server(), [RequiredMod("111")])
         apply_workshop_metadata(result, metadata)
@@ -84,6 +86,16 @@ class WorkshopFileSizeTests(unittest.TestCase):
             result.required_mods[0].workshop_preview_url,
             "https://cdn.example.test/preview.jpg",
         )
+        self.assertEqual(result.required_mods[0].name, "GameLabs-Experimental")
+
+    def test_keeps_server_name_for_installed_mod_metadata(self):
+        result = ModCheckResult(
+            True, make_server(), [RequiredMod("111", "Server GameLabs", installed=True)]
+        )
+
+        apply_workshop_metadata(result, {"111": {"title": "GameLabs-Experimental"}})
+
+        self.assertEqual(result.required_mods[0].name, "Server GameLabs")
 
     def test_fetches_public_batch_file_sizes(self):
         payload = {

@@ -134,6 +134,7 @@ def fetch_workshop_metadata(workshop_ids) -> dict[str, dict[str, Any]]:
         if workshop_id not in ids or int(detail.get("result") or 0) != 1:
             continue
         metadata[workshop_id] = {
+            "title": str(detail.get("title") or "").strip(),
             "file_size": max(0, int(detail.get("file_size") or 0)),
             "description": str(detail.get("description") or "").strip(),
             "preview_url": str(detail.get("preview_url") or "").strip(),
@@ -154,6 +155,13 @@ def apply_workshop_metadata(
     for mod in result.required_mods:
         detail = metadata.get(mod.workshop_id, {})
         mod.workshop_file_size = max(0, int(detail.get("file_size") or 0))
+        # A server rule can carry a generic label (for example, "GameLabs")
+        # while Steam's item title identifies the required release channel.
+        # The numeric Workshop ID remains authoritative; only an absent item's
+        # display label is upgraded to Steam's more specific title.
+        title = str(detail.get("title") or "").strip()
+        if title and not mod.installed:
+            mod.name = title
         mod.workshop_description = str(detail.get("description") or "").strip()
         mod.workshop_preview_url = str(detail.get("preview_url") or "").strip()
         mod.workshop_updated_at = max(0, int(detail.get("time_updated") or 0))
