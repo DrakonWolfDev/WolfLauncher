@@ -110,6 +110,13 @@ def active_workers(owner) -> list:
     return unique
 
 
+def retain_worker(owner, worker):
+    """Keep a Qt worker alive until it has stopped and Qt can delete it safely."""
+    worker.setParent(owner)
+    worker.finished.connect(worker.deleteLater)
+    return worker
+
+
 def begin_runtime_shutdown(owner) -> None:
     """Request shutdown without blocking Qt's GUI thread."""
     stop_runtime_scheduling(owner)

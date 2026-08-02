@@ -1,6 +1,6 @@
 import os
 
-from PySide6.QtCore import QPoint, QSignalBlocker, Qt, QTimer
+from PySide6.QtCore import QPoint, Qt, QTimer
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
@@ -465,12 +465,9 @@ class SettingsFeatureMixin:
         if product.experimental and hasattr(self, "discovery_provider"):
             # Hosted providers currently index Stable only.  Steam's app-id
             # filter is the verified Experimental discovery route.
-            with QSignalBlocker(self.discovery_provider):
-                self.discovery_provider.setCurrentText("Steam Master")
-            self.update_discovery_settings_visibility()
+            self.discovery_provider.setCurrentText("Steam Master")
         if product.experimental and hasattr(self, "launch_engine"):
-            with QSignalBlocker(self.launch_engine):
-                self.launch_engine.setCurrentText("Native launcher")
+            self.launch_engine.setCurrentText("Native launcher")
             self.launch_engine.setEnabled(False)
         elif hasattr(self, "launch_engine"):
             self.launch_engine.setEnabled(True)
@@ -504,23 +501,16 @@ class SettingsFeatureMixin:
         for server in self.servers:
             server.favourite = server_key(server) in self.favourites
         if hasattr(self, "reload_curated_servers"):
-            with QSignalBlocker(self.table):
-                self.reload_curated_servers()
+            self.reload_curated_servers()
         if hasattr(self, "browser_servers"):
             self.browser_servers = []
             self.active_discovered_server = None
             self.active_discovered_cache_key = ""
-            with QSignalBlocker(self.browser_table):
-                self.refresh_server_browser()
-        self.last_mod_result = None
-        self.workshop_recovery_ids = ()
-        if hasattr(self, "mod_summary"):
-            self.mod_summary.setText(
-                f"{product.label} selected. Recheck the selected server before launching."
-            )
-        if hasattr(self, "mods_table"):
-            self.mods_table.setRowCount(0)
-        self.handle_settings_changed()
+            self.refresh_server_browser()
+        SettingsFeatureMixin._recheck_after_mod_context_change(
+            self,
+            f"{product.label} selected. Rechecking the selected server in the new game context...",
+        )
 
     def handle_native_steam_mode_changed(self, *_args):
         SettingsFeatureMixin._recheck_after_mod_context_change(

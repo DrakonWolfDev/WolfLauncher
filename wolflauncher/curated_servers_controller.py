@@ -45,6 +45,7 @@ from .settings import (
     server_key,
 )
 from .settings_feature import SettingsFeatureMixin
+from .lifecycle import retain_worker
 from .status import ServerStatus
 from .theme import (
     COLOURS,
@@ -298,7 +299,7 @@ class CuratedServersMixin:
             return
         self._set_status_refresh_enabled(False)
         self.last_refresh_label.setText(label)
-        self.worker = StatusWorker(self.servers, rows)
+        self.worker = retain_worker(self, StatusWorker(self.servers, rows))
         self.worker.status_ready.connect(self.update_status_row)
         self.worker.finished_all.connect(self.handle_refresh_finished)
         self.worker.start()

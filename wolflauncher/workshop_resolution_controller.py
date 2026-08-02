@@ -3,6 +3,7 @@
 from PySide6.QtWidgets import QMessageBox, QProgressDialog
 
 from .mod_presenter import combined_download_estimate, mod_download_size
+from .lifecycle import retain_worker
 from .platform_detection import best_install, install_label
 from .settings import server_key
 from .workers import WorkshopSubscriptionWorker
@@ -157,7 +158,10 @@ class WorkshopResolutionCoordinator:
         dialog.setAutoReset(False)
         window.workshop_subscription_dialog = dialog
         window.workshop_subscription_monitor_hidden = False
-        worker = WorkshopSubscriptionWorker([mod.workshop_id for mod in mods], install, force_update=force_update)
+        worker = retain_worker(
+            window,
+            WorkshopSubscriptionWorker([mod.workshop_id for mod in mods], install, force_update=force_update),
+        )
         window.workshop_subscription_worker = worker
         worker.progress_ready.connect(window.update_workshop_subscription_progress)
         worker.subscription_ready.connect(window.finish_workshop_subscription)
