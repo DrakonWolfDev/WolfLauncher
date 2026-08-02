@@ -79,6 +79,14 @@ class ServerBrowserControllerTests(unittest.TestCase):
                     map_name="enoch",
                     source="wolfapi",
                 ),
+                DiscoveredServer(
+                    name="\ufffd\ufffd\ufffd",
+                    host="203.0.113.43",
+                    game_port=2302,
+                    query_port=27016,
+                    source="wolfapi",
+                    online=True,
+                ),
             ],
         )
 
@@ -97,13 +105,19 @@ class ServerBrowserControllerTests(unittest.TestCase):
 
         self.assertEqual([server.name for server in snapshot.servers], ["Busy PvP Namalsk"])
         self.assertEqual(snapshot.match_count, 1)
-        self.assertEqual(snapshot.cache_summary["total"], 6)
-        self.assertEqual(snapshot.cache_summary["online"], 2)
+        self.assertEqual(snapshot.cache_summary["total"], 7)
+        self.assertEqual(snapshot.cache_summary["online"], 3)
 
     def test_snapshot_count_is_not_limited_to_visible_rows(self):
         snapshot = load_browser_snapshot(self.connection, BrowserQuery(limit=1))
 
         self.assertEqual(len(snapshot.servers), 1)
+        self.assertEqual(snapshot.match_count, 6)
+
+    def test_snapshot_quietly_hides_replacement_character_names(self):
+        snapshot = load_browser_snapshot(self.connection, BrowserQuery(limit=200))
+
+        self.assertNotIn("\ufffd\ufffd\ufffd", [server.name for server in snapshot.servers])
         self.assertEqual(snapshot.match_count, 6)
 
     def test_snapshot_optionally_hides_quality_flagged_rows(self):

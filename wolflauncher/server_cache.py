@@ -551,6 +551,7 @@ def search_servers(
     style_terms: list[str] | None = None,
     modded: bool | None = None,
     hide_quality_flagged: bool = False,
+    hide_malformed_names: bool = False,
     sort_by: str = "name",
     descending: bool = False,
     limit: int = 200,
@@ -564,6 +565,7 @@ def search_servers(
         style_terms=style_terms,
         modded=modded,
         hide_quality_flagged=hide_quality_flagged,
+        hide_malformed_names=hide_malformed_names,
     )
     order_sql = SORT_COLUMNS.get(sort_by, SORT_COLUMNS["name"])
     direction = "DESC" if descending else "ASC"
@@ -591,6 +593,7 @@ def count_search_servers(
     style_terms: list[str] | None = None,
     modded: bool | None = None,
     hide_quality_flagged: bool = False,
+    hide_malformed_names: bool = False,
 ) -> int:
     where_sql, params = _search_where(
         text=text,
@@ -601,6 +604,7 @@ def count_search_servers(
         style_terms=style_terms,
         modded=modded,
         hide_quality_flagged=hide_quality_flagged,
+        hide_malformed_names=hide_malformed_names,
     )
     row = connection.execute(
         f"""
@@ -659,6 +663,7 @@ def _search_where(
     style_terms: list[str] | None = None,
     modded: bool | None = None,
     hide_quality_flagged: bool = False,
+    hide_malformed_names: bool = False,
 ) -> tuple[str, list[Any]]:
     clauses = []
     params: list[Any] = []
@@ -709,6 +714,9 @@ def _search_where(
         params.append(1 if modded else 0)
     if hide_quality_flagged:
         clauses.append("quality_flags = '[]'")
+    if hide_malformed_names:
+        clauses.append("INSTR(display_name, ?) = 0")
+        params.append("\ufffd")
 
     where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
     return where_sql, params

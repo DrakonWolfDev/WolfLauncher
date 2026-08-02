@@ -16,6 +16,7 @@ class BrowserQuery:
     style_terms: tuple[str, ...] = ()
     modded: bool | None = None
     hide_quality_flagged: bool = False
+    hide_malformed_names: bool = True
     sort_by: str = "name"
     descending: bool = False
     limit: int = 200
@@ -38,6 +39,7 @@ def load_browser_snapshot(connection: Any, query: BrowserQuery) -> BrowserSnapsh
         "style_terms": list(query.style_terms),
         "modded": query.modded,
         "hide_quality_flagged": query.hide_quality_flagged,
+        "hide_malformed_names": query.hide_malformed_names,
     }
     servers = server_cache.search_servers(
         connection,
