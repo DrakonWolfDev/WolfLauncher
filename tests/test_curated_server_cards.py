@@ -41,6 +41,8 @@ class CuratedServerCardTests(unittest.TestCase):
         self.assertEqual(card.name_label.text(), "Live server name")
         self.assertIn("chernarusplus", card.metadata_label.text())
         self.assertIn("203.0.113.10:2302", card.metadata_label.text())
+        self.assertEqual(card.time_label.text(), "14:30")
+        self.assertFalse(card.time_icon_label.pixmap().isNull())
         self.assertEqual(card.stats_label.text(), "12/60\n42ms")
         self.assertTrue(card.connect_button.isEnabled())
         self.assertTrue(card.favourite_button.property("favourite"))
@@ -75,6 +77,15 @@ class CuratedServerCardTests(unittest.TestCase):
 
         self.assertFalse(card.password_lock.isHidden())
         self.assertFalse(card.password_lock.pixmap().isNull())
+
+    def test_night_time_uses_the_moon_icon(self):
+        values = card_values()
+        values[11] = "23:10"
+
+        card = CuratedServerCard(0, values)
+
+        self.assertEqual(card.time_icon_label.toolTip(), "Night-time: 23:10")
+        self.assertFalse(card.time_icon_label.pixmap().isNull())
 
 
 if __name__ == "__main__":

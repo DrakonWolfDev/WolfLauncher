@@ -4,7 +4,7 @@ from PySide6.QtCore import QPoint, QSize, Qt, Signal
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from .server_display import ping_severity
-from .theme import set_monospace, set_ui_role, theme_icon
+from .theme import set_monospace, set_ui_role, theme_icon, time_icon
 
 
 class CuratedServerCard(QFrame):
@@ -65,6 +65,26 @@ class CuratedServerCard(QFrame):
         text.addWidget(self.metadata_label)
         layout.addLayout(text, 1)
 
+        self.time_icon_label = QLabel()
+        self.time_icon_label.setAlignment(Qt.AlignHCenter | Qt.AlignBottom)
+        self.time_icon_label.setFixedHeight(20)
+        self.time_label = QLabel(values[11])
+        self.time_label.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+        set_ui_role(self.time_label, "cardStats")
+        set_monospace(self.time_label)
+        is_day = self._game_time_is_day(values[11])
+        if is_day is not None:
+            self.time_icon_label.setPixmap(time_icon(is_day).pixmap(QSize(18, 18)))
+            phase = "Daytime" if is_day else "Night-time"
+            self.time_icon_label.setToolTip(f"{phase}: {values[11]}")
+            self.time_icon_label.setAccessibleName(f"{phase}, server time {values[11]}")
+        time_block = QVBoxLayout()
+        time_block.setContentsMargins(0, 0, 0, 0)
+        time_block.setSpacing(2)
+        time_block.addWidget(self.time_icon_label)
+        time_block.addWidget(self.time_label)
+        layout.addLayout(time_block)
+
         self.stats_label = QLabel(self._stats(values))
         set_ui_role(self.stats_label, self._ping_role(values[12]))
         self.stats_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
@@ -98,6 +118,16 @@ class CuratedServerCard(QFrame):
     @staticmethod
     def _stats(values: list[str]) -> str:
         return "\n".join(part for part in (values[10], values[12]) if part)
+
+    @staticmethod
+    def _game_time_is_day(value: str) -> bool | None:
+        try:
+            hour, minute = (int(part) for part in value.split(":", 1))
+        except (TypeError, ValueError):
+            return None
+        if not 0 <= hour <= 23 or not 0 <= minute <= 59:
+            return None
+        return 6 <= hour < 18
 
     @staticmethod
     def _ping_role(ping_text: str) -> str:
