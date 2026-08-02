@@ -464,12 +464,13 @@ class ModsFeatureMixin:
         self.pending_mod_check_row = None
         self.pending_mod_server = None
         workshop_install = install
-        self.mod_worker = ModWorker(
+        worker = ModWorker(
             server, workshop_dir, steam_context, workshop_install=workshop_install
         )
-        self.mod_worker.mods_ready.connect(self.update_mods_table)
-        self.mod_worker.finished.connect(self.handle_mod_worker_finished)
-        self.mod_worker.start()
+        self.mod_worker = worker
+        worker.mods_ready.connect(self.update_mods_table)
+        worker.finished.connect(lambda active=worker: self.handle_mod_worker_finished(active))
+        worker.start()
 
     def update_mods_table(self, result: ModCheckResult):
         self.active_mod_server_key = ""
@@ -507,7 +508,9 @@ class ModsFeatureMixin:
         server_cache.upsert_server(self.server_cache, replace(discovered, required_mod_count=count))
         self.refresh_server_browser()
 
-    def handle_mod_worker_finished(self):
+    def handle_mod_worker_finished(self, finished_worker=None):
+        if finished_worker is not None and finished_worker is not self.mod_worker:
+            return
         self.mod_worker = None
         self._check_pending_server_mods()
         self.maybe_launch_after_workshop_download()

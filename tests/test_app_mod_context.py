@@ -201,6 +201,20 @@ class ModContextChangeTests(unittest.TestCase):
         window._check_pending_server_mods.assert_called_once_with()
         window.maybe_launch_after_workshop_download.assert_called_once_with()
 
+    def test_stale_finished_mod_worker_cannot_clear_newer_worker(self):
+        current = object()
+        window = SimpleNamespace(
+            mod_worker=current,
+            _check_pending_server_mods=Mock(),
+            maybe_launch_after_workshop_download=Mock(),
+        )
+
+        MainWindow.handle_mod_worker_finished(window, object())
+
+        self.assertIs(window.mod_worker, current)
+        window._check_pending_server_mods.assert_not_called()
+        window.maybe_launch_after_workshop_download.assert_not_called()
+
     def test_pending_mod_check_waits_for_running_worker_without_polling(self):
         worker = Mock()
         worker.isRunning.return_value = True
