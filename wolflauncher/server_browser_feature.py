@@ -56,6 +56,7 @@ from .server_browser_table import (
     BROWSER_NAME_COLUMN,
     populate_browser_table,
     selected_browser_cache_key,
+    set_browser_favourite_marker,
     update_browser_mod_cell,
     update_browser_table_row,
 )
@@ -1641,13 +1642,7 @@ class ServerBrowserMixin:
                 self._set_browser_favourite_cell(row, is_favourite=is_favourite)
 
     def _set_browser_favourite_cell(self, row: int, *, is_favourite: bool):
-        item = self.browser_table.item(row, BROWSER_FAVOURITE_COLUMN)
-        if item is None:
-            return
-        item.setText("★" if is_favourite else "☆")
-        item.setToolTip(
-            "Remove from Favourite Servers" if is_favourite else "Add to Favourite Servers"
-        )
+        set_browser_favourite_marker(self.browser_table, row, is_favourite)
 
     def show_browser_context_menu(self, pos: QPoint):
         row = self.browser_table.rowAt(pos.y())

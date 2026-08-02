@@ -18,6 +18,7 @@ from wolflauncher.server_browser_table import (
     BROWSER_PASSWORD_COLUMN,
     populate_browser_table,
     selected_browser_cache_key,
+    set_browser_favourite_marker,
     update_browser_mod_cell,
     update_browser_table_row,
 )
@@ -152,6 +153,20 @@ class ServerBrowserTableTests(unittest.TestCase):
 
         marker = table.cellWidget(0, BROWSER_FAVOURITE_COLUMN)
         self.assertIsNotNone(marker)
+
+    def test_updating_favourite_marker_does_not_duplicate_the_star_glyph(self):
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        server = DiscoveredServer("Favourite", "host", 2302, 27016)
+        populate_browser_table(table, [server])
+
+        set_browser_favourite_marker(table, 0, True)
+
+        self.assertEqual(table.item(0, BROWSER_FAVOURITE_COLUMN).text(), "")
+        self.assertEqual(
+            table.item(0, BROWSER_FAVOURITE_COLUMN).toolTip(),
+            "Remove from Favourite Servers",
+        )
+        self.assertIsNotNone(table.cellWidget(0, BROWSER_FAVOURITE_COLUMN))
 
     def test_visible_selection_wins_over_a_stale_current_row(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)

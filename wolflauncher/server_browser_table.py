@@ -103,6 +103,18 @@ def update_browser_mod_cell(
     return False
 
 
+def set_browser_favourite_marker(table: QTableWidget, row: int, is_favourite: bool) -> None:
+    """Update the star widget without duplicating its glyph in the table item."""
+    item = table.item(row, BROWSER_FAVOURITE_COLUMN)
+    if item is None:
+        return
+    item.setText("")
+    item.setToolTip(
+        "Remove from Favourite Servers" if is_favourite else "Add to Favourite Servers"
+    )
+    table.setCellWidget(row, BROWSER_FAVOURITE_COLUMN, _browser_marker(is_favourite))
+
+
 def _set_browser_table_row(
     table: QTableWidget,
     row: int,
