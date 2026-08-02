@@ -66,6 +66,7 @@ from .server_enrichment import (
 from .server_map_atmosphere import ServerMapAtmosphereFrame
 from .settings import (
     DEFAULT_DISCOVERY_PROVIDER,
+    server_key,
 )
 from .theme import (
     STATUS_COLOURS,
@@ -1228,7 +1229,7 @@ class ServerBrowserMixin:
             host=server.host,
             game_port=server.game_port,
             query_port=server.query_port,
-            favourite=False,
+            favourite=True,
         )
         try:
             add_curated_server(self.config_path, curated)
@@ -1236,6 +1237,8 @@ class ServerBrowserMixin:
             QMessageBox.warning(self, "Could not promote server", str(exc))
             return
 
+        self.favourites.add(server_key(curated))
+        self._save_favourites_index()
         self.add_curated_server_row(curated)
         QMessageBox.information(
             self,
@@ -1379,7 +1382,11 @@ class ServerBrowserMixin:
         populate_browser_table(
             self.browser_table,
             servers,
-            {(server.host, server.game_port, server.query_port) for server in self.servers},
+            {
+                (server.host, server.game_port, server.query_port)
+                for server in self.servers
+                if server.favourite
+            },
         )
         if selected_key:
             for row in range(self.browser_table.rowCount()):
@@ -1592,7 +1599,10 @@ class ServerBrowserMixin:
         endpoint = (discovered.host, discovered.game_port, discovered.query_port)
         for index, curated in enumerate(self.servers):
             if (curated.host, curated.game_port, curated.query_port) == endpoint:
-                self.remove_curated_server_row(index, confirm=False)
+                if curated.favourite:
+                    self.remove_curated_server_row(index, confirm=False)
+                else:
+                    self.toggle_favourite(index)
                 return
         curated = Server(
             name=discovered.server_name or discovered.name or discovered.connect_target,
@@ -1607,6 +1617,8 @@ class ServerBrowserMixin:
         except ValueError as exc:
             QMessageBox.warning(self, "Could not add favourite", str(exc))
             return
+        self.favourites.add(server_key(curated))
+        self._save_favourites_index()
         self.add_curated_server_row(curated)
 
     def sync_browser_favourite_endpoint(

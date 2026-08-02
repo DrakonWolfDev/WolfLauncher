@@ -63,6 +63,18 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertEqual(browser_inspector(unverified).status_kind, "warning")
         self.assertEqual(browser_inspector(offline).status_kind, "offline")
 
+    def test_damaged_live_name_falls_back_to_the_provider_name(self):
+        server = DiscoveredServer(
+            name="Provider Server",
+            server_name="\ufffd\ufffd\ufffd",
+            host="203.0.113.10",
+            game_port=2302,
+            query_port=27016,
+            status_source="local",
+        )
+
+        self.assertEqual(display_server_name(server), "Provider Server")
+
     def test_mod_pill_only_surfaces_actionable_states(self):
         self.assertEqual(browser_mod_pill("3 missing locally"), ("3 MODS MISSING", "offline"))
         self.assertEqual(browser_mod_pill("Unavailable"), ("MOD CHECK FAILED", "warning"))

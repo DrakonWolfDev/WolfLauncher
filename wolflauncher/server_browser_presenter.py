@@ -4,7 +4,12 @@ from datetime import datetime, timezone
 from typing import Any
 
 from .models import DiscoveredServer
-from .server_display import display_map_name, display_required_mod_count, display_server_flags
+from .server_display import (
+    display_map_name,
+    display_required_mod_count,
+    display_server_flags,
+    is_displayable_server_name,
+)
 from .theme import STATUS_COLOURS
 
 
@@ -123,7 +128,7 @@ def _number_text(value: float) -> str:
 def live_name_text(server: DiscoveredServer) -> str:
     live_name = (server.server_name or "").strip()
     display_name = (server.name or "").strip()
-    if not live_name or live_name.casefold() == display_name.casefold():
+    if not is_displayable_server_name(live_name) or live_name.casefold() == display_name.casefold():
         return ""
     return live_name
 
@@ -132,7 +137,8 @@ def display_server_name(server: DiscoveredServer) -> str:
     live_name = live_name_text(server)
     if server.status_source == "local" and live_name:
         return live_name
-    return (server.name or "").strip() or server.connect_target
+    display_name = (server.name or "").strip()
+    return display_name if is_displayable_server_name(display_name) else server.connect_target
 
 
 def api_freshness_text(

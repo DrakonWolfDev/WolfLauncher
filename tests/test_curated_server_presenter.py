@@ -70,6 +70,14 @@ class CuratedServerPresenterTests(unittest.TestCase):
         self.assertEqual(row[9], "offline or no response")
         self.assertEqual(row[10:], ["", "", "", "", "", ""])
 
+    def test_damaged_live_name_keeps_the_configured_name(self):
+        row = curated_server_row(
+            self.server,
+            ServerStatus(online=True, server_name="\ufffd\ufffd\ufffd", players="1/60"),
+        )
+
+        self.assertEqual(row[3], "Configured Name")
+
 
 if __name__ == "__main__":
     unittest.main()

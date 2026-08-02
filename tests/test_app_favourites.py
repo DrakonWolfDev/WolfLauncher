@@ -6,7 +6,7 @@ from unittest.mock import Mock, patch
 from PySide6.QtWidgets import QMessageBox
 
 from wolflauncher.app import MainWindow
-from wolflauncher.models import Server
+from wolflauncher.models import DiscoveredServer, Server
 from wolflauncher.platform_detection import SteamInstall, build_steam_start_command
 
 
@@ -138,6 +138,37 @@ class FavouriteEmptyStateTests(unittest.TestCase):
 
         window.favourites_content.setCurrentWidget.assert_called_once_with(window.server_cards)
         window.launch_button.setEnabled.assert_called_once_with(True)
+
+
+class BrowserFavouriteTests(unittest.TestCase):
+    @patch("wolflauncher.server_browser_feature.add_curated_server")
+    @patch("wolflauncher.server_browser_feature.server_cache.get_server")
+    def test_browser_star_persists_a_new_favourite(self, get_server, add_curated):
+        discovered = DiscoveredServer(
+            "Provider Name", "203.0.113.10", 2302, 27016, server_name="Live Name"
+        )
+        get_server.return_value = discovered
+        name_item = Mock()
+        name_item.data.return_value = discovered.cache_key
+        browser_table = Mock()
+        browser_table.item.return_value = name_item
+        window = SimpleNamespace(
+            browser_table=browser_table,
+            server_cache=Mock(),
+            servers=[],
+            favourites=set(),
+            config_path=Path("servers.yaml"),
+            _save_favourites_index=Mock(),
+            add_curated_server_row=Mock(),
+        )
+
+        MainWindow.handle_browser_cell_clicked(window, 0, 0)
+
+        self.assertEqual(len(window.favourites), 1)
+        window._save_favourites_index.assert_called_once_with()
+        curated = add_curated.call_args.args[1]
+        self.assertTrue(curated.favourite)
+        window.add_curated_server_row.assert_called_once_with(curated)
 
 
 class FavouriteProfileReloadTests(unittest.TestCase):

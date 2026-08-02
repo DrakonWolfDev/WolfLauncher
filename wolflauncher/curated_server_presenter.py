@@ -1,5 +1,5 @@
 from .models import Server
-from .server_display import display_map_name, display_server_flags
+from .server_display import display_map_name, display_server_flags, is_displayable_server_name
 from .status import ServerStatus
 
 
@@ -32,7 +32,9 @@ def curated_server_row(server: Server, status: ServerStatus | None = None) -> li
         values[9] = status.error
         return values
 
-    values[3] = status.server_name or server.name
+    configured_name = server.name if is_displayable_server_name(server.name) else server.host
+    values[2] = configured_name
+    values[3] = status.server_name if is_displayable_server_name(status.server_name) else configured_name
     values[8] = "ONLINE"
     values[9] = display_map_name(status.map_name)
     values[10] = status.players
