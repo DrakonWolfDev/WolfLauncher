@@ -121,8 +121,9 @@ release matrix.
   1024020 and uses the observed official BattlEye handoff: `DayZ_BE.exe 0 1 1
   -exe DayZ_x64.exe`, absolute local-mod paths and `-connect=ip:game:query`.
   Experimental has no separate Workshop application: Stable's `DayZ\!Workshop`
-  junction collection is read as a local source and Workshop mutation controls
-  are hidden. Linux Experimental native launch remains deliberately blocked
+  junction collection is read as a local source. Its explicit, confirmed Steam
+  Workshop install/update controls use that same Stable DayZ Workshop context;
+  Linux Experimental native launch remains deliberately blocked
   until its handoff is validated.
 
 ## Active release boundary

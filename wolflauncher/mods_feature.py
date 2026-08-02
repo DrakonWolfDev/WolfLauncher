@@ -148,9 +148,6 @@ class ModsFeatureMixin:
         self.mod_filter.currentTextChanged.connect(self.apply_mod_filter)
         buttons.addWidget(self.subscribe_missing_button)
         buttons.addWidget(self.force_update_button)
-        if ModsFeatureMixin.experimental_product_active(self):
-            self.subscribe_missing_button.hide()
-            self.force_update_button.hide()
         buttons.addStretch(1)
         buttons.addWidget(QLabel("Filter"))
         buttons.addWidget(self.mod_filter)
@@ -307,7 +304,7 @@ class ModsFeatureMixin:
         elif self.last_mod_result:
             self.display_mods_result(self.last_mod_result)
         self.update_installed_mods_button.setVisible(
-            self.viewing_installed_workshop_library() and not ModsFeatureMixin.experimental_product_active(self)
+            self.viewing_installed_workshop_library()
         )
         self.recheck_mods_button.setText(
             (
@@ -891,13 +888,6 @@ class ModsFeatureMixin:
             QDesktopServices.openUrl(QUrl(mod.workshop_url))
 
     def subscribe_missing_workshop_mods(self):
-        if ModsFeatureMixin.experimental_product_active(self):
-            QMessageBox.information(
-                self,
-                "Experimental local mods",
-                "DayZ Experimental does not manage Workshop subscriptions. Add or update mods through Steam's Stable Workshop, then use its DayZ !Workshop folder as a local source.",
-            )
-            return
         self.workshop_resolution.subscribe_missing_mods()
 
     def check_update_mod_row(self, row: int):
@@ -907,8 +897,6 @@ class ModsFeatureMixin:
         self.workshop_resolution.force_update_mod(row)
 
     def force_update_selected_mod(self):
-        if ModsFeatureMixin.experimental_product_active(self):
-            return
         row = self.mods_table.currentRow()
         if row < 0:
             QMessageBox.warning(self, "No mod selected", "Select a mod to force its Steam update.")
@@ -916,8 +904,6 @@ class ModsFeatureMixin:
         self.force_update_mod_row(row)
 
     def update_all_installed_mods(self):
-        if ModsFeatureMixin.experimental_product_active(self):
-            return
         if not self.viewing_installed_workshop_library():
             return
         mods = mods_needing_workshop_update(self.installed_workshop_mods)

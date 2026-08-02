@@ -85,7 +85,8 @@ updates on Linux, sharing one release-channel manifest and policy.
 - Validate the Linux DayZ Experimental handoff before enabling its native
   launcher. The Windows Experimental profile is intentionally distinct from
   Stable: it uses Steam app ID 1024020, local mod sources and BattlEye's direct
-  launcher path; do not add an Experimental Workshop subscription flow.
+  launcher path. Experimental's explicitly confirmed install/update actions
+  resolve its required items through the Stable DayZ Workshop context.
 - Evolve **Editor / Local Tools** for advanced mod development in stages:
   v1 saved local client-mod profiles, offline DayZ Editor and joining existing
   LAN/test servers; v2 explicitly configured local dedicated-server start/stop

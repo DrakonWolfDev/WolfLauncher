@@ -9,6 +9,14 @@ from wolflauncher.workshop_subscription import ITEM_STATE_NEEDS_UPDATE
 
 
 class InstalledWorkshopLibraryTests(unittest.TestCase):
+    def test_experimental_can_start_confirmed_missing_mod_resolution(self):
+        resolution = Mock()
+        window = SimpleNamespace(workshop_resolution=resolution)
+
+        ModsFeatureMixin.subscribe_missing_workshop_mods(window)
+
+        resolution.subscribe_missing_mods.assert_called_once_with()
+
     def test_recheck_follows_the_active_mod_view(self):
         library_window = SimpleNamespace(
             viewing_installed_workshop_library=Mock(return_value=True),

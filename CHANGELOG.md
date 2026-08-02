@@ -11,6 +11,11 @@
 
 ## Unreleased
 
+- Enabled the confirmed Steam Workshop install, update and recovery controls
+  in DayZ Experimental. They resolve the server's exact required Workshop IDs
+  through Stable DayZ's shared Workshop context, then recheck the Experimental
+  local-mod source; no subscriptions are removed.
+
 - Windows local dedicated-server setup now asks the installed Steam client to own
   the DayZ Dedicated Server tool install and shows an activity bar until the
   completed server is detected; SteamCMD remains the custom-path alternative.

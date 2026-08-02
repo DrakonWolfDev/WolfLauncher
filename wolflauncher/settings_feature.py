@@ -441,7 +441,11 @@ class SettingsFeatureMixin:
                 "update_installed_mods_button",
             ):
                 if hasattr(self, name):
-                    getattr(self, name).setVisible(not product.experimental)
+                    getattr(self, name).setVisible(
+                        self.viewing_installed_workshop_library()
+                        if name == "update_installed_mods_button"
+                        else True
+                    )
         from .settings import load_favourites
         from .settings import curated_servers_path
 
