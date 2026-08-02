@@ -108,6 +108,7 @@ def check_server(
                 check=False,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
                 timeout=process_timeout,
                 **_hidden_process_kwargs(),
             )
@@ -171,6 +172,7 @@ def _run_cancellable(arguments: list[str], timeout: float, cancel_event):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
+        encoding="utf-8",
         **_hidden_process_kwargs(),
     )
     deadline = time.monotonic() + timeout

@@ -42,6 +42,7 @@ class CancellableProcessTests(unittest.TestCase):
         result = _run_cancellable(["gamedig"], 2, cancelled)
 
         self.assertIsNone(result)
+        self.assertEqual(popen.call_args.kwargs["encoding"], "utf-8")
         process.terminate.assert_called_once_with()
         process.wait.assert_called_once_with(timeout=0.25)
 
@@ -153,6 +154,26 @@ class CheckServerTests(unittest.TestCase):
         resolve_host_mock.assert_called_once_with("dayz.example.test")
         which.assert_has_calls([call("node"), call("gamedig")])
         run.assert_called_once()
+        self.assertEqual(run.call_args.kwargs["encoding"], "utf-8")
+
+    @patch("wolflauncher.status.resolve_host", return_value="203.0.113.10")
+    @patch("wolflauncher.status.shutil.which", return_value="/usr/bin/gamedig")
+    @patch("wolflauncher.status.subprocess.run")
+    def test_online_server_preserves_unicode_gamedig_name(self, run, _which, _resolve_host):
+        run.return_value = subprocess.CompletedProcess(
+            args=[],
+            returncode=0,
+            stdout=json.dumps(
+                {"name": "测试 DayZ", "numplayers": 1, "maxplayers": 60, "raw": {}},
+                ensure_ascii=False,
+            ),
+            stderr="",
+        )
+
+        status = check_server(self.make_server())
+
+        self.assertTrue(status.online)
+        self.assertEqual(status.server_name, "测试 DayZ")
 
     @patch("wolflauncher.status.resolve_host", return_value="203.0.113.10")
     @patch("wolflauncher.status.shutil.which", return_value="/usr/bin/gamedig")
