@@ -18,6 +18,7 @@ WORKER_ATTRIBUTES = (
     "wolfapi_cache_worker",
     "wolfapi_search_worker",
     "results_freshness_worker",
+    "workshop_library_worker",
 )
 
 WORKER_COLLECTION_ATTRIBUTES = (

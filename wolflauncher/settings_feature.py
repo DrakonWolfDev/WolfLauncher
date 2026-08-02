@@ -1,6 +1,6 @@
 import os
 
-from PySide6.QtCore import QPoint, Qt
+from PySide6.QtCore import QPoint, Qt, QTimer
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
@@ -30,6 +30,7 @@ from .diagnostics import (
 )
 from .launch_history import load_last_launch_report, save_last_launch_report
 from .launcher import DEFAULT_PLAYER_NAME
+from .lifecycle import active_workers
 from .known_issues import known_external_issues_text
 from .platform_detection import (
     steam_mode_label,
@@ -414,6 +415,46 @@ class SettingsFeatureMixin:
         product = product_from_key(self.dayz_product_selector.currentData())
         if self.dayz_product_key() == product.key:
             return
+        if self._defer_dayz_product_switch(product):
+            return
+        self._apply_dayz_product_switch(product)
+
+    def _defer_dayz_product_switch(self, product) -> bool:
+        """Keep profile-owned worker references alive before replacing their context."""
+        workers = active_workers(self)
+        if not workers:
+            return False
+        self._pending_dayz_product_key = product.key
+        current_index = self.dayz_product_selector.findData(self.dayz_product_key())
+        self.dayz_product_selector.blockSignals(True)
+        self.dayz_product_selector.setCurrentIndex(current_index)
+        self.dayz_product_selector.blockSignals(False)
+        for worker in workers:
+            cancel = getattr(worker, "cancel", None)
+            if callable(cancel):
+                cancel()
+            request_interruption = getattr(worker, "requestInterruption", None)
+            if callable(request_interruption):
+                request_interruption()
+        self.statusBar().showMessage(
+            "Finishing current background checks before changing DayZ version…", 5000
+        )
+        QTimer.singleShot(50, self._complete_deferred_dayz_product_switch)
+        return True
+
+    def _complete_deferred_dayz_product_switch(self):
+        product_key = getattr(self, "_pending_dayz_product_key", "")
+        if not product_key:
+            return
+        if active_workers(self):
+            QTimer.singleShot(50, self._complete_deferred_dayz_product_switch)
+            return
+        self._pending_dayz_product_key = ""
+        index = self.dayz_product_selector.findData(product_key)
+        if index >= 0:
+            self.dayz_product_selector.setCurrentIndex(index)
+
+    def _apply_dayz_product_switch(self, product):
         self.settings["dayz_product"] = product.key
         self.product = product
         self.setWindowTitle("WolfLauncher — DayZ Experimental" if product.experimental else "WolfLauncher")

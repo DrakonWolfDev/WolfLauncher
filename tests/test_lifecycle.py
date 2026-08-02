@@ -34,6 +34,7 @@ def owner_with(**overrides):
         "wolfapi_cache_worker": None,
         "wolfapi_search_worker": None,
         "results_freshness_worker": None,
+        "workshop_library_worker": None,
         "enrichment_worker": None,
         "selection_enrichment_workers": {},
         "browser_mod_workers": {},
