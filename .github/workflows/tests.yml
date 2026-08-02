@@ -93,7 +93,8 @@ jobs:
 
       - name: Install build inputs
         run: |
-          python -m pip install -r requirements-release.txt -r requirements-dev.txt
+          python -m pip install -r requirements-dev.txt
+          python -m pip install -r requirements-release.txt
 
       - name: Build wheel and Debian package
         env:
@@ -176,7 +177,9 @@ jobs:
           cache-dependency-path: packaging/npm/package-lock.json
 
       - name: Install Python build inputs
-        run: python -m pip install -r requirements-windows-release.txt -r requirements-dev.txt
+        run: |
+          python -m pip install -r requirements-dev.txt
+          python -m pip install -r requirements-windows-release.txt
 
       - name: Run Windows unit tests
         env:
