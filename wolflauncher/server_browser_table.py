@@ -11,7 +11,6 @@ from .table_items import SortableTableWidgetItem
 from .theme import (
     STATUS_COLOURS,
     monospace_font,
-    server_name_font,
     set_ui_role,
     theme_icon,
     time_icon,
@@ -133,10 +132,6 @@ def _set_browser_table_row(
         column = data_column + 1
         item = SortableTableWidgetItem(value, row_data.sort_values[data_column])
         item.setData(Qt.UserRole, server.cache_key)
-        if data_column == 0:
-            name_font = server_name_font(value)
-            if name_font is not None:
-                item.setFont(name_font)
         if data_column in row_data.tooltips:
             item.setToolTip(row_data.tooltips[data_column])
         if data_column == 5:

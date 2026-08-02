@@ -38,7 +38,7 @@ version = {attr = "wolflauncher.__version__"}
 include = ["wolflauncher*"]
 
 [tool.setuptools.package-data]
-wolflauncher = ["assets/*.svg", "assets/*.png", "assets/*.jpg", "assets/fonts/*"]
+wolflauncher = ["assets/*.svg", "assets/*.png", "assets/*.jpg"]
 
 [tool.setuptools.data-files]
 "share/applications" = ["packaging/linux/wolflauncher.desktop"]

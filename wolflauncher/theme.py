@@ -3,7 +3,7 @@
 from pathlib import Path
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QFont, QFontDatabase, QIcon, QPalette
+from PySide6.QtGui import QColor, QFontDatabase, QIcon, QPalette
 from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
@@ -39,8 +39,6 @@ SPACING = {
 STATUS_COLOURS = {key: COLOURS[key] for key in ("positive", "warning", "negative")}
 ASSETS_DIR = Path(__file__).resolve().parent / "assets"
 WOLF_MARK_PATH = ASSETS_DIR / "wolf-mark.svg"
-SERVER_NAME_CJK_FONT_PATH = ASSETS_DIR / "fonts" / "NotoSansCJKsc-Regular.otf"
-_server_name_cjk_font_family: str | None = None
 
 
 def theme_icon(name: str) -> QIcon:
@@ -247,18 +245,6 @@ def set_monospace(widget: QWidget) -> None:
 def monospace_font():
     """Return Qt's portable system fixed font."""
     return QFontDatabase.systemFont(QFontDatabase.FixedFont)
-
-
-def server_name_font(value: str) -> QFont | None:
-    """Provide bundled CJK glyph coverage only for server names that need it."""
-    if not any(0x3400 <= ord(character) <= 0x9FFF for character in value):
-        return None
-    global _server_name_cjk_font_family
-    if _server_name_cjk_font_family is None and SERVER_NAME_CJK_FONT_PATH.is_file():
-        font_id = QFontDatabase.addApplicationFont(str(SERVER_NAME_CJK_FONT_PATH))
-        families = QFontDatabase.applicationFontFamilies(font_id) if font_id >= 0 else []
-        _server_name_cjk_font_family = families[0] if families else ""
-    return QFont(_server_name_cjk_font_family) if _server_name_cjk_font_family else None
 
 
 def configure_data_table(table: QTableView) -> None:

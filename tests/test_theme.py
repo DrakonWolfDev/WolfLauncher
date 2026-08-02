@@ -16,7 +16,6 @@ from wolflauncher.theme import (
     configure_priority_columns,
     set_monospace,
     set_ui_role,
-    server_name_font,
 )
 
 
@@ -115,12 +114,6 @@ class ThemeTests(unittest.TestCase):
             button.font().family(),
             QFontDatabase.systemFont(QFontDatabase.FixedFont).family(),
         )
-
-    def test_server_name_font_loads_bundled_cjk_fallback_when_needed(self):
-        font = server_name_font("\u96e8\u4f60\u592a\u7f8e\u7fa4")
-        self.assertIsNotNone(font)
-        self.assertEqual(font.family(), "Noto Sans CJK SC")
-        self.assertIsNone(server_name_font("Plain Latin server"))
 
 
 if __name__ == "__main__":
