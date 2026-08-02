@@ -468,11 +468,16 @@ class ModsFeatureMixin:
             server, workshop_dir, steam_context, workshop_install=workshop_install
         )
         self.mod_worker = worker
-        worker.mods_ready.connect(self.update_mods_table)
+        product_key = self.dayz_product_key()
+        worker.mods_ready.connect(
+            lambda result, context=product_key: self.update_mods_table(result, context)
+        )
         worker.finished.connect(lambda active=worker: self.handle_mod_worker_finished(active))
         worker.start()
 
-    def update_mods_table(self, result: ModCheckResult):
+    def update_mods_table(self, result: ModCheckResult, product_key: str | None = None):
+        if product_key is not None and product_key != self.dayz_product_key():
+            return
         self.active_mod_server_key = ""
         current_server = self.active_server_context()
         install = (

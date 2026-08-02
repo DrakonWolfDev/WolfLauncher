@@ -415,8 +415,6 @@ class SettingsFeatureMixin:
         product = product_from_key(self.dayz_product_selector.currentData())
         if self.dayz_product_key() == product.key:
             return
-        if self._defer_dayz_product_switch(product):
-            return
         self._apply_dayz_product_switch(product)
 
     def _defer_dayz_product_switch(self, product) -> bool:

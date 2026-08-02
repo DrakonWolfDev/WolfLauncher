@@ -215,6 +215,11 @@ class ModContextChangeTests(unittest.TestCase):
         window._check_pending_server_mods.assert_not_called()
         window.maybe_launch_after_workshop_download.assert_not_called()
 
+    def test_old_product_mod_result_is_ignored_after_a_profile_switch(self):
+        window = SimpleNamespace(dayz_product_key=Mock(return_value="experimental"))
+
+        MainWindow.update_mods_table(window, Mock(), "stable")
+
     def test_pending_mod_check_waits_for_running_worker_without_polling(self):
         worker = Mock()
         worker.isRunning.return_value = True
