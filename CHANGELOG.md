@@ -11,6 +11,15 @@
 
 ## Unreleased
 
+- Improved the DayZ Stable/Experimental switch: it now shows a short
+  **Switching game version** progress dialog, applies the new profile without
+  waiting on an old check, and rejects late mod-check results from the previous
+  game context. Fixed a completion race where an older mod check could clear a
+  newer profile check.
+- Experimental local-mod discovery now recognises Stable's raw Workshop
+  folders as well as `DayZ\!Workshop` junctions. Missing entries prefer Steam's
+  specific Workshop title when the server manifest provides only a generic
+  label, such as the GameLabs Experimental variant.
 - Enabled the confirmed Steam Workshop install, update and recovery controls
   in DayZ Experimental. They resolve the server's exact required Workshop IDs
   through Stable DayZ's shared Workshop context, then recheck the Experimental

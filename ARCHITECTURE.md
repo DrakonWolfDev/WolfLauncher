@@ -211,6 +211,17 @@ mod counts, installed/missing state, Workshop URLs and missing Workshop IDs for
 native parity testing and support. It can also copy only the missing Workshop
 links for manual Steam subscription.
 
+DayZ Experimental keeps its curated servers and discovery data separate, but
+uses Stable DayZ's shared Workshop content as a read-only local source. The
+local source resolver recognises both raw numeric Workshop folders and the
+official `DayZ\!Workshop` junction collection. Missing items display Steam's
+specific Workshop title when it is more informative than the server's generic
+rule label, while the Workshop ID remains authoritative. Experimental retains
+the same explicitly confirmed Steam-managed install/update journey as Stable;
+it never removes subscriptions. Switching game version presents a brief modal
+progress boundary, and mod-check results are bound to their originating game
+profile so late Stable/Experimental results cannot cross contexts.
+
 ## Launching
 
 WolfLauncher uses a guarded native launch workflow by default. The external

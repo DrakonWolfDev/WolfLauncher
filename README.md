@@ -95,7 +95,8 @@ verify DayZ directly from Steam before trying WolfLauncher again.
 ### Mod Validation
 
 - Workshop folder detection.
-- Required mod lookup via DayZ SA Launcher style API.
+- Required mod lookup directly from the selected server's DayZ `A2S_RULES`
+  manifest.
 - Installed versus required mod comparison.
 - Missing mod detection.
 - Direct Steam Workshop links.
@@ -113,9 +114,12 @@ verify DayZ directly from Steam before trying WolfLauncher again.
 - Experimental native Windows Steam/DayZ detection and absolute Workshop mod
   handoff without symlinks or the external shell launcher.
 - A persistent **DayZ Stable / DayZ Experimental** setting. Experimental keeps
-  favourites and Steam discovery separate, reads Stable's `DayZ\!Workshop`
-  junctions as local mod sources, and uses the verified BattlEye direct launch
-  path. Linux Experimental launch remains unavailable pending validation.
+  favourites and Steam discovery separate, reads Stable Workshop content and
+  `DayZ\!Workshop` junctions as local mod sources, and uses the verified
+  BattlEye direct launch path. Experimental can explicitly ask the signed-in
+  Steam client to install or update required items through that shared Stable
+  Workshop context. Linux Experimental launch remains unavailable pending
+  validation.
 
 ### Editor / Local Tools
 
@@ -157,6 +161,11 @@ Workshop mod information, sizes and download operations may be incomplete until
 Steam is running and signed in.
 
 Missing or outdated mods are resolved automatically during Connect pre-flight and can also be requested from the Mods tab. Steam must run under the same user and be signed into an account that owns DayZ. **Hide monitor** only hides a manual batch's progress window: the helper continues monitoring in the background and launch remains blocked until it finishes. Use the install action again to reopen that live monitor; WolfLauncher will not start a second Steamworks session. Manual Workshop page actions remain under **Advanced mod tools** and on mod-row double-click/context actions.
+
+When changing **Game version** in Settings, WolfLauncher shows a short
+**Switching game version** progress dialog while it swaps the separate server,
+Steam and mod context. A check started for the previous game version is never
+accepted for the newly selected version.
 
 After a successful batch, **Launch server** waits for the isolated Steamworks helper to exit and for a fresh mod check to confirm every required directory before starting the selected server. A failed or incomplete recheck returns control to the Mods tab instead of launching with stale readiness data.
 

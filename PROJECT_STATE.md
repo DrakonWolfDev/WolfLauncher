@@ -123,7 +123,9 @@ release matrix.
   Experimental has no separate Workshop application: Stable's `DayZ\!Workshop`
   junction collection is read as a local source. Its explicit, confirmed Steam
   Workshop install/update controls use that same Stable DayZ Workshop context;
-  Linux Experimental native launch remains deliberately blocked
+  Game-version switching presents a short progress boundary and ignores a
+  late mod-check result from the previous product. Linux Experimental native
+  launch remains deliberately blocked
   until its handoff is validated.
 
 ## Active release boundary
