@@ -21,12 +21,15 @@ serialized response bytes (including that timestamp). A cached representation
 still returns `304`; a rebuilt byte-different representation receives a new
 validator. No Launcher parser, cache schema or UI change is required.
 
-Experimental-directory routing update on 2026-08-02: WolfLauncher again uses
-WolfAPI v1 as the default provider for the Experimental profile now that the
-hosted directory will serve Experimental rows. Its cache rows use the separate
-`wolfapi_experimental` source namespace. Experimental browser queries enforce
-that namespace, so Stable cache rows cannot appear there (or vice versa);
-Steam Master remains an explicit manual fallback.
+Experimental-directory routing update on 2026-08-03: WolfAPI has a
+disabled-by-default Steam collection using DayZ Experimental client App ID
+`1024020`. Its v1 list, search and resolve rows are product-filtered as
+`experimental`; the Launcher keeps them in the separate `wolfapi_experimental`
+source namespace and rejects a mixed response before cache writes. Experimental
+`A2S_RULES` metadata also uses an independent, opt-in 50-per-six-hours API
+lane, so it cannot consume Stable's existing budget. Steam Master remains an
+explicit manual fallback; enable hosted Experimental discovery only after
+deployment and product-isolation verification.
 
 Live-validation scheduling update on 2026-07-19: WolfAPI now suppresses only
 automatic A2S re-probes for seven days after three consecutive failures since a
