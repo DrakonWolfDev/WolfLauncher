@@ -4,17 +4,14 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from wolflauncher.platform_detection import ProcessCheck, SteamInstall
+from wolflauncher.dayz_product import EXPERIMENTAL
+from wolflauncher.platform_detection import SteamInstall
 from wolflauncher.settings_health import build_settings_health_snapshot
 
 
 class SettingsHealthSnapshotTests(unittest.TestCase):
     def setUp(self):
         self.report_patches = (
-            patch(
-                "wolflauncher.settings_health.dayz_process_check",
-                return_value=ProcessCheck(False, "No DayZ process visible"),
-            ),
             patch(
                 "wolflauncher.settings_health.launch_troubleshooting_report",
                 return_value=SimpleNamespace(status="OK", next_steps=["No action required"]),
@@ -52,7 +49,7 @@ class SettingsHealthSnapshotTests(unittest.TestCase):
         self.assertEqual(rows["Launch engine"], ("OK", "Native launcher"))
         self.assertEqual(rows["Launcher script"], ("OK", "Not required for native mode"))
         self.assertEqual(rows["Required tools"], ("OK", "All found"))
-        self.assertEqual(rows["DayZ"][0], "OK")
+        self.assertEqual(rows["DayZ Stable"][0], "OK")
         self.assertEqual(rows["Workshop"][0], "OK")
         self.assertIn("Selected Native Steam", snapshot.summary)
         self.assertIn("DayZ OK", snapshot.summary)
@@ -104,3 +101,32 @@ class SettingsHealthSnapshotTests(unittest.TestCase):
         self.assertEqual(rows["Selected Steam"][0], "WARN")
         self.assertIn("not running", rows["Selected Steam"][1])
         self.assertIn("Connect will start Steam", rows["Selected Steam"][1])
+
+    def test_experimental_snapshot_labels_the_missing_install_explicitly(self):
+        root = Path("/steam")
+        install = SteamInstall(
+            mode="native",
+            executable="steam",
+            running=True,
+            root=root,
+            steamapps=root / "steamapps",
+            dayz_dir=None,
+            workshop_dir=None,
+            product=EXPERIMENTAL,
+        )
+
+        snapshot = build_settings_health_snapshot(
+            "",
+            "native",
+            "auto",
+            "OK",
+            "WolfAPI hosted cache",
+            [install],
+            product=EXPERIMENTAL,
+            command_lookup=lambda command: f"/usr/bin/{command}",
+            launcher_candidates=(),
+        )
+
+        rows = {name: (status, detail) for name, status, detail in snapshot.rows}
+        self.assertNotIn("DayZ", rows)
+        self.assertEqual(rows["DayZ Experimental"], ("MISSING", "Not detected"))

@@ -17,7 +17,7 @@ GROUP_SPECS = (
     (
         "steam",
         "Steam and DayZ",
-        ("Selected Steam", "DayZ", "Workshop", "DayZ process"),
+        ("Selected Steam", "DayZ Stable", "DayZ Experimental", "Workshop"),
     ),
     (
         "launcher",

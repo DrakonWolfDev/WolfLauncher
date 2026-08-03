@@ -7,9 +7,9 @@ from .config import DEFAULT_LAUNCHER_PATHS
 from .diagnostics import (
     launch_troubleshooting_report,
 )
+from .dayz_product import DayZProduct, STABLE
 from .platform_detection import (
     SteamInstall,
-    dayz_process_check,
     proton_compatdata_detail,
     select_steam_install,
     selected_install_summary,
@@ -36,6 +36,7 @@ def build_settings_health_snapshot(
     provider_detail: str,
     install_rows: Iterable[SteamInstall],
     *,
+    product: DayZProduct = STABLE,
     command_lookup: Callable[[str], str | None] = shutil.which,
     launcher_candidates: Iterable[Path] = DEFAULT_LAUNCHER_PATHS,
 ) -> SettingsHealthSnapshot:
@@ -56,8 +57,7 @@ def build_settings_health_snapshot(
     existing_launcher_candidates = [
         str(candidate) for candidate in launcher_candidates if candidate.exists()
     ]
-    process_check = dayz_process_check()
-    launch_report = launch_troubleshooting_report(selected_steam_mode, installs, process_check)
+    launch_report = launch_troubleshooting_report(selected_steam_mode, installs)
 
     rows: list[HealthRow] = [
         (
@@ -84,9 +84,8 @@ def build_settings_health_snapshot(
             "OK" if steam_report.candidates else "WARN",
             steam_selection_candidates_detail(steam_report),
         ),
-        ("DayZ process", "OK", process_check.detail),
         (
-            "DayZ",
+            product.label,
             "OK" if selected_install and selected_install.dayz_dir else "MISSING",
             str(selected_install.dayz_dir)
             if selected_install and selected_install.dayz_dir

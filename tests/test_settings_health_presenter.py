@@ -14,10 +14,9 @@ class SettingsHealthPresenterTests(unittest.TestCase):
             ("Required tools", "OK", "All found"),
             ("Launcher script", "OK", "Not required"),
             ("Selected Steam", "OK", "Running"),
-            ("DayZ", "OK", "/dayz"),
+            ("DayZ Stable", "OK", "/dayz"),
             ("Workshop", "MISSING", "Not detected"),
             ("Proton compatdata", "OK", "/compatdata"),
-            ("DayZ process", "OK", "Not running"),
             ("Steam candidates", "OK", "Support detail"),
         )
 
@@ -28,7 +27,7 @@ class SettingsHealthPresenterTests(unittest.TestCase):
         self.assertEqual(groups[1].status, "WARN")
         self.assertEqual(groups[2].status, "OK")
         self.assertEqual([row[0] for row in groups[1].rows], ["Server API"])
-        self.assertIn("DayZ process", [row[0] for row in groups[0].rows])
+        self.assertIn("DayZ Stable", [row[0] for row in groups[0].rows])
         self.assertNotIn("Proton compatdata", [row[0] for row in groups[0].rows])
         self.assertNotIn("Steam candidates", [row[0] for group in groups for row in group.rows])
 
@@ -48,9 +47,8 @@ class SettingsHealthPresenterTests(unittest.TestCase):
             (
                 ("Server API", "OK", "WolfAPI"),
                 ("Selected Steam", "OK", "Native Steam"),
-                ("DayZ", "OK", "C:/DayZ"),
+                ("DayZ Experimental", "OK", "C:/DayZ Exp"),
                 ("Workshop", "OK", "C:/Workshop"),
-                ("DayZ process", "OK", "Not running"),
             )
         )
 

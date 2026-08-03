@@ -28,6 +28,7 @@ class SettingsHealthCoordinator:
             provider_status,
             provider_detail,
             install_rows,
+            product=window.dayz_product(),
         )
         window.system_summary.setText(snapshot.summary)
         rows = snapshot.rows
