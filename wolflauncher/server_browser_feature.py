@@ -613,6 +613,7 @@ class ServerBrowserMixin:
             automatic=automatic,
             use_v1=use_v1,
             unflagged_only=use_v1 and self.browser_hide_quality_flagged.isChecked(),
+            product=self.dayz_product_key(),
         )
         self.wolfapi_worker.discovery_ready.connect(self.handle_wolfapi_ready)
         self.wolfapi_worker.start()
@@ -891,6 +892,7 @@ class ServerBrowserMixin:
             map_name=map_name,
             version=version,
             unflagged_only=self.browser_hide_quality_flagged.isChecked(),
+            product=self.dayz_product_key(),
         )
         self.wolfapi_search_worker.search_ready.connect(self.handle_remote_wolfapi_search)
         self.wolfapi_search_worker.finished.connect(self.finish_remote_wolfapi_search)

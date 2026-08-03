@@ -401,6 +401,7 @@ def discover_dayz_servers_wolfapi_v1(
     timeout: float = 15.0,
     url: str = "",
     unflagged_only: bool = False,
+    product: str = "stable",
 ) -> list[DiscoveredServer]:
     endpoint = (
         url
@@ -412,6 +413,7 @@ def discover_dayz_servers_wolfapi_v1(
         {
             "limit": max(1, min(int(limit), 500)),
             "offset": max(0, int(offset)),
+            "product": product,
             **({"quality": "unflagged"} if unflagged_only else {}),
         },
     )
@@ -427,6 +429,7 @@ def search_dayz_servers_wolfapi_v1(
     timeout: float = 15.0,
     url: str = "",
     unflagged_only: bool = False,
+    product: str = "stable",
 ) -> list[DiscoveredServer]:
     query = " ".join(query.split())
     if not query:
@@ -435,6 +438,7 @@ def search_dayz_servers_wolfapi_v1(
         "q": query,
         "limit": max(1, min(int(limit), 500)),
         "offset": max(0, int(offset)),
+        "product": product,
     }
     if map_name.strip():
         params["map"] = map_name.strip()
@@ -459,13 +463,14 @@ def resolve_dayz_server_wolfapi_v1(
     query_port: int | None = None,
     timeout: float = 15.0,
     url: str = "",
+    product: str = "stable",
 ) -> list[DiscoveredServer]:
     host = host.strip()
     if not host:
         raise ValueError("WolfAPI resolution host is required.")
     if game_port is None and query_port is None:
         raise ValueError("WolfAPI resolution requires a game or query port.")
-    params: dict[str, str | int] = {"host": host}
+    params: dict[str, str | int] = {"host": host, "product": product}
     if game_port is not None:
         params["game_port"] = int(game_port)
     if query_port is not None:

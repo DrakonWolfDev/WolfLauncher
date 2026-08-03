@@ -296,12 +296,14 @@ class WolfApiDiscoveryWorker(QThread):
         automatic: bool = False,
         use_v1: bool = False,
         unflagged_only: bool = False,
+        product: str = "stable",
     ):
         super().__init__()
         self.limit = limit
         self.automatic = automatic
         self.use_v1 = use_v1
         self.unflagged_only = unflagged_only
+        self.product = product
 
     @property
     def provider_label(self) -> str:
@@ -311,9 +313,9 @@ class WolfApiDiscoveryWorker(QThread):
         try:
             if self.use_v1:
                 if self.unflagged_only:
-                    servers = discover_wolfapi_v1_pages(self.limit, unflagged_only=True)
+                    servers = discover_wolfapi_v1_pages(self.limit, unflagged_only=True, product=self.product)
                 else:
-                    servers = discover_wolfapi_v1_pages(self.limit)
+                    servers = discover_wolfapi_v1_pages(self.limit, product=self.product)
             else:
                 servers = discover_dayz_servers_wolfapi(limit=self.limit)
         except Exception as exc:
@@ -352,7 +354,7 @@ class WolfApiCacheMergeWorker(QThread):
                 connection.close()
 
 
-def discover_wolfapi_v1_pages(limit: int, unflagged_only: bool = False) -> list:
+def discover_wolfapi_v1_pages(limit: int, unflagged_only: bool = False, product: str = "stable") -> list:
     """Fetch bounded v1 pages in a background worker up to the user limit."""
     target = max(1, int(limit))
     servers = []
@@ -360,7 +362,7 @@ def discover_wolfapi_v1_pages(limit: int, unflagged_only: bool = False) -> list:
     offset = 0
     while len(servers) < target:
         page_limit = min(WOLFAPI_V1_PAGE_SIZE, target - len(servers))
-        kwargs = {"limit": page_limit, "offset": offset}
+        kwargs = {"limit": page_limit, "offset": offset, "product": product}
         if unflagged_only:
             kwargs["unflagged_only"] = True
         page = discover_dayz_servers_wolfapi_v1(**kwargs)
@@ -383,6 +385,7 @@ class WolfApiSearchWorker(QThread):
         map_name: str = "",
         version: str = "",
         unflagged_only: bool = False,
+        product: str = "stable",
     ):
         super().__init__()
         self.query = " ".join(query.split())
@@ -390,6 +393,7 @@ class WolfApiSearchWorker(QThread):
         self.map_name = map_name
         self.version = version
         self.unflagged_only = unflagged_only
+        self.product = product
 
     def run(self):
         try:
@@ -399,14 +403,15 @@ class WolfApiSearchWorker(QThread):
                     "limit": self.limit,
                     "map_name": self.map_name,
                     "version": self.version,
+                    "product": self.product,
                 }
                 if self.unflagged_only:
                     kwargs["unflagged_only"] = True
                 servers = search_dayz_servers_wolfapi_v1(self.query, **kwargs)
             else:
                 host, port = endpoint
-                game_matches = resolve_dayz_server_wolfapi_v1(host, game_port=port)
-                query_matches = resolve_dayz_server_wolfapi_v1(host, query_port=port)
+                game_matches = resolve_dayz_server_wolfapi_v1(host, game_port=port, product=self.product)
+                query_matches = resolve_dayz_server_wolfapi_v1(host, query_port=port, product=self.product)
                 directory_total = getattr(game_matches, "directory_total", None)
                 if directory_total is None:
                     directory_total = getattr(query_matches, "directory_total", None)
