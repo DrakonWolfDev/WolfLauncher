@@ -1356,10 +1356,14 @@ class ServerBrowserMixin:
         map_name = self._combo_filter_value(self.browser_map, "Any map")
         version = self._combo_filter_value(self.browser_version, "Any version")
         source = self._combo_filter_value(self.browser_source, "Any source")
+        source_namespace = ""
         if self.dayz_product().experimental:
-            # Hosted Experimental rows use their own disposable cache namespace,
-            # keeping them separate from the Stable WolfAPI directory.
-            source = self.discovery_source_name("wolfapi") if not source else source
+            # Never let a retained Stable source selection bypass Experimental's
+            # disposable cache namespace. This also permits manual Experimental
+            # Steam-source rows when the user selects them explicitly.
+            source_namespace = f"_{self.dayz_product_key()}"
+            if source and not source.endswith(source_namespace):
+                source = ""
         style_terms = browser_style_terms(self.browser_style.currentText())
         limit = int(self.browser_limit.currentText())
 
@@ -1371,6 +1375,7 @@ class ServerBrowserMixin:
                 map_name=map_name,
                 version=version,
                 source=source,
+                source_namespace=source_namespace,
                 style_terms=tuple(style_terms),
                 modded=modded,
                 hide_quality_flagged=self.browser_hide_quality_flagged.isChecked(),
@@ -1548,7 +1553,10 @@ class ServerBrowserMixin:
             header.setSectionResizeMode(BROWSER_NAME_COLUMN, QHeaderView.Stretch)
 
     def _refresh_browser_filter_options(self):
-        options = browser_filter_options(self.server_cache)
+        source_namespace = (
+            f"_{self.dayz_product_key()}" if self.dayz_product().experimental else ""
+        )
+        options = browser_filter_options(self.server_cache, source_namespace)
         self._set_combo_filter_options(
             self.browser_map,
             "Any map",

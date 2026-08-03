@@ -88,6 +88,15 @@ class ServerBrowserControllerTests(unittest.TestCase):
                     online=True,
                 ),
                 DiscoveredServer(
+                    name="Experimental Chernarus",
+                    host="203.0.113.11",
+                    game_port=2302,
+                    query_port=27016,
+                    map_name="chernarusplus",
+                    source="wolfapi_experimental",
+                    online=True,
+                ),
+                DiscoveredServer(
                     name="\x01" * 63,
                     host="203.0.113.44",
                     game_port=2302,
@@ -113,21 +122,21 @@ class ServerBrowserControllerTests(unittest.TestCase):
 
         self.assertEqual([server.name for server in snapshot.servers], ["Busy PvP Namalsk"])
         self.assertEqual(snapshot.match_count, 1)
-        self.assertEqual(snapshot.cache_summary["total"], 8)
-        self.assertEqual(snapshot.cache_summary["online"], 4)
+        self.assertEqual(snapshot.cache_summary["total"], 9)
+        self.assertEqual(snapshot.cache_summary["online"], 5)
 
     def test_snapshot_count_is_not_limited_to_visible_rows(self):
         snapshot = load_browser_snapshot(self.connection, BrowserQuery(limit=1))
 
         self.assertEqual(len(snapshot.servers), 1)
-        self.assertEqual(snapshot.match_count, 6)
+        self.assertEqual(snapshot.match_count, 7)
 
     def test_snapshot_quietly_hides_malformed_names(self):
         snapshot = load_browser_snapshot(self.connection, BrowserQuery(limit=200))
 
         self.assertNotIn("\ufffd\ufffd\ufffd", [server.name for server in snapshot.servers])
         self.assertNotIn("\x01" * 63, [server.name for server in snapshot.servers])
-        self.assertEqual(snapshot.match_count, 6)
+        self.assertEqual(snapshot.match_count, 7)
 
     def test_snapshot_optionally_hides_quality_flagged_rows(self):
         snapshot = load_browser_snapshot(
@@ -136,7 +145,7 @@ class ServerBrowserControllerTests(unittest.TestCase):
         )
 
         self.assertNotIn("Offline Namalsk", [server.name for server in snapshot.servers])
-        self.assertEqual(snapshot.match_count, 5)
+        self.assertEqual(snapshot.match_count, 6)
 
     def test_filter_options_are_distinct_and_sorted(self):
         options = browser_filter_options(self.connection)
@@ -146,7 +155,20 @@ class ServerBrowserControllerTests(unittest.TestCase):
             ["Bitterroot", "Chernarusplus", "Livonia", "Namalsk"],
         )
         self.assertEqual(options["version"], ["1.25", "1.26"])
-        self.assertEqual(options["source"], ["battlemetrics", "wolfapi"])
+        self.assertEqual(options["source"], ["battlemetrics", "wolfapi", "wolfapi_experimental"])
+
+    def test_experimental_namespace_excludes_stable_cached_servers(self):
+        snapshot = load_browser_snapshot(
+            self.connection,
+            BrowserQuery(source_namespace="_experimental"),
+        )
+
+        self.assertEqual([server.name for server in snapshot.servers], ["Experimental Chernarus"])
+        self.assertEqual(snapshot.match_count, 1)
+        self.assertEqual(
+            browser_filter_options(self.connection, "_experimental")["source"],
+            ["wolfapi_experimental"],
+        )
 
     def test_canonical_map_filter_matches_all_cached_casing_and_aliases(self):
         bitterroot = load_browser_snapshot(self.connection, BrowserQuery(map_name="Bitterroot"))

@@ -13,6 +13,7 @@ class BrowserQuery:
     map_name: str = ""
     version: str = ""
     source: str = ""
+    source_namespace: str = ""
     style_terms: tuple[str, ...] = ()
     modded: bool | None = None
     hide_quality_flagged: bool = False
@@ -36,6 +37,7 @@ def load_browser_snapshot(connection: Any, query: BrowserQuery) -> BrowserSnapsh
         "map_name": query.map_name,
         "version": query.version,
         "source": query.source,
+        "source_namespace": query.source_namespace,
         "style_terms": list(query.style_terms),
         "modded": query.modded,
         "hide_quality_flagged": query.hide_quality_flagged,
@@ -55,14 +57,17 @@ def load_browser_snapshot(connection: Any, query: BrowserQuery) -> BrowserSnapsh
     )
 
 
-def browser_filter_options(connection: Any) -> dict[str, list[str]]:
+def browser_filter_options(connection: Any, source_namespace: str = "") -> dict[str, list[str]]:
     map_labels = {}
     for value in server_cache.distinct_values(connection, "map"):
         label = display_map_name(value)
         if label:
             map_labels.setdefault(label.casefold(), label)
+    sources = server_cache.distinct_values(connection, "source")
+    if source_namespace:
+        sources = [source for source in sources if source.endswith(source_namespace)]
     return {
         "map": sorted(map_labels.values(), key=str.casefold),
         "version": server_cache.distinct_values(connection, "version"),
-        "source": server_cache.distinct_values(connection, "source"),
+        "source": sources,
     }

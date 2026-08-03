@@ -24,8 +24,9 @@ validator. No Launcher parser, cache schema or UI change is required.
 Experimental-directory routing update on 2026-08-02: WolfLauncher again uses
 WolfAPI v1 as the default provider for the Experimental profile now that the
 hosted directory will serve Experimental rows. Its cache rows use the separate
-`wolfapi_experimental` source namespace, so they cannot appear in the Stable
-browser; Steam Master remains an explicit manual fallback.
+`wolfapi_experimental` source namespace. Experimental browser queries enforce
+that namespace, so Stable cache rows cannot appear there (or vice versa);
+Steam Master remains an explicit manual fallback.
 
 Live-validation scheduling update on 2026-07-19: WolfAPI now suppresses only
 automatic A2S re-probes for seven days after three consecutive failures since a

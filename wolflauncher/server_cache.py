@@ -548,6 +548,7 @@ def search_servers(
     map_name: str = "",
     version: str = "",
     source: str = "",
+    source_namespace: str = "",
     style_terms: list[str] | None = None,
     modded: bool | None = None,
     hide_quality_flagged: bool = False,
@@ -562,6 +563,7 @@ def search_servers(
         map_name=map_name,
         version=version,
         source=source,
+        source_namespace=source_namespace,
         style_terms=style_terms,
         modded=modded,
         hide_quality_flagged=hide_quality_flagged,
@@ -590,6 +592,7 @@ def count_search_servers(
     map_name: str = "",
     version: str = "",
     source: str = "",
+    source_namespace: str = "",
     style_terms: list[str] | None = None,
     modded: bool | None = None,
     hide_quality_flagged: bool = False,
@@ -601,6 +604,7 @@ def count_search_servers(
         map_name=map_name,
         version=version,
         source=source,
+        source_namespace=source_namespace,
         style_terms=style_terms,
         modded=modded,
         hide_quality_flagged=hide_quality_flagged,
@@ -660,6 +664,7 @@ def _search_where(
     map_name: str = "",
     version: str = "",
     source: str = "",
+    source_namespace: str = "",
     style_terms: list[str] | None = None,
     modded: bool | None = None,
     hide_quality_flagged: bool = False,
@@ -709,6 +714,9 @@ def _search_where(
     if source:
         clauses.append("source = ? COLLATE NOCASE")
         params.append(source)
+    if source_namespace:
+        clauses.append("source COLLATE NOCASE LIKE ? ESCAPE '\\'")
+        params.append(f"%{_escape_like(source_namespace)}")
     if modded is not None:
         clauses.append("modded = ?")
         params.append(1 if modded else 0)
