@@ -47,6 +47,7 @@ from .settings import (
     save_settings,
     server_key,
 )
+from . import server_cache
 from .dayz_product import product_from_key, product_warning
 from .settings_health_presenter import GROUP_SPECS, settings_health_groups
 from .theme import (
@@ -469,6 +470,13 @@ class SettingsFeatureMixin:
             self.dayz_product_selector.setCurrentIndex(index)
 
     def _apply_dayz_product_switch(self, product):
+        if product.experimental and not self.settings.get("experimental_wolfapi_cache_cleared_v1"):
+            connection = server_cache.connect(server_cache.SERVER_CACHE_PATH)
+            try:
+                server_cache.clear_source_servers(connection, "wolfapi_experimental")
+            finally:
+                connection.close()
+            self.settings["experimental_wolfapi_cache_cleared_v1"] = True
         self.settings["dayz_product"] = product.key
         self.product = product
         self.setWindowTitle("WolfLauncher — DayZ Experimental" if product.experimental else "WolfLauncher")

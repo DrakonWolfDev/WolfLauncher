@@ -417,7 +417,7 @@ def discover_dayz_servers_wolfapi_v1(
             **({"quality": "unflagged"} if unflagged_only else {}),
         },
     )
-    return _fetch_wolfapi_servers(endpoint, limit=limit, timeout=timeout, require_v1=True)
+    return _fetch_wolfapi_servers(endpoint, limit=limit, timeout=timeout, require_v1=True, expected_product=product)
 
 
 def search_dayz_servers_wolfapi_v1(
@@ -454,6 +454,7 @@ def search_dayz_servers_wolfapi_v1(
         limit=limit,
         timeout=timeout,
         require_v1=True,
+        expected_product=product,
     )
 
 
@@ -483,6 +484,7 @@ def resolve_dayz_server_wolfapi_v1(
         limit=500,
         timeout=timeout,
         require_v1=True,
+        expected_product=product,
     )
 
 
@@ -512,6 +514,7 @@ def _fetch_wolfapi_servers(
     limit: int,
     timeout: float,
     require_v1: bool = False,
+    expected_product: str = "",
 ) -> list[DiscoveredServer]:
     try:
         data = fetch_json(endpoint, timeout=timeout)
@@ -519,6 +522,10 @@ def _fetch_wolfapi_servers(
         raise WolfApiError(f"WolfAPI {exc}") from exc
 
     if require_v1:
+        if expected_product == "experimental":
+            rows = data.get("servers", []) if isinstance(data, dict) else []
+            if any(not isinstance(row, dict) or row.get("product") != expected_product for row in rows):
+                raise WolfApiError("WolfAPI did not return an isolated Experimental directory.")
         return parse_wolfapi_v1_servers(data, limit=limit)
     return parse_wolfapi_servers(data, limit=limit)
 
