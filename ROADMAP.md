@@ -1,6 +1,6 @@
 # WolfLauncher Roadmap
 
-Updated: 2026-08-01
+Updated: 2026-08-05
 
 This file records milestones, not individual engineering jobs. The single
 ordered implementation backlog is `PRODUCTION_READINESS_REVIEW.md`.
@@ -74,6 +74,10 @@ updates on Linux, sharing one release-channel manifest and policy.
 
 - Gradually extract feature ownership from `app.py` without a wholesale GUI
   rewrite.
+- Add a Mods-screen sort selector: keep **Action needed** as the default,
+  and offer the selected server's reported load order and alphabetical name
+  order. Make the load-order view visibly numbered so it is clear that it
+  reflects the server's DayZ `A2S_RULES` manifest.
 - Continue the P1/P2 quality, accessibility, network, logging, cache and typing
   work in the production review.
 - Extend the initial signed update channels only from release evidence, and
