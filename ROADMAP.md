@@ -47,6 +47,9 @@ Completion means:
 - mutable user data works with application resources mounted read-only;
 - persistence and shutdown are recoverable and race-safe;
 - credentials and support reports have an explicit secure policy;
+- a focused release-readiness audit confirms that the source tree, build
+  inputs, generated artifacts and user-facing workflow remain purposeful,
+  documented and free of obsolete or misleading paths;
 - a reproducible Linux artifact can install, upgrade and uninstall cleanly;
 - CI and the supported native-Steam desktop matrix pass for that artifact, or
   each exception has an explicit release waiver.
@@ -78,6 +81,13 @@ updates on Linux, sharing one release-channel manifest and policy.
   and offer the selected server's reported load order and alphabetical name
   order. Make the load-order view visibly numbered so it is clear that it
   reflects the server's DayZ `A2S_RULES` manifest.
+- Add safe server deep links that resolve a stable server ID or explicit
+  endpoint into WolfLauncher's normal inspect, mod-validation and guarded
+  launch journey; links must never inject launch parameters or mod lists.
+- Conduct a deliberate calmness pass over every visible action, option and
+  message: retain only what supports choosing, preparing or joining a server;
+  keep meaningful uncertainty honest; and move secondary detail behind the
+  established compact disclosures rather than removing capability.
 - Continue the P1/P2 quality, accessibility, network, logging, cache and typing
   work in the production review.
 - Extend the initial signed update channels only from release evidence, and
