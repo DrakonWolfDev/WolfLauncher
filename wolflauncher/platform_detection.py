@@ -10,7 +10,6 @@ STEAM_APP_ID_DAYZ = 221100
 DAYZ_PROCESS_PATTERNS = (
     "DayZ_x64.exe",
     "DayZ_BE.exe",
-    "DayZDiag_x64.exe",
 )
 
 
@@ -366,6 +365,8 @@ def dayz_process_check() -> ProcessCheck:
         for pattern in DAYZ_PROCESS_PATTERNS:
             if pattern.lower() in lower_line and pattern not in names:
                 names.append(pattern)
+    if not names:
+        return ProcessCheck(False, "No known DayZ process detected")
     detail = "Detected known DayZ process: " + ", ".join(names)
     if len(lines) > len(names):
         detail += f" ({len(lines)} matching process lines)"

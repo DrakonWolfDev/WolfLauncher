@@ -455,6 +455,27 @@ class PlatformDetectionTests(unittest.TestCase):
 
     @unittest.skipIf(os.name == "nt", "Linux pgrep behavior is validated on Linux")
     @patch("wolflauncher.platforms.linux.subprocess.run")
+    def test_dayz_process_check_ignores_the_dayz_tools_diagnostic_client(self, run):
+        run.return_value = subprocess.CompletedProcess(
+            ["pgrep"], 0, stdout="1234 DayZDiag_x64.exe\n", stderr=""
+        )
+
+        check = dayz_process_check()
+
+        self.assertFalse(check.running)
+        self.assertEqual(check.detail, "No known DayZ process detected")
+
+    @patch("wolflauncher.platform_detection._matching_process_lines")
+    def test_dayz_process_check_does_not_block_for_the_diagnostic_client(self, matching):
+        matching.return_value = ["1234 DayZDiag_x64.exe"]
+
+        check = dayz_process_check()
+
+        self.assertFalse(check.running)
+        self.assertEqual(check.detail, "No known DayZ process detected")
+
+    @unittest.skipIf(os.name == "nt", "Linux pgrep behavior is validated on Linux")
+    @patch("wolflauncher.platforms.linux.subprocess.run")
     def test_dayz_process_check_reports_no_known_processes(self, run):
         run.return_value = subprocess.CompletedProcess(["pgrep"], 1, stdout="", stderr="")
 
