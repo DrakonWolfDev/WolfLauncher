@@ -81,12 +81,19 @@ class WorkshopFileSizeTests(unittest.TestCase):
         self.assertEqual(metadata["111"]["description"], "A useful mod")
         result = ModCheckResult(True, make_server(), [RequiredMod("111")])
         apply_workshop_metadata(result, metadata)
+        self.assertEqual(result.required_mods[0].name, "GameLabs-Experimental")
         self.assertEqual(result.required_mods[0].workshop_file_size, 1048576)
         self.assertEqual(
             result.required_mods[0].workshop_preview_url,
             "https://cdn.example.test/preview.jpg",
         )
-        self.assertEqual(result.required_mods[0].name, "GameLabs-Experimental")
+
+    def test_upgrades_an_installed_numeric_name_from_workshop_metadata(self):
+        result = ModCheckResult(True, make_server(), [RequiredMod("111", "111", installed=True)])
+
+        apply_workshop_metadata(result, {"111": {"title": "Community Framework"}})
+
+        self.assertEqual(result.required_mods[0].name, "Community Framework")
 
     def test_keeps_server_name_for_installed_mod_metadata(self):
         result = ModCheckResult(

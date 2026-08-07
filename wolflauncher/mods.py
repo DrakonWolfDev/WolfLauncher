@@ -158,9 +158,11 @@ def apply_workshop_metadata(
         # A server rule can carry a generic label (for example, "GameLabs")
         # while Steam's item title identifies the required release channel.
         # The numeric Workshop ID remains authoritative; only an absent item's
-        # display label is upgraded to Steam's more specific title.
+        # display label is upgraded to Steam's more specific title. Numeric
+        # labels are the local folder fallback and need the same upgrade even
+        # when the item is installed.
         title = str(detail.get("title") or "").strip()
-        if title and not mod.installed:
+        if title and (not mod.name or mod.name == mod.workshop_id or mod.name.isdigit()):
             mod.name = title
         mod.workshop_description = str(detail.get("description") or "").strip()
         mod.workshop_preview_url = str(detail.get("preview_url") or "").strip()
