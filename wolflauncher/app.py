@@ -71,6 +71,7 @@ from .server_browser_feature import (
     persist_enriched_server as persist_enriched_server,
 )
 from .settings_feature import SettingsFeatureMixin
+from .single_instance import SingleInstanceGuard, activate_window
 from .local_tools_feature import LocalToolsFeatureMixin
 
 
@@ -379,12 +380,15 @@ def configure_packaged_smoke_test(app, window, environ=None) -> bool:
 
 
 def main():
-    run_local_retention()
-    log_path = configure_local_logging()
     app = QApplication(sys.argv)
     app.setApplicationName("WolfLauncher")
     app.setApplicationVersion(__version__)
     app.setOrganizationName("WolfLauncher")
+    instance_guard = SingleInstanceGuard()
+    if not instance_guard.start_or_notify():
+        return
+    run_local_retention()
+    log_path = configure_local_logging()
     apply_application_theme(app)
     install_exception_hook(
         log_path,
@@ -396,6 +400,7 @@ def main():
         ),
     )
     window = MainWindow()
+    instance_guard.set_activation_handler(lambda: activate_window(window))
     window.show()
     configure_packaged_smoke_test(app, window)
     try:
@@ -403,4 +408,5 @@ def main():
     except KeyboardInterrupt:
         window.close()
         exit_code = 130
+    instance_guard.close()
     sys.exit(exit_code)
