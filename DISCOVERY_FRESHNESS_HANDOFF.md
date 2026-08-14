@@ -168,8 +168,9 @@ The user confirmed the advanced control works on the real desktop on
 
 ### WolfAPI product-identity hotfix (2026-08-14)
 
-WolfAPI normalized legacy raw Steam product labels and repaired duplicated
-Experimental endpoint identities internally. The existing v1 `product` filter,
+WolfAPI normalized legacy raw Steam product labels across global and map-sweep
+ingestion and repaired duplicated Experimental endpoint identities internally.
+The existing v1 `product` filter,
 opaque `server_id` and legacy endpoint compatibility remain unchanged; no
 WolfLauncher code, SQLite migration or user-setting change is required.
 
