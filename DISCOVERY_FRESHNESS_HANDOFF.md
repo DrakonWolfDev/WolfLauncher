@@ -2,6 +2,14 @@
 
 Last synchronized with WolfAPI migration `20260713_0007` on 2026-07-13.
 
+## Supplemental map sweep (2026-08-14)
+
+WolfAPI can supplement its bounded global Steam directory query with a slow,
+durable, case-normalized map sweep. This is ingestion-only coverage work: it
+does not change WolfLauncher endpoints, fields, stable IDs, pagination or
+freshness semantics. Launcher should continue to treat WolfAPI directory
+counts as observed coverage rather than a full Steam census.
+
 ## Purpose
 
 This file is the launcher-side companion to
