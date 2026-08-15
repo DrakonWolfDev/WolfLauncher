@@ -395,7 +395,9 @@ servers:
 
             config.reorder_curated_servers(path, [second, first])
 
-            self.assertEqual([server.name for server in config.load_servers(path)], ["Second", "First"])
+            self.assertEqual(
+                [server.name for server in config.load_servers(path)], ["Second", "First"]
+            )
             self.assertIn("note: preserve this", path.read_text(encoding="utf-8"))
 
 

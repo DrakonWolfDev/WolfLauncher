@@ -46,8 +46,11 @@ class DiagnosticsTests(unittest.TestCase):
 
     def test_launch_troubleshooting_reports_ready_native_install(self):
         install = SteamInstall(
-            mode="native", executable="steam", running=True,
-            root=Path("/steam"), steamapps=Path("/steam/steamapps"),
+            mode="native",
+            executable="steam",
+            running=True,
+            root=Path("/steam"),
+            steamapps=Path("/steam/steamapps"),
             dayz_dir=Path("/steam/steamapps/common/DayZ"),
             workshop_dir=Path("/steam/steamapps/workshop/content/221100"),
             compatdata_dir=Path("/steam/steamapps/compatdata/221100"),

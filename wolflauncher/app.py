@@ -19,35 +19,48 @@ from PySide6.QtWidgets import (
 )
 
 from . import __version__, server_cache
-from .logging_setup import configure_local_logging, install_exception_hook
 from .config import (
     CURATED_SERVERS_PATH,
-    ensure_servers_file,
     ensure_empty_servers_file,
+    ensure_servers_file,
     find_default_launcher_path,
     load_servers,
 )
+from .connect_preflight import ConnectPreflightCoordinator
+from .curated_servers_controller import CuratedServersMixin
 from .curated_status_cache import (
     load_status_cache,
 )
-from .connect_preflight import ConnectPreflightCoordinator
-from .launch_execution import LaunchExecutionCoordinator
+from .dayz_product import product_from_key, product_warning
 from .launch_dialogs import (
     LaunchDialog as LaunchDialog,
+)
+from .launch_dialogs import (
     NativeLaunchPreviewDialog as NativeLaunchPreviewDialog,
+)
+from .launch_dialogs import (
     PreflightLaunchDialog as PreflightLaunchDialog,
 )
-from .settings_health_controller import SettingsHealthCoordinator
-from .workshop_resolution_controller import WorkshopResolutionCoordinator
+from .launch_execution import LaunchExecutionCoordinator
+from .launch_feature import LaunchFeatureMixin
 from .launcher import DEFAULT_PLAYER_NAME
 from .lifecycle import (
     RuntimeShutdownCoordinator,
 )
+from .local_tools_feature import LocalToolsFeatureMixin
+from .logging_setup import configure_local_logging, install_exception_hook
+from .mods_feature import ModsFeatureMixin
 from .platforms import current_platform
 from .retention import run_local_retention
 from .secret_store import (
     SecretStore,
     load_steam_api_key,
+)
+from .server_browser_feature import (
+    ServerBrowserMixin,
+)
+from .server_browser_feature import (
+    persist_enriched_server as persist_enriched_server,
 )
 from .settings import (
     curated_servers_path,
@@ -55,7 +68,9 @@ from .settings import (
     load_settings,
     server_key,
 )
-from .dayz_product import product_from_key, product_warning
+from .settings_feature import SettingsFeatureMixin
+from .settings_health_controller import SettingsHealthCoordinator
+from .single_instance import SingleInstanceGuard, activate_window
 from .theme import (
     WOLF_MARK_PATH,
     apply_application_theme,
@@ -63,16 +78,7 @@ from .theme import (
     set_ui_role,
     theme_icon,
 )
-from .curated_servers_controller import CuratedServersMixin
-from .launch_feature import LaunchFeatureMixin
-from .mods_feature import ModsFeatureMixin
-from .server_browser_feature import (
-    ServerBrowserMixin,
-    persist_enriched_server as persist_enriched_server,
-)
-from .settings_feature import SettingsFeatureMixin
-from .single_instance import SingleInstanceGuard, activate_window
-from .local_tools_feature import LocalToolsFeatureMixin
+from .workshop_resolution_controller import WorkshopResolutionCoordinator
 
 
 class MainWindow(
@@ -100,9 +106,9 @@ class MainWindow(
         self.settings = load_settings()
         self.product = product_from_key(self.settings.get("dayz_product", "stable"))
         self.config_path = curated_servers_path(self.product.key)
-        (
-            ensure_empty_servers_file if self.product.experimental else ensure_servers_file
-        )(self.config_path)
+        (ensure_empty_servers_file if self.product.experimental else ensure_servers_file)(
+            self.config_path
+        )
         self.servers = load_servers(self.config_path)
         self.curated_status_cache = load_status_cache()
         if self.product.experimental:
@@ -237,7 +243,9 @@ class MainWindow(
         self.tabs.setAccessibleName("WolfLauncher main sections")
         self.tabs.tabBar().setAccessibleName("WolfLauncher main sections")
         self.tabs.setCornerWidget(self._build_brand_lockup(), Qt.TopRightCorner)
-        self.tabs.addTab(self._scrollable_workspace(self._build_servers_tab()), theme_icon("servers"), "Servers")
+        self.tabs.addTab(
+            self._scrollable_workspace(self._build_servers_tab()), theme_icon("servers"), "Servers"
+        )
         self.server_browser_tab_index = self.tabs.addTab(
             self._scrollable_workspace(self._build_server_browser_tab()),
             theme_icon("browser"),
@@ -252,7 +260,9 @@ class MainWindow(
             "Editor / Local Tools",
         )
         self.tabs.addTab(
-            self._scrollable_workspace(self._build_settings_tab()), theme_icon("settings"), "Settings"
+            self._scrollable_workspace(self._build_settings_tab()),
+            theme_icon("settings"),
+            "Settings",
         )
         for index in range(self.tabs.count()):
             self.tabs.setTabToolTip(index, f"Open {self.tabs.tabText(index)}")

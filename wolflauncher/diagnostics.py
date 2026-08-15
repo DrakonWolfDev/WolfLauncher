@@ -24,6 +24,7 @@ from .platforms import current_platform
 from .redaction import redact_support_text
 from .status import resolve_host
 
+
 @dataclass(frozen=True)
 class LaunchTroubleshootingReport:
     status: str
@@ -225,9 +226,7 @@ def run_diagnostics(
     lines.append(f"  {process_check.detail}")
     lines.append("")
 
-    launch_report = launch_troubleshooting_report(
-        selected_steam_mode, installs, process_check
-    )
+    launch_report = launch_troubleshooting_report(selected_steam_mode, installs, process_check)
     lines.append("Launch troubleshooting:")
     lines.append(f"  Status: {launch_report.status}")
     lines.append(f"  Summary: {launch_report.summary}")

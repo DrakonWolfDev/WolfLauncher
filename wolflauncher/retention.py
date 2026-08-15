@@ -20,7 +20,9 @@ class RetentionResult:
     removed_thumbnail_files: int = 0
 
 
-def run_local_retention(data_dir: Path | None = None, *, now: float | None = None) -> RetentionResult:
+def run_local_retention(
+    data_dir: Path | None = None, *, now: float | None = None
+) -> RetentionResult:
     """Remove only stale disposable data; settings and curated YAML are never touched."""
     directory = data_dir or user_data_dir()
     current_time = time.time() if now is None else now

@@ -25,14 +25,16 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from . import server_cache
+from .dayz_product import product_from_key, product_warning
 from .diagnostics import (
     format_settings_health_report,
     run_diagnostics,
 )
+from .known_issues import known_external_issues_text
 from .launch_history import load_last_launch_report, save_last_launch_report
 from .launcher import DEFAULT_PLAYER_NAME
 from .lifecycle import active_workers
-from .known_issues import known_external_issues_text
 from .platform_detection import (
     steam_mode_label,
 )
@@ -47,8 +49,6 @@ from .settings import (
     save_settings,
     server_key,
 )
-from . import server_cache
-from .dayz_product import product_from_key, product_warning
 from .settings_health_presenter import GROUP_SPECS, settings_health_groups
 from .theme import (
     configure_data_table,
@@ -417,9 +417,7 @@ class SettingsFeatureMixin:
         product = product_from_key(self.dayz_product_selector.currentData())
         if self.dayz_product_key() == product.key:
             return
-        dialog = QProgressDialog(
-            f"Switching to {product.label}…", "", 0, 0, self
-        )
+        dialog = QProgressDialog(f"Switching to {product.label}…", "", 0, 0, self)
         dialog.setWindowTitle("Switching game version")
         dialog.setCancelButton(None)
         dialog.setWindowModality(Qt.WindowModal)
@@ -479,7 +477,9 @@ class SettingsFeatureMixin:
             self.settings["experimental_wolfapi_cache_cleared_v1"] = True
         self.settings["dayz_product"] = product.key
         self.product = product
-        self.setWindowTitle("WolfLauncher — DayZ Experimental" if product.experimental else "WolfLauncher")
+        self.setWindowTitle(
+            "WolfLauncher — DayZ Experimental" if product.experimental else "WolfLauncher"
+        )
         self.experimental_notice.setText(product_warning(product))
         self.experimental_notice.setVisible(product.experimental)
         self.experimental_settings_notice.setText(product_warning(product))
@@ -509,16 +509,15 @@ class SettingsFeatureMixin:
                         if name == "update_installed_mods_button"
                         else True
                     )
-        from .settings import load_favourites
-        from .settings import curated_servers_path
+        from .settings import curated_servers_path, load_favourites
 
         self.favourites = load_favourites(product.key)
         self.config_path = curated_servers_path(product.key)
         from .config import ensure_empty_servers_file, ensure_servers_file, load_servers
 
-        (
-            ensure_empty_servers_file if product.experimental else ensure_servers_file
-        )(self.config_path)
+        (ensure_empty_servers_file if product.experimental else ensure_servers_file)(
+            self.config_path
+        )
         self.servers = load_servers(self.config_path)
         for server in self.servers:
             server.favourite = server_key(server) in self.favourites

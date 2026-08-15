@@ -21,8 +21,14 @@ class LocalServerTests(unittest.TestCase):
             config.touch()
             command = build_local_server_command(
                 LocalServerLaunch(
-                    root, executable, config, root / "profiles", 2302,
-                    (root / "@Client",), (root / "@Server",), True,
+                    root,
+                    executable,
+                    config,
+                    root / "profiles",
+                    2302,
+                    (root / "@Client",),
+                    (root / "@Server",),
+                    True,
                 )
             )
         self.assertIn(f"-mod={root / '@Client'}", command)

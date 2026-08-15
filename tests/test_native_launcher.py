@@ -6,6 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from wolflauncher.dayz_product import EXPERIMENTAL
 from wolflauncher.models import Server
 from wolflauncher.mods import RequiredMod
 from wolflauncher.native_launcher import (
@@ -21,7 +22,6 @@ from wolflauncher.native_launcher import (
     prepare_native_launch_preview,
 )
 from wolflauncher.platform_detection import SteamInstall
-from wolflauncher.dayz_product import EXPERIMENTAL
 
 
 def make_server(host: str = "dayz.example.test") -> Server:
@@ -207,8 +207,13 @@ class NativeLauncherTests(unittest.TestCase):
 
     def test_windows_direct_handoff_explicitly_requests_battleye(self):
         install = SteamInstall(
-            mode="native", executable=r"C:\\Program Files (x86)\\Steam\\steam.exe",
-            running=True, root=None, steamapps=None, dayz_dir=None, workshop_dir=None,
+            mode="native",
+            executable=r"C:\\Program Files (x86)\\Steam\\steam.exe",
+            running=True,
+            root=None,
+            steamapps=None,
+            dayz_dir=None,
+            workshop_dir=None,
         )
 
         command = build_steam_launch_command(install, make_server("203.0.113.10"), "PlayerOne", [])
@@ -1040,6 +1045,7 @@ class NativeLauncherTests(unittest.TestCase):
         self.assertIn("-world=empty", prepared.command)
         self.assertNotIn("-connect=", " ".join(prepared.command))
 
+
 class ExperimentalNativeLauncherTests(unittest.TestCase):
     def test_windows_experimental_launch_uses_battleye_and_local_workshop_path(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -1052,9 +1058,7 @@ class ExperimentalNativeLauncherTests(unittest.TestCase):
             install.product = EXPERIMENTAL
             workshop_mod = install.workshop_dir / "123"
             workshop_mod.mkdir()
-            fake_platform = SimpleNamespace(
-                capabilities=SimpleNamespace(platform_id="windows")
-            )
+            fake_platform = SimpleNamespace(capabilities=SimpleNamespace(platform_id="windows"))
             with patch("wolflauncher.native_launcher.current_platform", return_value=fake_platform):
                 prepared = prepare_native_launch(
                     install, make_server("203.0.113.10"), "PlayerOne", [RequiredMod("123")]
@@ -1063,9 +1067,17 @@ class ExperimentalNativeLauncherTests(unittest.TestCase):
                     install, make_server("203.0.113.10"), "PlayerOne", [RequiredMod("123")]
                 )
 
-        self.assertEqual(prepared.command[:6], [
-            str(exp_dir / "DayZ_BE.exe"), "0", "1", "1", "-exe", "DayZ_x64.exe",
-        ])
+        self.assertEqual(
+            prepared.command[:6],
+            [
+                str(exp_dir / "DayZ_BE.exe"),
+                "0",
+                "1",
+                "1",
+                "-exe",
+                "DayZ_x64.exe",
+            ],
+        )
         self.assertIn(f"-mod={workshop_mod}", prepared.command)
         self.assertIn("-connect=203.0.113.10:2302:27016", prepared.command)
         self.assertEqual(preview.command, prepared.command)

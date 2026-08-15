@@ -82,11 +82,15 @@ def server_key(server) -> str:
 
 
 def favourites_path(product_key: str = "stable") -> Path:
-    return FAVOURITES_PATH if product_key == "stable" else APP_DIR / f"favourites-{product_key}.json"
+    return (
+        FAVOURITES_PATH if product_key == "stable" else APP_DIR / f"favourites-{product_key}.json"
+    )
 
 
 def curated_servers_path(product_key: str = "stable") -> Path:
-    return CURATED_SERVERS_PATH if product_key == "stable" else APP_DIR / f"servers-{product_key}.yaml"
+    return (
+        CURATED_SERVERS_PATH if product_key == "stable" else APP_DIR / f"servers-{product_key}.yaml"
+    )
 
 
 def load_favourites(product_key: str = "stable") -> set[str]:

@@ -8,15 +8,15 @@ from PySide6.QtCore import QThread, Signal
 from . import server_cache
 from .models import Server
 from .mods import (
-    RequiredMod,
     WORKSHOP_URL,
+    RequiredMod,
+    apply_workshop_install_timestamps,
     apply_workshop_item_states,
     apply_workshop_metadata,
-    apply_workshop_install_timestamps,
     check_server_mods,
     fetch_workshop_metadata,
-    resolve_workshop_dependencies,
     resolve_local_dayz_addon_dependencies,
+    resolve_workshop_dependencies,
     scan_experimental_local_mods,
     scan_installed_mods,
     workshop_install_timestamps,
@@ -198,9 +198,7 @@ class WorkshopDependencyWorker(QThread):
         try:
             resolved, metadata = resolve_workshop_dependencies(self.workshop_ids)
             if self.local_workshop_dir:
-                local_ids = resolve_local_dayz_addon_dependencies(
-                    resolved, self.local_workshop_dir
-                )
+                local_ids = resolve_local_dayz_addon_dependencies(resolved, self.local_workshop_dir)
                 resolved = tuple(dict.fromkeys((*resolved, *local_ids)))
         except Exception:
             # Dependency metadata is advisory. Keep the explicit selection
@@ -214,7 +212,11 @@ class WorkshopSubscriptionWorker(QThread):
     subscription_ready = Signal(object)
 
     def __init__(
-        self, workshop_ids: list[str], install, *, force_update: bool = False,
+        self,
+        workshop_ids: list[str],
+        install,
+        *,
+        force_update: bool = False,
         subscribe_missing: bool = True,
     ):
         super().__init__()
@@ -287,7 +289,9 @@ class SteamWebApiDiscoveryWorker(QThread):
 
     def run(self):
         try:
-            servers = discover_dayz_servers_web_api(api_key=self.api_key, limit=self.limit, app_id=self.app_id)
+            servers = discover_dayz_servers_web_api(
+                api_key=self.api_key, limit=self.limit, app_id=self.app_id
+            )
         except Exception as exc:
             self.discovery_ready.emit([], str(exc))
         else:
@@ -340,7 +344,9 @@ class WolfApiDiscoveryWorker(QThread):
         try:
             if self.use_v1:
                 if self.unflagged_only:
-                    servers = discover_wolfapi_v1_pages(self.limit, unflagged_only=True, product=self.product)
+                    servers = discover_wolfapi_v1_pages(
+                        self.limit, unflagged_only=True, product=self.product
+                    )
                 else:
                     servers = discover_wolfapi_v1_pages(self.limit, product=self.product)
             else:
@@ -381,7 +387,9 @@ class WolfApiCacheMergeWorker(QThread):
                 connection.close()
 
 
-def discover_wolfapi_v1_pages(limit: int, unflagged_only: bool = False, product: str = "stable") -> list:
+def discover_wolfapi_v1_pages(
+    limit: int, unflagged_only: bool = False, product: str = "stable"
+) -> list:
     """Fetch bounded v1 pages in a background worker up to the user limit."""
     target = max(1, int(limit))
     servers = []
@@ -437,8 +445,12 @@ class WolfApiSearchWorker(QThread):
                 servers = search_dayz_servers_wolfapi_v1(self.query, **kwargs)
             else:
                 host, port = endpoint
-                game_matches = resolve_dayz_server_wolfapi_v1(host, game_port=port, product=self.product)
-                query_matches = resolve_dayz_server_wolfapi_v1(host, query_port=port, product=self.product)
+                game_matches = resolve_dayz_server_wolfapi_v1(
+                    host, game_port=port, product=self.product
+                )
+                query_matches = resolve_dayz_server_wolfapi_v1(
+                    host, query_port=port, product=self.product
+                )
                 directory_total = getattr(game_matches, "directory_total", None)
                 if directory_total is None:
                     directory_total = getattr(query_matches, "directory_total", None)

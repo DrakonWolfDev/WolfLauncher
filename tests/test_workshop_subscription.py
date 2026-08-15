@@ -18,12 +18,10 @@ from wolflauncher.workshop_subscription import (
     current_workshop_item,
     find_steam_api_library,
     query_workshop_item_states,
-    query_workshop_item_states_isolated,
     silence_helper_output,
     steam_api_library_candidates,
     subscribe_workshop_items,
     subscribe_workshop_items_isolated,
-    workshop_automation_unavailable_reason,
     workshop_recovery_state,
 )
 
@@ -220,13 +218,20 @@ class SubscribeWorkshopItemsTests(unittest.TestCase):
             workshop.mkdir()
             (workshop / "111").mkdir()
             install = install_for(root, workshop)
-            FakeWorkshopClient.snapshots = [{"111": WorkshopItemProgress("111", ITEM_STATE_INSTALLED)}]
+            FakeWorkshopClient.snapshots = [
+                {"111": WorkshopItemProgress("111", ITEM_STATE_INSTALLED)}
+            ]
 
             with (
-                patch("wolflauncher.workshop_subscription.find_steam_api_library", return_value=root / "libsteam_api.so"),
+                patch(
+                    "wolflauncher.workshop_subscription.find_steam_api_library",
+                    return_value=root / "libsteam_api.so",
+                ),
                 patch("wolflauncher.workshop_subscription.SteamWorkshopClient", FakeWorkshopClient),
             ):
-                result = subscribe_workshop_items(["111"], install, poll_seconds=0, force_update=True)
+                result = subscribe_workshop_items(
+                    ["111"], install, poll_seconds=0, force_update=True
+                )
 
         self.assertTrue(result.ok)
         self.assertEqual(FakeWorkshopClient.high_priority_downloads, ["111"])
@@ -238,10 +243,15 @@ class SubscribeWorkshopItemsTests(unittest.TestCase):
             workshop.mkdir()
             (workshop / "111").mkdir()
             install = install_for(root, workshop)
-            FakeWorkshopClient.snapshots = [{"111": WorkshopItemProgress("111", ITEM_STATE_INSTALLED)}]
+            FakeWorkshopClient.snapshots = [
+                {"111": WorkshopItemProgress("111", ITEM_STATE_INSTALLED)}
+            ]
 
             with (
-                patch("wolflauncher.workshop_subscription.find_steam_api_library", return_value=root / "libsteam_api.so"),
+                patch(
+                    "wolflauncher.workshop_subscription.find_steam_api_library",
+                    return_value=root / "libsteam_api.so",
+                ),
                 patch("wolflauncher.workshop_subscription.SteamWorkshopClient", FakeWorkshopClient),
             ):
                 result = subscribe_workshop_items(

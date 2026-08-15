@@ -11,6 +11,18 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+function Get-Sha256Digest([string]$Path) {
+    $algorithm = [System.Security.Cryptography.SHA256]::Create()
+    $stream = [System.IO.File]::OpenRead($Path)
+    try {
+        return -join ($algorithm.ComputeHash($stream) | ForEach-Object { $_.ToString("x2") })
+    }
+    finally {
+        $stream.Dispose()
+        $algorithm.Dispose()
+    }
+}
+
 if ($env:OS -ne "Windows_NT") {
     throw "The Windows installer must be built on Windows."
 }
@@ -70,7 +82,7 @@ if (-not (Test-Path -LiteralPath $installerPath -PathType Leaf)) {
     throw "Inno Setup did not produce the expected installer: $installerPath"
 }
 
-$hash = (Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()
+$hash = Get-Sha256Digest $installerPath
 $hashPath = "$installerPath.sha256"
 [System.IO.File]::WriteAllText($hashPath, "$hash  $installerName`n", [System.Text.Encoding]::ASCII)
 Write-Host "Built $installerPath"

@@ -28,6 +28,8 @@ ITEM_STATE_DOWNLOADING = 16
 ITEM_STATE_DOWNLOAD_PENDING = 32
 DOWNLOAD_REQUEST_RETRY_SECONDS = 15.0
 WORKSHOP_STALL_TIMEOUT_SECONDS = 120.0
+
+
 def workshop_automation_unavailable_reason(install: SteamInstall | None) -> str:
     return ""
 

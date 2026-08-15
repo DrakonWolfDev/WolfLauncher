@@ -5,9 +5,9 @@ from unittest.mock import Mock
 from PySide6.QtCore import QProcess
 
 from wolflauncher.lifecycle import (
-    RuntimeShutdownCoordinator,
     WORKER_ATTRIBUTES,
     WORKER_COLLECTION_ATTRIBUTES,
+    RuntimeShutdownCoordinator,
     active_workers,
     begin_runtime_shutdown,
     runtime_shutdown_complete,

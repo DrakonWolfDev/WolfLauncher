@@ -2,10 +2,9 @@ import unittest
 
 from wolflauncher.mod_presenter import (
     combined_download_estimate,
+    mod_default_sort_key,
     mod_description_preview,
     mod_detail_status,
-    mod_default_sort_key,
-    mods_needing_workshop_update,
     mod_download_size,
     mod_file_size,
     mod_inspector_scale,
@@ -15,6 +14,7 @@ from wolflauncher.mod_presenter import (
     mod_row,
     mod_server_heading,
     mod_summary_text,
+    mods_needing_workshop_update,
 )
 from wolflauncher.models import Server
 from wolflauncher.mods import ModCheckResult, RequiredMod
@@ -68,7 +68,9 @@ class ModPresenterTests(unittest.TestCase):
         )
 
     def test_row_warns_when_published_revision_is_newer_than_local_manifest(self):
-        stale = RequiredMod("111", installed=True, workshop_updated_at=200, installed_updated_at=100)
+        stale = RequiredMod(
+            "111", installed=True, workshop_updated_at=200, installed_updated_at=100
+        )
         self.assertEqual(mod_row(stale).values[0], "! Workshop update available")
 
     def test_inspector_scale_grows_from_720p_and_is_bounded(self):

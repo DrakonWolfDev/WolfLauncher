@@ -112,16 +112,14 @@ def decode_dayz_mod_rules(rules: Mapping[bytes, bytes]) -> list[DayzRequiredMod]
         id_length = encoded_id_length & 0x0F
         if not 1 <= id_length <= MAX_WORKSHOP_ID_BYTES:
             raise DayzModQueryError("DayZ mod manifest contains an invalid Workshop ID length")
-        workshop_id = int.from_bytes(
-            reader.read(id_length, f"Workshop ID {index + 1}"), "little"
-        )
+        workshop_id = int.from_bytes(reader.read(id_length, f"Workshop ID {index + 1}"), "little")
         if workshop_id == 0 or workshop_id in seen:
-            raise DayzModQueryError("DayZ mod manifest contains an invalid or duplicate Workshop ID")
+            raise DayzModQueryError(
+                "DayZ mod manifest contains an invalid or duplicate Workshop ID"
+            )
         seen.add(workshop_id)
         name_length = reader.uint8(f"mod name length {index + 1}")
-        name = reader.read(name_length, f"mod name {index + 1}").decode(
-            "utf-8", errors="replace"
-        )
+        name = reader.read(name_length, f"mod name {index + 1}").decode("utf-8", errors="replace")
         mods.append(DayzRequiredMod(workshop_id, name))
 
     signature_count = reader.uint8("signature count")

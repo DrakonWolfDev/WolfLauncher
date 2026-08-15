@@ -7,7 +7,6 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
-
 DAYZ_SERVER_APP_ID = "223350"
 _INSTALLDIR_RE = re.compile(r'"installdir"\s+"((?:\\.|[^"\\])*)"', re.IGNORECASE)
 
@@ -40,7 +39,9 @@ def steam_server_root(library_steamapps: tuple[Path, ...] | list[Path]) -> Path 
             match = _INSTALLDIR_RE.search(manifest.read_text(errors="ignore"))
         except OSError:
             match = None
-        install_dir = match.group(1).replace(r"\\", "\\").replace(r'\\"', '"') if match else "DayZServer"
+        install_dir = (
+            match.group(1).replace(r"\\", "\\").replace(r'\\"', '"') if match else "DayZServer"
+        )
         root = steamapps / "common" / install_dir
         if server_executable(root):
             return root
@@ -49,7 +50,9 @@ def steam_server_root(library_steamapps: tuple[Path, ...] | list[Path]) -> Path 
 
 def build_local_server_command(launch: LocalServerLaunch) -> list[str]:
     if not launch.executable.is_file():
-        raise ValueError("DayZ dedicated-server executable was not found in the selected server root.")
+        raise ValueError(
+            "DayZ dedicated-server executable was not found in the selected server root."
+        )
     if not launch.config.is_file():
         raise ValueError("Select an existing serverDZ.cfg file before starting the local server.")
     if not 1 <= launch.port <= 65535:
@@ -75,7 +78,9 @@ def build_local_server_command(launch: LocalServerLaunch) -> list[str]:
 
 def build_steamcmd_install_command(steamcmd: Path, destination: Path) -> list[str]:
     if not steamcmd.is_file():
-        raise ValueError("Select the SteamCMD executable/script before installing a temporary server.")
+        raise ValueError(
+            "Select the SteamCMD executable/script before installing a temporary server."
+        )
     if not destination.name:
         raise ValueError("Select a dedicated temporary-server folder.")
     return [

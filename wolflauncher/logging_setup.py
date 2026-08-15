@@ -31,7 +31,9 @@ def configure_local_logging(data_dir: Path | None = None) -> Path:
     logger.propagate = False
     if any(getattr(handler, "baseFilename", None) == str(path) for handler in logger.handlers):
         return path
-    handler = RotatingFileHandler(path, maxBytes=LOG_MAX_BYTES, backupCount=LOG_BACKUP_COUNT, encoding="utf-8")
+    handler = RotatingFileHandler(
+        path, maxBytes=LOG_MAX_BYTES, backupCount=LOG_BACKUP_COUNT, encoding="utf-8"
+    )
     handler.setFormatter(RedactingFormatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
     logger.addHandler(handler)
     return path
@@ -39,18 +41,22 @@ def configure_local_logging(data_dir: Path | None = None) -> Path:
 
 def install_exception_hook(log_path: Path, notify=None) -> None:
     """Log unexpected GUI-thread errors and offer a recoverable user notice."""
+
     def handle_unhandled_exception(exc_type, value, traceback) -> None:
         if issubclass(exc_type, KeyboardInterrupt):
             sys.__excepthook__(exc_type, value, traceback)
             return
         logging.getLogger("wolflauncher").error(
-            "Unhandled application error; local report: %s", log_path.name,
+            "Unhandled application error; local report: %s",
+            log_path.name,
             exc_info=(exc_type, value, traceback),
         )
         if notify is not None:
             try:
                 notify(log_path.name)
             except Exception:
-                logging.getLogger("wolflauncher").exception("Could not show application error notice")
+                logging.getLogger("wolflauncher").exception(
+                    "Could not show application error notice"
+                )
 
     sys.excepthook = handle_unhandled_exception

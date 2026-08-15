@@ -4,10 +4,10 @@ from pathlib import Path
 from typing import Callable, Iterable
 
 from .config import DEFAULT_LAUNCHER_PATHS
+from .dayz_product import STABLE, DayZProduct
 from .diagnostics import (
     launch_troubleshooting_report,
 )
-from .dayz_product import DayZProduct, STABLE
 from .platform_detection import (
     SteamInstall,
     proton_compatdata_detail,

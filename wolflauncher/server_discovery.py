@@ -7,8 +7,8 @@ import urllib.parse
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 
-from .models import DiscoveredServer
 from .http_client import HttpClientError, fetch_json
+from .models import DiscoveredServer
 
 DAYZ_APP_ID = 221100
 STEAM_WEB_API_SERVER_LIST_URL = "https://api.steampowered.com/IGameServersService/GetServerList/v1/"
@@ -417,7 +417,9 @@ def discover_dayz_servers_wolfapi_v1(
             **({"quality": "unflagged"} if unflagged_only else {}),
         },
     )
-    return _fetch_wolfapi_servers(endpoint, limit=limit, timeout=timeout, require_v1=True, expected_product=product)
+    return _fetch_wolfapi_servers(
+        endpoint, limit=limit, timeout=timeout, require_v1=True, expected_product=product
+    )
 
 
 def search_dayz_servers_wolfapi_v1(
@@ -524,7 +526,9 @@ def _fetch_wolfapi_servers(
     if require_v1:
         if expected_product == "experimental":
             rows = data.get("servers", []) if isinstance(data, dict) else []
-            if any(not isinstance(row, dict) or row.get("product") != expected_product for row in rows):
+            if any(
+                not isinstance(row, dict) or row.get("product") != expected_product for row in rows
+            ):
                 raise WolfApiError("WolfAPI did not return an isolated Experimental directory.")
         return parse_wolfapi_v1_servers(data, limit=limit)
     return parse_wolfapi_servers(data, limit=limit)
@@ -635,7 +639,9 @@ def discovered_server_from_wolfapi_row(row: dict, timestamp: str = "") -> Discov
     if not _valid_provider_endpoint(host, game_port, query_port):
         return None
 
-    name = _provider_text(row.get("name") or row.get("server_name") or f"{host}:{game_port}", MAX_PROVIDER_NAME_LENGTH)
+    name = _provider_text(
+        row.get("name") or row.get("server_name") or f"{host}:{game_port}", MAX_PROVIDER_NAME_LENGTH
+    )
     map_name = _provider_text(row.get("map") or row.get("map_name"), MAX_PROVIDER_METADATA_LENGTH)
     version = _provider_text(row.get("version"), MAX_PROVIDER_METADATA_LENGTH)
     if name is None or map_name is None or version is None:
@@ -771,8 +777,12 @@ def discovered_server_from_battlemetrics_row(
         details = {}
 
     name = _provider_text(attributes.get("name") or f"{host}:{port}", MAX_PROVIDER_NAME_LENGTH)
-    map_name = _provider_text(details.get("map") or attributes.get("map"), MAX_PROVIDER_METADATA_LENGTH)
-    version = _provider_text(details.get("version") or attributes.get("version"), MAX_PROVIDER_METADATA_LENGTH)
+    map_name = _provider_text(
+        details.get("map") or attributes.get("map"), MAX_PROVIDER_METADATA_LENGTH
+    )
+    version = _provider_text(
+        details.get("version") or attributes.get("version"), MAX_PROVIDER_METADATA_LENGTH
+    )
     if name is None or map_name is None or version is None:
         return None
     status = str(attributes.get("status") or "").lower()

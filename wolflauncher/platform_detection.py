@@ -3,8 +3,8 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .dayz_product import STABLE, DayZProduct
 from .platforms import current_platform
-from .dayz_product import DayZProduct, STABLE
 
 STEAM_APP_ID_DAYZ = 221100
 DAYZ_PROCESS_PATTERNS = (

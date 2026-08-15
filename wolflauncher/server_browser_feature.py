@@ -26,6 +26,7 @@ from PySide6.QtWidgets import (
 )
 
 from . import server_cache
+from .browser_filter_options import combo_filter_value, set_combo_filter_options
 from .config import (
     add_curated_server,
 )
@@ -39,7 +40,6 @@ from .mods import (
     ModCheckResult,
 )
 from .server_browser_controller import BrowserQuery, browser_filter_options, load_browser_snapshot
-from .browser_filter_options import combo_filter_value, set_combo_filter_options
 from .server_browser_presenter import (
     browser_inspector,
     browser_mod_pill,
@@ -52,8 +52,8 @@ from .server_browser_presenter import (
 from .server_browser_table import (
     BROWSER_COLUMN_COUNT,
     BROWSER_FAVOURITE_COLUMN,
-    BROWSER_PASSWORD_COLUMN,
     BROWSER_NAME_COLUMN,
+    BROWSER_PASSWORD_COLUMN,
     populate_browser_table,
     selected_browser_cache_key,
     set_browser_favourite_marker,
@@ -111,7 +111,9 @@ def persist_enriched_server(connection, old_cache_key: str, server: DiscoveredSe
 class ServerBrowserMixin:
     def discovery_source_name(self, source: str) -> str:
         """Keep disposable discovered-server cache rows isolated by game product."""
-        return source if self.dayz_product_key() == "stable" else f"{source}_{self.dayz_product_key()}"
+        return (
+            source if self.dayz_product_key() == "stable" else f"{source}_{self.dayz_product_key()}"
+        )
 
     def _build_server_browser_tab(self) -> QWidget:
         widget = QWidget()
@@ -511,7 +513,8 @@ class ServerBrowserMixin:
             QMessageBox.warning(self, "Invalid Steam master endpoints", str(exc))
             return
         self.discovery_worker = SteamDiscoveryWorker(
-            max_batches=1, master_addresses=master_addresses,
+            max_batches=1,
+            master_addresses=master_addresses,
             app_id=self.dayz_product().client_app_id,
         )
         self.discovery_worker.discovery_ready.connect(self.handle_steam_discovery_ready)
@@ -555,7 +558,8 @@ class ServerBrowserMixin:
         self.browser_summary.setText("Cached discovered servers: querying Steam Web API...")
         self._set_database_refresh_enabled(False)
         self.web_api_worker = SteamWebApiDiscoveryWorker(
-            api_key=api_key, limit=self.discovery_limit.value(),
+            api_key=api_key,
+            limit=self.discovery_limit.value(),
             app_id=self.dayz_product().client_app_id,
         )
         self.web_api_worker.discovery_ready.connect(self.handle_steam_web_api_ready)
@@ -591,10 +595,7 @@ class ServerBrowserMixin:
         self.battlemetrics_worker.start()
 
     def refresh_from_wolfapi(self):
-        if (
-            self.wolfapi_worker
-            and self.wolfapi_worker.isRunning()
-        ):
+        if self.wolfapi_worker and self.wolfapi_worker.isRunning():
             return
         use_v1 = self.discovery_provider_key() == "wolfapi_v1"
         self.start_wolfapi_refresh_process(automatic=False, use_v1=use_v1)
@@ -673,7 +674,8 @@ class ServerBrowserMixin:
                 self.statusBar().showMessage(f"Steam master auto-refresh skipped: {exc}", 7000)
                 return
             self.discovery_worker = SteamDiscoveryWorker(
-                max_batches=1, master_addresses=master_addresses,
+                max_batches=1,
+                master_addresses=master_addresses,
                 app_id=self.dayz_product().client_app_id,
             )
             self.discovery_worker.discovery_ready.connect(self.handle_auto_steam_discovery_ready)
@@ -1553,9 +1555,7 @@ class ServerBrowserMixin:
             header.setSectionResizeMode(BROWSER_NAME_COLUMN, QHeaderView.Stretch)
 
     def _refresh_browser_filter_options(self):
-        source_namespace = (
-            f"_{self.dayz_product_key()}" if self.dayz_product().experimental else ""
-        )
+        source_namespace = f"_{self.dayz_product_key()}" if self.dayz_product().experimental else ""
         options = browser_filter_options(self.server_cache, source_namespace)
         self._set_combo_filter_options(
             self.browser_map,
@@ -1604,7 +1604,9 @@ class ServerBrowserMixin:
             return
         item = self.browser_table.item(row, BROWSER_NAME_COLUMN)
         cache_key = item.data(Qt.UserRole) if item else ""
-        discovered = server_cache.get_server(self.server_cache, str(cache_key)) if cache_key else None
+        discovered = (
+            server_cache.get_server(self.server_cache, str(cache_key)) if cache_key else None
+        )
         if not discovered:
             return
         endpoint = (discovered.host, discovered.game_port, discovered.query_port)

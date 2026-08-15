@@ -6,7 +6,6 @@ from collections.abc import Callable
 
 from PySide6.QtNetwork import QLocalServer, QLocalSocket
 
-
 SERVER_NAME = "WolfLauncher-single-instance-v1"
 ACTIVATION_TIMEOUT_MS = 500
 

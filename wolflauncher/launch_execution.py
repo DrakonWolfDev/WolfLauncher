@@ -3,9 +3,10 @@
 from PySide6.QtWidgets import QMessageBox
 
 from .launch_dialogs import LaunchDialog, NativeLaunchPreviewDialog
+from .launch_history import record_launch
+from .launch_preflight import usable_mod_result
 from .launch_selection import server_with_resolved_ipv4
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
-from .launch_preflight import usable_mod_result
 from .native_launcher import (
     NativeLaunchError,
     format_native_launch_parity_report,
@@ -14,7 +15,6 @@ from .native_launcher import (
     prepare_native_launch_parity_report,
 )
 from .settings import server_key
-from .launch_history import record_launch
 
 
 class LaunchExecutionCoordinator:

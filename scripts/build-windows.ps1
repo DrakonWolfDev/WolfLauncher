@@ -9,6 +9,18 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+function Get-Sha256Digest([string]$Path) {
+    $algorithm = [System.Security.Cryptography.SHA256]::Create()
+    $stream = [System.IO.File]::OpenRead($Path)
+    try {
+        return -join ($algorithm.ComputeHash($stream) | ForEach-Object { $_.ToString("x2") })
+    }
+    finally {
+        $stream.Dispose()
+        $algorithm.Dispose()
+    }
+}
+
 if ($env:OS -ne "Windows_NT") {
     throw "The Windows artifact must be built on Windows."
 }
@@ -116,7 +128,7 @@ try {
     }
     Compress-Archive -LiteralPath $bundleRoot -DestinationPath $archivePath -CompressionLevel Optimal
 
-    $hash = (Get-FileHash -LiteralPath $archivePath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $hash = Get-Sha256Digest $archivePath
     $hashPath = "$archivePath.sha256"
     [System.IO.File]::WriteAllText($hashPath, "$hash  $archiveName`n", [System.Text.Encoding]::ASCII)
 

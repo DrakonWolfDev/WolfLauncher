@@ -756,7 +756,10 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         request = urlopen.call_args.args[0]
         parsed = urllib.parse.urlparse(request.full_url)
         self.assertEqual(parsed.path, "/api/v1/servers")
-        self.assertEqual(urllib.parse.parse_qs(parsed.query), {"limit": ["500"], "offset": ["25"]})
+        self.assertEqual(
+            urllib.parse.parse_qs(parsed.query),
+            {"limit": ["500"], "offset": ["25"], "product": ["stable"]},
+        )
         self.assertEqual(urlopen.call_args.kwargs["timeout"], 4)
 
     @patch("wolflauncher.http_client.urllib.request.urlopen")
@@ -790,6 +793,7 @@ class WolfApiDiscoveryTests(unittest.TestCase):
                 "q": ["Alpha Server"],
                 "limit": ["25"],
                 "offset": ["50"],
+                "product": ["stable"],
                 "map": ["chernarusplus"],
                 "version": ["1.29"],
             },
@@ -824,7 +828,12 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         self.assertEqual(parsed.path, "/api/v1/servers/resolve")
         self.assertEqual(
             urllib.parse.parse_qs(parsed.query),
-            {"host": ["203.0.113.10"], "game_port": ["2302"], "query_port": ["27016"]},
+            {
+                "host": ["203.0.113.10"],
+                "game_port": ["2302"],
+                "product": ["stable"],
+                "query_port": ["27016"],
+            },
         )
 
     def test_wolfapi_v1_resolution_requires_a_port(self):
@@ -867,4 +876,3 @@ class WolfApiDiscoveryTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

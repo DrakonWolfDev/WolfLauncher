@@ -100,9 +100,7 @@ class QueryDayzRequiredModsTests(unittest.TestCase):
             query_dayz_required_mods("203.0.113.10", 27016),
             [DayzRequiredMod(111, "Example")],
         )
-        rules.assert_called_once_with(
-            ("203.0.113.10", 27016), timeout=10.0, encoding=None
-        )
+        rules.assert_called_once_with(("203.0.113.10", 27016), timeout=10.0, encoding=None)
 
     @patch("wolflauncher.dayz_mod_query.a2s.rules", side_effect=TimeoutError("timed out"))
     def test_wraps_network_failure_without_partial_data(self, rules):

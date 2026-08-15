@@ -82,7 +82,7 @@ class WorkerTests(unittest.TestCase):
 
         worker.run()
 
-        discover.assert_called_once_with(limit=100, offset=0)
+        discover.assert_called_once_with(limit=100, offset=0, product="stable")
         self.assertEqual(worker.provider_label, "WolfAPI v1")
         self.assertEqual(results, [(["v1-server"], "")])
 
@@ -115,8 +115,8 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(
             discover.call_args_list,
             [
-                unittest.mock.call(limit=100, offset=0),
-                unittest.mock.call(limit=50, offset=100),
+                unittest.mock.call(limit=100, offset=0, product="stable"),
+                unittest.mock.call(limit=50, offset=100, product="stable"),
             ],
         )
 
@@ -126,7 +126,7 @@ class WorkerTests(unittest.TestCase):
 
         discover_wolfapi_v1_pages(100, unflagged_only=True)
 
-        discover.assert_called_once_with(limit=100, offset=0, unflagged_only=True)
+        discover.assert_called_once_with(limit=100, offset=0, product="stable", unflagged_only=True)
 
     @patch("wolflauncher.workers.search_dayz_servers_wolfapi_v1")
     def test_v1_search_worker_preserves_query_and_filters(self, search):
@@ -142,7 +142,11 @@ class WorkerTests(unittest.TestCase):
         worker.run()
 
         search.assert_called_once_with(
-            "Alpha Server", limit=50, map_name="chernarusplus", version="1.29"
+            "Alpha Server",
+            limit=50,
+            map_name="chernarusplus",
+            version="1.29",
+            product="stable",
         )
         self.assertEqual(results, [("Alpha Server", ["remote-server"], "")])
 
@@ -154,7 +158,12 @@ class WorkerTests(unittest.TestCase):
         worker.run()
 
         search.assert_called_once_with(
-            "Alpha", limit=100, map_name="", version="", unflagged_only=True
+            "Alpha",
+            limit=100,
+            map_name="",
+            version="",
+            product="stable",
+            unflagged_only=True,
         )
 
     @patch("wolflauncher.workers.resolve_dayz_server_wolfapi_v1")
@@ -176,8 +185,8 @@ class WorkerTests(unittest.TestCase):
         self.assertEqual(
             resolve.call_args_list,
             [
-                unittest.mock.call("203.0.113.10", game_port=2302),
-                unittest.mock.call("203.0.113.10", query_port=2302),
+                unittest.mock.call("203.0.113.10", game_port=2302, product="stable"),
+                unittest.mock.call("203.0.113.10", query_port=2302, product="stable"),
             ],
         )
         self.assertEqual(results, [("203.0.113.10:2302", [server], "")])

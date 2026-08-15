@@ -28,17 +28,17 @@ from .launch_preflight import (
     usable_mod_result,
 )
 from .mod_presenter import (
+    mod_default_sort_key,
     mod_description_preview,
     mod_detail_status,
     mod_file_size,
     mod_inspector_scale,
     mod_inspector_type_scale,
-    mod_default_sort_key,
-    mods_needing_workshop_update,
     mod_readiness_text,
     mod_row,
     mod_server_heading,
     mod_summary_text,
+    mods_needing_workshop_update,
 )
 from .models import Server
 from .mods import (
@@ -55,6 +55,13 @@ from .platform_detection import (
 from .settings import (
     server_key,
 )
+from .theme import (
+    ASSETS_DIR,
+    configure_data_table,
+    monospace_font,
+    set_ui_role,
+    theme_icon,
+)
 from .thumbnail_safety import (
     MAX_THUMBNAIL_BYTES,
     THUMBNAIL_REQUEST_TIMEOUT_MS,
@@ -62,13 +69,6 @@ from .thumbnail_safety import (
     is_safe_thumbnail_dimensions,
     is_safe_thumbnail_url,
     normalize_thumbnail_url,
-)
-from .theme import (
-    ASSETS_DIR,
-    configure_data_table,
-    monospace_font,
-    set_ui_role,
-    theme_icon,
 )
 from .ui_sections import set_disclosure_state
 from .workers import (
@@ -82,7 +82,6 @@ from .workshop_subscription import (
     launch_block_reason,
     workshop_recovery_state,
 )
-
 
 WORKSHOP_PREVIEW_PLACEHOLDER_PATH = ASSETS_DIR / "workshop-preview-unavailable.jpg"
 
@@ -133,7 +132,9 @@ class ModsFeatureMixin:
         buttons.addWidget(self.recheck_mods_button)
         self.mod_view = QComboBox()
         library_label = (
-            "Available local mods" if ModsFeatureMixin.experimental_product_active(self) else "Installed Workshop library"
+            "Available local mods"
+            if ModsFeatureMixin.experimental_product_active(self)
+            else "Installed Workshop library"
         )
         self.mod_view.addItems(["Required for selected server", library_label])
         self.mod_view.currentIndexChanged.connect(self.change_mod_view)
@@ -303,9 +304,7 @@ class ModsFeatureMixin:
             self.show_installed_workshop_library()
         elif self.last_mod_result:
             self.display_mods_result(self.last_mod_result)
-        self.update_installed_mods_button.setVisible(
-            self.viewing_installed_workshop_library()
-        )
+        self.update_installed_mods_button.setVisible(self.viewing_installed_workshop_library())
         self.recheck_mods_button.setText(
             (
                 "Recheck available local mods"
@@ -317,18 +316,29 @@ class ModsFeatureMixin:
         )
 
     def show_installed_workshop_library(self):
-        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        install = (
+            self.selected_steam_install()
+            if self.launch_engine_key() == "native"
+            else best_install()
+        )
         self.mod_server_title.setText("Installed DayZ Workshop library")
-        self.mod_readiness.setText("Checking local Workshop content against Steam's current item state…")
+        self.mod_readiness.setText(
+            "Checking local Workshop content against Steam's current item state…"
+        )
         self.mod_summary.setText("")
         self.subscribe_missing_button.setEnabled(False)
         self.force_update_button.setEnabled(False)
         if not install or not install.workshop_dir:
             self.installed_workshop_mods = []
-            self.mod_readiness.setText("DayZ Workshop folder not detected for the selected Steam installation.")
+            self.mod_readiness.setText(
+                "DayZ Workshop folder not detected for the selected Steam installation."
+            )
             self._display_mod_rows([])
             return
-        if getattr(self, "workshop_library_worker", None) and self.workshop_library_worker.isRunning():
+        if (
+            getattr(self, "workshop_library_worker", None)
+            and self.workshop_library_worker.isRunning()
+        ):
             return
         worker = WorkshopLibraryWorker(install)
         self.workshop_library_worker = worker
@@ -464,9 +474,7 @@ class ModsFeatureMixin:
         self.pending_mod_check_row = None
         self.pending_mod_server = None
         workshop_install = install
-        worker = ModWorker(
-            server, workshop_dir, steam_context, workshop_install=workshop_install
-        )
+        worker = ModWorker(server, workshop_dir, steam_context, workshop_install=workshop_install)
         self.mod_worker = worker
         product_key = self.dayz_product_key()
         worker.mods_ready.connect(
@@ -917,16 +925,27 @@ class ModsFeatureMixin:
         mods = mods_needing_workshop_update(self.installed_workshop_mods)
         if not mods:
             QMessageBox.information(
-                self, "No Workshop updates pending",
+                self,
+                "No Workshop updates pending",
                 "Steam reports no installed DayZ Workshop mods that need an update or download.",
             )
             return
         if self.workshop_subscription_worker and self.workshop_subscription_worker.isRunning():
-            QMessageBox.information(self, "Steam Workshop in progress", "Wait for the current Steam Workshop operation to finish.")
+            QMessageBox.information(
+                self,
+                "Steam Workshop in progress",
+                "Wait for the current Steam Workshop operation to finish.",
+            )
             return
-        install = self.selected_steam_install() if self.launch_engine_key() == "native" else best_install()
+        install = (
+            self.selected_steam_install()
+            if self.launch_engine_key() == "native"
+            else best_install()
+        )
         if not install or not install.workshop_dir or not install.running:
-            QMessageBox.warning(self, "Steam unavailable", "Start the selected Steam client and try again.")
+            QMessageBox.warning(
+                self, "Steam unavailable", "Start the selected Steam client and try again."
+            )
             return
         reply = QMessageBox.question(
             self,
@@ -938,8 +957,12 @@ class ModsFeatureMixin:
         )
         if reply != QMessageBox.Yes:
             return
-        self.workshop_subscription_names = {mod.workshop_id: (mod.name or mod.workshop_id) for mod in mods}
-        dialog = QProgressDialog("Requesting Steam Workshop updates...", "Hide monitor", 0, 100, self)
+        self.workshop_subscription_names = {
+            mod.workshop_id: (mod.name or mod.workshop_id) for mod in mods
+        }
+        dialog = QProgressDialog(
+            "Requesting Steam Workshop updates...", "Hide monitor", 0, 100, self
+        )
         dialog.setWindowTitle("Steam Workshop")
         dialog.setMinimumDuration(0)
         dialog.setAutoClose(False)
@@ -963,12 +986,14 @@ class ModsFeatureMixin:
         self.workshop_subscription_monitor_hidden = False
         if result.ok:
             QMessageBox.information(
-                self, "Workshop update check complete",
+                self,
+                "Workshop update check complete",
                 "Steam completed its update check. The installed Workshop library will now refresh.",
             )
         else:
             QMessageBox.warning(
-                self, "Workshop update incomplete",
+                self,
+                "Workshop update incomplete",
                 result.error or "Steam did not finish checking every installed Workshop item.",
             )
         if self.viewing_installed_workshop_library():
@@ -1063,7 +1088,9 @@ class ModsFeatureMixin:
             box = QMessageBox(self)
             box.setIcon(QMessageBox.Information)
             box.setWindowTitle("Mod download complete")
-            box.setText(f"Steam completed its Workshop check for {installed_count} required {noun}. WolfLauncher will now verify the local and published revisions.")
+            box.setText(
+                f"Steam completed its Workshop check for {installed_count} required {noun}. WolfLauncher will now verify the local and published revisions."
+            )
             launch_button = box.addButton("Launch server", QMessageBox.ButtonRole.AcceptRole)
             set_ui_role(launch_button, "primary")
             box.addButton("Close", QMessageBox.ButtonRole.RejectRole)

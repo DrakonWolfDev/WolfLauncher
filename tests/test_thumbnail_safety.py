@@ -1,5 +1,5 @@
-from pathlib import Path
 import unittest
+from pathlib import Path
 
 from wolflauncher.thumbnail_safety import (
     THUMBNAIL_REQUEST_TIMEOUT_MS,
@@ -12,7 +12,12 @@ from wolflauncher.thumbnail_safety import (
 
 class ThumbnailSafetyTests(unittest.TestCase):
     def test_builtin_workshop_placeholder_is_packaged_asset(self):
-        asset = Path(__file__).parents[1] / "wolflauncher" / "assets" / "workshop-preview-unavailable.jpg"
+        asset = (
+            Path(__file__).parents[1]
+            / "wolflauncher"
+            / "assets"
+            / "workshop-preview-unavailable.jpg"
+        )
         self.assertTrue(asset.is_file())
 
     def test_accepts_https_image_urls_only(self):

@@ -227,7 +227,9 @@ class PlatformDetectionTests(unittest.TestCase):
 
             with patch("wolflauncher.platform_detection.NATIVE_STEAM_ROOTS", [native_root]):
                 with patch("wolflauncher.platforms.linux.shutil.which") as which:
-                    which.side_effect = lambda command: "/usr/bin/steam" if command == "steam" else None
+                    which.side_effect = lambda command: (
+                        "/usr/bin/steam" if command == "steam" else None
+                    )
                     with patch("wolflauncher.platform_detection._is_running", return_value=False):
                         installs = detect_steam()
 
@@ -250,8 +252,12 @@ class PlatformDetectionTests(unittest.TestCase):
                     "wolflauncher.platform_detection.NATIVE_STEAM_ROOTS", [root / "missing-native"]
                 ):
                     with patch("wolflauncher.platforms.linux.shutil.which") as which:
-                        which.side_effect = lambda command: "/usr/bin/steam" if command == "steam" else None
-                        with patch("wolflauncher.platform_detection._is_running", return_value=True):
+                        which.side_effect = lambda command: (
+                            "/usr/bin/steam" if command == "steam" else None
+                        )
+                        with patch(
+                            "wolflauncher.platform_detection._is_running", return_value=True
+                        ):
                             installs = detect_steam()
 
         steam_root = installs[-1]
@@ -285,7 +291,9 @@ class PlatformDetectionTests(unittest.TestCase):
 
             with patch("wolflauncher.platform_detection.NATIVE_STEAM_ROOTS", [native_root]):
                 with patch("wolflauncher.platforms.linux.shutil.which") as which:
-                    which.side_effect = lambda command: "/usr/bin/steam" if command == "steam" else None
+                    which.side_effect = lambda command: (
+                        "/usr/bin/steam" if command == "steam" else None
+                    )
                     with patch("wolflauncher.platform_detection._is_running", return_value=True):
                         installs = detect_steam()
 

@@ -6,8 +6,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from wolflauncher import config
-from wolflauncher import server_cache
+from wolflauncher import config, server_cache
 from wolflauncher.http_client import HttpClientError, fetch_json
 from wolflauncher.server_discovery import (
     parse_battlemetrics_servers,
@@ -62,7 +61,7 @@ class HostileParserCorpusTests(unittest.TestCase):
 
     @patch("wolflauncher.http_client.urllib.request.urlopen")
     def test_synthetic_raw_json_corpus_raises_controlled_errors(self, urlopen):
-        for payload in (b'{"servers":', b'\xff\xfe', b'not-json'):
+        for payload in (b'{"servers":', b"\xff\xfe", b"not-json"):
             urlopen.return_value = _Response(payload)
             with self.assertRaisesRegex(HttpClientError, "invalid JSON"):
                 fetch_json("https://example.test/servers", retries=0)

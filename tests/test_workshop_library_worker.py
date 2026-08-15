@@ -16,10 +16,13 @@ class WorkshopLibraryWorkerTests(unittest.TestCase):
             (mod_dir / "meta.cpp").write_text('name = "Example Mod"', encoding="utf-8")
             install = SimpleNamespace(workshop_dir=workshop, running=False)
             with (
-                patch("wolflauncher.workers.fetch_workshop_metadata", return_value={
-                    "111": {"file_size": 42, "time_updated": 200}
-                }),
-                patch("wolflauncher.workers.workshop_install_timestamps", return_value={"111": 100}),
+                patch(
+                    "wolflauncher.workers.fetch_workshop_metadata",
+                    return_value={"111": {"file_size": 42, "time_updated": 200}},
+                ),
+                patch(
+                    "wolflauncher.workers.workshop_install_timestamps", return_value={"111": 100}
+                ),
             ):
                 mods, state_error = load_installed_workshop_library(install)
 

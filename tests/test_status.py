@@ -76,7 +76,9 @@ class GameDigCommandTests(unittest.TestCase):
     @patch("wolflauncher.status.shutil.which", return_value=r"C:\\Program Files\\nodejs\\node.exe")
     def test_source_checkout_uses_lockfile_pinned_gamedig(self, which, source_script):
         source_script.is_file.return_value = True
-        source_script.__str__.return_value = r"C:\\repo\\packaging\\npm\\node_modules\\gamedig\\bin\\gamedig.js"
+        source_script.__str__.return_value = (
+            r"C:\\repo\\packaging\\npm\\node_modules\\gamedig\\bin\\gamedig.js"
+        )
         with patch.dict("wolflauncher.status.os.environ", {}, clear=True):
             command = gamedig_command()
 

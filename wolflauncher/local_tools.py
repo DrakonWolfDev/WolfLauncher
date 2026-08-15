@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 
-
 DAYZ_EDITOR_MODS = (
     ("2250764298", "DayZ Editor"),
     ("1559212036", "CF"),
@@ -49,7 +48,9 @@ def profile_from_data(data: object) -> LocalToolProfile | None:
         return None
     return LocalToolProfile(
         name=name,
-        mod_paths=tuple(str(item).strip() for item in data.get("mod_paths", []) if str(item).strip()),
+        mod_paths=tuple(
+            str(item).strip() for item in data.get("mod_paths", []) if str(item).strip()
+        ),
         endpoint=str(data.get("endpoint") or "").strip(),
     )
 

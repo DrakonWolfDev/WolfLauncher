@@ -1,7 +1,6 @@
 import unittest
-from unittest.mock import Mock, patch
-
 from pathlib import Path
+from unittest.mock import Mock, patch
 
 from wolflauncher.app import MainWindow, configure_packaged_smoke_test
 

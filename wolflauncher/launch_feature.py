@@ -2,6 +2,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
+from .dayz_product import product_from_key
 from .launch_preflight import (
     LaunchPreflightAction,
     build_launch_preflight_state,
@@ -21,7 +22,6 @@ from .platform_detection import (
     install_label,
     select_steam_install,
 )
-from .dayz_product import product_from_key
 from .settings import (
     server_key,
 )
@@ -58,9 +58,7 @@ class LaunchFeatureMixin:
     def selected_steam_install(self) -> SteamInstall | None:
         from .platform_detection import detect_steam
 
-        return select_steam_install(
-            self.native_steam_mode_key(), detect_steam(self.dayz_product())
-        )
+        return select_steam_install(self.native_steam_mode_key(), detect_steam(self.dayz_product()))
 
     def selected_browser_preview_install(self) -> SteamInstall | None:
         """Reuse the latest health snapshot so browsing never scans Steam on the UI thread."""

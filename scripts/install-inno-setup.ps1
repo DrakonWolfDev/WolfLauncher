@@ -7,6 +7,18 @@ param(
 $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
+function Get-Sha256Digest([string]$Path) {
+    $algorithm = [System.Security.Cryptography.SHA256]::Create()
+    $stream = [System.IO.File]::OpenRead($Path)
+    try {
+        return -join ($algorithm.ComputeHash($stream) | ForEach-Object { $_.ToString("x2") })
+    }
+    finally {
+        $stream.Dispose()
+        $algorithm.Dispose()
+    }
+}
+
 $expectedVersion = "6.7.3"
 $expectedSha256 = "9c73c3bae7ed48d44112a0f48e66742c00090bdb5bef71d9d3c056c66e97b732"
 if ($Version -ne $expectedVersion) {
@@ -25,7 +37,7 @@ if (
     (Test-Path -LiteralPath $versionMarker -PathType Leaf)
 ) {
     $marker = Get-Content -LiteralPath $versionMarker -Raw | ConvertFrom-Json
-    $compilerSha256 = (Get-FileHash -LiteralPath $compilerPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $compilerSha256 = Get-Sha256Digest $compilerPath
     if (
         $marker.version -eq $Version -and
         $marker.installer_sha256 -eq $expectedSha256 -and
@@ -41,7 +53,7 @@ $downloadUrl = "https://github.com/jrsoftware/issrc/releases/download/is-6_7_3/i
 $installerPath = Join-Path ([System.IO.Path]::GetTempPath()) "innosetup-$Version-$([guid]::NewGuid()).exe"
 try {
     Invoke-WebRequest -Uri $downloadUrl -OutFile $installerPath
-    $actualSha256 = (Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $actualSha256 = Get-Sha256Digest $installerPath
     if ($actualSha256 -ne $expectedSha256) {
         throw "Inno Setup download hash mismatch: expected $expectedSha256, received $actualSha256."
     }
@@ -68,7 +80,7 @@ try {
     ) {
         throw "The installed compiler did not contain the expected $Version release marker."
     }
-    $compilerSha256 = (Get-FileHash -LiteralPath $compilerPath -Algorithm SHA256).Hash.ToLowerInvariant()
+    $compilerSha256 = Get-Sha256Digest $compilerPath
     $marker = [ordered]@{
         version = $Version
         installer_sha256 = $expectedSha256

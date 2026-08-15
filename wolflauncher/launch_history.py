@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
 import json
 from datetime import datetime, timezone
+from pathlib import Path
 
 from .curated_status_cache import DATA_DIR, ensure_data_dir
 from .persistence import atomic_write_text
@@ -34,11 +34,18 @@ def record_launch(server, path: Path = RECENT_LAUNCHES_PATH) -> None:
     rows = load_recent_launches(path, limit=20)
     key = f"{server.host}:{server.game_port}:{server.query_port}"
     rows = [row for row in rows if row.get("key") != key]
-    rows.insert(0, {
-        "key": key, "name": server.name, "group": server.group, "host": server.host,
-        "game_port": server.game_port, "query_port": server.query_port,
-        "launched_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
-    })
+    rows.insert(
+        0,
+        {
+            "key": key,
+            "name": server.name,
+            "group": server.group,
+            "host": server.host,
+            "game_port": server.game_port,
+            "query_port": server.query_port,
+            "launched_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        },
+    )
     ensure_data_dir(path.parent)
     atomic_write_text(path, json.dumps(rows[:20], indent=2) + "\n")
 

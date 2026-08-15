@@ -30,12 +30,12 @@ from .config import (
 )
 from .curated_dialogs import EditCuratedServerDialog
 from .curated_server_cards import CuratedServerCard
-from .launch_history import load_recent_launches
 from .curated_server_presenter import curated_server_row
 from .curated_status_cache import (
     cached_status_for_server,
     update_status_cache,
 )
+from .launch_history import load_recent_launches
 from .models import Server
 from .server_display import display_map_name, display_server_flags, ping_severity
 from .server_enrichment import (
@@ -235,13 +235,21 @@ class CuratedServersMixin:
         self.recent_servers_panel.setVisible(bool(rows))
         for row in rows:
             try:
-                server = Server(row["name"], row.get("group", "Recent"), row["host"], int(row["game_port"]), int(row["query_port"]))
+                server = Server(
+                    row["name"],
+                    row.get("group", "Recent"),
+                    row["host"],
+                    int(row["game_port"]),
+                    int(row["query_port"]),
+                )
             except (KeyError, TypeError, ValueError):
                 continue
             line = QHBoxLayout()
             line.addWidget(QLabel(f"{server.name}  ·  {server.connect_target}"), 1)
             launch = QPushButton("Launch")
-            launch.clicked.connect(lambda _checked=False, target=server: self.launch_recent_server(target))
+            launch.clicked.connect(
+                lambda _checked=False, target=server: self.launch_recent_server(target)
+            )
             line.addWidget(launch)
             self.recent_servers_list.addLayout(line)
 

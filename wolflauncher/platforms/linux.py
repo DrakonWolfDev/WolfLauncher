@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .base import PlatformCapabilities
 
+
 class LinuxPlatformBackend:
     capabilities = PlatformCapabilities(
         platform_id="linux",

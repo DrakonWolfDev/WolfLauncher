@@ -1,9 +1,8 @@
 import re
+import struct
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-import struct
-import re
 from typing import Any
 
 from .dayz_mod_query import query_dayz_required_mods
@@ -56,7 +55,11 @@ class RequiredMod:
 
     @property
     def remote_update_available(self) -> bool:
-        return bool(self.workshop_updated_at and self.installed_updated_at and self.workshop_updated_at > self.installed_updated_at)
+        return bool(
+            self.workshop_updated_at
+            and self.installed_updated_at
+            and self.workshop_updated_at > self.installed_updated_at
+        )
 
 
 @dataclass
@@ -272,7 +275,9 @@ def resolve_local_dayz_addon_dependencies(
     provided_by: dict[str, set[str]] = {}
     source_pbos: list[Path] = []
     try:
-        mod_dirs = [child for child in workshop_dir.iterdir() if child.is_dir() and child.name.isdigit()]
+        mod_dirs = [
+            child for child in workshop_dir.iterdir() if child.is_dir() and child.name.isdigit()
+        ]
     except OSError:
         return ()
     for mod_dir in mod_dirs:
@@ -301,7 +306,9 @@ def resolve_local_dayz_addon_dependencies(
                 payload += scanned
             except OSError:
                 pass
-        tokens = {match.group().decode("ascii").casefold() for match in _ADDON_TOKEN_RE.finditer(payload)}
+        tokens = {
+            match.group().decode("ascii").casefold() for match in _ADDON_TOKEN_RE.finditer(payload)
+        }
         for token in tokens:
             for workshop_id in provided_by.get(token, ()):
                 if workshop_id not in selected:
@@ -337,7 +344,10 @@ def apply_workshop_metadata(
 
 
 def workshop_install_timestamps(install) -> dict[str, int]:
-    paths = [Path(item) / "workshop" / "appworkshop_221100.acf" for item in getattr(install, "library_steamapps", ())]
+    paths = [
+        Path(item) / "workshop" / "appworkshop_221100.acf"
+        for item in getattr(install, "library_steamapps", ())
+    ]
     if getattr(install, "steamapps", None):
         paths.append(Path(install.steamapps) / "workshop" / "appworkshop_221100.acf")
     timestamps = {}
@@ -346,12 +356,16 @@ def workshop_install_timestamps(install) -> dict[str, int]:
             text = path.read_text(encoding="utf-8", errors="ignore")
         except OSError:
             continue
-        for match in re.finditer(r'"(\d+)"\s*\{\s*"manifest"\s*"[^"]*"\s*"timeupdated"\s*"(\d+)"', text):
+        for match in re.finditer(
+            r'"(\d+)"\s*\{\s*"manifest"\s*"[^"]*"\s*"timeupdated"\s*"(\d+)"', text
+        ):
             timestamps[match.group(1)] = max(timestamps.get(match.group(1), 0), int(match.group(2)))
     return timestamps
 
 
-def apply_workshop_install_timestamps(result: ModCheckResult, timestamps: dict[str, int]) -> ModCheckResult:
+def apply_workshop_install_timestamps(
+    result: ModCheckResult, timestamps: dict[str, int]
+) -> ModCheckResult:
     for mod in result.required_mods:
         mod.installed_updated_at = max(0, int(timestamps.get(mod.workshop_id, 0)))
     return result

@@ -66,12 +66,17 @@ class LaunchDialogModuleTests(unittest.TestCase):
                 "wolflauncher.launch_dialogs.dayz_process_check",
                 return_value=ProcessCheck(True, "Detected known DayZ process: DayZ_x64.exe"),
             ),
-            patch("wolflauncher.launch_dialogs.QTimer.singleShot", side_effect=lambda ms, call: scheduled.append((ms, call))),
+            patch(
+                "wolflauncher.launch_dialogs.QTimer.singleShot",
+                side_effect=lambda ms, call: scheduled.append((ms, call)),
+            ),
         ):
             dialog.check_dayz_process()
 
         self.assertTrue(dialog.dayz_detected)
-        self.assertIn("will close and WolfLauncher will minimize in 3 seconds", dialog.detail.text())
+        self.assertIn(
+            "will close and WolfLauncher will minimize in 3 seconds", dialog.detail.text()
+        )
         self.assertEqual(len(scheduled), 1)
         self.assertEqual(scheduled[0][0], dialog.SUCCESS_CLOSE_DELAY_MS)
 

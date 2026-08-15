@@ -3,6 +3,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from PySide6.QtWidgets import QMessageBox
+
 from wolflauncher.mods import RequiredMod
 from wolflauncher.mods_feature import ModsFeatureMixin
 from wolflauncher.workshop_subscription import ITEM_STATE_NEEDS_UPDATE
@@ -39,13 +40,17 @@ class InstalledWorkshopLibraryTests(unittest.TestCase):
     @patch("wolflauncher.mods_feature.WorkshopSubscriptionWorker")
     @patch("wolflauncher.mods_feature.QProgressDialog")
     @patch("wolflauncher.mods_feature.QMessageBox.question", return_value=QMessageBox.Yes)
-    def test_update_all_starts_a_monitor_for_only_pending_items(self, _question, dialog_type, worker_type):
+    def test_update_all_starts_a_monitor_for_only_pending_items(
+        self, _question, dialog_type, worker_type
+    ):
         dialog = Mock()
         dialog_type.return_value = dialog
         worker = Mock()
         worker_type.return_value = worker
         install = SimpleNamespace(workshop_dir=object(), running=True)
-        pending = RequiredMod("111", name="Pending", installed=True, workshop_state=ITEM_STATE_NEEDS_UPDATE)
+        pending = RequiredMod(
+            "111", name="Pending", installed=True, workshop_state=ITEM_STATE_NEEDS_UPDATE
+        )
         ready = RequiredMod("222", name="Ready", installed=True)
         window = SimpleNamespace(
             viewing_installed_workshop_library=Mock(return_value=True),

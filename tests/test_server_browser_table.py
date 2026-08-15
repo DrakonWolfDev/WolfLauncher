@@ -10,8 +10,8 @@ from PySide6.QtCore import QItemSelectionModel, QSize, Qt
 from PySide6.QtWidgets import QApplication, QCheckBox, QHeaderView, QPushButton, QTableWidget
 
 from wolflauncher.app import MainWindow, persist_enriched_server
-from wolflauncher.server_browser_feature import ServerBrowserMixin
 from wolflauncher.models import DiscoveredServer
+from wolflauncher.server_browser_feature import ServerBrowserMixin
 from wolflauncher.server_browser_table import (
     BROWSER_COLUMN_COUNT,
     BROWSER_FAVOURITE_COLUMN,
@@ -38,10 +38,13 @@ class ServerBrowserTableTests(unittest.TestCase):
             _set_database_refresh_enabled=Mock(),
             discovery_limit=discovery_limit,
             browser_hide_quality_flagged=hide_quality_flagged,
+            dayz_product_key=Mock(return_value="stable"),
             handle_wolfapi_ready=Mock(),
         )
 
-        with patch("wolflauncher.server_browser_feature.WolfApiDiscoveryWorker", return_value=worker) as create_worker:
+        with patch(
+            "wolflauncher.server_browser_feature.WolfApiDiscoveryWorker", return_value=worker
+        ) as create_worker:
             ServerBrowserMixin.start_wolfapi_refresh_process(window, automatic=True, use_v1=True)
 
         create_worker.assert_called_once_with(
@@ -49,6 +52,7 @@ class ServerBrowserTableTests(unittest.TestCase):
             automatic=True,
             use_v1=True,
             unflagged_only=True,
+            product="stable",
         )
         worker.discovery_ready.connect.assert_called_once_with(window.handle_wolfapi_ready)
         worker.start.assert_called_once_with()

@@ -312,11 +312,7 @@ def _prepare_experimental_native_launch(
         )
     workshop_dir = _require_dir(install.workshop_dir, "Stable DayZ Workshop")
     local_paths = _experimental_mod_paths(dayz_dir, workshop_dir, mods)
-    missing = [
-        str(mod.workshop_id)
-        for mod, path in zip(mods, local_paths)
-        if not path.is_dir()
-    ]
+    missing = [str(mod.workshop_id) for mod, path in zip(mods, local_paths) if not path.is_dir()]
     if missing:
         raise NativeLaunchError(
             "Missing local mod directories for: " + ", ".join(_missing_mod_labels(mods, missing)),
@@ -333,7 +329,9 @@ def _prepare_experimental_native_launch(
     return PreparedNativeLaunch(command=command, mod_links=links)
 
 
-def _experimental_mod_paths(dayz_dir: Path, workshop_dir: Path, mods: list[RequiredMod]) -> list[Path]:
+def _experimental_mod_paths(
+    dayz_dir: Path, workshop_dir: Path, mods: list[RequiredMod]
+) -> list[Path]:
     """Prefer the official launcher-compatible Stable ``!Workshop`` junction names."""
     by_id: dict[str, Path] = {}
     local_source = dayz_dir.parent / "DayZ" / "!Workshop"

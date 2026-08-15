@@ -8,7 +8,12 @@ from .launcher import LaunchError
 from .models import Server
 from .mods import ModCheckResult
 from .native_launcher import NativeLaunchError
-from .platform_detection import best_install, build_steam_start_command, dayz_process_check, install_label
+from .platform_detection import (
+    best_install,
+    build_steam_start_command,
+    dayz_process_check,
+    install_label,
+)
 from .settings import server_key
 from .workers import ModWorker, WorkshopSubscriptionWorker
 from .workshop_subscription import current_workshop_item, workshop_automation_unavailable_reason

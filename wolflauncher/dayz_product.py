@@ -7,7 +7,6 @@ Stable launch, server, or mod assumptions.
 
 from dataclasses import dataclass
 
-
 STABLE_PRODUCT_KEY = "stable"
 EXPERIMENTAL_PRODUCT_KEY = "experimental"
 

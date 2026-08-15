@@ -58,7 +58,9 @@ class ServerCacheTests(unittest.TestCase):
         self.assertIsNotNone(quarantined)
         self.assertTrue(quarantined.exists())
         self.assertEqual(path.read_bytes()[:16], b"SQLite format 3\x00")
-        self.assertEqual(connection.execute("PRAGMA user_version").fetchone()[0], server_cache.SCHEMA_VERSION)
+        self.assertEqual(
+            connection.execute("PRAGMA user_version").fetchone()[0], server_cache.SCHEMA_VERSION
+        )
 
     def test_schema_v6_migrates_local_game_time_additively(self):
         connection = server_cache.sqlite3.connect(":memory:")

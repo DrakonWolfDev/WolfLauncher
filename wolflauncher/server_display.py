@@ -6,8 +6,10 @@ PING_CRITICAL_MS = 250
 
 def is_displayable_server_name(value: str) -> bool:
     """Reject names already damaged by upstream decoding or binary data."""
-    return bool(value.strip()) and "\ufffd" not in value and not any(
-        ord(character) < 32 for character in value
+    return (
+        bool(value.strip())
+        and "\ufffd" not in value
+        and not any(ord(character) < 32 for character in value)
     )
 
 

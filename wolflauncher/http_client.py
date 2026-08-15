@@ -103,7 +103,9 @@ def request_json(
             if attempt + 1 < attempts:
                 _retry_delay(attempt, cancel)
                 continue
-            raise HttpClientError("connection", f"Provider connection failed: {exc.reason}") from exc
+            raise HttpClientError(
+                "connection", f"Provider connection failed: {exc.reason}"
+            ) from exc
         except TimeoutError as exc:
             if attempt + 1 < attempts:
                 _retry_delay(attempt, cancel)
@@ -116,7 +118,9 @@ def request_json(
 
 def _validate_content_type(response) -> None:
     headers = getattr(response, "headers", None)
-    content_type = headers.get_content_type() if headers and hasattr(headers, "get_content_type") else ""
+    content_type = (
+        headers.get_content_type() if headers and hasattr(headers, "get_content_type") else ""
+    )
     if content_type and content_type not in JSON_CONTENT_TYPES:
         raise HttpClientError("content_type", "Provider returned a non-JSON response")
 
@@ -124,7 +128,11 @@ def _validate_content_type(response) -> None:
 def _read_bounded(response, max_bytes: int, cancel: Callable[[], bool] | None) -> bytes:
     if max_bytes <= 0:
         raise ValueError("max_bytes must be positive")
-    content_length = getattr(response, "headers", {}).get("Content-Length") if getattr(response, "headers", None) else None
+    content_length = (
+        getattr(response, "headers", {}).get("Content-Length")
+        if getattr(response, "headers", None)
+        else None
+    )
     if content_length:
         try:
             if int(content_length) > max_bytes:

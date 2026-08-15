@@ -2,27 +2,27 @@
 
 from pathlib import Path
 
-from PySide6.QtCore import QProcess, QTimer, Qt, QUrl
+from PySide6.QtCore import QProcess, Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices, QPixmap
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QFileDialog,
     QFormLayout,
     QFrame,
-    QFileDialog,
     QHBoxLayout,
     QLabel,
     QLineEdit,
     QListWidget,
     QListWidgetItem,
     QMessageBox,
-    QProgressBar,
     QPushButton,
     QVBoxLayout,
     QWidget,
 )
 
+from .launch_dialogs import LaunchDialog
 from .launcher import DEFAULT_PLAYER_NAME
 from .local_server import (
     LocalServerLaunch,
@@ -39,11 +39,10 @@ from .local_tools import (
     profiles_from_settings,
 )
 from .models import Server
-from .mods import RequiredMod, WORKSHOP_URL, scan_installed_mods
+from .mods import WORKSHOP_URL, RequiredMod, scan_installed_mods
 from .native_launcher import NativeLaunchError, prepare_native_launch, prepare_native_local_launch
 from .platform_detection import build_steam_start_command
 from .platforms import current_platform
-from .launch_dialogs import LaunchDialog
 from .theme import set_monospace, set_ui_role
 from .thumbnail_safety import (
     MAX_THUMBNAIL_BYTES,
@@ -53,7 +52,6 @@ from .thumbnail_safety import (
     is_safe_thumbnail_url,
 )
 from .workers import WorkshopDependencyWorker, WorkshopSubscriptionWorker
-
 
 DAYZ_EDITOR_IMAGE_URL = (
     "https://images.steamusercontent.com/ugc/11750326816948686244/"
@@ -104,7 +102,9 @@ class LocalToolsFeatureMixin:
         self.local_profile_name = QLineEdit()
         self.local_profile_mods = QLineEdit()
         set_monospace(self.local_profile_mods)
-        self.local_profile_mods.setPlaceholderText("Packed or unpacked local mod folders, separated by ;")
+        self.local_profile_mods.setPlaceholderText(
+            "Packed or unpacked local mod folders, separated by ;"
+        )
         self.local_profile_endpoint = QLineEdit()
         self.local_profile_endpoint.setPlaceholderText("192.168.1.25:2302")
         form.addRow("Name", self.local_profile_name)
@@ -129,7 +129,9 @@ class LocalToolsFeatureMixin:
         profile_actions.addWidget(save_profile)
         profile_actions.addStretch(1)
         profile_layout.addLayout(profile_actions)
-        self.local_tools_status = QLabel("Save a local mod profile, then verify its Workshop items before launching.")
+        self.local_tools_status = QLabel(
+            "Save a local mod profile, then verify its Workshop items before launching."
+        )
         self.local_tools_status.setWordWrap(True)
         set_ui_role(self.local_tools_status, "metadata")
 
@@ -272,7 +274,9 @@ class LocalToolsFeatureMixin:
         self.local_profile_picker.addItems([profile.name for profile in self.local_tool_profiles])
         self.local_profile_picker.blockSignals(False)
         if self.local_tool_profiles:
-            self.local_profile_picker.setCurrentIndex(min(self.local_tool_active_index, len(self.local_tool_profiles) - 1))
+            self.local_profile_picker.setCurrentIndex(
+                min(self.local_tool_active_index, len(self.local_tool_profiles) - 1)
+            )
             self._load_local_tool_profile(self.local_profile_picker.currentIndex())
         else:
             self._new_local_tool_profile()
@@ -295,7 +299,11 @@ class LocalToolsFeatureMixin:
 
     def _current_local_tool_profile(self) -> LocalToolProfile:
         name = self.local_profile_name.text().strip() or "Local development"
-        return LocalToolProfile(name, tuple(str(path) for path in self._local_path_list(self.local_profile_mods.text())), self.local_profile_endpoint.text().strip())
+        return LocalToolProfile(
+            name,
+            tuple(str(path) for path in self._local_path_list(self.local_profile_mods.text())),
+            self.local_profile_endpoint.text().strip(),
+        )
 
     def _save_local_tool_profile(self):
         profile = self._current_local_tool_profile()
@@ -406,9 +414,7 @@ class LocalToolsFeatureMixin:
                 request, roots, resolved, metadata
             )
         )
-        worker.finished.connect(
-            lambda active=worker: self._clear_editor_dependency_worker(active)
-        )
+        worker.finished.connect(lambda active=worker: self._clear_editor_dependency_worker(active))
         worker.start()
 
     def _finish_editor_dependency_resolution(self, request, roots, resolved, metadata):
@@ -436,19 +442,31 @@ class LocalToolsFeatureMixin:
             names = dict(DAYZ_EDITOR_MODS)
             ids = list(names) + list(self._selected_editor_extra_mod_ids())
         else:
-            profile = self._current_local_tool_profile()
             names = {}
             ids = list(self._selected_editor_extra_mod_ids())
-        return [RequiredMod(item, names.get(item, installed.get(item, "")), item in installed, installed.get(item, ""), WORKSHOP_URL.format(mod_id=item)) for item in ids]
+        return [
+            RequiredMod(
+                item,
+                names.get(item, installed.get(item, "")),
+                item in installed,
+                installed.get(item, ""),
+                WORKSHOP_URL.format(mod_id=item),
+            )
+            for item in ids
+        ]
 
     def _verify_local_tool_mods(self, *, editor: bool) -> list[RequiredMod]:
         mods = self._local_required_mods(editor=editor)
         missing = [mod for mod in mods if not mod.installed]
         label = "Editor" if editor else "local profile"
         if missing:
-            self.local_tools_status.setText(f"{label}: {len(missing)} of {len(mods)} Workshop mod(s) missing. Open their Workshop pages or use Steam Downloads, then verify again.")
+            self.local_tools_status.setText(
+                f"{label}: {len(missing)} of {len(mods)} Workshop mod(s) missing. Open their Workshop pages or use Steam Downloads, then verify again."
+            )
         else:
-            self.local_tools_status.setText(f"{label}: all {len(mods)} Workshop mod(s) are installed locally.")
+            self.local_tools_status.setText(
+                f"{label}: all {len(mods)} Workshop mod(s) are installed locally."
+            )
         return mods
 
     def _open_missing_local_tool_pages(self, *, editor: bool):
@@ -458,11 +476,19 @@ class LocalToolsFeatureMixin:
 
     def _native_local_install(self):
         if self.launch_engine_key() != "native":
-            QMessageBox.information(self, "Native launcher required", "Editor and Local Development use WolfLauncher’s native Steam handoff. Choose Native launcher in Settings first.")
+            QMessageBox.information(
+                self,
+                "Native launcher required",
+                "Editor and Local Development use WolfLauncher’s native Steam handoff. Choose Native launcher in Settings first.",
+            )
             return None
         install = self.selected_steam_install()
         if not install:
-            QMessageBox.warning(self, "Steam not detected", "WolfLauncher could not detect the selected Steam installation. Check Settings health.")
+            QMessageBox.warning(
+                self,
+                "Steam not detected",
+                "WolfLauncher could not detect the selected Steam installation. Check Settings health.",
+            )
         return install
 
     def _launch_local_editor(self):
@@ -516,9 +542,7 @@ class LocalToolsFeatureMixin:
                 self.local_tools_status.setText(
                     "Checking selected Editor mods for local DayZ addon requirements…"
                 )
-                worker = WorkshopDependencyWorker(
-                    roots, local_workshop_dir=install.workshop_dir
-                )
+                worker = WorkshopDependencyWorker(roots, local_workshop_dir=install.workshop_dir)
                 worker.setParent(self)
                 self.editor_addon_dependency_worker = worker
                 worker.dependencies_ready.connect(
@@ -584,7 +608,9 @@ class LocalToolsFeatureMixin:
                 install, self.player_name.text().strip() or DEFAULT_PLAYER_NAME, mods
             )
         except NativeLaunchError as exc:
-            QMessageBox.warning(self, f"Editor launch blocked during {exc.stage}", exc.user_message())
+            QMessageBox.warning(
+                self, f"Editor launch blocked during {exc.stage}", exc.user_message()
+            )
             return
         self._show_local_launch(prepared.command, "Opening DayZ Editor", minimize_on_handoff=True)
 
@@ -654,7 +680,9 @@ class LocalToolsFeatureMixin:
         selected = QFileDialog.getExistingDirectory(self, "Select local DayZ mod folder")
         if not selected:
             return
-        existing = [part.strip() for part in self.local_profile_mods.text().split(";") if part.strip()]
+        existing = [
+            part.strip() for part in self.local_profile_mods.text().split(";") if part.strip()
+        ]
         if selected not in existing:
             existing.append(selected)
         self.local_profile_mods.setText("; ".join(existing))
@@ -702,7 +730,9 @@ class LocalToolsFeatureMixin:
         process.finished.connect(lambda _code, _status: self._finish_temporary_server_install())
         self.local_server_install_process = process
         process.start(command[0], command[1:])
-        self.local_tools_status.setText("SteamCMD is preparing the temporary DayZ dedicated serverâ€¦")
+        self.local_tools_status.setText(
+            "SteamCMD is preparing the temporary DayZ dedicated serverâ€¦"
+        )
 
     def _finish_temporary_server_install(self):
         process = getattr(self, "local_server_install_process", None)
@@ -729,10 +759,16 @@ class LocalToolsFeatureMixin:
             return
         install = self.selected_steam_install()
         if not install or not install.root:
-            QMessageBox.warning(self, "Steam not detected", "Open Steam, then try the Steam-owned install again.")
+            QMessageBox.warning(
+                self, "Steam not detected", "Open Steam, then try the Steam-owned install again."
+            )
             return
         if not QDesktopServices.openUrl(QUrl("steam://install/223350")):
-            QMessageBox.warning(self, "Steam install unavailable", "WolfLauncher could not ask Steam to install DayZ Dedicated Server.")
+            QMessageBox.warning(
+                self,
+                "Steam install unavailable",
+                "WolfLauncher could not ask Steam to install DayZ Dedicated Server.",
+            )
             return
         self.steam_server_progress.setRange(0, 0)
         self.steam_server_progress.setFormat("Waiting for Steam to finish DayZ Dedicated Server…")
@@ -759,13 +795,17 @@ class LocalToolsFeatureMixin:
         self.local_server_root.setText(str(root))
         self.local_server_config.setText(str(root / "serverDZ.cfg"))
         self._save_local_host_settings()
-        self.local_tools_status.setText("Steam-installed DayZ Dedicated Server is ready to configure and start.")
+        self.local_tools_status.setText(
+            "Steam-installed DayZ Dedicated Server is ready to configure and start."
+        )
 
     def _local_server_launch(self) -> LocalServerLaunch:
         root = Path(self.local_server_root.text().strip())
         executable = server_executable(root)
         if executable is None:
-            raise ValueError("DayZ dedicated-server executable was not found in the selected server root.")
+            raise ValueError(
+                "DayZ dedicated-server executable was not found in the selected server root."
+            )
         profile = self._current_local_tool_profile()
         _host, port = parse_local_endpoint(profile.endpoint)
         config = Path(self.local_server_config.text().strip() or root / "serverDZ.cfg")
@@ -783,7 +823,11 @@ class LocalToolsFeatureMixin:
     def _start_local_server(self):
         process = getattr(self, "local_server_process", None)
         if process and process.state() != QProcess.NotRunning:
-            QMessageBox.information(self, "Local server running", "Stop the managed local server before starting it again.")
+            QMessageBox.information(
+                self,
+                "Local server running",
+                "Stop the managed local server before starting it again.",
+            )
             return
         try:
             launch = self._local_server_launch()
@@ -872,7 +916,11 @@ class LocalToolsFeatureMixin:
             self._launch_verified_local_test_server(install)
             return
         if self.workshop_subscription_worker and self.workshop_subscription_worker.isRunning():
-            QMessageBox.information(self, "Steam Workshop in progress", "WolfLauncher is already waiting for a Steam Workshop operation to finish.")
+            QMessageBox.information(
+                self,
+                "Steam Workshop in progress",
+                "WolfLauncher is already waiting for a Steam Workshop operation to finish.",
+            )
             return
         self.local_tools_status.setText("Checking selected Additional mods with Steam for updates…")
         worker = WorkshopSubscriptionWorker(selected_ids, install, force_update=True)
@@ -909,21 +957,31 @@ class LocalToolsFeatureMixin:
             return
         mods = self._verify_local_tool_mods(editor=False)
         if any(not mod.installed for mod in mods):
-            QMessageBox.warning(self, "Local profile mods missing", "Install every listed Workshop item before joining the local test server.")
+            QMessageBox.warning(
+                self,
+                "Local profile mods missing",
+                "Install every listed Workshop item before joining the local test server.",
+            )
             return
         server = Server(profile.name, "Local development", host, port, port)
         try:
-            prepared = prepare_native_launch(install, server, self.player_name.text().strip() or DEFAULT_PLAYER_NAME, mods)
+            prepared = prepare_native_launch(
+                install, server, self.player_name.text().strip() or DEFAULT_PLAYER_NAME, mods
+            )
             command = self._with_local_client_mods(prepared.command)
         except NativeLaunchError as exc:
-            QMessageBox.warning(self, f"Local launch blocked during {exc.stage}", exc.user_message())
+            QMessageBox.warning(
+                self, f"Local launch blocked during {exc.stage}", exc.user_message()
+            )
             return
         except ValueError as exc:
             QMessageBox.warning(self, "Local launch blocked", str(exc))
             return
         self._show_local_launch(command, f"Joining {server.connect_target}")
 
-    def _show_local_launch(self, command: list[str], title: str, *, minimize_on_handoff: bool = False):
+    def _show_local_launch(
+        self, command: list[str], title: str, *, minimize_on_handoff: bool = False
+    ):
         self._save_local_tool_profile()
         dialog = LaunchDialog(
             self,

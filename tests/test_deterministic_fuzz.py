@@ -35,7 +35,10 @@ class DeterministicFuzzTests(unittest.TestCase):
         randomizer = random.Random(11035)
         scalars = (None, "", "bad", -1, 0, 1, 2302, 65536, True, False, [], {})
         for _ in range(250):
-            value = lambda: randomizer.choice(scalars)
+
+            def value():
+                return randomizer.choice(scalars)
+
             steam_row = {"addr": value(), "ip": value(), "gameport": value(), "name": value()}
             wolfapi_row = {
                 "addr": value(),

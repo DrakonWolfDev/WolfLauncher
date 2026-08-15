@@ -115,9 +115,7 @@ def set_browser_favourite_marker(table: QTableWidget, row: int, is_favourite: bo
     if item is None:
         return
     item.setText("")
-    item.setToolTip(
-        "Remove from Favourite Servers" if is_favourite else "Add to Favourite Servers"
-    )
+    item.setToolTip("Remove from Favourite Servers" if is_favourite else "Add to Favourite Servers")
     table.setCellWidget(row, BROWSER_FAVOURITE_COLUMN, _browser_marker(is_favourite))
 
 
@@ -151,10 +149,14 @@ def _set_browser_table_row(
             if is_day is not None:
                 item.setIcon(time_icon(is_day))
         table.setItem(row, column, item)
-    is_favourite = (server.host, server.game_port, server.query_port) in (favourite_endpoints or set())
+    is_favourite = (server.host, server.game_port, server.query_port) in (
+        favourite_endpoints or set()
+    )
     favourite = SortableTableWidgetItem("", 0)
     favourite.setData(Qt.UserRole, server.cache_key)
-    favourite.setToolTip("Remove from Favourite Servers" if is_favourite else "Add to Favourite Servers")
+    favourite.setToolTip(
+        "Remove from Favourite Servers" if is_favourite else "Add to Favourite Servers"
+    )
     table.setItem(row, BROWSER_FAVOURITE_COLUMN, favourite)
     table.setCellWidget(row, BROWSER_FAVOURITE_COLUMN, _browser_marker(is_favourite))
     password = SortableTableWidgetItem("", int(server.password))
