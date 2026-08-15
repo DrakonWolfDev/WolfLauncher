@@ -420,7 +420,7 @@ class LocalToolsFeatureMixin:
         count = len(self.editor_dependency_mod_ids)
         if count:
             self.local_tools_status.setText(
-                f"Added {count} author-declared Workshop requirement(s) to the selection."
+                f"Added {count} detected Workshop requirement(s) to the selection."
             )
 
     def _clear_editor_dependency_worker(self, worker):
