@@ -226,9 +226,12 @@ deliberate product decision rather than an informal visual tidy-up.
 ### Discovery recovery and server submissions
 
 Next build: add a compact **Add by address** journey for a server missing from
-the directory. It should accept an explicit `host:port`, use the normal local
-inspection, mod-validation and guarded-launch path, and let the player save it
-to their own favourites without mutating WolfAPI.
+the directory. It should accept the single `host:query_port` value players
+normally receive from other launchers, infer the conventional DayZ game port
+where possible, and keep an advanced explicit override for unusual endpoints.
+It must then use the normal local inspection, mod-validation and guarded-launch
+path, and let the player save it to their own favourites without mutating
+WolfAPI.
 
 Review curated and manually added server status language at the same time. An
 incomplete or partial A2S/GameDig response is retryable uncertainty, not proof

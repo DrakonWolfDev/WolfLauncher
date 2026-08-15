@@ -3,8 +3,10 @@
 ## Unreleased
 
 - Planned the next-build discovery recovery work: a local **Add by address**
-  journey for servers absent from the directory, followed by a separately
-  moderated and rate-limited WolfAPI server-submission path.
+  journey for servers absent from the directory. It will accept the usual
+  query-port address with an advanced override for unusual game/query ports,
+  followed by a separately moderated and rate-limited WolfAPI
+  server-submission path.
 - Planned clearer retryable-status language for incomplete A2S/GameDig
   responses, so a temporary partial response is not mistaken for a definitive
   offline server.
