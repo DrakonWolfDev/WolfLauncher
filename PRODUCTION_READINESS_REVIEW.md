@@ -230,6 +230,10 @@ the directory. It should accept an explicit `host:port`, use the normal local
 inspection, mod-validation and guarded-launch path, and let the player save it
 to their own favourites without mutating WolfAPI.
 
+Review curated and manually added server status language at the same time. An
+incomplete or partial A2S/GameDig response is retryable uncertainty, not proof
+that a server is offline; present that distinction and make a recheck obvious.
+
 Follow with a separate, explicitly confirmed **Submit this server to WolfAPI**
 path only after WolfAPI has a server-side validation, rate-limit and moderation
 contract. A submission must never publish a row immediately, bypass quality
