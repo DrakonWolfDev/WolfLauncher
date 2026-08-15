@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Planned the next-build discovery recovery work: a local **Add by address**
+  journey for servers absent from the directory, followed by a separately
+  moderated and rate-limited WolfAPI server-submission path.
+
 ## 0.9.0b1 — 2026-08-15
 
 - Published the first Windows beta after a clean full test, lint, type-check,

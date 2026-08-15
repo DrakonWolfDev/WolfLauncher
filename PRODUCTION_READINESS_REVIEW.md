@@ -223,6 +223,18 @@ preserve clear explanations where uncertainty or an external boundary matters.
 Record the outcome in the release notes or project state so the review is a
 deliberate product decision rather than an informal visual tidy-up.
 
+### Discovery recovery and server submissions
+
+Next build: add a compact **Add by address** journey for a server missing from
+the directory. It should accept an explicit `host:port`, use the normal local
+inspection, mod-validation and guarded-launch path, and let the player save it
+to their own favourites without mutating WolfAPI.
+
+Follow with a separate, explicitly confirmed **Submit this server to WolfAPI**
+path only after WolfAPI has a server-side validation, rate-limit and moderation
+contract. A submission must never publish a row immediately, bypass quality
+controls or turn Launcher discovery into a source of untrusted directory data.
+
 ### Decompose `app.py` by feature ownership
 
 At 4,255 lines, `MainWindow` builds four tabs, owns application state, runs
