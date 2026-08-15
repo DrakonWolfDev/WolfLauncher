@@ -211,6 +211,18 @@ waiver, performed against the packaged artifact rather than the source checkout.
 
 ## P1 — high-value hardening immediately after the gates
 
+### Final UI purpose review
+
+Before the next beta/release pass, review every visible button, field, option
+and setting. Each control must earn its place by directly helping a player
+choose, prepare for or join a server, or by providing essential support or
+advanced recovery capability. Remove duplicate or non-actionable controls;
+keep necessary advanced tools behind the established compact disclosures; and
+preserve clear explanations where uncertainty or an external boundary matters.
+
+Record the outcome in the release notes or project state so the review is a
+deliberate product decision rather than an informal visual tidy-up.
+
 ### Decompose `app.py` by feature ownership
 
 At 4,255 lines, `MainWindow` builds four tabs, owns application state, runs
