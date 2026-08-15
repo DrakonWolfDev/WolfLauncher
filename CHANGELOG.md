@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+## 0.9.0b1 — 2026-08-15
+
+- Published the first Windows beta after a clean full test, lint, type-check,
+  dependency-audit and local portable/installer smoke-test pass. The Windows
+  artifacts remain unsigned experimental beta builds.
 - Updated the hosted WolfAPI discovery endpoint to `https://api.wolfcontrol.co.uk`.
 
 - Replaced the native Mods-screen and launch-preflight DZSA lookup with a
@@ -10,8 +17,6 @@
 - Accepted DayZ's bounded opaque post-signature rules extension after complete
   manifest parsing; this fixes Linux/server combinations that legitimately
   return binary extension bytes without weakening declared-record validation.
-
-## Unreleased
 
 - Editor / Local Tools now resolves author-declared Steam Workshop requirements
   for selected additional mods, including nested dependencies. Required mods

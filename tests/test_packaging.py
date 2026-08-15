@@ -16,8 +16,8 @@ class PackagingMetadataTests(unittest.TestCase):
     def test_pyproject_derives_version_from_package(self):
         text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
         self.assertIn('version = {attr = "wolflauncher.__version__"}', text)
-        self.assertNotIn('version = "0.9.0.dev0"', text)
-        self.assertEqual(wolflauncher.__version__, "0.9.0.dev0")
+        self.assertNotIn('version = "0.9.0b1"', text)
+        self.assertEqual(wolflauncher.__version__, "0.9.0b1")
 
     def test_desktop_entry_names_installed_command_and_icon(self):
         parser = configparser.ConfigParser(interpolation=None)

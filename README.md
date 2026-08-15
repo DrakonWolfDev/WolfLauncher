@@ -14,10 +14,11 @@ The upstream MIT-licensed shell launcher is vendored in `external/dayz-linux-cli
 
 Current baseline: v0.8 Linux native-launch parity validated, with the native
 launcher used by default and the external launcher retained as a Linux
-fallback. Windows detection, native Steam/DayZ handoff, confirmed Workshop
-resolution and portable packaging have been validated on Windows 10 and Windows 11. The
-Windows build remains experimental until signing, update delivery and broader
-release-artifact desktop gates are exercised.
+fallback. **v0.9.0b1 is the first Windows beta.** Windows detection, native
+Steam/DayZ handoff, confirmed Workshop resolution and portable packaging have
+been validated on Windows 10 and Windows 11. The Windows build remains
+experimental until signing, update delivery and broader release-artifact
+desktop gates are exercised.
 
 The server browser, settings health checks, diagnostics, mod checks and guarded
 launch handoff are working with native Steam. Connect pre-flight asks the

@@ -156,8 +156,8 @@ the owner-only atomic settings file. Copyable support text passes through one
 redaction boundary for known secrets, credential-shaped values, home paths and
 Steam userdata identifiers.
 
-The active hardening version is `0.9.0.dev0` and package/application metadata
-derive from `wolflauncher.__version__`. Wheel, source archive and versioned
+The first Windows beta is `0.9.0b1`; package/application metadata derive from
+`wolflauncher.__version__`. Wheel, source archive and versioned
 `.deb` artifacts build with desktop resources, locked Python dependencies and
 an npm-locked GameDig 5.3.3 runtime. GitHub Actions run `29640723322` passed
 build, extraction, import, checksum and artifact-upload checks on Ubuntu
