@@ -15,6 +15,7 @@ from .mods import (
     apply_workshop_install_timestamps,
     check_server_mods,
     fetch_workshop_metadata,
+    resolve_workshop_dependencies,
     scan_experimental_local_mods,
     scan_installed_mods,
     workshop_install_timestamps,
@@ -180,6 +181,25 @@ class WorkshopLibraryWorker(QThread):
         except Exception as exc:
             mods, error = [], str(exc)
         self.library_ready.emit(mods, error)
+
+
+class WorkshopDependencyWorker(QThread):
+    """Resolve author-declared Workshop requirements away from the Qt thread."""
+
+    dependencies_ready = Signal(object, object)
+
+    def __init__(self, workshop_ids):
+        super().__init__()
+        self.workshop_ids = tuple(workshop_ids)
+
+    def run(self):
+        try:
+            resolved, metadata = resolve_workshop_dependencies(self.workshop_ids)
+        except Exception:
+            # Dependency metadata is advisory. Keep the explicit selection
+            # launchable if Steam's public endpoint is temporarily unavailable.
+            resolved, metadata = self.workshop_ids, {}
+        self.dependencies_ready.emit(resolved, metadata)
 
 
 class WorkshopSubscriptionWorker(QThread):

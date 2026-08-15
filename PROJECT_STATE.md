@@ -58,10 +58,11 @@ release matrix.
 - The Editor / Local Tools tab now provides an offline Editor-only picker of
   locally installed extra mods alongside its required framework mods, plus
   saved Local Development profiles for native joining of an already-running
-  LAN/test server. It is advanced local
-  development tooling, not public hosting. The primary Editor action explicitly
-  asks Steam to subscribe/update its three standard requirements, verifies them
-  locally and then minimizes after a detected DayZ handoff; dedicated-server
+  LAN/test server. It resolves recursively bounded author-declared Steam Workshop
+  requirements into read-only selected rows, then asks Steam to subscribe/update
+  the full resolved set before local verification and a detected DayZ handoff.
+  Undeclared DayZ/PBO requirements remain manual. It is advanced local
+  development tooling, not public hosting; dedicated-server
   installation, start/stop control, project-editor opening and log views remain
   staged follow-on work.
 - Local Development now has an initial host workspace for server roots visible

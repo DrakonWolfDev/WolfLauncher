@@ -312,9 +312,13 @@ fail before handoff.
 The Editor / Local Tools tab is an explicit advanced-development workspace,
 separate from curated YAML and the discovered-server cache. Editor selections
 are a separate locally installed-only checklist persisted as
-`editor_extra_mod_ids` in `settings.json`; they are combined with DayZ Editor
-(`2250764298`), CF (`1559212036`) and Dabs Framework (`2545327648`) for an
-offline handoff without `-connect`. Local Development alone owns the saved
+`editor_extra_mod_ids` in `settings.json`; their author-declared Steam Workshop
+requirements are resolved recursively (bounded to six levels/500 items), shown
+as read-only checked rows, and are deliberately not persisted as user choices.
+The full resolved set is combined with DayZ Editor (`2250764298`), CF
+(`1559212036`) and Dabs Framework (`2545327648`) for an offline handoff without
+`-connect`. Steam metadata is optional, so undeclared DayZ/PBO requirements
+remain a manual author/documentation concern. Local Development alone owns the saved
 profile data: name, ordered client Workshop IDs and existing LAN
 `host:game-port` endpoint, used to launch native DayZ into that test server.
 
@@ -329,8 +333,8 @@ Private keys are never read or copied. Source-development mode enables
 
 Steam remains the only Workshop subscription/download owner. When the Editor
 action is selected, WolfLauncher explicitly asks Steam to subscribe/update its
-three standard requirements, waits for the isolated helper to finish, rechecks
-the local directories and only then launches. Its handoff dialog closes and the
+standard requirements and the full resolved selection, waits for the isolated
+helper to finish, rechecks the local directories and only then launches. Its handoff dialog closes and the
 main window minimizes once DayZ is detected. V1 does not start, stop, install,
 configure, expose or monitor a dedicated server. Future hosting must use an
 explicit configured server root (the dedicated-server app is separate from the

@@ -11,6 +11,13 @@
 
 ## Unreleased
 
+- Editor / Local Tools now resolves author-declared Steam Workshop requirements
+  for selected additional mods, including nested dependencies. Required mods
+  appear as checked read-only rows and the confirmed Editor Steam workflow
+  subscribes/updates the complete resolved set before launch. Steam metadata is
+  optional, so undeclared DayZ/PBO requirements remain visible as a manual
+  author/documentation responsibility.
+
 - Improved the DayZ Stable/Experimental switch: it now shows a short
   **Switching game version** progress dialog, applies the new profile without
   waiting on an old check, and rejects late mod-check results from the previous

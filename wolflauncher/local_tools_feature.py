@@ -53,7 +53,7 @@ from .thumbnail_safety import (
     is_safe_thumbnail_dimensions,
     is_safe_thumbnail_url,
 )
-from .workers import WorkshopSubscriptionWorker
+from .workers import WorkshopDependencyWorker, WorkshopSubscriptionWorker
 
 
 DAYZ_EDITOR_IMAGE_URL = (
@@ -83,6 +83,10 @@ class LocalToolsFeatureMixin:
         self.editor_extra_mod_ids = set(
             normalise_workshop_ids(self.settings.get("editor_extra_mod_ids", []))
         )
+        self.editor_dependency_mod_ids = set()
+        self.editor_dependency_metadata = {}
+        self.editor_dependency_request = 0
+        self.editor_dependency_worker = None
         profile_card = QFrame()
         set_ui_role(profile_card, "healthGroup")
         profile_layout = QVBoxLayout(profile_card)
@@ -208,6 +212,7 @@ class LocalToolsFeatureMixin:
         editor_mods_layout.addLayout(editor_filter_row)
         self.editor_mod_picker = QListWidget()
         self.editor_mod_picker.setAccessibleName("Installed additional mods")
+        self.editor_mod_picker.itemChanged.connect(self._editor_mod_selection_changed)
         editor_mods_layout.addWidget(self.editor_mod_picker)
         self.editor_image_manager = QNetworkAccessManager(self)
         self.editor_image_manager.finished.connect(self._finish_editor_image_load)
@@ -308,24 +313,38 @@ class LocalToolsFeatureMixin:
         install = self.selected_steam_install()
         installed = scan_installed_mods(install.workshop_dir if install else None)
         fixed_ids = {DAYZ_EDITOR_MODS[0][0]}
+        known_names = {
+            workshop_id: str(detail.get("title") or "")
+            for workshop_id, detail in self.editor_dependency_metadata.items()
+        }
         available = [
             (workshop_id, name)
             for workshop_id, name in installed.items()
             if workshop_id not in fixed_ids
         ]
+        available_ids = {workshop_id for workshop_id, _name in available}
+        for workshop_id in self.editor_dependency_mod_ids:
+            if workshop_id not in available_ids and workshop_id not in fixed_ids:
+                available.append((workshop_id, known_names.get(workshop_id, "")))
         available.sort(key=lambda entry: ((entry[1] or entry[0]).casefold(), entry[0]))
+        self.editor_mod_picker.blockSignals(True)
         self.editor_mod_picker.clear()
-        available_ids = set()
         for workshop_id, name in available:
             available_ids.add(workshop_id)
-            item = QListWidgetItem(f"{name or workshop_id}  ({workshop_id})")
+            required = workshop_id in self.editor_dependency_mod_ids
+            label = f"{name or workshop_id}  ({workshop_id})"
+            if required:
+                label += " — required by selected mod"
+            item = QListWidgetItem(label)
             item.setData(Qt.UserRole, workshop_id)
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
             item.setCheckState(
-                Qt.Checked if workshop_id in self.editor_extra_mod_ids else Qt.Unchecked
+                Qt.Checked if workshop_id in self.editor_extra_mod_ids or required else Qt.Unchecked
             )
+            if required:
+                item.setFlags(item.flags() & ~Qt.ItemIsEnabled)
             self.editor_mod_picker.addItem(item)
-        self.editor_extra_mod_ids.intersection_update(available_ids)
+        self.editor_mod_picker.blockSignals(False)
         self._filter_editor_mod_picker(self.editor_mod_filter.text())
 
     def _filter_editor_mod_picker(self, text: str):
@@ -337,19 +356,73 @@ class LocalToolsFeatureMixin:
     def _reset_editor_mod_picker(self):
         self.editor_mod_filter.clear()
         self.editor_extra_mod_ids.clear()
+        self.editor_dependency_mod_ids.clear()
+        self.editor_dependency_metadata.clear()
         for row in range(self.editor_mod_picker.count()):
             self.editor_mod_picker.item(row).setCheckState(Qt.Unchecked)
         self.save_user_settings(silent=True)
         self.local_tools_status.setText("Additional-mod selection cleared.")
 
     def _selected_editor_extra_mod_ids(self) -> tuple[str, ...]:
-        selected = []
-        for row in range(self.editor_mod_picker.count()):
-            item = self.editor_mod_picker.item(row)
-            if item.checkState() == Qt.Checked:
-                selected.append(str(item.data(Qt.UserRole)))
-        self.editor_extra_mod_ids = set(selected)
+        selected = list(self.editor_extra_mod_ids)
+        selected.extend(
+            workshop_id
+            for workshop_id in self.editor_dependency_mod_ids
+            if workshop_id not in self.editor_extra_mod_ids
+        )
         return tuple(selected)
+
+    def _editor_mod_selection_changed(self, item):
+        workshop_id = str(item.data(Qt.UserRole) or "")
+        if not workshop_id or workshop_id in self.editor_dependency_mod_ids:
+            return
+        if item.checkState() == Qt.Checked:
+            self.editor_extra_mod_ids.add(workshop_id)
+        else:
+            self.editor_extra_mod_ids.discard(workshop_id)
+        self._resolve_editor_dependencies()
+        self.save_user_settings(silent=True)
+
+    def _resolve_editor_dependencies(self):
+        self.editor_dependency_request += 1
+        request = self.editor_dependency_request
+        roots = tuple(sorted(self.editor_extra_mod_ids, key=int))
+        if not roots:
+            self.editor_dependency_mod_ids.clear()
+            self.editor_dependency_metadata.clear()
+            self._refresh_editor_mod_picker()
+            return
+        worker = WorkshopDependencyWorker(roots)
+        worker.setParent(self)
+        self.editor_dependency_worker = worker
+        self.editor_mod_picker.setEnabled(False)
+        worker.dependencies_ready.connect(
+            lambda resolved, metadata: self._finish_editor_dependency_resolution(
+                request, roots, resolved, metadata
+            )
+        )
+        worker.finished.connect(
+            lambda active=worker: self._clear_editor_dependency_worker(active)
+        )
+        worker.start()
+
+    def _finish_editor_dependency_resolution(self, request, roots, resolved, metadata):
+        if request != self.editor_dependency_request:
+            return
+        self.editor_dependency_mod_ids = set(resolved) - set(roots)
+        self.editor_dependency_metadata = dict(metadata)
+        self._refresh_editor_mod_picker()
+        count = len(self.editor_dependency_mod_ids)
+        if count:
+            self.local_tools_status.setText(
+                f"Added {count} author-declared Workshop requirement(s) to the selection."
+            )
+
+    def _clear_editor_dependency_worker(self, worker):
+        if self.editor_dependency_worker is worker:
+            self.editor_dependency_worker = None
+        self.editor_mod_picker.setEnabled(True)
+        worker.deleteLater()
 
     def _local_required_mods(self, *, editor: bool) -> list[RequiredMod]:
         install = self.selected_steam_install()
@@ -431,12 +504,11 @@ class LocalToolsFeatureMixin:
             )
             return
         mods = self._local_required_mods(editor=True)
-        editor_mods = mods[: len(DAYZ_EDITOR_MODS)]
         self.local_tools_status.setText(
-            "Checking DayZ Editor, CF and Dabs Framework with Steam for updatesâ€¦"
+            f"Checking {len(mods)} DayZ Editor mod(s), including declared requirements, with Steam for updatesâ€¦"
         )
         worker = WorkshopSubscriptionWorker(
-            [mod.workshop_id for mod in editor_mods], install, force_update=True
+            [mod.workshop_id for mod in mods], install, force_update=True
         )
         self.workshop_subscription_worker = worker
         worker.progress_ready.connect(self._update_editor_workshop_progress)

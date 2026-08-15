@@ -113,12 +113,18 @@ def fetch_workshop_file_sizes(workshop_ids) -> dict[str, int]:
     return sizes
 
 
-def fetch_workshop_metadata(workshop_ids) -> dict[str, dict[str, Any]]:
+def fetch_workshop_metadata(
+    workshop_ids, *, include_children: bool = False
+) -> dict[str, dict[str, Any]]:
     """Fetch public display metadata for Workshop items in one bounded batch."""
     ids = tuple(dict.fromkeys(str(item).strip() for item in workshop_ids if str(item).strip()))
     if not ids:
         return {}
     fields = [("itemcount", str(len(ids)))]
+    if include_children:
+        # Steam calls Workshop dependencies "children" in this public endpoint.
+        # They are author-declared requirements, so an empty list is valid.
+        fields.append(("return_children", "true"))
     fields.extend((f"publishedfileids[{index}]", item) for index, item in enumerate(ids))
     try:
         payload = post_form_json(WORKSHOP_DETAILS_URL, fields, timeout=10)
@@ -139,8 +145,63 @@ def fetch_workshop_metadata(workshop_ids) -> dict[str, dict[str, Any]]:
             "description": str(detail.get("description") or "").strip(),
             "preview_url": str(detail.get("preview_url") or "").strip(),
             "time_updated": max(0, int(detail.get("time_updated") or 0)),
+            "children": tuple(
+                str(child.get("publishedfileid") or "").strip()
+                for child in (detail.get("children") or [])
+                if isinstance(child, dict)
+                and str(child.get("publishedfileid") or "").strip().isdigit()
+            )
+            if include_children
+            else (),
         }
     return metadata
+
+
+def resolve_workshop_dependencies(
+    workshop_ids,
+    *,
+    max_depth: int = 6,
+    max_items: int = 500,
+) -> tuple[tuple[str, ...], dict[str, dict[str, Any]]]:
+    """Return selected Workshop IDs plus their declared dependency closure.
+
+    Steam Workshop dependencies are optional author metadata.  This resolver is
+    deliberately bounded so a malformed collection or cycle cannot turn an
+    Editor selection into unbounded network work.
+    """
+    roots = tuple(
+        dict.fromkeys(
+            str(item).strip()
+            for item in workshop_ids
+            if str(item).strip().isdigit() and int(str(item).strip()) > 0
+        )
+    )
+    resolved = list(roots)
+    seen = set(roots)
+    metadata: dict[str, dict[str, Any]] = {}
+    pending = list(roots)
+    depth = 0
+    while pending and depth < max_depth and len(seen) < max_items:
+        # GetPublishedFileDetails accepts batches; retaining this cap keeps the
+        # request and UI response bounded even for a large collection.
+        batch = pending[:100]
+        pending = pending[100:]
+        details = fetch_workshop_metadata(batch, include_children=True)
+        metadata.update(details)
+        next_level = []
+        for workshop_id in batch:
+            for child_id in details.get(workshop_id, {}).get("children", ()):
+                if child_id in seen or len(seen) >= max_items:
+                    continue
+                seen.add(child_id)
+                resolved.append(child_id)
+                next_level.append(child_id)
+        if not pending:
+            pending = next_level
+            depth += 1
+        else:
+            pending.extend(next_level)
+    return tuple(resolved), metadata
 
 
 def apply_workshop_file_sizes(result: ModCheckResult, sizes: dict[str, int]) -> ModCheckResult:
