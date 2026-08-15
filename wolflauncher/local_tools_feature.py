@@ -35,7 +35,6 @@ from .local_server import (
 from .local_tools import (
     DAYZ_EDITOR_MODS,
     LocalToolProfile,
-    normalise_workshop_ids,
     parse_local_endpoint,
     profiles_from_settings,
 )
@@ -80,9 +79,9 @@ class LocalToolsFeatureMixin:
         self.local_tool_profiles = profiles_from_settings(self.settings.get("local_tool_profiles"))
         self.local_host_settings = dict(self.settings.get("local_host_settings") or {})
         self.local_tool_active_index = 0
-        self.editor_extra_mod_ids = set(
-            normalise_workshop_ids(self.settings.get("editor_extra_mod_ids", []))
-        )
+        # Editor selections are an ephemeral launch workspace. Keeping them
+        # between app sessions is surprising and can quietly launch old mods.
+        self.editor_extra_mod_ids = set()
         self.editor_dependency_mod_ids = set()
         self.editor_dependency_metadata = {}
         self.editor_dependency_request = 0
@@ -395,7 +394,10 @@ class LocalToolsFeatureMixin:
             self.editor_dependency_metadata.clear()
             self._refresh_editor_mod_picker()
             return
-        worker = WorkshopDependencyWorker(roots)
+        install = self.selected_steam_install()
+        worker = WorkshopDependencyWorker(
+            roots, local_workshop_dir=install.workshop_dir if install else None
+        )
         worker.setParent(self)
         self.editor_dependency_worker = worker
         self.editor_mod_picker.setEnabled(False)

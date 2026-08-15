@@ -610,9 +610,8 @@ class SettingsFeatureMixin:
                 }
                 for profile in getattr(self, "local_tool_profiles", [])
             ],
-            "editor_extra_mod_ids": sorted(
-                getattr(self, "editor_extra_mod_ids", set()), key=int
-            ),
+            # Editor selections intentionally reset when WolfLauncher closes.
+            "editor_extra_mod_ids": [],
             "local_host_settings": dict(getattr(self, "local_host_settings", {})),
         }
         api_key = (

@@ -315,12 +315,13 @@ are a separate locally installed-only checklist persisted as
 `editor_extra_mod_ids` in `settings.json`; their author-declared Steam Workshop
 requirements are resolved recursively (bounded to six levels/500 items), shown
 as read-only checked rows, and are deliberately not persisted as user choices.
+The explicit Editor selection also resets quietly on each app start.
 The full resolved set is combined with DayZ Editor (`2250764298`), CF
 (`1559212036`) and Dabs Framework (`2545327648`) for an offline handoff without
-`-connect`. Immediately before an Editor launch only, WolfLauncher also performs
+`-connect`. When an additional Editor mod is selected, WolfLauncher also performs
 a bounded read-only scan of selected local PBO config/payload references and
 matches addon names to installed Workshop owners; this catches undeclared
-requirements without applying that heuristic to Local Development. Local Development alone owns the saved
+requirements before launch without applying that heuristic to Local Development. Local Development alone owns the saved
 profile data: name, ordered client Workshop IDs and existing LAN
 `host:game-port` endpoint, used to launch native DayZ into that test server.
 

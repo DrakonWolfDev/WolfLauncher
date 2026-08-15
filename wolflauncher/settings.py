@@ -67,6 +67,8 @@ def normalize_settings(data: Any) -> dict[str, Any]:
             migrated.setdefault("local_tool_profiles", [])
         if version < 6:
             migrated.setdefault("editor_extra_mod_ids", [])
+        # Editor selections are a temporary workspace, never a saved profile.
+        migrated["editor_extra_mod_ids"] = []
         if version < 7:
             migrated.setdefault("local_host_settings", {})
         if version < 8:

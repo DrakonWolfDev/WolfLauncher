@@ -21,6 +21,9 @@
   addon-reference scan for selected mods, matching undeclared references to
   installed Workshop owners. This catches PripyatGamma's GSC Gameworld Assets
   requirement without applying a heuristic to Local Development sessions.
+- Editor dependency detection now runs immediately when an additional mod is
+  checked, so detected requirements appear before the launch action. Editor
+  selections are now temporary and reset quietly when WolfLauncher restarts.
 
 - Improved the DayZ Stable/Experimental switch: it now shows a short
   **Switching game version** progress dialog, applies the new profile without
