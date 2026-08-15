@@ -13,8 +13,8 @@ from .http_client import HttpClientError, fetch_json
 DAYZ_APP_ID = 221100
 STEAM_WEB_API_SERVER_LIST_URL = "https://api.steampowered.com/IGameServersService/GetServerList/v1/"
 BATTLEMETRICS_SERVER_LIST_URL = "https://api.battlemetrics.com/servers"
-WOLFAPI_SERVER_LIST_URL = "https://api.drakonwolf.ddns.net/api/servers"
-WOLFAPI_V1_SERVER_LIST_URL = "https://api.drakonwolf.ddns.net/api/v1/servers"
+WOLFAPI_SERVER_LIST_URL = "https://api.wolfcontrol.co.uk/api/servers"
+WOLFAPI_V1_SERVER_LIST_URL = "https://api.wolfcontrol.co.uk/api/v1/servers"
 WOLFAPI_V1_SEARCH_URL = f"{WOLFAPI_V1_SERVER_LIST_URL}/search"
 WOLFAPI_V1_RESOLVE_URL = f"{WOLFAPI_V1_SERVER_LIST_URL}/resolve"
 MASTER_SERVER_HOST = "hl2master.steampowered.com"

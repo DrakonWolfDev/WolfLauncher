@@ -1,5 +1,7 @@
 # Changelog
 
+- Updated the hosted WolfAPI discovery endpoint to `https://api.wolfcontrol.co.uk`.
+
 - Replaced the native Mods-screen and launch-preflight DZSA lookup with a
   direct, background DayZ `A2S_RULES` query to the selected game server. Added
   a strict bounded manifest decoder that rejects incomplete, overflowed,

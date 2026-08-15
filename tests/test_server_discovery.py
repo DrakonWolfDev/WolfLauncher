@@ -743,7 +743,7 @@ class WolfApiDiscoveryTests(unittest.TestCase):
 
         self.assertEqual(len(servers), 1)
         request = urlopen.call_args.args[0]
-        self.assertEqual(request.full_url, "https://api.drakonwolf.ddns.net/api/servers")
+        self.assertEqual(request.full_url, "https://api.wolfcontrol.co.uk/api/servers")
         self.assertEqual(urlopen.call_args.kwargs["timeout"], 7)
 
     @patch("wolflauncher.http_client.urllib.request.urlopen")

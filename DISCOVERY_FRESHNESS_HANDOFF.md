@@ -177,9 +177,9 @@ WolfLauncher code, SQLite migration or user-setting change is required.
 WolfLauncher uses the hosted v1 endpoints for fresh-install default discovery:
 
 ```text
-GET https://api.drakonwolf.ddns.net/api/v1/servers
-GET https://api.drakonwolf.ddns.net/api/v1/servers/search
-GET https://api.drakonwolf.ddns.net/api/v1/servers/resolve
+GET https://api.wolfcontrol.co.uk/api/v1/servers
+GET https://api.wolfcontrol.co.uk/api/v1/servers/search
+GET https://api.wolfcontrol.co.uk/api/v1/servers/resolve
 ```
 
 V1 is the default provider for fresh installations after the production
