@@ -2,6 +2,8 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+import struct
+import re
 from typing import Any
 
 from .dayz_mod_query import query_dayz_required_mods
@@ -14,6 +16,11 @@ WORKSHOP_URL = "https://steamcommunity.com/sharedfiles/filedetails/?id={mod_id}"
 WORKSHOP_DETAILS_URL = (
     "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"
 )
+MAX_ADDON_DEPENDENCY_PBOS = 256
+MAX_ADDON_CONFIG_BYTES = 2 * 1024 * 1024
+MAX_ADDON_SOURCE_SCAN_BYTES = 64 * 1024 * 1024
+MAX_ADDON_PBO_SCAN_BYTES = 8 * 1024 * 1024
+_ADDON_TOKEN_RE = re.compile(rb"[A-Za-z_][A-Za-z0-9_]{3,127}")
 
 
 @dataclass
@@ -202,6 +209,104 @@ def resolve_workshop_dependencies(
         else:
             pending.extend(next_level)
     return tuple(resolved), metadata
+
+
+def _read_pbo_cstring(handle) -> bytes:
+    value = bytearray()
+    while len(value) <= 1024:
+        character = handle.read(1)
+        if not character or character == b"\0":
+            return bytes(value)
+        value.extend(character)
+    raise ValueError("PBO header name is too long")
+
+
+def _pbo_config_bytes(path: Path) -> bytes:
+    """Read one uncompressed config.bin from a PBO without unpacking it."""
+    try:
+        with path.open("rb") as handle:
+            # A PBO starts with its extension header (an empty filename), then
+            # NUL-terminated property key/value pairs, followed by file entries.
+            if _read_pbo_cstring(handle):
+                return b""
+            if len(handle.read(20)) != 20:
+                return b""
+            while _read_pbo_cstring(handle):
+                if not _read_pbo_cstring(handle):
+                    return b""
+            entries = []
+            while True:
+                name = _read_pbo_cstring(handle)
+                header = handle.read(20)
+                if len(header) != 20:
+                    return b""
+                if not name:
+                    break
+                _packing, _original, _reserved, _timestamp, size = struct.unpack("<IIIII", header)
+                entries.append((name.lower(), size))
+            data_offset = handle.tell()
+            for name, size in entries:
+                if name == b"config.bin":
+                    if size > MAX_ADDON_CONFIG_BYTES:
+                        return b""
+                    handle.seek(data_offset)
+                    return handle.read(size)
+                data_offset += size
+    except (OSError, ValueError, struct.error):
+        return b""
+    return b""
+
+
+def resolve_local_dayz_addon_dependencies(
+    workshop_ids, workshop_dir: Path | None
+) -> tuple[str, ...]:
+    """Infer installed Workshop owners of addon names referenced by Editor mods.
+
+    This is a local, Editor-only safety net for mods whose Steam pages omit
+    dependency metadata. It reads only PBO directory headers and config.bin
+    payloads; it never unpacks, runs, or changes mod files.
+    """
+    if not workshop_dir or not workshop_dir.is_dir():
+        return ()
+    selected = {str(item) for item in workshop_ids}
+    provided_by: dict[str, set[str]] = {}
+    source_pbos: list[Path] = []
+    try:
+        mod_dirs = [child for child in workshop_dir.iterdir() if child.is_dir() and child.name.isdigit()]
+    except OSError:
+        return ()
+    for mod_dir in mod_dirs:
+        try:
+            pbos = list((mod_dir / "addons").glob("*.pbo"))[:MAX_ADDON_DEPENDENCY_PBOS]
+        except OSError:
+            continue
+        for pbo in pbos:
+            token = pbo.stem.casefold()
+            if len(token) >= 5 and "_" in token:
+                provided_by.setdefault(token, set()).add(mod_dir.name)
+            if mod_dir.name in selected:
+                source_pbos.append(pbo)
+    detected: set[str] = set()
+    remaining_bytes = MAX_ADDON_SOURCE_SCAN_BYTES
+    for pbo in source_pbos[:MAX_ADDON_DEPENDENCY_PBOS]:
+        payload = _pbo_config_bytes(pbo)
+        # Binarized config strings can be fragmented. Search a small bounded
+        # prefix of the PBO too: model/config references are retained there as
+        # plain addon names, while this avoids unpacking or reading giant maps.
+        if remaining_bytes > 0:
+            try:
+                with pbo.open("rb") as handle:
+                    scanned = handle.read(min(MAX_ADDON_PBO_SCAN_BYTES, remaining_bytes))
+                remaining_bytes -= len(scanned)
+                payload += scanned
+            except OSError:
+                pass
+        tokens = {match.group().decode("ascii").casefold() for match in _ADDON_TOKEN_RE.finditer(payload)}
+        for token in tokens:
+            for workshop_id in provided_by.get(token, ()):
+                if workshop_id not in selected:
+                    detected.add(workshop_id)
+    return tuple(sorted(detected, key=int))
 
 
 def apply_workshop_file_sizes(result: ModCheckResult, sizes: dict[str, int]) -> ModCheckResult:

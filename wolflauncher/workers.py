@@ -16,6 +16,7 @@ from .mods import (
     check_server_mods,
     fetch_workshop_metadata,
     resolve_workshop_dependencies,
+    resolve_local_dayz_addon_dependencies,
     scan_experimental_local_mods,
     scan_installed_mods,
     workshop_install_timestamps,
@@ -188,13 +189,19 @@ class WorkshopDependencyWorker(QThread):
 
     dependencies_ready = Signal(object, object)
 
-    def __init__(self, workshop_ids):
+    def __init__(self, workshop_ids, *, local_workshop_dir=None):
         super().__init__()
         self.workshop_ids = tuple(workshop_ids)
+        self.local_workshop_dir = local_workshop_dir
 
     def run(self):
         try:
             resolved, metadata = resolve_workshop_dependencies(self.workshop_ids)
+            if self.local_workshop_dir:
+                local_ids = resolve_local_dayz_addon_dependencies(
+                    resolved, self.local_workshop_dir
+                )
+                resolved = tuple(dict.fromkeys((*resolved, *local_ids)))
         except Exception:
             # Dependency metadata is advisory. Keep the explicit selection
             # launchable if Steam's public endpoint is temporarily unavailable.

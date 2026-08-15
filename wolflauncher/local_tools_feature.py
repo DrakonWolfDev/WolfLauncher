@@ -87,6 +87,8 @@ class LocalToolsFeatureMixin:
         self.editor_dependency_metadata = {}
         self.editor_dependency_request = 0
         self.editor_dependency_worker = None
+        self.editor_addon_dependency_worker = None
+        self.editor_addon_dependencies_checked = False
         profile_card = QFrame()
         set_ui_role(profile_card, "healthGroup")
         profile_layout = QVBoxLayout(profile_card)
@@ -380,6 +382,7 @@ class LocalToolsFeatureMixin:
             self.editor_extra_mod_ids.add(workshop_id)
         else:
             self.editor_extra_mod_ids.discard(workshop_id)
+        self.editor_addon_dependencies_checked = False
         self._resolve_editor_dependencies()
         self.save_user_settings(silent=True)
 
@@ -503,6 +506,28 @@ class LocalToolsFeatureMixin:
                 "WolfLauncher is already waiting for a Steam Workshop operation to finish.",
             )
             return
+        if self.editor_addon_dependency_worker and self.editor_addon_dependency_worker.isRunning():
+            return
+        if not self.editor_addon_dependencies_checked:
+            roots = tuple(sorted(self.editor_extra_mod_ids, key=int))
+            if roots:
+                self.local_tools_status.setText(
+                    "Checking selected Editor mods for local DayZ addon requirements…"
+                )
+                worker = WorkshopDependencyWorker(
+                    roots, local_workshop_dir=install.workshop_dir
+                )
+                worker.setParent(self)
+                self.editor_addon_dependency_worker = worker
+                worker.dependencies_ready.connect(
+                    lambda resolved, metadata: self._finish_editor_addon_dependency_scan(
+                        roots, resolved, metadata, install
+                    )
+                )
+                worker.finished.connect(self._clear_editor_addon_dependency_worker)
+                worker.start()
+                return
+            self.editor_addon_dependencies_checked = True
         mods = self._local_required_mods(editor=True)
         self.local_tools_status.setText(
             f"Checking {len(mods)} DayZ Editor mod(s), including declared requirements, with Steam for updatesâ€¦"
@@ -515,6 +540,19 @@ class LocalToolsFeatureMixin:
         worker.subscription_ready.connect(self._finish_editor_workshop_resolution)
         worker.finished.connect(self._clear_editor_workshop_worker)
         worker.start()
+
+    def _finish_editor_addon_dependency_scan(self, roots, resolved, metadata, install):
+        self.editor_dependency_mod_ids = set(resolved) - set(roots)
+        self.editor_dependency_metadata.update(metadata)
+        self.editor_addon_dependencies_checked = True
+        self._refresh_editor_mod_picker()
+        self._start_editor_workshop_resolution(install)
+
+    def _clear_editor_addon_dependency_worker(self):
+        worker = self.editor_addon_dependency_worker
+        self.editor_addon_dependency_worker = None
+        if worker:
+            worker.deleteLater()
 
     def _update_editor_workshop_progress(self, snapshots):
         installed = sum(1 for item in snapshots if item.installed)

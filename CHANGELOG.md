@@ -17,6 +17,10 @@
   subscribes/updates the complete resolved set before launch. Steam metadata is
   optional, so undeclared DayZ/PBO requirements remain visible as a manual
   author/documentation responsibility.
+- The Editor launch preflight now also performs a bounded read-only local PBO
+  addon-reference scan for selected mods, matching undeclared references to
+  installed Workshop owners. This catches PripyatGamma's GSC Gameworld Assets
+  requirement without applying a heuristic to Local Development sessions.
 
 - Improved the DayZ Stable/Experimental switch: it now shows a short
   **Switching game version** progress dialog, applies the new profile without

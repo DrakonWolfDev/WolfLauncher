@@ -61,7 +61,9 @@ release matrix.
   LAN/test server. It resolves recursively bounded author-declared Steam Workshop
   requirements into read-only selected rows, then asks Steam to subscribe/update
   the full resolved set before local verification and a detected DayZ handoff.
-  Undeclared DayZ/PBO requirements remain manual. It is advanced local
+  Before that Editor-only handoff, it also scans selected local PBO references
+  against installed Workshop addon owners to catch undeclared dependencies such
+  as PripyatGamma's GSC asset requirement. It is advanced local
   development tooling, not public hosting; dedicated-server
   installation, start/stop control, project-editor opening and log views remain
   staged follow-on work.

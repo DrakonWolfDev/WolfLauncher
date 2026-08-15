@@ -20,6 +20,7 @@ WORKER_ATTRIBUTES = (
     "results_freshness_worker",
     "workshop_library_worker",
     "editor_dependency_worker",
+    "editor_addon_dependency_worker",
 )
 
 WORKER_COLLECTION_ATTRIBUTES = (
