@@ -13,8 +13,9 @@ counts as observed coverage rather than a full Steam census.
 ## WolfAPI post-canary scheduling update (2026-08-16)
 
 WolfAPI now gives advisory-flagged rows a bounded validation share, supports
-bounded concurrency in its separately budgeted direct-mod job, avoids
-rewriting unchanged per-server Redis hashes after live-validation batches and
+bounded concurrency in its separately budgeted direct-mod job, patches only
+changed Redis rows after live-validation batches and lets the next normal
+Steam cycle refresh the compatibility JSON snapshot, and
 publishes queue wait/runtime plus cache-write telemetry. Postgres recovery also
 rebuilds legacy IDs from each current product-scoped endpoint, preserving port
 corrections and Stable/Experimental separation. This improves hosted
