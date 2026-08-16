@@ -191,10 +191,11 @@ not that cached servers disappeared.
 WolfAPI's additive `/api/health` operator telemetry now breaks advisory quality
 warnings down by stable reason and reports the configured direct-validation
 capacity plus map-sweep cycle yield. This does not change v1 row parsing,
-visibility, SQLite storage or Launcher behavior. The API will stage a 900-row,
-concurrency-10 validation canary only after deployment verification; continue
-to treat provider/validation state as browsing evidence and selected-server
-checks as local truth.
+visibility, SQLite storage or Launcher behavior. The API's 900-row,
+concurrency-10 production canary passed three scheduled cycles on 2026-08-16
+with zero queue residue, dead letters, restarts or service errors; continue to
+treat provider/validation state as browsing evidence and selected-server checks
+as local truth.
 
 Post-fix probe on 2026-07-13: bounded list, dedicated search, exact resolution
 and conditional ETag requests all pass. Migration `20260713_0006`, rollout
