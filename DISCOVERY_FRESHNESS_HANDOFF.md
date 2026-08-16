@@ -32,6 +32,13 @@ completed 250 probes at concurrency 4 in 65.521 seconds. These are hosted API
 operational changes only; the Launcher contract, fallback and local final-truth
 rules remain unchanged.
 
+WolfAPI now performs normal source cache writes incrementally and delegates the
+legacy compatibility JSON to a coalesced, Redis-leased, short-lived snapshot
+builder. It atomically replaces the previous payload only after success and
+preserves that last known-good fallback during pending or failed builds. This
+is an API memory/queue isolation change: WolfLauncher continues using v1 by
+default and retains the same explicit legacy `/api/servers` fallback.
+
 ## Purpose
 
 This file is the launcher-side companion to
