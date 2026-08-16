@@ -39,6 +39,15 @@ preserves that last known-good fallback during pending or failed builds. This
 is an API memory/queue isolation change: WolfLauncher continues using v1 by
 default and retains the same explicit legacy `/api/servers` fallback.
 
+Production release `20260816T135506Z-39df6ba` validated that isolation on
+2026-08-16. Incremental Stable-family and Experimental publications completed
+in 32.509 and 27.865 seconds respectively, and three consecutive isolated
+legacy replacements succeeded without normal-queue work, restart or OOM. The
+latest snapshot contained 190,092 rows and completed in 29.674 seconds; a
+public legacy request returned that full snapshot in 25.663 seconds. This is
+deployment evidence only and does not change Launcher parsing, v1 preference,
+legacy fallback, or the local selected-server final-truth boundary.
+
 ## Purpose
 
 This file is the launcher-side companion to
