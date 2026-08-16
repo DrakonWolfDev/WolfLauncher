@@ -24,6 +24,14 @@ Launcher behavior. Flagged rows remain discoverable by exact resolution and a
 warning is still advisory rather than proof that a server is unsafe. Launcher
 selected-server and launch-time checks remain local final truth.
 
+Production release `20260816T132016Z-e070e87` validated the new policy on
+2026-08-16: 1,200 live probes at concurrency 10 completed in 51.887 seconds
+with 1,151 successes, 49 failures, empty queues, zero restarts and no legacy
+snapshot or membership rebuild. The separately budgeted Stable metadata lane
+completed 250 probes at concurrency 4 in 65.521 seconds. These are hosted API
+operational changes only; the Launcher contract, fallback and local final-truth
+rules remain unchanged.
+
 ## Purpose
 
 This file is the launcher-side companion to
