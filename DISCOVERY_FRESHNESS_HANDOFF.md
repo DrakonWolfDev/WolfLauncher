@@ -15,7 +15,9 @@ counts as observed coverage rather than a full Steam census.
 WolfAPI now gives advisory-flagged rows a bounded validation share, supports
 bounded concurrency in its separately budgeted direct-mod job, avoids
 rewriting unchanged per-server Redis hashes after live-validation batches and
-publishes queue wait/runtime plus cache-write telemetry. This improves hosted
+publishes queue wait/runtime plus cache-write telemetry. Postgres recovery also
+rebuilds legacy IDs from each current product-scoped endpoint, preserving port
+corrections and Stable/Experimental separation. This improves hosted
 freshness throughput without changing v1 fields, quality-warning semantics or
 Launcher behavior. Flagged rows remain discoverable by exact resolution and a
 warning is still advisory rather than proof that a server is unsafe. Launcher
