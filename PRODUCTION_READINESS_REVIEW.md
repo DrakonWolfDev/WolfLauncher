@@ -471,6 +471,12 @@ not merely source changes.
   still work. Coordinate the removal of WolfAPI's compatibility-only
   `GET /api/servers` route in the same release window; do not remove it until
   the Launcher migration and its regression tests pass.
+- [ ] **PR-19 — Add verified WolfAPI server submissions for the next beta.**
+  Let a player submit a missing `host:query_port` from the Launcher and provide
+  the same rate-limited, abuse-protected submission journey for the Wolf
+  Control website and Discord integration. A submission must enter an API-side
+  review/validation queue with provenance, rate limits and moderation controls;
+  it must never publish a row immediately or bypass directory quality rules.
 
 Ideas beyond PR-17 belong in the post-v1 roadmap only when they have a concrete
 user outcome. They must not displace unfinished release gates.
