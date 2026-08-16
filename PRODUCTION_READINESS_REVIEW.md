@@ -464,6 +464,13 @@ not merely source changes.
   budgets** for settings, parsers, cache identity, startup and browser search.
 - [ ] **PR-17 — Implement the defined update strategy and complete retention
   policies** for packages, cache, logs, thumbnails and reports.
+- [ ] **PR-18 — Retire the WolfAPI legacy discovery fallback for the next beta.**
+  Audit and migrate any saved `WolfAPI (legacy fallback)` provider selections
+  to the hosted v1 provider, remove the user-facing legacy provider choice,
+  and verify offline SQLite discovery, bounded list/search and exact resolution
+  still work. Coordinate the removal of WolfAPI's compatibility-only
+  `GET /api/servers` route in the same release window; do not remove it until
+  the Launcher migration and its regression tests pass.
 
 Ideas beyond PR-17 belong in the post-v1 roadmap only when they have a concrete
 user outcome. They must not displace unfinished release gates.
