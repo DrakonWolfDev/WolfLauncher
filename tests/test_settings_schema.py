@@ -15,6 +15,11 @@ class SettingsSchemaTests(unittest.TestCase):
         self.assertTrue(settings["hide_quality_flagged"])
         self.assertEqual(settings["future_setting"], {"keep": True})
 
+    def test_legacy_wolfapi_provider_migrates_to_v1(self):
+        settings = normalize_settings({"schema_version": 8, "discovery_provider": "wolfapi"})
+
+        self.assertEqual(settings["discovery_provider"], "wolfapi_v1")
+
     def test_invalid_settings_are_replaced_with_a_minimal_valid_schema(self):
         self.assertEqual(
             normalize_settings(["not", "a", "mapping"]),

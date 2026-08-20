@@ -402,10 +402,7 @@ class LocalToolsFeatureMixin:
             self.editor_dependency_metadata.clear()
             self._refresh_editor_mod_picker()
             return
-        install = self.selected_steam_install()
-        worker = WorkshopDependencyWorker(
-            roots, local_workshop_dir=install.workshop_dir if install else None
-        )
+        worker = WorkshopDependencyWorker(roots)
         worker.setParent(self)
         self.editor_dependency_worker = worker
         self.editor_mod_picker.setEnabled(False)
@@ -540,9 +537,9 @@ class LocalToolsFeatureMixin:
             roots = tuple(sorted(self.editor_extra_mod_ids, key=int))
             if roots:
                 self.local_tools_status.setText(
-                    "Checking selected Editor mods for local DayZ addon requirements…"
+                    "Checking selected Editor mods for declared Workshop requirements…"
                 )
-                worker = WorkshopDependencyWorker(roots, local_workshop_dir=install.workshop_dir)
+                worker = WorkshopDependencyWorker(roots)
                 worker.setParent(self)
                 self.editor_addon_dependency_worker = worker
                 worker.dependencies_ready.connect(

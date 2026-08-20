@@ -77,27 +77,14 @@ class WorkerTests(unittest.TestCase):
     def test_wolfapi_worker_uses_strict_bounded_v1_when_selected(self, discover):
         discover.return_value = ["v1-server"]
         results = []
-        worker = WolfApiDiscoveryWorker(limit=100, use_v1=True)
+        worker = WolfApiDiscoveryWorker(limit=100)
         worker.discovery_ready.connect(lambda servers, error: results.append((servers, error)))
 
         worker.run()
 
         discover.assert_called_once_with(limit=100, offset=0, product="stable")
-        self.assertEqual(worker.provider_label, "WolfAPI v1")
+        self.assertEqual(worker.provider_label, "WolfAPI")
         self.assertEqual(results, [(["v1-server"], "")])
-
-    @patch("wolflauncher.workers.discover_dayz_servers_wolfapi")
-    def test_wolfapi_worker_preserves_legacy_fallback(self, discover):
-        discover.return_value = ["legacy-server"]
-        results = []
-        worker = WolfApiDiscoveryWorker(limit=500, use_v1=False)
-        worker.discovery_ready.connect(lambda servers, error: results.append((servers, error)))
-
-        worker.run()
-
-        discover.assert_called_once_with(limit=500)
-        self.assertEqual(worker.provider_label, "WolfAPI legacy")
-        self.assertEqual(results, [(["legacy-server"], "")])
 
     @patch("wolflauncher.workers.discover_dayz_servers_wolfapi_v1")
     def test_v1_background_discovery_fetches_bounded_pages(self, discover):

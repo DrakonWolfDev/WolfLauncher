@@ -154,7 +154,6 @@ class SettingsFeatureMixin:
         self.discovery_provider.addItems(
             [
                 "WolfAPI",
-                "WolfAPI (legacy fallback)",
                 "BattleMetrics",
                 "Steam Web API",
                 "Steam Master",

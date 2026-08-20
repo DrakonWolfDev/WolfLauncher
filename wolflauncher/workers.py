@@ -15,7 +15,6 @@ from .mods import (
     apply_workshop_metadata,
     check_server_mods,
     fetch_workshop_metadata,
-    resolve_local_dayz_addon_dependencies,
     resolve_workshop_dependencies,
     scan_experimental_local_mods,
     scan_installed_mods,
@@ -26,7 +25,6 @@ from .server_discovery import (
     discover_dayz_servers,
     discover_dayz_servers_battlemetrics,
     discover_dayz_servers_web_api,
-    discover_dayz_servers_wolfapi,
     discover_dayz_servers_wolfapi_v1,
     parse_exact_server_endpoint,
     resolve_dayz_server_wolfapi_v1,
@@ -189,17 +187,13 @@ class WorkshopDependencyWorker(QThread):
 
     dependencies_ready = Signal(object, object)
 
-    def __init__(self, workshop_ids, *, local_workshop_dir=None):
+    def __init__(self, workshop_ids):
         super().__init__()
         self.workshop_ids = tuple(workshop_ids)
-        self.local_workshop_dir = local_workshop_dir
 
     def run(self):
         try:
             resolved, metadata = resolve_workshop_dependencies(self.workshop_ids)
-            if self.local_workshop_dir:
-                local_ids = resolve_local_dayz_addon_dependencies(resolved, self.local_workshop_dir)
-                resolved = tuple(dict.fromkeys((*resolved, *local_ids)))
         except Exception:
             # Dependency metadata is advisory. Keep the explicit selection
             # launchable if Steam's public endpoint is temporarily unavailable.
@@ -325,32 +319,27 @@ class WolfApiDiscoveryWorker(QThread):
         self,
         limit: int = 10000,
         automatic: bool = False,
-        use_v1: bool = False,
         unflagged_only: bool = False,
         product: str = "stable",
     ):
         super().__init__()
         self.limit = limit
         self.automatic = automatic
-        self.use_v1 = use_v1
         self.unflagged_only = unflagged_only
         self.product = product
 
     @property
     def provider_label(self) -> str:
-        return "WolfAPI v1" if self.use_v1 else "WolfAPI legacy"
+        return "WolfAPI"
 
     def run(self):
         try:
-            if self.use_v1:
-                if self.unflagged_only:
-                    servers = discover_wolfapi_v1_pages(
-                        self.limit, unflagged_only=True, product=self.product
-                    )
-                else:
-                    servers = discover_wolfapi_v1_pages(self.limit, product=self.product)
+            if self.unflagged_only:
+                servers = discover_wolfapi_v1_pages(
+                    self.limit, unflagged_only=True, product=self.product
+                )
             else:
-                servers = discover_dayz_servers_wolfapi(limit=self.limit)
+                servers = discover_wolfapi_v1_pages(self.limit, product=self.product)
         except Exception as exc:
             self.discovery_ready.emit([], str(exc))
         else:

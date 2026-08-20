@@ -318,10 +318,10 @@ as read-only checked rows, and are deliberately not persisted as user choices.
 The explicit Editor selection also resets quietly on each app start.
 The full resolved set is combined with DayZ Editor (`2250764298`), CF
 (`1559212036`) and Dabs Framework (`2545327648`) for an offline handoff without
-`-connect`. When an additional Editor mod is selected, WolfLauncher also performs
-a bounded read-only scan of selected local PBO config/payload references and
-matches addon names to installed Workshop owners; this catches undeclared
-requirements before launch without applying that heuristic to Local Development. Local Development alone owns the saved
+`-connect`. When an additional Editor mod is selected, WolfLauncher performs a
+bounded recursive traversal of its author-declared Steam Workshop requirements.
+It deliberately does not infer requirements from arbitrary PBO asset or config
+references, because those references do not establish a mod dependency. Local Development alone owns the saved
 profile data: name, ordered client Workshop IDs and existing LAN
 `host:game-port` endpoint, used to launch native DayZ into that test server.
 

@@ -10,6 +10,11 @@
 - Planned clearer retryable-status language for incomplete A2S/GameDig
   responses, so a temporary partial response is not mistaken for a definitive
   offline server.
+- Editor dependency detection now relies exclusively on author-declared Steam
+  Workshop requirements. The local PBO token scan was removed because normal
+  asset/config references could be misidentified as required Workshop mods.
+- The legacy WolfAPI provider selection now migrates to the v1 provider; the
+  Server Browser no longer offers the retired fallback path.
 
 ## 0.9.0b1 — 2026-08-15
 
@@ -31,9 +36,9 @@
   for selected additional mods, including nested dependencies. Required mods
   appear as checked read-only rows and the confirmed Editor Steam workflow
   subscribes/updates the complete resolved set before launch. Steam metadata is
-  optional, so undeclared DayZ/PBO requirements remain visible as a manual
+  optional, so Workshop requirements remain visible as a manual
   author/documentation responsibility.
-- The Editor launch preflight now also performs a bounded read-only local PBO
+- The Editor launch preflight also performed a bounded read-only local PBO
   addon-reference scan for selected mods, matching undeclared references to
   installed Workshop owners. This catches PripyatGamma's GSC Gameworld Assets
   requirement without applying a heuristic to Local Development sessions.

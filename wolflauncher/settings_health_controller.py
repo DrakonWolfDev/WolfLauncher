@@ -62,7 +62,6 @@ class SettingsHealthCoordinator:
             return "OK", detail or "Default Steam masters"
         details = {
             "wolfapi_v1": "WolfAPI server discovery",
-            "wolfapi": "WolfAPI legacy hosted cache fallback",
             "battlemetrics": "BattleMetrics public API",
             "disabled": "Database refresh is disabled",
         }

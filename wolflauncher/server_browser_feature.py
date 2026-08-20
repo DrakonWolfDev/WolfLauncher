@@ -476,7 +476,7 @@ class ServerBrowserMixin:
         self._start_configured_provider_refresh(provider)
 
     def _start_configured_provider_refresh(self, provider: str):
-        if provider in ("wolfapi", "wolfapi_v1"):
+        if provider == "wolfapi_v1":
             self.refresh_from_wolfapi()
         elif provider == "battlemetrics":
             self.refresh_from_battlemetrics()
@@ -597,23 +597,21 @@ class ServerBrowserMixin:
     def refresh_from_wolfapi(self):
         if self.wolfapi_worker and self.wolfapi_worker.isRunning():
             return
-        use_v1 = self.discovery_provider_key() == "wolfapi_v1"
-        self.start_wolfapi_refresh_process(automatic=False, use_v1=use_v1)
+        self.start_wolfapi_refresh_process(automatic=False)
 
-    def start_wolfapi_refresh_process(self, automatic: bool, use_v1: bool):
-        label = "WolfAPI v1" if use_v1 else "WolfAPI legacy"
+    def start_wolfapi_refresh_process(self, automatic: bool):
+        label = "WolfAPI"
         self.browser_summary.setText(f"Cached discovered servers: querying {label}…")
         self._set_database_refresh_enabled(False)
         self.wolfapi_cache_context = (
             automatic,
             label,
-            "wolfapi_v1" if use_v1 else "wolfapi",
+            "wolfapi_v1",
         )
         self.wolfapi_worker = WolfApiDiscoveryWorker(
             limit=self.discovery_limit.value(),
             automatic=automatic,
-            use_v1=use_v1,
-            unflagged_only=use_v1 and self.browser_hide_quality_flagged.isChecked(),
+            unflagged_only=self.browser_hide_quality_flagged.isChecked(),
             product=self.dayz_product_key(),
         )
         self.wolfapi_worker.discovery_ready.connect(self.handle_wolfapi_ready)
@@ -644,8 +642,8 @@ class ServerBrowserMixin:
             "Cached discovered servers: quietly refreshing configured provider..."
         )
         self._set_database_refresh_enabled(False)
-        if provider in ("wolfapi", "wolfapi_v1"):
-            self.start_wolfapi_refresh_process(automatic=True, use_v1=provider == "wolfapi_v1")
+        if provider == "wolfapi_v1":
+            self.start_wolfapi_refresh_process(automatic=True)
         elif provider == "battlemetrics":
             self.battlemetrics_worker = BattleMetricsDiscoveryWorker(
                 limit=self.discovery_limit.value(),
@@ -797,7 +795,7 @@ class ServerBrowserMixin:
 
     def handle_wolfapi_ready(self, servers, error: str):
         automatic = bool(self.wolfapi_worker and self.wolfapi_worker.automatic)
-        provider = "wolfapi_v1" if self.wolfapi_worker and self.wolfapi_worker.use_v1 else "wolfapi"
+        provider = "wolfapi_v1"
         label = self.wolfapi_worker.provider_label if self.wolfapi_worker else "WolfAPI"
         if automatic:
             self.mark_auto_refresh(provider)
@@ -1319,7 +1317,6 @@ class ServerBrowserMixin:
     def _provider_label(self, key: str) -> str:
         labels = {
             "wolfapi_v1": "WolfAPI",
-            "wolfapi": "WolfAPI (legacy fallback)",
             "battlemetrics": "BattleMetrics",
             "steam_web_api": "Steam Web API",
             "steam_master": "Steam Master",
@@ -1333,7 +1330,6 @@ class ServerBrowserMixin:
         keys = {
             "WolfAPI": "wolfapi_v1",
             "WolfAPI v1 (staged)": "wolfapi_v1",
-            "WolfAPI (legacy fallback)": "wolfapi",
             "BattleMetrics": "battlemetrics",
             "Steam Web API": "steam_web_api",
             "Steam Master": "steam_master",

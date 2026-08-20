@@ -45,12 +45,11 @@ class ServerBrowserTableTests(unittest.TestCase):
         with patch(
             "wolflauncher.server_browser_feature.WolfApiDiscoveryWorker", return_value=worker
         ) as create_worker:
-            ServerBrowserMixin.start_wolfapi_refresh_process(window, automatic=True, use_v1=True)
+            ServerBrowserMixin.start_wolfapi_refresh_process(window, automatic=True)
 
         create_worker.assert_called_once_with(
             limit=250,
             automatic=True,
-            use_v1=True,
             unflagged_only=True,
             product="stable",
         )

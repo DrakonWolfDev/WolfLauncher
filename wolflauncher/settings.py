@@ -10,7 +10,7 @@ SETTINGS_PATH = APP_DIR / "settings.json"
 FAVOURITES_PATH = APP_DIR / "favourites.json"
 CURATED_SERVERS_PATH = APP_DIR / "servers.yaml"
 DEFAULT_DISCOVERY_PROVIDER = "wolfapi_v1"
-SETTINGS_SCHEMA_VERSION = 8
+SETTINGS_SCHEMA_VERSION = 9
 
 
 def ensure_app_dir() -> None:
@@ -73,6 +73,8 @@ def normalize_settings(data: Any) -> dict[str, Any]:
             migrated.setdefault("local_host_settings", {})
         if version < 8:
             migrated.setdefault("dayz_product", "stable")
+        if version < 9 and migrated.get("discovery_provider") == "wolfapi":
+            migrated["discovery_provider"] = DEFAULT_DISCOVERY_PROVIDER
         migrated["schema_version"] = SETTINGS_SCHEMA_VERSION
     return migrated
 
