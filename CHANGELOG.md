@@ -21,6 +21,9 @@
 - Auto-detected Editor requirements can now be unchecked for the current
   session when a detection is not required; the fixed DayZ Editor, CF and Dabs
   Framework baseline remains automatic.
+- Added RaG_BaseItems → RaG_Core to the exact Editor compatibility rules for
+  Workshop pages that document a requirement without publishing it as Steam
+  dependency metadata.
 - The legacy WolfAPI provider selection now migrates to the v1 provider; the
   Server Browser no longer offers the retired fallback path.
 

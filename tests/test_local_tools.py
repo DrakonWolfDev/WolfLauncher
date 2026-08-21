@@ -39,6 +39,12 @@ class LocalToolsTests(unittest.TestCase):
             {"3711012403": {"title": "GSC Gameworld Assets 2026"}},
         )
 
+    def test_rag_baseitems_includes_its_documented_rag_core_requirement(self):
+        self.assertEqual(
+            expand_editor_mod_requirements(("2878980498",)),
+            ("2878980498", "3556131153"),
+        )
+
     def test_unchecked_auto_detected_editor_requirement_is_excluded_from_launch(self):
         feature = SimpleNamespace(
             editor_extra_mod_ids={"3136720512"},

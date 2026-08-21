@@ -15,6 +15,7 @@ DAYZ_EDITOR_MODS = (
 EDITOR_COMPATIBILITY_REQUIREMENTS = {
     "3136720512": (("2868091107", "GSC Gameworld Assets"),),
     "3711024720": (("3711012403", "GSC Gameworld Assets 2026"),),
+    "2878980498": (("3556131153", "RaG_Core"),),
 }
 
 
