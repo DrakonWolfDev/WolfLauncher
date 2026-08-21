@@ -1,0 +1,18 @@
+# Store text files as LF and check them out as LF on both Windows and Linux
+* text=auto eol=lf
+
+# Windows command scripts
+*.bat  text eol=crlf
+*.cmd  text eol=crlf
+*.ps1  text eol=crlf
+
+# Binary files
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.ico  binary
+*.zip  binary
+*.dll  binary
+*.exe  binary
+*.pbo  binary
