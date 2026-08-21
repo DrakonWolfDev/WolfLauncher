@@ -44,6 +44,33 @@ def fetch_json(
     return request_json(url, timeout=timeout, max_bytes=max_bytes, cancel=cancel, retries=retries)
 
 
+def fetch_html(
+    url: str, *, timeout: float = 15.0, max_bytes: int = DEFAULT_MAX_RESPONSE_BYTES
+) -> str:
+    """Fetch one bounded HTML document for a read-only provider fallback."""
+    request = urllib.request.Request(
+        url, headers={"User-Agent": user_agent(), "Accept": "text/html"}
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            content_type = response.headers.get_content_type() if response.headers else ""
+            if content_type and content_type not in {"text/html", "application/xhtml+xml"}:
+                raise HttpClientError("content_type", "Provider returned non-HTML content")
+            payload = _read_bounded(response, max_bytes, None)
+    except urllib.error.HTTPError as exc:
+        raise HttpClientError("http", f"Provider HTTP error: {exc.code}", exc.code) from exc
+    except urllib.error.URLError as exc:
+        raise HttpClientError("connection", f"Provider connection failed: {exc.reason}") from exc
+    except TimeoutError as exc:
+        raise HttpClientError("timeout", "Provider request timed out") from exc
+    except OSError as exc:
+        raise HttpClientError("connection", "Provider connection failed") from exc
+    try:
+        return payload.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise HttpClientError("invalid_text", "Provider returned invalid HTML") from exc
+
+
 def post_form_json(
     url: str,
     fields: list[tuple[str, str]],

@@ -11,19 +11,13 @@
   responses, so a temporary partial response is not mistaken for a definitive
   offline server.
 - Editor dependency detection relies on author-declared Steam Workshop
-  requirements, with exact compatibility rules only where Steam metadata is
-  known to omit a documented requirement. The local PBO token scan was removed
+  requirements, falling back to the page's explicit Required items links when
+  the metadata endpoint omits them. The local PBO token scan was removed
   because normal asset/config references could be misidentified as required
   Workshop mods.
-- Restored the documented GSC Gameworld Assets requirement for PripyatGamma in
-  DayZ Editor through an exact version-specific compatibility rule, covering
-  Steam metadata responses that omit the declared requirement.
 - Auto-detected Editor requirements can now be unchecked for the current
   session when a detection is not required; the fixed DayZ Editor, CF and Dabs
   Framework baseline remains automatic.
-- Added RaG_BaseItems → RaG_Core to the exact Editor compatibility rules for
-  Workshop pages that document a requirement without publishing it as Steam
-  dependency metadata.
 - The legacy WolfAPI provider selection now migrates to the v1 provider; the
   Server Browser no longer offers the retired fallback path.
 

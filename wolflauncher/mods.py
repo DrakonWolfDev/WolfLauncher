@@ -1,11 +1,13 @@
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 from .dayz_mod_query import query_dayz_required_mods
-from .http_client import HttpClientError, post_form_json
+from .http_client import HttpClientError, fetch_html, post_form_json
 from .models import Server
 from .redaction import redact_support_text
 from .status import resolve_host
@@ -14,6 +16,51 @@ WORKSHOP_URL = "https://steamcommunity.com/sharedfiles/filedetails/?id={mod_id}"
 WORKSHOP_DETAILS_URL = (
     "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"
 )
+
+
+class _WorkshopRequiredItemsParser(HTMLParser):
+    """Extract only Workshop links inside Steam's Required items container."""
+
+    def __init__(self):
+        super().__init__()
+        self._required_depth: int | None = None
+        self._depth = 0
+        self.workshop_ids: list[str] = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "div":
+            self._depth += 1
+            classes = (dict(attrs).get("class") or "").casefold()
+            if self._required_depth is None and "requireditems" in classes:
+                self._required_depth = self._depth
+        if tag == "a" and self._required_depth is not None:
+            href = dict(attrs).get("href") or ""
+            workshop_id = parse_qs(urlparse(href).query).get("id", [""])[0]
+            if workshop_id.isdigit() and workshop_id not in self.workshop_ids:
+                self.workshop_ids.append(workshop_id)
+
+    def handle_endtag(self, tag):
+        if tag == "div":
+            if self._required_depth == self._depth:
+                self._required_depth = None
+            self._depth = max(0, self._depth - 1)
+
+
+def fetch_workshop_page_required_items(workshop_id: str) -> tuple[str, ...]:
+    """Read Steam's explicit Required items links when metadata omits them."""
+    if not str(workshop_id).isdigit():
+        return ()
+    try:
+        page = fetch_html(WORKSHOP_URL.format(mod_id=workshop_id), timeout=10, max_bytes=2 * 1024 * 1024)
+    except HttpClientError:
+        return ()
+    parser = _WorkshopRequiredItemsParser()
+    try:
+        parser.feed(page)
+        parser.close()
+    except ValueError:
+        return ()
+    return tuple(parser.workshop_ids)
 
 
 @dataclass
@@ -194,7 +241,13 @@ def resolve_workshop_dependencies(
         metadata.update(details)
         next_level = []
         for workshop_id in batch:
-            for child_id in details.get(workshop_id, {}).get("children", ()):
+            children = details.get(workshop_id, {}).get("children", ())
+            # Steam's published-file endpoint does not reliably expose the
+            # Required items panel seen on Workshop pages. Use that explicit
+            # link panel only as a fallback, never free-form description text.
+            if not children:
+                children = fetch_workshop_page_required_items(workshop_id)
+            for child_id in children:
                 if child_id in seen or len(seen) >= max_items:
                     continue
                 seen.add(child_id)

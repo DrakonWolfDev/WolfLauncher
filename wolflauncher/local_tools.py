@@ -8,15 +8,6 @@ DAYZ_EDITOR_MODS = (
     ("2545327648", "Dabs Framework"),
 )
 
-# These Workshop pages explicitly list GSC as a required item, but Steam's
-# published-file details endpoint does not reliably return that relationship.
-# Keep the compatibility additions narrow and version-specific instead of
-# inferring dependencies from arbitrary PBO asset/config references.
-EDITOR_COMPATIBILITY_REQUIREMENTS = {
-    "3136720512": (("2868091107", "GSC Gameworld Assets"),),
-    "3711024720": (("3711012403", "GSC Gameworld Assets 2026"),),
-    "2878980498": (("3556131153", "RaG_Core"),),
-}
 
 
 @dataclass(frozen=True)
@@ -24,27 +15,6 @@ class LocalToolProfile:
     name: str
     mod_paths: tuple[str, ...] = ()
     endpoint: str = ""
-
-
-def expand_editor_mod_requirements(workshop_ids) -> tuple[str, ...]:
-    """Add exact Editor compatibility requirements, preserving selection order."""
-    result = list(normalise_workshop_ids(tuple(workshop_ids)))
-    selected = set(result)
-    for workshop_id in tuple(result):
-        for requirement_id, _name in EDITOR_COMPATIBILITY_REQUIREMENTS.get(workshop_id, ()):
-            if requirement_id not in selected:
-                selected.add(requirement_id)
-                result.append(requirement_id)
-    return tuple(result)
-
-
-def editor_compatibility_metadata(workshop_ids) -> dict[str, dict[str, str]]:
-    """Return display metadata for compatibility requirements absent from Steam metadata."""
-    return {
-        requirement_id: {"title": name}
-        for workshop_id in workshop_ids
-        for requirement_id, name in EDITOR_COMPATIBILITY_REQUIREMENTS.get(workshop_id, ())
-    }
 
 
 def normalise_workshop_ids(value: str | list[str] | tuple[str, ...]) -> tuple[str, ...]:

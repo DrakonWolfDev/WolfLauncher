@@ -66,9 +66,9 @@ release matrix.
   endpoint when the user changes an Editor selection; WolfAPI is not required
   for this immediate local workflow.
   Dependencies are taken from the selected Workshop items' author-declared
-  requirement graph, plus an exact documented compatibility rule for the
-  PripyatGamma-to-GSC requirement that Steam metadata can omit. A former local
-  PBO-token heuristic was retired because ordinary asset/config references
+  requirement graph, falling back only to explicit Workshop-page Required items
+  links when Steam metadata omits them. A former local PBO-token heuristic was
+  retired because ordinary asset/config references
   produced false requirements. It is advanced local
   development tooling, not public hosting; dedicated-server
   installation, start/stop control, project-editor opening and log views remain

@@ -325,9 +325,9 @@ bounded recursive traversal of its author-declared Steam Workshop requirements.
 This is the immediate, client-side lookup path: it uses Steam's published-file
 details endpoint directly when the user changes an Editor selection, so normal
 dependency resolution does not wait for WolfAPI.
-It also supplies the exact documented GSC requirement for the supported
-PripyatGamma Workshop releases when Steam's metadata response omits it. It
-deliberately does not infer requirements from arbitrary PBO asset or config
+When Steam metadata omits children, it reads only the Workshop page's explicit
+**Required items** links and resolves those recursively. It deliberately does
+not infer requirements from arbitrary PBO asset or config
 references, because those references do not establish a mod dependency. Local Development alone owns the saved
 profile data: name, ordered client Workshop IDs and existing LAN
 `host:game-port` endpoint, used to launch native DayZ into that test server.
