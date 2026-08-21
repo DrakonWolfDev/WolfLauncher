@@ -64,8 +64,12 @@ server/launch-time checks remain local truth.
 Editor Workshop dependency note (2026-08-21): the Editor resolves a user's
 selected Workshop mods directly with Steam's published-file details endpoint.
 WolfAPI is not required for this immediate local workflow. A non-urgent future
-WolfAPI cached Workshop-page fallback must be worker-backed, advisory and
-user-removable, with no upstream page retrieval in public API request paths.
+WolfAPI cached resolver should use the same source order: published-file graph,
+explicit Workshop Required items links, then reviewed documented compatibility
+rules. It must be worker-backed, preserve per-edge source/confidence and source
+update timestamps, retain a stale last-known-good result on failure, remain
+advisory/user-removable, and perform no upstream page retrieval in public API
+request paths.
 
 Production-hardening synchronization on 2026-07-19: WolfAPI v1 retains the
 required `generated_at` field, but its strong ETag now hashes the exact
