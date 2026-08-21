@@ -61,9 +61,11 @@ release matrix.
   LAN/test server. It resolves recursively bounded author-declared Steam Workshop
   requirements into read-only selected rows, then asks Steam to subscribe/update
   the full resolved set before local verification and a detected DayZ handoff.
-  Dependencies are taken only from the selected Workshop items' author-declared
-  requirement graph. A former local PBO-token heuristic was retired because
-  ordinary asset/config references produced false requirements. It is advanced local
+  Dependencies are taken from the selected Workshop items' author-declared
+  requirement graph, plus an exact documented compatibility rule for the
+  PripyatGamma-to-GSC requirement that Steam metadata can omit. A former local
+  PBO-token heuristic was retired because ordinary asset/config references
+  produced false requirements. It is advanced local
   development tooling, not public hosting; dedicated-server
   installation, start/stop control, project-editor opening and log views remain
   staged follow-on work.

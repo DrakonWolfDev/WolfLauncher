@@ -35,6 +35,8 @@ from .local_server import (
 from .local_tools import (
     DAYZ_EDITOR_MODS,
     LocalToolProfile,
+    editor_compatibility_metadata,
+    expand_editor_mod_requirements,
     parse_local_endpoint,
     profiles_from_settings,
 )
@@ -417,8 +419,10 @@ class LocalToolsFeatureMixin:
     def _finish_editor_dependency_resolution(self, request, roots, resolved, metadata):
         if request != self.editor_dependency_request:
             return
+        resolved = expand_editor_mod_requirements(resolved)
         self.editor_dependency_mod_ids = set(resolved) - set(roots)
         self.editor_dependency_metadata = dict(metadata)
+        self.editor_dependency_metadata.update(editor_compatibility_metadata(resolved))
         self._refresh_editor_mod_picker()
         count = len(self.editor_dependency_mod_ids)
         if count:
@@ -565,8 +569,10 @@ class LocalToolsFeatureMixin:
         worker.start()
 
     def _finish_editor_addon_dependency_scan(self, roots, resolved, metadata, install):
+        resolved = expand_editor_mod_requirements(resolved)
         self.editor_dependency_mod_ids = set(resolved) - set(roots)
         self.editor_dependency_metadata.update(metadata)
+        self.editor_dependency_metadata.update(editor_compatibility_metadata(resolved))
         self.editor_addon_dependencies_checked = True
         self._refresh_editor_mod_picker()
         self._start_editor_workshop_resolution(install)

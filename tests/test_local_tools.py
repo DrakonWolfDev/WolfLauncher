@@ -2,6 +2,8 @@ import unittest
 
 from wolflauncher.local_tools import (
     DAYZ_EDITOR_MODS,
+    editor_compatibility_metadata,
+    expand_editor_mod_requirements,
     normalise_workshop_ids,
     parse_local_endpoint,
     profiles_from_settings,
@@ -23,6 +25,16 @@ class LocalToolsTests(unittest.TestCase):
         self.assertEqual(
             normalise_workshop_ids(" 123, no, 456\n123,  "),
             ("123", "456"),
+        )
+
+    def test_pripyat_editor_requirements_include_the_matching_gsc_release(self):
+        self.assertEqual(
+            expand_editor_mod_requirements(("3136720512",)),
+            ("3136720512", "2868091107"),
+        )
+        self.assertEqual(
+            editor_compatibility_metadata(("3711024720",)),
+            {"3711012403": {"title": "GSC Gameworld Assets 2026"}},
         )
 
     def test_parse_local_endpoint(self):

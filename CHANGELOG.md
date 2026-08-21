@@ -10,9 +10,14 @@
 - Planned clearer retryable-status language for incomplete A2S/GameDig
   responses, so a temporary partial response is not mistaken for a definitive
   offline server.
-- Editor dependency detection now relies exclusively on author-declared Steam
-  Workshop requirements. The local PBO token scan was removed because normal
-  asset/config references could be misidentified as required Workshop mods.
+- Editor dependency detection relies on author-declared Steam Workshop
+  requirements, with exact compatibility rules only where Steam metadata is
+  known to omit a documented requirement. The local PBO token scan was removed
+  because normal asset/config references could be misidentified as required
+  Workshop mods.
+- Restored the documented GSC Gameworld Assets requirement for PripyatGamma in
+  DayZ Editor through an exact version-specific compatibility rule, covering
+  Steam metadata responses that omit the declared requirement.
 - The legacy WolfAPI provider selection now migrates to the v1 provider; the
   Server Browser no longer offers the retired fallback path.
 
