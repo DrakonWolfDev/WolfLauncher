@@ -1,6 +1,6 @@
 # WolfAPI Discovery Freshness Handoff
 
-Last synchronized with WolfAPI migration `20260821_0017` on 2026-08-21.
+Last synchronized with WolfAPI migration `20260821_0018` on 2026-08-21.
 
 ## Authoritative quality coverage and hot-map revisits (2026-08-21)
 
@@ -17,6 +17,11 @@ the delay for servers that start after a productive map's previous pass, but
 Steam-capped shards remain incomplete and directory counts are still observed
 coverage rather than a census. Launcher GameDig remains selected-server and
 launch-time final truth.
+
+WolfAPI also excludes map-field paths, status prose and punctuation-bearing
+values from supplemental scheduling. This prevents bad upstream metadata from
+consuming sweep slots without changing the original map value delivered to
+the Launcher.
 
 ## Supplemental map sweep (2026-08-14)
 
