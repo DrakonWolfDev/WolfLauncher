@@ -61,6 +61,12 @@ WolfLauncher remains offline-first: cached SQLite rows render immediately,
 remote discovery is read-only, curated YAML remains user-owned, and selected
 server/launch-time checks remain local truth.
 
+Future manual address/favourite submission note (2026-08-21): the normal input
+must be the advertised `host:game-port`, which is sufficient for a Steam/DayZ
+launch target. A query-port override is advanced troubleshooting only; it must
+not be a second required field. WolfAPI validation should resolve from the game
+port first and retain any discovered query port separately.
+
 Editor Workshop dependency note (2026-08-21): the Editor resolves a user's
 selected Workshop mods directly with Steam's published-file details endpoint.
 WolfAPI is not required for this immediate local workflow. A non-urgent future
