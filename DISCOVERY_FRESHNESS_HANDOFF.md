@@ -531,3 +531,9 @@ No Launcher application, parser, SQLite or UI change is required. This is
 deliberately server-side so an installed Launcher that has not been updated can
 discover the admitted row on its next normal WolfAPI refresh. Selected-server
 and launch-time local checks remain final truth.
+
+WolfAPI production release `20260821T154000Z-2b982dc` is the verified targeted
+admission release. After deployment, a complete 1,200-row live-validation
+cycle persisted successfully and public readiness returned HTTP 200. This
+production correction did not alter the Launcher contract or require a
+Launcher application update.
