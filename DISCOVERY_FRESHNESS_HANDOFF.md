@@ -61,6 +61,12 @@ WolfLauncher remains offline-first: cached SQLite rows render immediately,
 remote discovery is read-only, curated YAML remains user-owned, and selected
 server/launch-time checks remain local truth.
 
+Editor Workshop dependency note (2026-08-21): the Editor resolves a user's
+selected Workshop mods directly with Steam's published-file details endpoint.
+WolfAPI is not required for this immediate local workflow. A non-urgent future
+WolfAPI cached Workshop-page fallback must be worker-backed, advisory and
+user-removable, with no upstream page retrieval in public API request paths.
+
 Production-hardening synchronization on 2026-07-19: WolfAPI v1 retains the
 required `generated_at` field, but its strong ETag now hashes the exact
 serialized response bytes (including that timestamp). A cached representation

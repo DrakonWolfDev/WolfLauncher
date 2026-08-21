@@ -322,6 +322,9 @@ The full resolved set is combined with DayZ Editor (`2250764298`), CF
 (`1559212036`) and Dabs Framework (`2545327648`) for an offline handoff without
 `-connect`. When an additional Editor mod is selected, WolfLauncher performs a
 bounded recursive traversal of its author-declared Steam Workshop requirements.
+This is the immediate, client-side lookup path: it uses Steam's published-file
+details endpoint directly when the user changes an Editor selection, so normal
+dependency resolution does not wait for WolfAPI.
 It also supplies the exact documented GSC requirement for the supported
 PripyatGamma Workshop releases when Steam's metadata response omits it. It
 deliberately does not infer requirements from arbitrary PBO asset or config

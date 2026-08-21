@@ -62,6 +62,9 @@ release matrix.
   requirements into checked rows, which can be excluded for the current Editor
   session if a detection is not needed, then asks Steam to subscribe/update
   the full resolved set before local verification and a detected DayZ handoff.
+  The first dependency lookup is direct to Steam's published-file details
+  endpoint when the user changes an Editor selection; WolfAPI is not required
+  for this immediate local workflow.
   Dependencies are taken from the selected Workshop items' author-declared
   requirement graph, plus an exact documented compatibility rule for the
   PripyatGamma-to-GSC requirement that Steam metadata can omit. A former local
