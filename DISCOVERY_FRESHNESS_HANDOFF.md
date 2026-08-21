@@ -518,3 +518,16 @@ did before, while retaining direct selected-server and launch-time checks as
 the final authority where those checks already apply. It must not infer that a
 corrected directory label is fresh source observation or live-validation
 evidence.
+
+## WolfAPI targeted admin admission — 2026-08-21
+
+WolfAPI can now admit a missing server from its protected admin panel using the
+advertised public IP and game port. It resolves or probes the query port and
+publishes only after a successful A2S response. Directly verified rows may have
+the API-side source `admin_probe`, but they arrive through the existing WolfAPI
+v1 row shape and are still mapped to the Launcher's `wolfapi` cache namespace.
+
+No Launcher application, parser, SQLite or UI change is required. This is
+deliberately server-side so an installed Launcher that has not been updated can
+discover the admitted row on its next normal WolfAPI refresh. Selected-server
+and launch-time local checks remain final truth.
