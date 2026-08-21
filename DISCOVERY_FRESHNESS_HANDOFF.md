@@ -503,3 +503,18 @@ rows. Keep the current ranking behavior while an explicit optional Launcher
 filter is evaluated from real browsing behavior; do not silently hide rows.
 - Production proxy/CDN behavior and sustained-load peak RSS still need final
   deployment evidence.
+
+## WolfAPI manual correction layer — 2026-08-21
+
+WolfAPI now keeps internal manual corrections separate from canonical scanner
+and source-observation data, then resolves the effective browse-time value
+centrally before v1 or legacy publication. Overrides are limited to existing
+fields and can be removed to expose the latest automatic value again.
+
+This is a server-side truth and administration change only. It adds no
+Launcher field, endpoint, SQLite migration, filter, or UI requirement. The
+Launcher should consume the effective values returned by WolfAPI exactly as it
+did before, while retaining direct selected-server and launch-time checks as
+the final authority where those checks already apply. It must not infer that a
+corrected directory label is fresh source observation or live-validation
+evidence.
