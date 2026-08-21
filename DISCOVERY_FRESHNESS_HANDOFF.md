@@ -17,6 +17,11 @@ WolfLauncher continues to consume bounded observed coverage, retain its offline
 cache and use local selected-server/GameDig checks as final truth. Steam's
 directory remains bounded and is not presented as an exhaustive census.
 
+WolfAPI production release `20260821T230138Z-fca57ad` serves this policy on
+schema `20260821_0019`. Its first Enoch and Namalsk partition sweeps materially
+expanded safe discovery, while public readiness and the existing bounded v1
+contract passed. No Launcher deployment or cache migration is required.
+
 ## Authoritative quality coverage and hot-map revisits (2026-08-21)
 
 WolfAPI migration `20260821_0017` reconciles persisted quality flags with the
