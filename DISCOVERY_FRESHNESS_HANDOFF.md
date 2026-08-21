@@ -23,6 +23,11 @@ values from supplemental scheduling. This prevents bad upstream metadata from
 consuming sweep slots without changing the original map value delivered to
 the Launcher.
 
+Production release `20260821T220410Z-4171e6e` now serves this behavior on
+schema `20260821_0018`. Its first valid-map canary added 471 previously absent
+endpoints from `chernarusplus`; public readiness and the Launcher's bounded
+default-visible v1 request both returned HTTP 200.
+
 ## Supplemental map sweep (2026-08-14)
 
 WolfAPI can supplement its bounded global Steam directory query with a slow,
