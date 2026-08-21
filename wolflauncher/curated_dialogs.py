@@ -4,13 +4,16 @@ from PySide6.QtWidgets import (
     QDialogButtonBox,
     QFormLayout,
     QLineEdit,
+    QPushButton,
     QSpinBox,
     QVBoxLayout,
+    QWidget,
 )
 
 from .config import normalize_server_endpoint
 from .models import Server
 from .theme import set_monospace, set_ui_role
+from .ui_sections import set_disclosure_state
 
 
 class PromoteServerDialog(QDialog):
@@ -44,7 +47,7 @@ class EditCuratedServerDialog(QDialog):
     def __init__(self, parent, server: Server, title: str = "Edit a favourite server"):
         super().__init__(parent)
         self.setWindowTitle(title)
-        self.resize(440, 240)
+        self.resize(440, 215)
 
         layout = QVBoxLayout(self)
         form = QFormLayout()
@@ -58,13 +61,34 @@ class EditCuratedServerDialog(QDialog):
         self.query_port = QSpinBox()
         self.query_port.setRange(1, 65535)
         self.query_port.setValue(server.query_port)
+        self.query_port_panel = QWidget()
+        query_port_layout = QFormLayout(self.query_port_panel)
+        query_port_layout.setContentsMargins(0, 0, 0, 0)
+        query_port_layout.addRow("Query port override", self.query_port)
+        self.query_port_disclosure = QPushButton()
+        self.query_port_disclosure.setCheckable(True)
+        self.query_port_disclosure.toggled.connect(
+            lambda expanded: set_disclosure_state(
+                self.query_port_disclosure,
+                self.query_port_panel,
+                "advanced connection port",
+                expanded,
+            )
+        )
+        set_disclosure_state(
+            self.query_port_disclosure,
+            self.query_port_panel,
+            "advanced connection port",
+            False,
+        )
         self.favourite = QCheckBox("Favourite")
         self.favourite.setChecked(server.favourite)
         form.addRow("Name", self.name)
         form.addRow("Group", self.group)
         form.addRow("Host", self.host)
         form.addRow("Game port", self.game_port)
-        form.addRow("Query port", self.query_port)
+        form.addRow("", self.query_port_disclosure)
+        form.addRow("", self.query_port_panel)
         form.addRow("", self.favourite)
         layout.addLayout(form)
 

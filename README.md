@@ -391,8 +391,8 @@ servers:
 The `host` field may contain either a DNS hostname or an IP address.
 
 Use **Add a favourite server** on the Servers tab to add a server directly to
-the curated server file. The dialog defaults to common DayZ ports, but both game and
-query ports can be edited before saving. If you paste `host:port` into the host
+the curated server file. Enter the normally advertised game port; a query-port
+override is available only through the advanced connection-port disclosure. If you paste `host:port` into the host
 field, WolfLauncher saves the host and game port separately. Newly added rows
 are checked on their own after saving. Existing Favourite Servers can be edited,
 removed or refreshed individually from the row context menu. If a live status

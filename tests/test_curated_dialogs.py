@@ -36,6 +36,9 @@ class CuratedDialogTests(unittest.TestCase):
             dialog.host.font().family(),
             QFontDatabase.systemFont(QFontDatabase.FixedFont).family(),
         )
+        self.assertTrue(dialog.query_port_panel.isHidden())
+        dialog.query_port_disclosure.click()
+        self.assertFalse(dialog.query_port_panel.isHidden())
 
     def test_edit_dialog_normalizes_host_port_and_default_group(self):
         original = Server("Name", "Group", "example.test", 2302, 2303)

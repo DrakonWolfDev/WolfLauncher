@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Simplified **Add a favourite server** to show the advertised game port by
+  default; query-port editing is now an advanced override.
 - Planned the next-build discovery recovery work: a local **Add by address**
   journey for servers absent from the directory. It will accept the normally
   advertised `host:game-port` address, with a query-port override available
