@@ -314,7 +314,9 @@ separate from curated YAML and the discovered-server cache. Editor selections
 are a separate locally installed-only checklist persisted as
 `editor_extra_mod_ids` in `settings.json`; their author-declared Steam Workshop
 requirements are resolved recursively (bounded to six levels/500 items), shown
-as read-only checked rows, and are deliberately not persisted as user choices.
+as checked rows. A user can uncheck an auto-detected item for the current
+Editor session when it is not actually needed; the exclusion is deliberately
+not persisted as a user choice.
 The explicit Editor selection also resets quietly on each app start.
 The full resolved set is combined with DayZ Editor (`2250764298`), CF
 (`1559212036`) and Dabs Framework (`2545327648`) for an offline handoff without

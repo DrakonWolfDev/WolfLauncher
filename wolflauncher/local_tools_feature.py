@@ -83,6 +83,7 @@ class LocalToolsFeatureMixin:
         # between app sessions is surprising and can quietly launch old mods.
         self.editor_extra_mod_ids = set()
         self.editor_dependency_mod_ids = set()
+        self.editor_dependency_excluded_ids = set()
         self.editor_dependency_metadata = {}
         self.editor_dependency_request = 0
         self.editor_dependency_worker = None
@@ -186,7 +187,8 @@ class LocalToolsFeatureMixin:
         editor_mods_layout.addWidget(editor_mods_section)
         editor_mods_detail = QLabel(
             "The required Editor mods (CF, Dabs Framework and DayZ Editor) are included automatically. "
-            "Add any extra installed Workshop mods you want to use in your project."
+            "Add any extra installed Workshop mods you want to use in your project. Auto-detected "
+            "requirements can be unchecked if they are not needed."
         )
         editor_mods_detail.setWordWrap(True)
         set_ui_role(editor_mods_detail, "metadata")
@@ -345,15 +347,16 @@ class LocalToolsFeatureMixin:
             required = workshop_id in self.editor_dependency_mod_ids
             label = f"{name or workshop_id}  ({workshop_id})"
             if required:
-                label += " — required by selected mod"
+                label += " — auto-detected requirement"
             item = QListWidgetItem(label)
             item.setData(Qt.UserRole, workshop_id)
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
             item.setCheckState(
-                Qt.Checked if workshop_id in self.editor_extra_mod_ids or required else Qt.Unchecked
+                Qt.Checked
+                if workshop_id in self.editor_extra_mod_ids
+                or (required and workshop_id not in self.editor_dependency_excluded_ids)
+                else Qt.Unchecked
             )
-            if required:
-                item.setFlags(item.flags() & ~Qt.ItemIsEnabled)
             self.editor_mod_picker.addItem(item)
         self.editor_mod_picker.blockSignals(False)
         self._filter_editor_mod_picker(self.editor_mod_filter.text())
@@ -368,6 +371,7 @@ class LocalToolsFeatureMixin:
         self.editor_mod_filter.clear()
         self.editor_extra_mod_ids.clear()
         self.editor_dependency_mod_ids.clear()
+        self.editor_dependency_excluded_ids.clear()
         self.editor_dependency_metadata.clear()
         for row in range(self.editor_mod_picker.count()):
             self.editor_mod_picker.item(row).setCheckState(Qt.Unchecked)
@@ -380,12 +384,20 @@ class LocalToolsFeatureMixin:
             workshop_id
             for workshop_id in self.editor_dependency_mod_ids
             if workshop_id not in self.editor_extra_mod_ids
+            and workshop_id not in self.editor_dependency_excluded_ids
         )
         return tuple(selected)
 
     def _editor_mod_selection_changed(self, item):
         workshop_id = str(item.data(Qt.UserRole) or "")
-        if not workshop_id or workshop_id in self.editor_dependency_mod_ids:
+        if not workshop_id:
+            return
+        if workshop_id in self.editor_dependency_mod_ids:
+            if item.checkState() == Qt.Checked:
+                self.editor_dependency_excluded_ids.discard(workshop_id)
+            else:
+                self.editor_dependency_excluded_ids.add(workshop_id)
+            self.save_user_settings(silent=True)
             return
         if item.checkState() == Qt.Checked:
             self.editor_extra_mod_ids.add(workshop_id)
@@ -401,6 +413,7 @@ class LocalToolsFeatureMixin:
         roots = tuple(sorted(self.editor_extra_mod_ids, key=int))
         if not roots:
             self.editor_dependency_mod_ids.clear()
+            self.editor_dependency_excluded_ids.clear()
             self.editor_dependency_metadata.clear()
             self._refresh_editor_mod_picker()
             return
@@ -421,6 +434,7 @@ class LocalToolsFeatureMixin:
             return
         resolved = expand_editor_mod_requirements(resolved)
         self.editor_dependency_mod_ids = set(resolved) - set(roots)
+        self.editor_dependency_excluded_ids.intersection_update(self.editor_dependency_mod_ids)
         self.editor_dependency_metadata = dict(metadata)
         self.editor_dependency_metadata.update(editor_compatibility_metadata(resolved))
         self._refresh_editor_mod_picker()
@@ -571,6 +585,7 @@ class LocalToolsFeatureMixin:
     def _finish_editor_addon_dependency_scan(self, roots, resolved, metadata, install):
         resolved = expand_editor_mod_requirements(resolved)
         self.editor_dependency_mod_ids = set(resolved) - set(roots)
+        self.editor_dependency_excluded_ids.intersection_update(self.editor_dependency_mod_ids)
         self.editor_dependency_metadata.update(metadata)
         self.editor_dependency_metadata.update(editor_compatibility_metadata(resolved))
         self.editor_addon_dependencies_checked = True

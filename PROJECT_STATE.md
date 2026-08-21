@@ -59,7 +59,8 @@ release matrix.
   locally installed extra mods alongside its required framework mods, plus
   saved Local Development profiles for native joining of an already-running
   LAN/test server. It resolves recursively bounded author-declared Steam Workshop
-  requirements into read-only selected rows, then asks Steam to subscribe/update
+  requirements into checked rows, which can be excluded for the current Editor
+  session if a detection is not needed, then asks Steam to subscribe/update
   the full resolved set before local verification and a detected DayZ handoff.
   Dependencies are taken from the selected Workshop items' author-declared
   requirement graph, plus an exact documented compatibility rule for the

@@ -18,6 +18,9 @@
 - Restored the documented GSC Gameworld Assets requirement for PripyatGamma in
   DayZ Editor through an exact version-specific compatibility rule, covering
   Steam metadata responses that omit the declared requirement.
+- Auto-detected Editor requirements can now be unchecked for the current
+  session when a detection is not required; the fixed DayZ Editor, CF and Dabs
+  Framework baseline remains automatic.
 - The legacy WolfAPI provider selection now migrates to the v1 provider; the
   Server Browser no longer offers the retired fallback path.
 
