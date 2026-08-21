@@ -1,6 +1,22 @@
 # WolfAPI Discovery Freshness Handoff
 
-Last synchronized with WolfAPI migration `20260713_0007` on 2026-07-13.
+Last synchronized with WolfAPI migration `20260821_0017` on 2026-08-21.
+
+## Authoritative quality coverage and hot-map revisits (2026-08-21)
+
+WolfAPI migration `20260821_0017` reconciles persisted quality flags with the
+directory-wide Redis classification and the API now publishes request-time
+flagged/unflagged freshness plus unique-validation coverage. This corrects
+operator telemetry and makes the Launcher's existing default
+`quality=unflagged` request agree with the scheduler population; it does not
+change v1 row fields, SQLite storage, filtering controls or exact resolution.
+
+WolfAPI also retains its weekly all-map Steam safety cycle while revisiting
+high-yield maps daily on a bounded thirty-minute shard cadence. This reduces
+the delay for servers that start after a productive map's previous pass, but
+Steam-capped shards remain incomplete and directory counts are still observed
+coverage rather than a census. Launcher GameDig remains selected-server and
+launch-time final truth.
 
 ## Supplemental map sweep (2026-08-14)
 
