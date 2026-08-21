@@ -1,6 +1,21 @@
 # WolfAPI Discovery Freshness Handoff
 
-Last synchronized with WolfAPI migration `20260821_0018` on 2026-08-21.
+Last synchronized with WolfAPI migration `20260821_0019` on 2026-08-21.
+
+## Adaptive hosted map discovery (2026-08-21)
+
+WolfAPI now bundles low-volume map filters into bounded Steam OR requests and
+uses mutually exclusive Linux/non-Linux plus populated/empty partitions for
+near-cap maps. It deduplicates the combined response and applies its deny-list
+and endpoint-flood checks globally before persistence. Repeatedly empty map
+labels use a longer revisit interval, while per-map attempt history and
+request-aware operator telemetry make declining yield visible.
+
+This is hosted ingestion policy only. It changes no v1 endpoint, row field,
+stable identity, freshness classification, SQLite behavior or Launcher UI.
+WolfLauncher continues to consume bounded observed coverage, retain its offline
+cache and use local selected-server/GameDig checks as final truth. Steam's
+directory remains bounded and is not presented as an exhaustive census.
 
 ## Authoritative quality coverage and hot-map revisits (2026-08-21)
 
