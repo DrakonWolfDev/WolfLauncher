@@ -154,7 +154,7 @@ class LocalToolsFeatureMixin:
         self.editor_workshop_image.setFixedSize(180, 180)
         self.editor_workshop_image.setAlignment(Qt.AlignCenter)
         set_ui_role(self.editor_workshop_image, "modThumbnail")
-        editor_launch_layout.addWidget(self.editor_workshop_image)
+        editor_launch_layout.addWidget(self.editor_workshop_image, 0, Qt.AlignTop)
         editor_content = QVBoxLayout()
         editor_title = QLabel("DayZ Editor")
         set_ui_role(editor_title, "cardTitle")
@@ -193,10 +193,6 @@ class LocalToolsFeatureMixin:
         self.mod_selection_detail.setWordWrap(True)
         set_ui_role(self.mod_selection_detail, "metadata")
         editor_mods_layout.addWidget(self.mod_selection_detail)
-        self.mod_selection_enabled = QLabel()
-        self.mod_selection_enabled.setWordWrap(True)
-        set_ui_role(self.mod_selection_enabled, "metadata")
-        editor_mods_layout.addWidget(self.mod_selection_enabled)
         editor_mods_layout.addSpacing(8)
         editor_filter_row = QHBoxLayout()
         self.editor_mod_filter = QLineEdit()
@@ -531,7 +527,6 @@ class LocalToolsFeatureMixin:
         worker = WorkshopDependencyWorker(roots)
         worker.setParent(self)
         self.editor_dependency_worker = worker
-        self.editor_mod_picker.setEnabled(False)
         worker.dependencies_ready.connect(
             lambda resolved, metadata: self._finish_editor_dependency_resolution(
                 request, roots, resolved, metadata
@@ -580,7 +575,7 @@ class LocalToolsFeatureMixin:
         return entries
 
     def _update_mod_selection_summary(self):
-        if not hasattr(self, "mod_selection_enabled"):
+        if not hasattr(self, "selected_mods_layout"):
             return
         entries = self._enabled_mod_entries(editor=self.mod_selection_target == "editor")
         local_paths = (
@@ -588,17 +583,6 @@ class LocalToolsFeatureMixin:
             if self.mod_selection_target == "local"
             else []
         )
-        if self.mod_selection_target == "editor":
-            self.mod_selection_enabled.setText(
-                "Enabled now: " + ", ".join(entries) if entries else "Enabled now: no mods selected."
-            )
-        else:
-            enabled = entries + [f"Local folder: {path}" for path in local_paths]
-            self.mod_selection_enabled.setText(
-                "Enabled now: " + ", ".join(enabled)
-                if enabled
-                else "Enabled now: no Workshop mods or local folders selected."
-            )
         self._update_selected_mod_pills(entries, local_paths)
 
     def _update_selected_mod_pills(self, entries: list[str], local_paths: list[str]):
@@ -643,7 +627,6 @@ class LocalToolsFeatureMixin:
     def _clear_editor_dependency_worker(self, worker):
         if self.editor_dependency_worker is worker:
             self.editor_dependency_worker = None
-        self.editor_mod_picker.setEnabled(True)
         worker.deleteLater()
 
     def _local_required_mods(self, *, editor: bool) -> list[RequiredMod]:
