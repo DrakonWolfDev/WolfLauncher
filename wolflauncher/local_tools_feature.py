@@ -290,7 +290,11 @@ class LocalToolsFeatureMixin:
         self.selected_mods_layout = QVBoxLayout(self.selected_mods_container)
         self.selected_mods_layout.setContentsMargins(0, 4, 0, 0)
         self.selected_mods_layout.setSpacing(6)
-        self.selected_mods_layout.addStretch(1)
+        # The scroll area's child grows to the viewport. A trailing stretch
+        # consequently absorbs that spare height *between* the pills as the
+        # viewport is relaid out, leaving apparent gaps after scrolling.
+        # Keep the normal layout top-aligned instead.
+        self.selected_mods_layout.setAlignment(Qt.AlignTop)
         self.selected_mods_scroll.setWidget(self.selected_mods_container)
         selected_mods_layout.addWidget(self.selected_mods_scroll, 1)
         self.local_tool_active_left_layout.addWidget(self.selected_mods_panel, 1)
@@ -607,7 +611,7 @@ class LocalToolsFeatureMixin:
         """Keep the focused workspace's selection readable as individual pills."""
         if not hasattr(self, "selected_mods_layout"):
             return
-        while self.selected_mods_layout.count() > 1:
+        while self.selected_mods_layout.count():
             item = self.selected_mods_layout.takeAt(0)
             widget = item.widget()
             if widget:
@@ -622,7 +626,7 @@ class LocalToolsFeatureMixin:
         if not all_entries:
             empty = QLabel("No additional mods selected yet.")
             set_ui_role(empty, "metadata")
-            self.selected_mods_layout.insertWidget(0, empty)
+            self.selected_mods_layout.addWidget(empty)
             return
         for entry in all_entries:
             pill = QFrame()
@@ -640,7 +644,7 @@ class LocalToolsFeatureMixin:
             animation.setEndValue(1.0)
             animation.start()
             pill._selection_animation = animation
-            self.selected_mods_layout.insertWidget(self.selected_mods_layout.count() - 1, pill)
+            self.selected_mods_layout.addWidget(pill)
 
     def _clear_editor_dependency_worker(self, worker):
         if self.editor_dependency_worker is worker:
