@@ -1,10 +1,33 @@
 import unittest
 from unittest.mock import patch
 
-from wolflauncher.mods import _WorkshopRequiredItemsParser, resolve_workshop_dependencies
+from wolflauncher.mods import (
+    _WorkshopRequiredItemsParser,
+    cached_workshop_dependencies,
+    resolve_workshop_dependencies,
+)
 
 
 class WorkshopDependencyResolutionTests(unittest.TestCase):
+    def test_uses_ready_wolfapi_cached_graph(self):
+        payload = {
+            "graphs": {
+                "2572331007": {
+                    "status": "ready",
+                    "dependencies": ["1559212036", "2545327648", "2116157322"],
+                    "metadata": {"1559212036": {"title": "CF"}},
+                }
+            }
+        }
+        with patch("wolflauncher.mods.fetch_json", return_value=payload) as fetch_json:
+            resolved, metadata = cached_workshop_dependencies(["2572331007"])
+
+        self.assertEqual(
+            resolved, ("2572331007", "1559212036", "2545327648", "2116157322")
+        )
+        self.assertEqual(metadata, {"1559212036": {"title": "CF"}})
+        self.assertIn("ids=2572331007", fetch_json.call_args.args[0])
+
     def test_resolves_nested_dependencies_once_and_preserves_selection_order(self):
         responses = {
             "100": {"children": ("200", "300")},

@@ -8,7 +8,7 @@ from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from .dayz_mod_query import query_dayz_required_mods
-from .http_client import HttpClientError, fetch_html, post_form_json
+from .http_client import HttpClientError, fetch_html, fetch_json, post_form_json
 from .models import Server
 from .redaction import redact_support_text
 from .status import resolve_host
