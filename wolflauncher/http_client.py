@@ -93,6 +93,42 @@ def post_form_json(
     )
 
 
+def post_json(
+    url: str,
+    payload: Any,
+    *,
+    timeout: float = 15.0,
+    max_bytes: int = DEFAULT_MAX_RESPONSE_BYTES,
+) -> Any:
+    """Submit one bounded JSON document without retrying the write."""
+    request = urllib.request.Request(
+        url,
+        data=json.dumps(payload, separators=(",", ":")).encode("utf-8"),
+        headers={
+            "User-Agent": user_agent(),
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            _validate_content_type(response)
+            body = _read_bounded(response, max_bytes, None)
+    except urllib.error.HTTPError as exc:
+        raise HttpClientError("http", f"Provider HTTP error: {exc.code}", exc.code) from exc
+    except urllib.error.URLError as exc:
+        raise HttpClientError("connection", f"Provider connection failed: {exc.reason}") from exc
+    except TimeoutError as exc:
+        raise HttpClientError("timeout", "Provider request timed out") from exc
+    except OSError as exc:
+        raise HttpClientError("connection", "Provider connection failed") from exc
+    try:
+        return json.loads(body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise HttpClientError("invalid_json", "Provider returned invalid JSON") from exc
+
+
 def request_json(
     url: str,
     *,

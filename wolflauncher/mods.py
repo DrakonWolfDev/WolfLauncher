@@ -8,7 +8,7 @@ from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from .dayz_mod_query import query_dayz_required_mods
-from .http_client import HttpClientError, fetch_html, fetch_json, post_form_json
+from .http_client import HttpClientError, fetch_html, fetch_json, post_form_json, post_json
 from .models import Server
 from .redaction import redact_support_text
 from .status import resolve_host
@@ -317,6 +317,38 @@ def cached_workshop_dependencies(workshop_ids) -> tuple[tuple[str, ...], dict[st
                 resolved.append(item)
         metadata.update(graph_metadata)
     return tuple(resolved), metadata
+
+
+def contribute_workshop_dependency_graph(
+    root: str, resolved, metadata: dict[str, dict[str, Any]]
+) -> None:
+    """Share a locally resolved graph so later launchers avoid the same Steam work."""
+    root = str(root).strip()
+    if not root.isdigit():
+        return
+    dependencies = [
+        item for item in dict.fromkeys(str(item).strip() for item in resolved)
+        if item.isdigit() and item != root
+    ][:500]
+    safe_metadata = {
+        item: {
+            "title": str(detail.get("title") or "")[:256],
+            "time_updated": max(0, int(detail.get("time_updated") or 0)),
+        }
+        for item, detail in metadata.items()
+        if str(item).isdigit() and str(item) in {root, *dependencies} and isinstance(detail, dict)
+    }
+    endpoint = os.environ.get("WOLFLAUNCHER_WOLFAPI_WORKSHOP_DEPENDENCIES_URL", "") or WOLFAPI_WORKSHOP_DEPENDENCIES_URL
+    try:
+        post_json(
+            endpoint,
+            {"root": root, "dependencies": dependencies, "metadata": safe_metadata},
+            timeout=2,
+        )
+    except (HttpClientError, TypeError, ValueError):
+        # Contribution is best-effort. The locally resolved result remains
+        # usable even while the hosted cache is unavailable.
+        return
 
 
 def apply_workshop_file_sizes(result: ModCheckResult, sizes: dict[str, int]) -> ModCheckResult:
