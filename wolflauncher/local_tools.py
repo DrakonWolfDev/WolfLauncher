@@ -15,6 +15,7 @@ class LocalToolProfile:
     name: str
     mod_paths: tuple[str, ...] = ()
     endpoint: str = ""
+    workshop_mod_ids: tuple[str, ...] = ()
 
 
 def normalise_workshop_ids(value: str | list[str] | tuple[str, ...]) -> tuple[str, ...]:
@@ -53,6 +54,7 @@ def profile_from_data(data: object) -> LocalToolProfile | None:
             str(item).strip() for item in data.get("mod_paths", []) if str(item).strip()
         ),
         endpoint=str(data.get("endpoint") or "").strip(),
+        workshop_mod_ids=normalise_workshop_ids(data.get("workshop_mod_ids", [])),
     )
 
 

@@ -34,13 +34,19 @@ class LocalToolsTests(unittest.TestCase):
     def test_profiles_from_settings_discards_invalid_profiles(self):
         profiles = profiles_from_settings(
             [
-                {"name": "Weapons", "mod_paths": ["C:/mods/@Weapons", ""], "endpoint": "lan:2302"},
+                {
+                    "name": "Weapons",
+                    "mod_paths": ["C:/mods/@Weapons", ""],
+                    "endpoint": "lan:2302",
+                    "workshop_mod_ids": ["123", "invalid", "123", "456"],
+                },
                 {"name": "", "mod_paths": ["C:/mods/@Other"]},
                 "invalid",
             ]
         )
         self.assertEqual(len(profiles), 1)
         self.assertEqual(profiles[0].mod_paths, ("C:/mods/@Weapons",))
+        self.assertEqual(profiles[0].workshop_mod_ids, ("123", "456"))
 
 
 if __name__ == "__main__":
