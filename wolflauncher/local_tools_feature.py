@@ -90,6 +90,11 @@ class LocalToolsFeatureMixin:
         self.editor_dependency_metadata = {}
         self.editor_dependency_request = 0
         self.editor_dependency_worker = None
+        self.editor_dependency_pending = False
+        self.editor_dependency_timer = QTimer(self)
+        self.editor_dependency_timer.setSingleShot(True)
+        self.editor_dependency_timer.setInterval(350)
+        self.editor_dependency_timer.timeout.connect(self._start_editor_dependency_resolution)
         self.editor_addon_dependency_worker = None
         self.editor_addon_dependencies_checked = False
         profile_card = QFrame()
@@ -515,14 +520,24 @@ class LocalToolsFeatureMixin:
         self._update_mod_selection_summary()
 
     def _resolve_editor_dependencies(self):
+        """Coalesce quick mod choices before checking their shared closure."""
         self.editor_dependency_request += 1
+        self.editor_dependency_timer.start()
+
+    def _start_editor_dependency_resolution(self):
         request = self.editor_dependency_request
         roots = tuple(sorted(self.editor_extra_mod_ids, key=int))
         if not roots:
+            self.editor_dependency_pending = False
             self.editor_dependency_mod_ids.clear()
             self.editor_dependency_excluded_ids.clear()
             self.editor_dependency_metadata.clear()
             self._refresh_editor_mod_picker()
+            return
+        if self.editor_dependency_worker and self.editor_dependency_worker.isRunning():
+            # QThread work cannot be safely interrupted. Let it complete, then
+            # resolve the newest complete selection rather than losing a root.
+            self.editor_dependency_pending = True
             return
         worker = WorkshopDependencyWorker(roots)
         worker.setParent(self)
@@ -537,6 +552,14 @@ class LocalToolsFeatureMixin:
 
     def _finish_editor_dependency_resolution(self, request, roots, resolved, metadata):
         if request != self.editor_dependency_request:
+            # A newer selection is queued, but do not discard a completed
+            # result for roots that are still selected. The queued pass will
+            # reconcile the full set afterwards.
+            if set(roots).intersection(self.editor_extra_mod_ids):
+                fixed_ids = {workshop_id for workshop_id, _name in DAYZ_EDITOR_MODS}
+                self.editor_dependency_mod_ids.update(set(resolved) - set(roots) - fixed_ids)
+                self.editor_dependency_metadata.update(metadata)
+                self._refresh_editor_mod_picker()
             return
         fixed_ids = {workshop_id for workshop_id, _name in DAYZ_EDITOR_MODS}
         self.editor_dependency_mod_ids = set(resolved) - set(roots) - fixed_ids
@@ -627,6 +650,9 @@ class LocalToolsFeatureMixin:
     def _clear_editor_dependency_worker(self, worker):
         if self.editor_dependency_worker is worker:
             self.editor_dependency_worker = None
+            if self.editor_dependency_pending:
+                self.editor_dependency_pending = False
+                self.editor_dependency_timer.start(0)
         worker.deleteLater()
 
     def _local_required_mods(self, *, editor: bool) -> list[RequiredMod]:
