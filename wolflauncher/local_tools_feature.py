@@ -19,6 +19,8 @@ from PySide6.QtWidgets import (
     QListWidgetItem,
     QMessageBox,
     QPushButton,
+    QScrollArea,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -167,12 +169,12 @@ class LocalToolsFeatureMixin:
         editor_actions = QHBoxLayout()
         verify_editor = QPushButton("Verify Editor mods")
         verify_editor.clicked.connect(lambda: self._verify_local_tool_mods(editor=True))
-        launch_editor = QPushButton("Open DayZ Editor")
-        set_ui_role(launch_editor, "primary")
-        launch_editor.clicked.connect(self._launch_local_editor)
+        self.editor_session_button = QPushButton("Choose DayZ Editor")
+        set_ui_role(self.editor_session_button, "primary")
+        self.editor_session_button.clicked.connect(lambda: self._choose_local_tool_session("editor"))
         editor_actions.addWidget(verify_editor)
         editor_actions.addStretch(1)
-        editor_actions.addWidget(launch_editor)
+        editor_actions.addWidget(self.editor_session_button)
         editor_content.addStretch(1)
         editor_content.addLayout(editor_actions)
         editor_launch_layout.addLayout(editor_content, 1)
@@ -180,19 +182,11 @@ class LocalToolsFeatureMixin:
 
         editor_mods_panel = QWidget()
         editor_mods_layout = QVBoxLayout(editor_mods_panel)
-        editor_mods_layout.setContentsMargins(8, 0, 0, 0)
-        editor_mods_title = QLabel("Choose a session, then choose its mods")
+        editor_mods_layout.setContentsMargins(0, 0, 0, 0)
+        self.editor_mods_title = QLabel("Installed Workshop mods")
+        editor_mods_title = self.editor_mods_title
         set_ui_role(editor_mods_title, "cardTitle")
         editor_mods_layout.addWidget(editor_mods_title)
-        mode_row = QHBoxLayout()
-        self.editor_mod_mode_button = QPushButton("DayZ Editor")
-        self.local_mod_mode_button = QPushButton("Local Development")
-        for button in (self.editor_mod_mode_button, self.local_mod_mode_button):
-            button.setCheckable(True)
-            mode_row.addWidget(button)
-        self.editor_mod_mode_button.clicked.connect(lambda: self._set_mod_selection_target("editor"))
-        self.local_mod_mode_button.clicked.connect(lambda: self._set_mod_selection_target("local"))
-        editor_mods_layout.addLayout(mode_row)
         self.mod_selection_detail = QLabel()
         self.mod_selection_detail.setWordWrap(True)
         set_ui_role(self.mod_selection_detail, "metadata")
@@ -231,7 +225,7 @@ class LocalToolsFeatureMixin:
         local_card = QFrame()
         set_ui_role(local_card, "healthGroup")
         local_layout = QVBoxLayout(local_card)
-        local_title = QLabel("Local Development")
+        local_title = QLabel("Local Server")
         set_ui_role(local_title, "cardTitle")
         local_layout.addWidget(local_title)
         local_detail = QLabel(
@@ -247,25 +241,66 @@ class LocalToolsFeatureMixin:
         local_actions = QHBoxLayout()
         verify_local = QPushButton("Verify profile mods")
         verify_local.clicked.connect(lambda: self._verify_local_tool_mods(editor=False))
-        join_local = QPushButton("Join local test server")
-        set_ui_role(join_local, "primary")
-        join_local.clicked.connect(self._join_local_test_server)
+        self.local_session_button = QPushButton("Choose local server")
+        set_ui_role(self.local_session_button, "primary")
+        self.local_session_button.clicked.connect(lambda: self._choose_local_tool_session("local"))
         local_actions.addWidget(verify_local)
         local_actions.addStretch(1)
-        local_actions.addWidget(join_local)
+        local_actions.addWidget(self.local_session_button)
         local_layout.addLayout(local_actions)
-        workspace = QWidget()
-        workspace_layout = QHBoxLayout(workspace)
-        workspace_layout.setContentsMargins(0, 0, 0, 0)
-        workflow_panel = QWidget()
-        workflow_column = QVBoxLayout(workflow_panel)
-        workflow_column.setContentsMargins(0, 0, 0, 0)
-        workflow_column.addWidget(editor_card)
-        workflow_column.addSpacing(12)
-        workflow_column.addWidget(local_card)
-        workspace_layout.addWidget(workflow_panel, 3)
-        workspace_layout.addWidget(editor_mods_panel, 2)
-        layout.addWidget(workspace)
+
+        # Choosing a session clears the other large card from the work area. The
+        # focused card then shares the page evenly with the mod picker.
+        self.local_tool_workspace = QStackedWidget()
+        choice_page = QWidget()
+        self.local_tool_choice_layout = QHBoxLayout(choice_page)
+        self.local_tool_choice_layout.setContentsMargins(0, 0, 0, 0)
+        self.local_tool_choice_layout.setSpacing(12)
+        self.local_tool_choice_layout.addWidget(editor_card, 1)
+        self.local_tool_choice_layout.addWidget(local_card, 1)
+
+        active_page = QWidget()
+        active_layout = QHBoxLayout(active_page)
+        active_layout.setContentsMargins(0, 0, 0, 0)
+        active_layout.setSpacing(12)
+        active_left = QWidget()
+        self.local_tool_active_left_layout = QVBoxLayout(active_left)
+        self.local_tool_active_left_layout.setContentsMargins(0, 0, 0, 0)
+        back_row = QHBoxLayout()
+        back_to_choice = QPushButton("← Choose a different session")
+        set_ui_role(back_to_choice, "disclosure")
+        back_to_choice.clicked.connect(self._return_to_local_tool_choice)
+        back_row.addWidget(back_to_choice)
+        back_row.addStretch(1)
+        self.local_tool_active_left_layout.addLayout(back_row)
+        self.selected_mods_title = QLabel("Selected mods")
+        set_ui_role(self.selected_mods_title, "cardTitle")
+        self.selected_mods_panel = QFrame()
+        set_ui_role(self.selected_mods_panel, "healthGroup")
+        selected_mods_layout = QVBoxLayout(self.selected_mods_panel)
+        selected_mods_layout.addWidget(self.selected_mods_title)
+        self.selected_mods_hint = QLabel()
+        self.selected_mods_hint.setWordWrap(True)
+        set_ui_role(self.selected_mods_hint, "metadata")
+        selected_mods_layout.addWidget(self.selected_mods_hint)
+        self.selected_mods_scroll = QScrollArea()
+        self.selected_mods_scroll.setWidgetResizable(True)
+        self.selected_mods_scroll.setFrameShape(QFrame.NoFrame)
+        self.selected_mods_container = QWidget()
+        self.selected_mods_layout = QVBoxLayout(self.selected_mods_container)
+        self.selected_mods_layout.setContentsMargins(0, 4, 0, 0)
+        self.selected_mods_layout.setSpacing(6)
+        self.selected_mods_layout.addStretch(1)
+        self.selected_mods_scroll.setWidget(self.selected_mods_container)
+        selected_mods_layout.addWidget(self.selected_mods_scroll, 1)
+        self.local_tool_active_left_layout.addWidget(self.selected_mods_panel, 1)
+        active_layout.addWidget(active_left, 1)
+        active_layout.addWidget(editor_mods_panel, 1)
+        self.local_tool_workspace.addWidget(choice_page)
+        self.local_tool_workspace.addWidget(active_page)
+        self.local_tool_cards = {"editor": editor_card, "local": local_card}
+        self.local_tool_active_target = None
+        layout.addWidget(self.local_tool_workspace)
         layout.addWidget(self.local_tools_status)
         layout.addStretch(1)
         self._refresh_local_profile_picker()
@@ -404,10 +439,43 @@ class LocalToolsFeatureMixin:
     def _active_extra_mod_ids(self) -> set[str]:
         return self.editor_extra_mod_ids if self.mod_selection_target == "editor" else self.local_extra_mod_ids
 
+    def _choose_local_tool_session(self, target: str):
+        """Focus one session card and reveal its mod workspace beside it."""
+        if self.local_tool_active_target == target:
+            if target == "editor":
+                self._launch_local_editor()
+            else:
+                self._join_local_test_server()
+            return
+        if self.local_tool_active_target:
+            self._return_to_local_tool_choice()
+        card = self.local_tool_cards[target]
+        self.local_tool_choice_layout.removeWidget(card)
+        self.local_tool_active_left_layout.insertWidget(1, card)
+        self.local_tool_active_target = target
+        self._set_mod_selection_target(target)
+        if target == "editor":
+            self.editor_session_button.setText("Open DayZ Editor")
+            self.editor_mods_title.setText("Add installed Editor mods")
+        else:
+            self.local_session_button.setText("Join local test server")
+            self.editor_mods_title.setText("Add installed server mods")
+        self.local_tool_workspace.setCurrentIndex(1)
+
+    def _return_to_local_tool_choice(self):
+        target = self.local_tool_active_target
+        if not target:
+            return
+        card = self.local_tool_cards[target]
+        self.local_tool_active_left_layout.removeWidget(card)
+        self.local_tool_choice_layout.addWidget(card, 1)
+        self.editor_session_button.setText("Choose DayZ Editor")
+        self.local_session_button.setText("Choose local server")
+        self.local_tool_active_target = None
+        self.local_tool_workspace.setCurrentIndex(0)
+
     def _set_mod_selection_target(self, target: str, *, animate: bool = True):
         self.mod_selection_target = target
-        self.editor_mod_mode_button.setChecked(target == "editor")
-        self.local_mod_mode_button.setChecked(target == "local")
         if target == "editor":
             self.mod_selection_detail.setText(
                 "DayZ Editor automatically enables DayZ Editor, CF and Dabs Framework. Choose any additional installed Workshop mods below."
@@ -524,6 +592,46 @@ class LocalToolsFeatureMixin:
                 if enabled
                 else "Enabled now: no Workshop mods or local folders selected."
             )
+        self._update_selected_mod_pills(entries, local_paths)
+
+    def _update_selected_mod_pills(self, entries: list[str], local_paths: list[str]):
+        """Keep the focused workspace's selection readable as individual pills."""
+        if not hasattr(self, "selected_mods_layout"):
+            return
+        while self.selected_mods_layout.count() > 1:
+            item = self.selected_mods_layout.takeAt(0)
+            widget = item.widget()
+            if widget:
+                widget.deleteLater()
+        all_entries = entries + [f"Local folder: {path}" for path in local_paths]
+        session_name = "DayZ Editor" if self.mod_selection_target == "editor" else "Local Server"
+        self.selected_mods_title.setText(f"{session_name} selection")
+        self.selected_mods_hint.setText(
+            f"{len(all_entries)} mod{'s' if len(all_entries) != 1 else ''} enabled. "
+            "Selections appear here as you check them."
+        )
+        if not all_entries:
+            empty = QLabel("No additional mods selected yet.")
+            set_ui_role(empty, "metadata")
+            self.selected_mods_layout.insertWidget(0, empty)
+            return
+        for entry in all_entries:
+            pill = QFrame()
+            set_ui_role(pill, "selectedModPill")
+            pill_layout = QHBoxLayout(pill)
+            pill_layout.setContentsMargins(9, 5, 9, 5)
+            label = QLabel(entry)
+            label.setWordWrap(True)
+            pill_layout.addWidget(label)
+            opacity = QGraphicsOpacityEffect(pill)
+            pill.setGraphicsEffect(opacity)
+            animation = QPropertyAnimation(opacity, b"opacity", pill)
+            animation.setDuration(180)
+            animation.setStartValue(0.0)
+            animation.setEndValue(1.0)
+            animation.start()
+            pill._selection_animation = animation
+            self.selected_mods_layout.insertWidget(self.selected_mods_layout.count() - 1, pill)
 
     def _clear_editor_dependency_worker(self, worker):
         if self.editor_dependency_worker is worker:

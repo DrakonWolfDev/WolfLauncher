@@ -336,15 +336,16 @@ control and row-level Connect action unless later usage reveals a concrete
 problem.
 
 Editor / Local Tools is an intentionally separate advanced workspace and does
-not reopen the approved player-facing tabs. Keep its simple vertical rhythm:
-summary, then one slightly taller primary **DayZ Editor** workspace. Its left
-60% holds Workshop artwork, description and launch action; its right 40% holds
-the compact searchable installed-extra-mod picker. Follow it with the **Local
-Development** card containing the saved local profile form. Each card has one
-filled action at most; verification and missing-Workshop actions remain
-secondary. It must state plainly that v1 joins an existing LAN/test server and
-does not host or expose a server. Its initial layout requires a real-desktop
-review before it becomes a locked hierarchy.
+not reopen the approved player-facing tabs. Start with two equal, full-height
+choices: **DayZ Editor** and **Local Server**. Once a person chooses a session,
+move the unused choice away and use an even two-column workspace: the active
+session and its selected-mod pills on the left, the searchable installed-mod
+picker on the right. Selected mods must have individual pill treatment rather
+than becoming a comma-separated list, with a short entrance animation as the
+selection changes. Each card has one filled action at most; verification and
+missing-Workshop actions remain secondary. It must state plainly that v1 joins
+an existing LAN/test server and does not host or expose a server. This revised
+layout requires a real-desktop review before it becomes a locked hierarchy.
 
 The settled cross-tab visual pattern is a dense operational surface paired
 with calm contextual grouping, restrained amber selection, semantic status

@@ -133,6 +133,8 @@ QLabel[uiRole="healthBadge"] {{ color: {c["positive"]}; background-color: #1e3a2
 QLabel[uiRole="healthBadge"][healthStatus="WARN"] {{ color: {c["warning"]}; background-color: #3a301e; }}
 QLabel[uiRole="healthBadge"][healthStatus="MISSING"] {{ color: {c["negative"]}; background-color: #3a1e1e; }}
 QLabel[uiRole="modThumbnail"] {{ background-color: {c["surface_alt"]}; color: {c["text_muted"]}; border: 1px solid {c["border"]}; border-radius: 4px; }}
+QFrame[uiRole="selectedModPill"] {{ background-color: {c["surface_alt"]}; border: 1px solid {c["border_strong"]}; border-radius: 12px; }}
+QFrame[uiRole="selectedModPill"]:hover {{ border-color: {c["accent"]}; }}
 QSplitter::handle {{ background-color: {c["border"]}; width: 2px; }}
 QSplitter::handle:hover {{ background-color: {c["accent_pressed"]}; }}
 QSplitter#modsSplitter::handle {{ background-color: transparent; }}
