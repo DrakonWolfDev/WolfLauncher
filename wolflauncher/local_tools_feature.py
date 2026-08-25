@@ -90,11 +90,6 @@ class LocalToolsFeatureMixin:
         self.editor_dependency_metadata = {}
         self.editor_dependency_request = 0
         self.editor_dependency_worker = None
-        self.editor_dependency_pending = False
-        self.editor_dependency_timer = QTimer(self)
-        self.editor_dependency_timer.setSingleShot(True)
-        self.editor_dependency_timer.setInterval(350)
-        self.editor_dependency_timer.timeout.connect(self._start_editor_dependency_resolution)
         self.editor_addon_dependency_worker = None
         self.editor_addon_dependencies_checked = False
         profile_card = QFrame()
@@ -520,24 +515,14 @@ class LocalToolsFeatureMixin:
         self._update_mod_selection_summary()
 
     def _resolve_editor_dependencies(self):
-        """Coalesce quick mod choices before checking their shared closure."""
         self.editor_dependency_request += 1
-        self.editor_dependency_timer.start()
-
-    def _start_editor_dependency_resolution(self):
         request = self.editor_dependency_request
         roots = tuple(sorted(self.editor_extra_mod_ids, key=int))
         if not roots:
-            self.editor_dependency_pending = False
             self.editor_dependency_mod_ids.clear()
             self.editor_dependency_excluded_ids.clear()
             self.editor_dependency_metadata.clear()
             self._refresh_editor_mod_picker()
-            return
-        if self.editor_dependency_worker and self.editor_dependency_worker.isRunning():
-            # QThread work cannot be safely interrupted. Let it complete, then
-            # resolve the newest complete selection rather than losing a root.
-            self.editor_dependency_pending = True
             return
         worker = WorkshopDependencyWorker(roots)
         worker.setParent(self)
@@ -650,9 +635,6 @@ class LocalToolsFeatureMixin:
     def _clear_editor_dependency_worker(self, worker):
         if self.editor_dependency_worker is worker:
             self.editor_dependency_worker = None
-            if self.editor_dependency_pending:
-                self.editor_dependency_pending = False
-                self.editor_dependency_timer.start(0)
         worker.deleteLater()
 
     def _local_required_mods(self, *, editor: bool) -> list[RequiredMod]:
