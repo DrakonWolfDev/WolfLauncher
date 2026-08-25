@@ -113,6 +113,12 @@ launch target. A query-port override is advanced troubleshooting only; it must
 not be a second required field. WolfAPI validation should resolve from the game
 port first and retain any discovered query port separately.
 
+Editor Workshop dependency note (2026-08-26): the Editor first reads WolfAPI's
+cached-only `/api/v1/workshop/dependencies` graph. Cache misses enqueue a
+deduplicated, bounded WolfAPI worker refresh; Launcher retains its direct Steam
+resolver only as an immediate fallback while that shared cache warms. Cached
+and stale last-known-good graphs remain advisory and user-removable.
+
 Editor Workshop dependency note (2026-08-21): the Editor resolves a user's
 selected Workshop mods directly with Steam's published-file details endpoint.
 WolfAPI is not required for this immediate local workflow. A non-urgent future

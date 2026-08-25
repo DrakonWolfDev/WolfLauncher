@@ -2,6 +2,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from html.parser import HTMLParser
+import os
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
@@ -16,6 +17,7 @@ WORKSHOP_URL = "https://steamcommunity.com/sharedfiles/filedetails/?id={mod_id}"
 WORKSHOP_DETAILS_URL = (
     "https://api.steampowered.com/ISteamRemoteStorage/GetPublishedFileDetails/v1/"
 )
+WOLFAPI_WORKSHOP_DEPENDENCIES_URL = "https://api.wolfcontrol.co.uk/api/v1/workshop/dependencies"
 
 
 class _WorkshopRequiredItemsParser(HTMLParser):
@@ -258,6 +260,31 @@ def resolve_workshop_dependencies(
             depth += 1
         else:
             pending.extend(next_level)
+    return tuple(resolved), metadata
+
+
+def cached_workshop_dependencies(workshop_ids) -> tuple[tuple[str, ...], dict[str, dict[str, Any]]] | None:
+    """Read WolfAPI's cached graph; cache misses remain a direct-Steam fallback."""
+    roots = tuple(dict.fromkeys(str(item).strip() for item in workshop_ids if str(item).strip().isdigit()))
+    if not roots:
+        return (), {}
+    endpoint = os.environ.get("WOLFLAUNCHER_WOLFAPI_WORKSHOP_DEPENDENCIES_URL", "") or WOLFAPI_WORKSHOP_DEPENDENCIES_URL
+    try:
+        query = "&".join(f"ids={item}" for item in roots)
+        payload = fetch_json(f"{endpoint}?{query}", timeout=2)
+    except HttpClientError:
+        return None
+    graphs = payload.get("graphs") if isinstance(payload, dict) else None
+    if not isinstance(graphs, dict) or any(str((graphs.get(root) or {}).get("status")) not in {"ready", "stale"} for root in roots):
+        return None
+    resolved, metadata = list(roots), {}
+    for root in roots:
+        graph = graphs[root]
+        for item in graph.get("dependencies", []):
+            item = str(item)
+            if item.isdigit() and item not in resolved:
+                resolved.append(item)
+        metadata.update(graph.get("metadata") if isinstance(graph.get("metadata"), dict) else {})
     return tuple(resolved), metadata
 
 

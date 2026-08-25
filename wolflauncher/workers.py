@@ -13,6 +13,7 @@ from .mods import (
     apply_workshop_install_timestamps,
     apply_workshop_item_states,
     apply_workshop_metadata,
+    cached_workshop_dependencies,
     check_server_mods,
     fetch_workshop_metadata,
     resolve_workshop_dependencies,
@@ -193,7 +194,8 @@ class WorkshopDependencyWorker(QThread):
 
     def run(self):
         try:
-            resolved, metadata = resolve_workshop_dependencies(self.workshop_ids)
+            cached = cached_workshop_dependencies(self.workshop_ids)
+            resolved, metadata = cached or resolve_workshop_dependencies(self.workshop_ids)
         except Exception:
             # Dependency metadata is advisory. Keep the explicit selection
             # launchable if Steam's public endpoint is temporarily unavailable.
