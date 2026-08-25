@@ -8,6 +8,8 @@ from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequ
 from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
+    QDialog,
+    QDialogButtonBox,
     QFileDialog,
     QFormLayout,
     QFrame,
@@ -102,6 +104,7 @@ class LocalToolsFeatureMixin:
         form = QFormLayout()
         self.local_profile_name = QLineEdit()
         self.local_profile_mods = QLineEdit()
+        self.local_profile_mods.textChanged.connect(self._update_enabled_mods_button)
         set_monospace(self.local_profile_mods)
         self.local_profile_mods.setPlaceholderText(
             "Packed or unpacked local mod folders, separated by ;"
@@ -211,10 +214,16 @@ class LocalToolsFeatureMixin:
         refresh_editor_mods.clicked.connect(self._refresh_editor_mod_picker)
         reset_editor_mods = QPushButton("Reset Editor mods")
         reset_editor_mods.clicked.connect(self._reset_editor_mod_picker)
+        self.enabled_mods_button = QPushButton("View enabled mods")
+        self.enabled_mods_button.setToolTip(
+            "Show the complete mod sets that will be used for Editor and the active local profile."
+        )
+        self.enabled_mods_button.clicked.connect(self._show_enabled_mods)
         editor_filter_row.addWidget(self.editor_mod_filter, 1)
         editor_filter_row.addWidget(refresh_editor_mods)
         editor_filter_row.addWidget(reset_editor_mods)
         editor_mods_layout.addLayout(editor_filter_row)
+        editor_mods_layout.addWidget(self.enabled_mods_button)
         self.editor_mod_picker = QListWidget()
         self.editor_mod_picker.setAccessibleName("Installed additional mods")
         self.editor_mod_picker.itemChanged.connect(self._editor_mod_selection_changed)
@@ -266,6 +275,7 @@ class LocalToolsFeatureMixin:
         layout.addStretch(1)
         self._refresh_local_profile_picker()
         self._refresh_editor_mod_picker()
+        self._update_enabled_mods_button()
         return widget
 
     def _refresh_local_profile_picker(self):
@@ -291,6 +301,7 @@ class LocalToolsFeatureMixin:
         self.local_profile_name.setText(profile.name)
         self.local_profile_mods.setText("; ".join(profile.mod_paths))
         self.local_profile_endpoint.setText(profile.endpoint)
+        self._update_enabled_mods_button()
 
     def _new_local_tool_profile(self):
         self.local_tool_active_index = -1
@@ -298,6 +309,7 @@ class LocalToolsFeatureMixin:
         self.local_profile_name.setText("New local profile")
         self.local_profile_mods.clear()
         self.local_profile_endpoint.clear()
+        self._update_enabled_mods_button()
 
     def _current_local_tool_profile(self) -> LocalToolProfile:
         name = self.local_profile_name.text().strip() or "Local development"
@@ -317,6 +329,7 @@ class LocalToolsFeatureMixin:
         self._refresh_local_profile_picker()
         self.save_user_settings(silent=True)
         self.local_tools_status.setText(f"Saved local profile: {profile.name}.")
+        self._update_enabled_mods_button()
 
     def _refresh_editor_mod_picker(self):
         if not hasattr(self, "editor_mod_picker"):
@@ -358,6 +371,7 @@ class LocalToolsFeatureMixin:
             self.editor_mod_picker.addItem(item)
         self.editor_mod_picker.blockSignals(False)
         self._filter_editor_mod_picker(self.editor_mod_filter.text())
+        self._update_enabled_mods_button()
 
     def _filter_editor_mod_picker(self, text: str):
         needle = text.strip().casefold()
@@ -375,6 +389,7 @@ class LocalToolsFeatureMixin:
             self.editor_mod_picker.item(row).setCheckState(Qt.Unchecked)
         self.save_user_settings(silent=True)
         self.local_tools_status.setText("Additional-mod selection cleared.")
+        self._update_enabled_mods_button()
 
     def _selected_editor_extra_mod_ids(self) -> tuple[str, ...]:
         selected = list(self.editor_extra_mod_ids)
@@ -396,6 +411,7 @@ class LocalToolsFeatureMixin:
             else:
                 self.editor_dependency_excluded_ids.add(workshop_id)
             self.save_user_settings(silent=True)
+            self._update_enabled_mods_button()
             return
         if item.checkState() == Qt.Checked:
             self.editor_extra_mod_ids.add(workshop_id)
@@ -404,6 +420,7 @@ class LocalToolsFeatureMixin:
         self.editor_addon_dependencies_checked = False
         self._resolve_editor_dependencies()
         self.save_user_settings(silent=True)
+        self._update_enabled_mods_button()
 
     def _resolve_editor_dependencies(self):
         self.editor_dependency_request += 1
@@ -434,11 +451,80 @@ class LocalToolsFeatureMixin:
         self.editor_dependency_excluded_ids.intersection_update(self.editor_dependency_mod_ids)
         self.editor_dependency_metadata = dict(metadata)
         self._refresh_editor_mod_picker()
+        self._update_enabled_mods_button()
         count = len(self.editor_dependency_mod_ids)
         if count:
             self.local_tools_status.setText(
                 f"Added {count} detected Workshop requirement(s) to the selection."
             )
+
+    def _enabled_mod_entries(self, *, editor: bool) -> list[str]:
+        """Return launch-order-independent, readable entries for the enabled-mod window."""
+        install = self.selected_steam_install()
+        installed = scan_installed_mods(install.workshop_dir if install else None)
+        dependency_names = {
+            workshop_id: str(detail.get("title") or "")
+            for workshop_id, detail in self.editor_dependency_metadata.items()
+        }
+        entries = []
+        if editor:
+            entries.extend(
+                f"{name} ({workshop_id}) — included automatically"
+                for workshop_id, name in DAYZ_EDITOR_MODS
+            )
+        for workshop_id in self._selected_editor_extra_mod_ids():
+            name = installed.get(workshop_id) or dependency_names.get(workshop_id) or workshop_id
+            entries.append(f"{name} ({workshop_id})")
+        return entries
+
+    def _update_enabled_mods_button(self):
+        if not hasattr(self, "enabled_mods_button"):
+            return
+        editor_count = len(self._enabled_mod_entries(editor=True))
+        local_count = len(self._enabled_mod_entries(editor=False)) + len(
+            self._local_path_list(self.local_profile_mods.text())
+        )
+        self.enabled_mods_button.setText(
+            f"View enabled mods (Editor {editor_count} · Local {local_count})"
+        )
+
+    def _show_enabled_mods(self):
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Enabled mods")
+        dialog.setMinimumWidth(500)
+        layout = QVBoxLayout(dialog)
+        detail = QLabel(
+            "These are the mod sets WolfLauncher will use. Editor includes its required mods automatically."
+        )
+        detail.setWordWrap(True)
+        set_ui_role(detail, "metadata")
+        layout.addWidget(detail)
+
+        editor_entries = self._enabled_mod_entries(editor=True)
+        layout.addWidget(QLabel(f"DayZ Editor ({len(editor_entries)})"))
+        editor_list = QListWidget()
+        editor_list.setAccessibleName("Enabled DayZ Editor mods")
+        editor_list.addItems(editor_entries)
+        editor_list.setMinimumHeight(140)
+        layout.addWidget(editor_list)
+
+        local_entries = self._enabled_mod_entries(editor=False)
+        local_profile = self._current_local_tool_profile()
+        local_paths = [str(path) for path in local_profile.mod_paths]
+        layout.addWidget(QLabel(f"Local Development ({len(local_entries) + len(local_paths)})"))
+        local_list = QListWidget()
+        local_list.setAccessibleName("Enabled local development mods")
+        local_list.addItems(local_entries)
+        local_list.addItems(f"Local folder: {path}" for path in local_paths)
+        if not local_entries and not local_paths:
+            local_list.addItem("No additional Workshop mods or local mod folders selected.")
+        local_list.setMinimumHeight(110)
+        layout.addWidget(local_list)
+
+        buttons = QDialogButtonBox(QDialogButtonBox.Close)
+        buttons.rejected.connect(dialog.reject)
+        layout.addWidget(buttons)
+        dialog.exec()
 
     def _clear_editor_dependency_worker(self, worker):
         if self.editor_dependency_worker is worker:
