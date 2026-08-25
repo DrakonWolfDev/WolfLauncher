@@ -90,6 +90,7 @@ class LocalToolsFeatureMixin:
         self.editor_dependency_metadata = {}
         self.editor_dependency_request = 0
         self.editor_dependency_worker = None
+        self.editor_dependency_pending = False
         self.editor_addon_dependency_worker = None
         self.editor_addon_dependencies_checked = False
         profile_card = QFrame()
@@ -516,9 +517,18 @@ class LocalToolsFeatureMixin:
 
     def _resolve_editor_dependencies(self):
         self.editor_dependency_request += 1
+        if self.editor_dependency_worker and self.editor_dependency_worker.isRunning():
+            # Steam's dependency endpoint is unreliable under overlapping
+            # requests. Finish this pass, then resolve the newest full set.
+            self.editor_dependency_pending = True
+            return
+        self._start_editor_dependency_resolution()
+
+    def _start_editor_dependency_resolution(self):
         request = self.editor_dependency_request
         roots = tuple(sorted(self.editor_extra_mod_ids, key=int))
         if not roots:
+            self.editor_dependency_pending = False
             self.editor_dependency_mod_ids.clear()
             self.editor_dependency_excluded_ids.clear()
             self.editor_dependency_metadata.clear()
@@ -635,6 +645,9 @@ class LocalToolsFeatureMixin:
     def _clear_editor_dependency_worker(self, worker):
         if self.editor_dependency_worker is worker:
             self.editor_dependency_worker = None
+            if self.editor_dependency_pending:
+                self.editor_dependency_pending = False
+                self._start_editor_dependency_resolution()
         worker.deleteLater()
 
     def _local_required_mods(self, *, editor: bool) -> list[RequiredMod]:
