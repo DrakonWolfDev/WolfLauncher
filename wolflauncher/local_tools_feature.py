@@ -145,8 +145,10 @@ class LocalToolsFeatureMixin:
         editor_card = QFrame()
         set_ui_role(editor_card, "healthGroup")
         editor_layout = QHBoxLayout(editor_card)
+        editor_layout.setAlignment(Qt.AlignTop)
         editor_launch_panel = QWidget()
         editor_launch_layout = QHBoxLayout(editor_launch_panel)
+        editor_launch_layout.setAlignment(Qt.AlignTop)
         editor_launch_layout.setSpacing(14)
         self.editor_workshop_image = QLabel("DayZ Editor Workshop image")
         self.editor_workshop_image.setFixedSize(180, 180)
@@ -225,6 +227,7 @@ class LocalToolsFeatureMixin:
         local_card = QFrame()
         set_ui_role(local_card, "healthGroup")
         local_layout = QVBoxLayout(local_card)
+        local_layout.setAlignment(Qt.AlignTop)
         local_title = QLabel("Local Server")
         set_ui_role(local_title, "cardTitle")
         local_layout.addWidget(local_title)
@@ -540,7 +543,8 @@ class LocalToolsFeatureMixin:
     def _finish_editor_dependency_resolution(self, request, roots, resolved, metadata):
         if request != self.editor_dependency_request:
             return
-        self.editor_dependency_mod_ids = set(resolved) - set(roots)
+        fixed_ids = {workshop_id for workshop_id, _name in DAYZ_EDITOR_MODS}
+        self.editor_dependency_mod_ids = set(resolved) - set(roots) - fixed_ids
         self.editor_dependency_excluded_ids.intersection_update(self.editor_dependency_mod_ids)
         self.editor_dependency_metadata = dict(metadata)
         self._refresh_editor_mod_picker()
@@ -775,7 +779,8 @@ class LocalToolsFeatureMixin:
         worker.start()
 
     def _finish_editor_addon_dependency_scan(self, roots, resolved, metadata, install):
-        self.editor_dependency_mod_ids = set(resolved) - set(roots)
+        fixed_ids = {workshop_id for workshop_id, _name in DAYZ_EDITOR_MODS}
+        self.editor_dependency_mod_ids = set(resolved) - set(roots) - fixed_ids
         self.editor_dependency_excluded_ids.intersection_update(self.editor_dependency_mod_ids)
         self.editor_dependency_metadata.update(metadata)
         self.editor_addon_dependencies_checked = True
