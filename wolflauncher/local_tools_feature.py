@@ -300,7 +300,9 @@ class LocalToolsFeatureMixin:
         self.local_tool_workspace.addWidget(active_page)
         self.local_tool_cards = {"editor": editor_card, "local": local_card}
         self.local_tool_active_target = None
-        layout.addWidget(self.local_tool_workspace)
+        # This is the primary tab content. Give it the spare vertical space so
+        # the focused selection and installed-mod list reach the tab footer.
+        layout.addWidget(self.local_tool_workspace, 1)
         layout.addWidget(self.local_tools_status)
         layout.addStretch(1)
         self._refresh_local_profile_picker()
@@ -468,7 +470,9 @@ class LocalToolsFeatureMixin:
             return
         card = self.local_tool_cards[target]
         self.local_tool_active_left_layout.removeWidget(card)
-        self.local_tool_choice_layout.addWidget(card, 1)
+        # Restore the initial left-to-right choice order every time. Appending
+        # the card made the previously focused session swap sides on return.
+        self.local_tool_choice_layout.insertWidget(0 if target == "editor" else 1, card, 1)
         self.editor_session_button.setText("Choose DayZ Editor")
         self.local_session_button.setText("Choose local server")
         self.local_tool_active_target = None
