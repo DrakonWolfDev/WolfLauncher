@@ -13,7 +13,7 @@ from .mods import (
     apply_workshop_install_timestamps,
     apply_workshop_item_states,
     apply_workshop_metadata,
-    cached_workshop_dependencies,
+    cached_workshop_dependency_graphs,
     check_server_mods,
     fetch_workshop_metadata,
     resolve_workshop_dependencies,
@@ -194,8 +194,23 @@ class WorkshopDependencyWorker(QThread):
 
     def run(self):
         try:
-            cached = cached_workshop_dependencies(self.workshop_ids)
-            resolved, metadata = cached or resolve_workshop_dependencies(self.workshop_ids)
+            cached = cached_workshop_dependency_graphs(self.workshop_ids)
+            if cached is None:
+                resolved, metadata = resolve_workshop_dependencies(self.workshop_ids)
+            else:
+                graphs, _missing_roots = cached
+                resolved, metadata = [], {}
+                for root in self.workshop_ids:
+                    if root in graphs:
+                        graph_resolved, graph_metadata = graphs[root]
+                    else:
+                        # Query only the cache miss.  A new selection must not
+                        # make a ready graph for an earlier selection vanish.
+                        graph_resolved, graph_metadata = resolve_workshop_dependencies([root])
+                    for workshop_id in graph_resolved:
+                        if workshop_id not in resolved:
+                            resolved.append(workshop_id)
+                    metadata.update(graph_metadata)
         except Exception:
             # Dependency metadata is advisory. Keep the explicit selection
             # launchable if Steam's public endpoint is temporarily unavailable.

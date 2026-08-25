@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from wolflauncher.mods import (
     _WorkshopRequiredItemsParser,
+    cached_workshop_dependency_graphs,
     cached_workshop_dependencies,
     resolve_workshop_dependencies,
 )
@@ -27,6 +28,25 @@ class WorkshopDependencyResolutionTests(unittest.TestCase):
         )
         self.assertEqual(metadata, {"1559212036": {"title": "CF"}})
         self.assertIn("ids=2572331007", fetch_json.call_args.args[0])
+
+    def test_keeps_ready_graph_when_another_requested_root_is_unknown(self):
+        payload = {
+            "graphs": {
+                "2572331007": {
+                    "status": "ready",
+                    "dependencies": ["2116157322"],
+                    "metadata": {"2116157322": {"title": "DayZ-Expansion-Licensed"}},
+                },
+                "3711024720": {"status": "unknown"},
+            }
+        }
+        with patch("wolflauncher.mods.fetch_json", return_value=payload):
+            graphs, missing = cached_workshop_dependency_graphs(["2572331007", "3711024720"])
+
+        self.assertEqual(missing, ("3711024720",))
+        self.assertEqual(
+            graphs["2572331007"][0], ("2572331007", "2116157322")
+        )
 
     def test_resolves_nested_dependencies_once_and_preserves_selection_order(self):
         responses = {

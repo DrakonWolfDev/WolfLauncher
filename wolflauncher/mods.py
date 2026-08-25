@@ -263,11 +263,18 @@ def resolve_workshop_dependencies(
     return tuple(resolved), metadata
 
 
-def cached_workshop_dependencies(workshop_ids) -> tuple[tuple[str, ...], dict[str, dict[str, Any]]] | None:
-    """Read WolfAPI's cached graph; cache misses remain a direct-Steam fallback."""
+def cached_workshop_dependency_graphs(
+    workshop_ids,
+) -> tuple[dict[str, tuple[tuple[str, ...], dict[str, dict[str, Any]]]], tuple[str, ...]] | None:
+    """Read ready WolfAPI graphs and identify only the roots still needing Steam.
+
+    A mixed request is normal while the shared cache is warming.  Keeping the
+    ready graphs here means one new cache miss cannot hide dependencies already
+    known for another selected mod.
+    """
     roots = tuple(dict.fromkeys(str(item).strip() for item in workshop_ids if str(item).strip().isdigit()))
     if not roots:
-        return (), {}
+        return {}, ()
     endpoint = os.environ.get("WOLFLAUNCHER_WOLFAPI_WORKSHOP_DEPENDENCIES_URL", "") or WOLFAPI_WORKSHOP_DEPENDENCIES_URL
     try:
         query = "&".join(f"ids={item}" for item in roots)
@@ -275,16 +282,40 @@ def cached_workshop_dependencies(workshop_ids) -> tuple[tuple[str, ...], dict[st
     except HttpClientError:
         return None
     graphs = payload.get("graphs") if isinstance(payload, dict) else None
-    if not isinstance(graphs, dict) or any(str((graphs.get(root) or {}).get("status")) not in {"ready", "stale"} for root in roots):
+    if not isinstance(graphs, dict):
         return None
-    resolved, metadata = list(roots), {}
+    ready_graphs = {}
+    missing = []
     for root in roots:
-        graph = graphs[root]
+        graph = graphs.get(root)
+        if not isinstance(graph, dict) or str(graph.get("status")) not in {"ready", "stale"}:
+            missing.append(root)
+            continue
+        resolved, metadata = [root], {}
         for item in graph.get("dependencies", []):
             item = str(item)
             if item.isdigit() and item not in resolved:
                 resolved.append(item)
         metadata.update(graph.get("metadata") if isinstance(graph.get("metadata"), dict) else {})
+        ready_graphs[root] = (tuple(resolved), metadata)
+    return ready_graphs, tuple(missing)
+
+
+def cached_workshop_dependencies(workshop_ids) -> tuple[tuple[str, ...], dict[str, dict[str, Any]]] | None:
+    """Read a completely ready WolfAPI graph set for callers needing one result."""
+    cached = cached_workshop_dependency_graphs(workshop_ids)
+    if cached is None:
+        return None
+    graphs, missing = cached
+    if missing:
+        return None
+    resolved, metadata = [], {}
+    for root in tuple(dict.fromkeys(str(item).strip() for item in workshop_ids if str(item).strip().isdigit())):
+        graph_resolved, graph_metadata = graphs[root]
+        for item in graph_resolved:
+            if item not in resolved:
+                resolved.append(item)
+        metadata.update(graph_metadata)
     return tuple(resolved), metadata
 
 
