@@ -304,7 +304,6 @@ class LocalToolsFeatureMixin:
         # the focused selection and installed-mod list reach the tab footer.
         layout.addWidget(self.local_tool_workspace, 1)
         layout.addWidget(self.local_tools_status)
-        layout.addStretch(1)
         self._refresh_local_profile_picker()
         self._refresh_editor_mod_picker()
         self._set_mod_selection_target("editor", animate=False)
