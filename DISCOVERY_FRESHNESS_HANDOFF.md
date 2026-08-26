@@ -4,6 +4,16 @@ Last synchronized with WolfAPI migration `20260821_0019` on 2026-08-21.
 
 ## Adaptive hosted map discovery (2026-08-21)
 
+## DZSA map-name catalogue lane (2026-08-26)
+
+WolfAPI may import normalized technical map identifiers from DZSA's public DayZ
+list on a bounded daily cadence. This is catalogue-only: DZSA endpoints,
+server names, player counts and mod data are never imported into WolfAPI.
+Accepted names become Steam map-sweep targets and all directory rows still
+come through the existing Steam admission, freshness and validation path. No
+Launcher response field, cache schema, visibility setting or selected-server
+truth behavior changes.
+
 WolfAPI now bundles low-volume map filters into bounded Steam OR requests and
 uses mutually exclusive Linux/non-Linux plus populated/empty partitions for
 near-cap maps. It deduplicates the combined response and applies its deny-list
