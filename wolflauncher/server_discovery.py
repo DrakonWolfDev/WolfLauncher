@@ -398,6 +398,7 @@ def discover_dayz_servers_wolfapi(
 def discover_dayz_servers_wolfapi_v1(
     limit: int = 100,
     offset: int = 0,
+    map_name: str = "",
     timeout: float = 15.0,
     url: str = "",
     unflagged_only: bool = False,
@@ -408,15 +409,15 @@ def discover_dayz_servers_wolfapi_v1(
         or os.environ.get("WOLFLAUNCHER_WOLFAPI_V1_SERVER_LIST_URL", "")
         or WOLFAPI_V1_SERVER_LIST_URL
     )
-    endpoint = _url_with_query(
-        endpoint,
-        {
-            "limit": max(1, min(int(limit), 500)),
-            "offset": max(0, int(offset)),
-            "product": product,
-            **({"quality": "unflagged"} if unflagged_only else {}),
-        },
-    )
+    params = {
+        "limit": max(1, min(int(limit), 500)),
+        "offset": max(0, int(offset)),
+        "product": product,
+        **({"quality": "unflagged"} if unflagged_only else {}),
+    }
+    if map_name.strip():
+        params["map"] = map_name.strip()
+    endpoint = _url_with_query(endpoint, params)
     return _fetch_wolfapi_servers(
         endpoint, limit=limit, timeout=timeout, require_v1=True, expected_product=product
     )

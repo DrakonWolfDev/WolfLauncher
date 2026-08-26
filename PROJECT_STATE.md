@@ -43,6 +43,11 @@ release matrix.
   aliases, bounded pagination, indexed remote search/resolve, freshness,
   validation, quality, country and required-mod metadata are supported. Saved
   legacy selections and the explicit legacy fallback remain intact.
+- Map selection is map-first rather than cache-first: typed or selected map
+  names make a bounded WolfAPI v1 map request and merge the result locally, so
+  small maps are not dependent on a machine's popularity-ranked refresh slice.
+- Settings exposes WolfAPI and the Steam Master fallback. BattleMetrics, Steam
+  Web API and Disabled are retired from the normal provider chooser.
 - Listing-data warnings are hidden by default. The Launcher also flags an
   obvious cluster of three or more exact normalized provider names across
   different endpoints as advisory duplicate-directory data until WolfAPI

@@ -152,6 +152,13 @@ the launcher marks the stored label as expired/pending refresh rather than
 inventing the next server state. Ping and selected/launch-time checks remain
 local.
 
+Map filtering is map-first under WolfAPI: users may select a cached map or type
+one that is not yet local, then Launcher retrieves a bounded map-only v1 page
+and merges it by stable ID. This prevents a machine's popularity-ranked
+refresh slice from deciding which maps it can browse. WolfAPI is the normal
+provider; Steam Master remains its explicit fallback, while BattleMetrics,
+Steam Web API and Disabled are no longer normal settings choices.
+
 The planned transition from launcher polling to API-owned directory freshness is specified in `DISCOVERY_FRESHNESS_HANDOFF.md`. It preserves local selected-server/launch checks and offline cache use while moving shared validation age, provenance, canonical identity and scheduling responsibility into a stable WolfAPI contract.
 
 ## Server Status

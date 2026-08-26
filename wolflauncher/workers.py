@@ -474,6 +474,35 @@ class WolfApiSearchWorker(QThread):
             self.search_ready.emit(self.query, servers, "")
 
 
+class WolfApiMapWorker(QThread):
+    """Fetch a bounded remote map slice even when the local cache has none."""
+
+    map_ready = Signal(str, object, str)
+
+    def __init__(
+        self, map_name: str, limit: int = 500,
+        unflagged_only: bool = False, product: str = "stable",
+    ):
+        super().__init__()
+        self.map_name = " ".join(map_name.split())
+        self.limit = max(1, min(int(limit), 500))
+        self.unflagged_only = unflagged_only
+        self.product = product
+
+    def run(self):
+        try:
+            servers = discover_dayz_servers_wolfapi_v1(
+                limit=self.limit,
+                map_name=self.map_name,
+                unflagged_only=self.unflagged_only,
+                product=self.product,
+            )
+        except Exception as exc:
+            self.map_ready.emit(self.map_name, [], str(exc))
+        else:
+            self.map_ready.emit(self.map_name, servers, "")
+
+
 class ServerEnrichmentWorker(QThread):
     enrichment_ready = Signal(object, str)
     enrichment_progress = Signal(object, int, int)

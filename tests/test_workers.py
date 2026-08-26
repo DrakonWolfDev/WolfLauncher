@@ -11,6 +11,7 @@ from wolflauncher.workers import (
     SteamDiscoveryWorker,
     WolfApiCacheMergeWorker,
     WolfApiDiscoveryWorker,
+    WolfApiMapWorker,
     WolfApiSearchWorker,
     _checked_server_status,
     discover_wolfapi_v1_pages,
@@ -152,6 +153,22 @@ class WorkerTests(unittest.TestCase):
             product="stable",
             unflagged_only=True,
         )
+
+    @patch("wolflauncher.workers.discover_dayz_servers_wolfapi_v1")
+    def test_map_worker_fetches_a_map_without_a_name_query(self, discover):
+        discover.return_value = ["stuart-server"]
+        results = []
+        worker = WolfApiMapWorker(" StuartIsland ", unflagged_only=True)
+        worker.map_ready.connect(
+            lambda map_name, servers, error: results.append((map_name, servers, error))
+        )
+
+        worker.run()
+
+        discover.assert_called_once_with(
+            limit=500, map_name="StuartIsland", unflagged_only=True, product="stable"
+        )
+        self.assertEqual(results, [("StuartIsland", ["stuart-server"], "")])
 
     @patch("wolflauncher.workers.resolve_dayz_server_wolfapi_v1")
     @patch("wolflauncher.workers.search_dayz_servers_wolfapi_v1")

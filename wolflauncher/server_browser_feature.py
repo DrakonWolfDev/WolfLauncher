@@ -86,6 +86,7 @@ from .workers import (
     SteamWebApiDiscoveryWorker,
     WolfApiCacheMergeWorker,
     WolfApiDiscoveryWorker,
+    WolfApiMapWorker,
     WolfApiSearchWorker,
 )
 
@@ -138,11 +139,14 @@ class ServerBrowserMixin:
         filters.addWidget(self.browser_modded)
 
         self.browser_map = QComboBox()
+        self.browser_map.setEditable(True)
+        self.browser_map.setInsertPolicy(QComboBox.NoInsert)
+        self.browser_map.setPlaceholderText("Any map")
         self.browser_map.setFixedWidth(180)
         self.browser_map.addItem("Any map")
         self.browser_map.currentTextChanged.connect(self.refresh_server_browser)
         self.browser_map.currentTextChanged.connect(
-            lambda _text: self.schedule_remote_wolfapi_search(self.browser_search.text())
+            self.schedule_remote_wolfapi_map
         )
         filters.addWidget(self.browser_map)
 
@@ -865,6 +869,58 @@ class ServerBrowserMixin:
         self.pending_wolfapi_search = query
         self.remote_search_timer.start()
 
+    def schedule_remote_wolfapi_map(self, map_name: str):
+        self.remote_map_timer.stop()
+        map_name = " ".join(map_name.split())
+        if (
+            self.discovery_provider_key() != "wolfapi_v1"
+            or not map_name
+            or map_name == "Any map"
+        ):
+            self.pending_wolfapi_map = ""
+            return
+        self.pending_wolfapi_map = map_name
+        self.remote_map_timer.start()
+
+    def start_remote_wolfapi_map(self):
+        map_name = self.pending_wolfapi_map
+        if not map_name or self.discovery_provider_key() != "wolfapi_v1":
+            return
+        if self.wolfapi_map_worker and self.wolfapi_map_worker.isRunning():
+            return
+        self.pending_wolfapi_map = ""
+        self.wolfapi_map_worker = WolfApiMapWorker(
+            map_name,
+            limit=500,
+            unflagged_only=self.browser_hide_quality_flagged.isChecked(),
+            product=self.dayz_product_key(),
+        )
+        self.wolfapi_map_worker.map_ready.connect(self.handle_remote_wolfapi_map)
+        self.wolfapi_map_worker.finished.connect(self.finish_remote_wolfapi_map)
+        self.statusBar().showMessage(f'Loading WolfAPI map "{map_name}"…')
+        self.wolfapi_map_worker.start()
+
+    def handle_remote_wolfapi_map(self, map_name: str, servers, error: str):
+        if error:
+            self.statusBar().showMessage(
+                f'WolfAPI map lookup unavailable; showing cached results: {error}', 7000
+            )
+            return
+        self.record_wolfapi_directory_total(getattr(servers, "directory_total", None))
+        merged = server_cache.merge_source_servers(
+            self.server_cache, self.discovery_source_name("wolfapi"), servers
+        )
+        if self._combo_filter_value(self.browser_map, "Any map").casefold() == map_name.casefold():
+            self.refresh_server_browser()
+            self.statusBar().showMessage(
+                f'WolfAPI map lookup merged {merged} result(s) for "{map_name}".', 5000
+            )
+
+    def finish_remote_wolfapi_map(self):
+        self.wolfapi_map_worker = None
+        if self.pending_wolfapi_map:
+            self.remote_map_timer.start()
+
     def schedule_browser_search_refresh(self, text: str):
         self.browser_filter_timer.stop()
         query = " ".join(text.split())
@@ -1317,10 +1373,7 @@ class ServerBrowserMixin:
     def _provider_label(self, key: str) -> str:
         labels = {
             "wolfapi_v1": "WolfAPI",
-            "battlemetrics": "BattleMetrics",
-            "steam_web_api": "Steam Web API",
             "steam_master": "Steam Master",
-            "disabled": "Disabled",
         }
         return labels.get(key, labels[DEFAULT_DISCOVERY_PROVIDER])
 
@@ -1330,10 +1383,7 @@ class ServerBrowserMixin:
         keys = {
             "WolfAPI": "wolfapi_v1",
             "WolfAPI v1 (staged)": "wolfapi_v1",
-            "BattleMetrics": "battlemetrics",
-            "Steam Web API": "steam_web_api",
             "Steam Master": "steam_master",
-            "Disabled": "disabled",
         }
         return keys.get(self.discovery_provider.currentText(), DEFAULT_DISCOVERY_PROVIDER)
 

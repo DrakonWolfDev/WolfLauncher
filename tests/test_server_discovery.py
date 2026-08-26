@@ -773,6 +773,17 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         self.assertEqual(query["quality"], ["unflagged"])
 
     @patch("wolflauncher.http_client.urllib.request.urlopen")
+    def test_wolfapi_v1_list_accepts_a_map_without_a_name_search(self, urlopen):
+        urlopen.return_value = self.fake_wolfapi_response()
+
+        discover_dayz_servers_wolfapi_v1(limit=500, map_name="StuartIsland")
+
+        request = urlopen.call_args.args[0]
+        query = urllib.parse.parse_qs(urllib.parse.urlparse(request.full_url).query)
+        self.assertEqual(query["map"], ["StuartIsland"])
+        self.assertNotIn("q", query)
+
+    @patch("wolflauncher.http_client.urllib.request.urlopen")
     def test_wolfapi_v1_search_normalizes_and_encodes_filters(self, urlopen):
         urlopen.return_value = self.fake_wolfapi_response()
 

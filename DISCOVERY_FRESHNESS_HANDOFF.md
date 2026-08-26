@@ -14,6 +14,17 @@ come through the existing Steam admission, freshness and validation path. No
 Launcher response field, cache schema, visibility setting or selected-server
 truth behavior changes.
 
+## Map-first hosted discovery (2026-08-26)
+
+WolfLauncher no longer treats its locally cached map dropdown as the directory's
+map universe. Selecting or typing a map under the WolfAPI provider starts a
+bounded map-only v1 list request (up to 500 rows), then merges results into the
+existing stable-ID SQLite cache. This makes long-tail maps discoverable on a
+fresh installation even when no server from that map appeared in its
+popularity-ranked refresh. Name search and exact endpoint resolution remain
+separate paths. WolfAPI v1 already supports this map filter; no API field or
+identity change is required.
+
 WolfAPI now bundles low-volume map filters into bounded Steam OR requests and
 uses mutually exclusive Linux/non-Linux plus populated/empty partitions for
 near-cap maps. It deduplicates the combined response and applies its deny-list

@@ -17,6 +17,7 @@ WORKER_ATTRIBUTES = (
     "wolfapi_worker",
     "wolfapi_cache_worker",
     "wolfapi_search_worker",
+    "wolfapi_map_worker",
     "results_freshness_worker",
     "workshop_library_worker",
     "editor_dependency_worker",
@@ -31,6 +32,7 @@ WORKER_COLLECTION_ATTRIBUTES = (
 TIMER_ATTRIBUTES = (
     "timer",
     "remote_search_timer",
+    "remote_map_timer",
     "browser_filter_timer",
     "browser_selection_timer",
     "steam_server_install_timer",
@@ -92,6 +94,8 @@ def stop_runtime_scheduling(owner) -> None:
             pending.clear()
     if hasattr(owner, "pending_wolfapi_search"):
         owner.pending_wolfapi_search = ""
+    if hasattr(owner, "pending_wolfapi_map"):
+        owner.pending_wolfapi_map = ""
     if hasattr(owner, "pending_results_freshness"):
         owner.pending_results_freshness = False
 

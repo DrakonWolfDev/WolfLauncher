@@ -154,10 +154,7 @@ class SettingsFeatureMixin:
         self.discovery_provider.addItems(
             [
                 "WolfAPI",
-                "BattleMetrics",
-                "Steam Web API",
                 "Steam Master",
-                "Disabled",
             ]
         )
         self.discovery_provider.setCurrentText(

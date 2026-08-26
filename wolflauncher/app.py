@@ -143,7 +143,9 @@ class MainWindow(
         self.wolfapi_cache_worker = None
         self.wolfapi_cache_context = (False, "WolfAPI", "wolfapi")
         self.wolfapi_search_worker = None
+        self.wolfapi_map_worker = None
         self.pending_wolfapi_search = ""
+        self.pending_wolfapi_map = ""
         self.wolfapi_directory_total = self._saved_wolfapi_directory_total()
         self.selection_enrichment_workers = {}
         self.pending_selection_checks = {}
@@ -225,6 +227,10 @@ class MainWindow(
         self.remote_search_timer.setSingleShot(True)
         self.remote_search_timer.setInterval(450)
         self.remote_search_timer.timeout.connect(self.start_remote_wolfapi_search)
+        self.remote_map_timer = QTimer(self)
+        self.remote_map_timer.setSingleShot(True)
+        self.remote_map_timer.setInterval(450)
+        self.remote_map_timer.timeout.connect(self.start_remote_wolfapi_map)
         self.browser_filter_timer = QTimer(self)
         self.browser_filter_timer.setSingleShot(True)
         self.browser_filter_timer.setInterval(250)
