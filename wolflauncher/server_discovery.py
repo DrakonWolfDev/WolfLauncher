@@ -15,6 +15,7 @@ STEAM_WEB_API_SERVER_LIST_URL = "https://api.steampowered.com/IGameServersServic
 BATTLEMETRICS_SERVER_LIST_URL = "https://api.battlemetrics.com/servers"
 WOLFAPI_SERVER_LIST_URL = "https://api.wolfcontrol.co.uk/api/servers"
 WOLFAPI_V1_SERVER_LIST_URL = "https://api.wolfcontrol.co.uk/api/v1/servers"
+WOLFAPI_V1_MAPS_URL = "https://api.wolfcontrol.co.uk/api/v1/maps"
 WOLFAPI_V1_SEARCH_URL = f"{WOLFAPI_V1_SERVER_LIST_URL}/search"
 WOLFAPI_V1_RESOLVE_URL = f"{WOLFAPI_V1_SERVER_LIST_URL}/resolve"
 MASTER_SERVER_HOST = "hl2master.steampowered.com"
@@ -421,6 +422,29 @@ def discover_dayz_servers_wolfapi_v1(
     return _fetch_wolfapi_servers(
         endpoint, limit=limit, timeout=timeout, require_v1=True, expected_product=product
     )
+
+
+def discover_wolfapi_v1_maps(timeout: float = 15.0, url: str = "") -> list[str]:
+    """Fetch the small WolfAPI map catalogue, not a server directory."""
+    endpoint = url or os.environ.get("WOLFLAUNCHER_WOLFAPI_V1_MAPS_URL", "") or WOLFAPI_V1_MAPS_URL
+    try:
+        payload = fetch_json(endpoint, timeout=timeout)
+    except HttpClientError as exc:
+        raise WolfApiError(f"WolfAPI map catalogue {exc}") from exc
+    if not isinstance(payload, dict) or str(payload.get("contract_version")) != "1":
+        raise WolfApiError("WolfAPI returned an invalid map catalogue.")
+    rows = payload.get("maps")
+    if not isinstance(rows, list):
+        raise WolfApiError("WolfAPI map catalogue did not contain maps.")
+    maps = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        name = " ".join(str(row.get("name") or "").split())
+        key = " ".join(str(row.get("key") or "").split())
+        if name and key:
+            maps.append(name[:1].upper() + name[1:])
+    return sorted(dict.fromkeys(maps), key=str.casefold)
 
 
 def search_dayz_servers_wolfapi_v1(

@@ -18,6 +18,7 @@ WORKER_ATTRIBUTES = (
     "wolfapi_cache_worker",
     "wolfapi_search_worker",
     "wolfapi_map_worker",
+    "wolfapi_map_catalog_worker",
     "results_freshness_worker",
     "workshop_library_worker",
     "editor_dependency_worker",

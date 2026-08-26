@@ -144,6 +144,8 @@ class MainWindow(
         self.wolfapi_cache_context = (False, "WolfAPI", "wolfapi")
         self.wolfapi_search_worker = None
         self.wolfapi_map_worker = None
+        self.wolfapi_map_catalog_worker = None
+        self.wolfapi_map_catalog = []
         self.pending_wolfapi_search = ""
         self.pending_wolfapi_map = ""
         self.wolfapi_directory_total = self._saved_wolfapi_directory_total()

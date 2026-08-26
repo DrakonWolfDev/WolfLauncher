@@ -17,6 +17,7 @@ from wolflauncher.server_discovery import (
     discover_dayz_servers_battlemetrics,
     discover_dayz_servers_wolfapi,
     discover_dayz_servers_wolfapi_v1,
+    discover_wolfapi_v1_maps,
     discovered_server_from_battlemetrics_row,
     discovered_server_from_endpoint,
     discovered_server_from_web_api_row,
@@ -782,6 +783,19 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         query = urllib.parse.parse_qs(urllib.parse.urlparse(request.full_url).query)
         self.assertEqual(query["map"], ["StuartIsland"])
         self.assertNotIn("q", query)
+
+    @patch("wolflauncher.server_discovery.fetch_json")
+    def test_wolfapi_map_catalog_uses_its_small_dedicated_endpoint(self, fetch_json):
+        fetch_json.return_value = {
+            "contract_version": "1",
+            "maps": [
+                {"key": "stuartisland", "name": "stuartisland"},
+                {"key": "namalsk", "name": "namalsk"},
+            ],
+        }
+
+        self.assertEqual(discover_wolfapi_v1_maps(), ["Namalsk", "Stuartisland"])
+        self.assertEqual(fetch_json.call_args.args[0], "https://api.wolfcontrol.co.uk/api/v1/maps")
 
     @patch("wolflauncher.http_client.urllib.request.urlopen")
     def test_wolfapi_v1_search_normalizes_and_encodes_filters(self, urlopen):

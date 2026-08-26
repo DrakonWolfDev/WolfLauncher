@@ -86,6 +86,7 @@ from .workers import (
     SteamWebApiDiscoveryWorker,
     WolfApiCacheMergeWorker,
     WolfApiDiscoveryWorker,
+    WolfApiMapCatalogWorker,
     WolfApiMapWorker,
     WolfApiSearchWorker,
 )
@@ -149,6 +150,7 @@ class ServerBrowserMixin:
             self.schedule_remote_wolfapi_map
         )
         filters.addWidget(self.browser_map)
+        QTimer.singleShot(0, self.refresh_wolfapi_map_catalog)
 
         self.browser_online_only = QCheckBox("Online only")
         self.browser_online_only.setFixedWidth(120)
@@ -882,6 +884,25 @@ class ServerBrowserMixin:
         self.pending_wolfapi_map = map_name
         self.remote_map_timer.start()
 
+    def refresh_wolfapi_map_catalog(self):
+        if self.discovery_provider_key() != "wolfapi_v1":
+            return
+        if self.wolfapi_map_catalog_worker and self.wolfapi_map_catalog_worker.isRunning():
+            return
+        self.wolfapi_map_catalog_worker = WolfApiMapCatalogWorker()
+        self.wolfapi_map_catalog_worker.catalog_ready.connect(self.handle_wolfapi_map_catalog)
+        self.wolfapi_map_catalog_worker.finished.connect(self.finish_wolfapi_map_catalog)
+        self.wolfapi_map_catalog_worker.start()
+
+    def handle_wolfapi_map_catalog(self, maps, _error: str):
+        if not isinstance(maps, list):
+            return
+        self.wolfapi_map_catalog = [str(map_name) for map_name in maps if str(map_name).strip()]
+        self._refresh_browser_filter_options()
+
+    def finish_wolfapi_map_catalog(self):
+        self.wolfapi_map_catalog_worker = None
+
     def start_remote_wolfapi_map(self):
         map_name = self.pending_wolfapi_map
         if not map_name or self.discovery_provider_key() != "wolfapi_v1":
@@ -1606,7 +1627,7 @@ class ServerBrowserMixin:
         self._set_combo_filter_options(
             self.browser_map,
             "Any map",
-            options["map"],
+            sorted(set(options["map"]) | set(self.wolfapi_map_catalog), key=str.casefold),
         )
         self._set_combo_filter_options(
             self.browser_version,

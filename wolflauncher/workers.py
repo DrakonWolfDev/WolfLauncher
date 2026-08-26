@@ -24,6 +24,7 @@ from .mods import (
 )
 from .server_discovery import (
     WolfApiServerList,
+    discover_wolfapi_v1_maps,
     discover_dayz_servers,
     discover_dayz_servers_battlemetrics,
     discover_dayz_servers_web_api,
@@ -501,6 +502,18 @@ class WolfApiMapWorker(QThread):
             self.map_ready.emit(self.map_name, [], str(exc))
         else:
             self.map_ready.emit(self.map_name, servers, "")
+
+
+class WolfApiMapCatalogWorker(QThread):
+    catalog_ready = Signal(object, str)
+
+    def run(self):
+        try:
+            maps = discover_wolfapi_v1_maps()
+        except Exception as exc:
+            self.catalog_ready.emit([], str(exc))
+        else:
+            self.catalog_ready.emit(maps, "")
 
 
 class ServerEnrichmentWorker(QThread):

@@ -25,6 +25,12 @@ popularity-ranked refresh. Name search and exact endpoint resolution remain
 separate paths. WolfAPI v1 already supports this map filter; no API field or
 identity change is required.
 
+WolfAPI now also exposes `GET /api/v1/maps`, a small cacheable catalogue of
+enabled sweep-target keys and display names only. Launcher populates its map
+chooser from this catalogue as well as its local cache, capitalizing displayed
+names while retaining the map filter path for actual retrieval. It never
+downloads a directory merely to learn map names.
+
 WolfAPI now bundles low-volume map filters into bounded Steam OR requests and
 uses mutually exclusive Linux/non-Linux plus populated/empty partitions for
 near-cap maps. It deduplicates the combined response and applies its deny-list
