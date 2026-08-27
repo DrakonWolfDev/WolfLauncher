@@ -54,6 +54,9 @@ def time_icon(is_day: bool) -> QIcon:
 def _build_stylesheet() -> str:
     c, s = COLOURS, SPACING
     check_icon = (Path(__file__).resolve().parent / "assets" / "check.svg").as_posix()
+    combo_chevron = (
+        Path(__file__).resolve().parent / "assets" / "combo-chevron-down.svg"
+    ).as_posix()
     atmosphere = (Path(__file__).resolve().parent / "assets" / "wolf-atmosphere-v1.png").as_posix()
     return f"""
 QWidget {{ background-color: {c["background"]}; color: {c["text"]}; selection-background-color: {c["accent"]}; selection-color: {c["background"]}; }}
@@ -81,7 +84,10 @@ QLineEdit, QComboBox, QSpinBox, QTextEdit {{ background-color: {c["surface_alt"]
 QLineEdit:hover, QComboBox:hover, QSpinBox:hover, QTextEdit:hover {{ border-color: {c["border_strong"]}; }}
 QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QTextEdit:focus {{ border: 1px solid {c["accent"]}; }}
 QLineEdit:disabled, QComboBox:disabled, QSpinBox:disabled, QTextEdit:disabled {{ background-color: {c["surface"]}; color: {c["text_muted"]}; }}
-QComboBox::drop-down, QSpinBox::up-button, QSpinBox::down-button {{ border: 0; background-color: transparent; }}
+QComboBox::drop-down {{ width: 24px; border: 0; border-left: 1px solid {c["border"]}; background-color: {c["surface"]}; border-top-right-radius: {s["radius"]}px; border-bottom-right-radius: {s["radius"]}px; }}
+QComboBox::drop-down:hover {{ background-color: {c["border"]}; }}
+QComboBox::down-arrow {{ image: url("{combo_chevron}"); width: 12px; height: 12px; }}
+QSpinBox::up-button, QSpinBox::down-button {{ border: 0; background-color: transparent; }}
 QComboBox QAbstractItemView {{ background-color: {c["surface_alt"]}; color: {c["text"]}; border: 1px solid {c["border_strong"]}; selection-background-color: {c["accent"]}; selection-color: {c["background"]}; }}
 QPushButton {{ background-color: {c["surface_alt"]}; color: {c["text"]}; border: 1px solid {c["border"]}; border-radius: {s["radius"]}px; padding: {s["control_vertical"]}px {s["control_horizontal"]}px; }}
 QPushButton:hover {{ background-color: {c["border"]}; border-color: {c["border_strong"]}; }}

@@ -30,6 +30,8 @@ class ThemeTests(unittest.TestCase):
         self.assertIn(COLOURS["background"], APPLICATION_STYLESHEET)
         self.assertIn(COLOURS["accent"], APPLICATION_STYLESHEET)
         self.assertIn("check.svg", APPLICATION_STYLESHEET)
+        self.assertIn("combo-chevron-down.svg", APPLICATION_STYLESHEET)
+        self.assertIn("QComboBox::down-arrow", APPLICATION_STYLESHEET)
         self.assertIn('QTableView[uiRole="browserTable"]', APPLICATION_STYLESHEET)
         self.assertTrue(
             (
