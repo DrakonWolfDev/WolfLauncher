@@ -83,6 +83,13 @@ wolflauncher
 
 Build this on 64-bit Windows using PowerShell.
 
+### Quick ZIP + installer button
+
+After completing the one-time Python preparation below, double-click
+`Build-Windows-Release.cmd` in the repository root. It builds the portable
+ZIP, ensures the hash-pinned Inno Setup compiler is available, then builds the
+per-user Setup executable and SHA-256 sidecars in `dist\windows`.
+
 ### Dependencies
 
 Install:
