@@ -87,7 +87,7 @@ install -m 0644 packaging/linux/wolflauncher.svg \
 install -m 0644 example.servers.yaml "$package_root/usr/share/wolflauncher/"
 install -m 0755 external/dayz-linux-cli-launcher/dayz-launcher.sh \
   "$package_root/usr/share/wolflauncher/external/"
-install -m 0644 LICENSE THIRD_PARTY_NOTICES.md "$package_root/usr/share/doc/wolflauncher/"
+install -m 0644 LICENSE COPYRIGHT THIRD_PARTY_NOTICES.md "$package_root/usr/share/doc/wolflauncher/"
 
 cat > "$package_root/usr/bin/wolflauncher" <<'EOF'
 #!/usr/bin/env bash
@@ -110,7 +110,7 @@ Priority: optional
 Architecture: $architecture
 Depends: python3 (>= $python_version), python3 (<< $python_next_minor), libegl1
 Installed-Size: $installed_size
-Maintainer: WolfLauncher contributors
+Maintainer: Andrew Hodgson trading as Wolf Forge
 Homepage: https://github.com/DrakonWolfDev/WolfLauncher
 Description: Linux-first DayZ launcher
  Native Steam and Workshop-aware DayZ server launcher for Linux.

@@ -85,6 +85,7 @@ try {
 
     Copy-Item -LiteralPath "README.md" -Destination $bundleRoot
     Copy-Item -LiteralPath "LICENSE" -Destination $bundleRoot
+    Copy-Item -LiteralPath "COPYRIGHT" -Destination $bundleRoot
     Copy-Item -LiteralPath "THIRD_PARTY_NOTICES.md" -Destination $bundleRoot
 
     $version = (& $Python -c "from wolflauncher import __version__; print(__version__)").Trim()

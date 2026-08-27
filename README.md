@@ -562,6 +562,9 @@ evidence-driven.
 
 ## License
 
-WolfLauncher is licensed under the MIT License.
+WolfLauncher is free and open-source software licensed under the
+[GNU Affero General Public License, version 3](LICENSE) (`AGPL-3.0-only`).
+
+Copyright © 2026 Andrew Hodgson trading as Wolf Forge.
 
 This repository includes the MIT-licensed `dayz-linux-cli-launcher` under `external/dayz-linux-cli-launcher/`. See `THIRD_PARTY_NOTICES.md` for details.

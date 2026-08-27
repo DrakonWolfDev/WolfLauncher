@@ -44,6 +44,7 @@ foreach ($requiredFile in @(
     $Iscc,
     (Join-Path $BundleRoot "WolfLauncher.exe"),
     (Join-Path $BundleRoot "LICENSE"),
+    (Join-Path $BundleRoot "COPYRIGHT"),
     $iconPath,
     $installerScript
 )) {
