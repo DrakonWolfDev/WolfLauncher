@@ -7,6 +7,7 @@ from PySide6.QtCore import QThread, Signal
 
 from . import server_cache
 from .models import Server
+from .server_display import map_filter_key
 from .mods import (
     WORKSHOP_URL,
     RequiredMod,
@@ -494,7 +495,7 @@ class WolfApiMapWorker(QThread):
         try:
             servers = discover_dayz_servers_wolfapi_v1(
                 limit=self.limit,
-                map_name=self.map_name,
+                map_name=map_filter_key(self.map_name),
                 unflagged_only=self.unflagged_only,
                 product=self.product,
             )

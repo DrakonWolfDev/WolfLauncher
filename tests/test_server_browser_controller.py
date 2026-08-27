@@ -152,7 +152,7 @@ class ServerBrowserControllerTests(unittest.TestCase):
 
         self.assertEqual(
             options["map"],
-            ["Bitterroot", "Chernarusplus", "Livonia", "Namalsk"],
+            ["Bitterroot", "ChernarusPlus", "Livonia", "Namalsk"],
         )
         self.assertEqual(options["version"], ["1.25", "1.26"])
         self.assertEqual(options["source"], ["battlemetrics", "wolfapi", "wolfapi_experimental"])

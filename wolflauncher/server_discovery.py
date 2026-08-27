@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 
 from .http_client import HttpClientError, fetch_json
 from .models import DiscoveredServer
+from .server_display import display_map_name
 
 DAYZ_APP_ID = 221100
 STEAM_WEB_API_SERVER_LIST_URL = "https://api.steampowered.com/IGameServersService/GetServerList/v1/"
@@ -440,10 +441,9 @@ def discover_wolfapi_v1_maps(timeout: float = 15.0, url: str = "") -> list[str]:
     for row in rows:
         if not isinstance(row, dict):
             continue
-        name = " ".join(str(row.get("name") or "").split())
         key = " ".join(str(row.get("key") or "").split())
-        if name and key:
-            maps.append(name[:1].upper() + name[1:])
+        if key:
+            maps.append(display_map_name(key))
     return sorted(dict.fromkeys(maps), key=str.casefold)
 
 

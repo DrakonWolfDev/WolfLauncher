@@ -794,7 +794,7 @@ class WolfApiDiscoveryTests(unittest.TestCase):
             ],
         }
 
-        self.assertEqual(discover_wolfapi_v1_maps(), ["Namalsk", "Stuartisland"])
+        self.assertEqual(discover_wolfapi_v1_maps(), ["Namalsk", "Stuart Island"])
         self.assertEqual(fetch_json.call_args.args[0], "https://api.wolfcontrol.co.uk/api/v1/maps")
 
     @patch("wolflauncher.http_client.urllib.request.urlopen")

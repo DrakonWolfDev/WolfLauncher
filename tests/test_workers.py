@@ -167,7 +167,7 @@ class WorkerTests(unittest.TestCase):
         worker.run()
 
         discover.assert_called_once_with(
-            limit=500, map_name="StuartIsland", unflagged_only=True, product="stable"
+            limit=500, map_name="stuartisland", unflagged_only=True, product="stable"
         )
         self.assertEqual(results, [("StuartIsland", ["stuart-server"], "")])
 
