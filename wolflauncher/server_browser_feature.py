@@ -140,9 +140,6 @@ class ServerBrowserMixin:
         filters.addWidget(self.browser_modded)
 
         self.browser_map = QComboBox()
-        self.browser_map.setEditable(True)
-        self.browser_map.setInsertPolicy(QComboBox.NoInsert)
-        self.browser_map.setPlaceholderText("Any map")
         self.browser_map.setFixedWidth(180)
         self.browser_map.addItem("Any map")
         self.browser_map.currentTextChanged.connect(self.refresh_server_browser)
