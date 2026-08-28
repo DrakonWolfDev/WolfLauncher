@@ -6,6 +6,13 @@ from pathlib import Path
 from .dayz_product import STABLE, DayZProduct
 from .platforms import current_platform
 
+# Flatpak Steam parameters (matching the external launcher)
+FLATPAK_PARAMS = (
+    "--branch=stable",
+    "--arch=x86_64",
+    "--command=/app/bin/steam-wrapper",
+)
+
 STEAM_APP_ID_DAYZ = 221100
 DAYZ_PROCESS_PATTERNS = (
     "DayZ_x64.exe",
@@ -169,49 +176,58 @@ def _first_existing(paths: list[Path]) -> Path | None:
 
 
 def detect_steam(product: DayZProduct = STABLE) -> list[SteamInstall]:
-    installs: list[SteamInstall] = []
+        installs: list[SteamInstall] = []
 
-    native_root = _first_existing(NATIVE_STEAM_ROOTS)
-    native_executable = current_platform().native_steam_executable()
-    native_running = _is_running("steam")
-    native_libraries = _library_steamapps_from_root(native_root)
-    native_steamapps = _select_visible_steamapps(native_libraries, product)
-    installs.append(
-        SteamInstall(
-            mode="native",
-            executable=native_executable,
-            running=native_running,
-            root=native_root,
-            steamapps=native_steamapps,
-            dayz_dir=_dayz_from_libraries(native_libraries, product),
-            workshop_dir=_workshop_from_libraries(native_libraries),
-            compatdata_dir=_compatdata_from_libraries(native_libraries),
-            library_steamapps=native_libraries,
-            product=product,
-        )
-    )
-
-    env_root = os.environ.get("STEAM_ROOT")
-    if env_root:
-        root = Path(env_root).expanduser()
-        steamapps = root / "steamapps" if (root / "steamapps").exists() else root
-        env_libraries = [steamapps] if steamapps.exists() else []
+        native_root = _first_existing(NATIVE_STEAM_ROOTS)
+        native_executable = current_platform().native_steam_executable()
+        native_running = _is_running("steam")
+        native_libraries = _library_steamapps_from_root(native_root)
+        native_steamapps = _select_visible_steamapps(native_libraries, product)
+        
+        # Determine the mode for the primary detected Steam installation
+        if native_executable == "flatpak":
+            mode = "flatpak"
+        elif native_executable and "snap" in native_executable:
+            mode = "snap"
+        else:
+            mode = "native"
+            
         installs.append(
             SteamInstall(
-                mode="STEAM_ROOT env",
+                mode=mode,
                 executable=native_executable,
                 running=native_running,
-                root=root,
-                steamapps=_select_visible_steamapps(env_libraries, product),
-                dayz_dir=_dayz_from_libraries(env_libraries, product),
-                workshop_dir=_workshop_from_libraries(env_libraries),
-                compatdata_dir=_compatdata_from_libraries(env_libraries),
-                library_steamapps=env_libraries,
+                root=native_root,
+                steamapps=native_steamapps,
+                dayz_dir=_dayz_from_libraries(native_libraries, product),
+                workshop_dir=_workshop_from_libraries(native_libraries),
+                compatdata_dir=_compatdata_from_libraries(native_libraries),
+                library_steamapps=native_libraries,
                 product=product,
             )
         )
 
-    return installs
+        env_root = os.environ.get("STEAM_ROOT")
+        if env_root:
+            root = Path(env_root).expanduser()
+            steamapps = root / "steamapps" if (root / "steamapps").exists() else root
+            env_libraries = [steamapps] if steamapps.exists() else []
+            installs.append(
+                SteamInstall(
+                    mode="STEAM_ROOT env",
+                    executable=native_executable,
+                    running=native_running,
+                    root=root,
+                    steamapps=_select_visible_steamapps(env_libraries, product),
+                    dayz_dir=_dayz_from_libraries(env_libraries, product),
+                    workshop_dir=_workshop_from_libraries(env_libraries),
+                    compatdata_dir=_compatdata_from_libraries(env_libraries),
+                    library_steamapps=env_libraries,
+                    product=product,
+                )
+            )
+
+        return installs
 
 
 def best_install(product: DayZProduct = STABLE) -> SteamInstall | None:
@@ -229,12 +245,14 @@ def best_install_from(installs: list[SteamInstall]) -> SteamInstall | None:
 
 
 def steam_mode_label(mode: str) -> str:
-    labels = {
-        "auto": "Auto",
-        "native": "Native Steam",
-        "STEAM_ROOT env": "STEAM_ROOT Steam library",
-    }
-    return labels.get(mode, "Auto")
+        labels = {
+            "auto": "Auto",
+            "native": "Native Steam",
+            "flatpak": "Flatpak Steam",
+            "snap": "Snap Steam",
+            "STEAM_ROOT env": "STEAM_ROOT Steam library",
+        }
+        return labels.get(mode, "Auto")
 
 
 def select_steam_install(
@@ -250,11 +268,15 @@ def select_steam_install(
 
 
 def install_label(install: SteamInstall) -> str:
-    if install.mode == "native":
-        return "Native Steam"
-    if install.mode == "STEAM_ROOT env":
-        return "STEAM_ROOT Steam library"
-    return f"{install.mode} Steam"
+        if install.mode == "native":
+            return "Native Steam"
+        if install.mode == "flatpak":
+            return "Flatpak Steam"
+        if install.mode == "snap":
+            return "Snap Steam"
+        if install.mode == "STEAM_ROOT env":
+            return "STEAM_ROOT Steam library"
+        return f"{install.mode} Steam"
 
 
 def steam_command_detail(install: SteamInstall | None) -> str:
@@ -264,8 +286,14 @@ def steam_command_detail(install: SteamInstall | None) -> str:
 
 
 def build_steam_start_command(install: SteamInstall) -> list[str]:
-    """Build the selected client's normal start command without launching a game."""
-    return [install.executable] if install.executable else []
+        """Build the selected client's normal start command without launching a game."""
+        # Handle flatpak steam
+        if install.executable == "flatpak":
+            return ["flatpak", "run"] + list(FLATPAK_PARAMS) + ["com.valvesoftware.Steam"]
+        # Handle snap steam (if executable is a path to snap steam)
+        elif install.executable and "snap" in install.executable:
+            return [install.executable]
+        return [install.executable] if install.executable else []
 
 
 def steam_install_summary(install: SteamInstall | None) -> str:
