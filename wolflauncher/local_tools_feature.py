@@ -252,11 +252,14 @@ class LocalToolsFeatureMixin:
         # Choosing a session clears the other large card from the work area. The
         # focused card then shares the page evenly with the mod picker.
         self.local_tool_workspace = QStackedWidget()
+        set_ui_role(self.local_tool_workspace, "workspace")
         choice_page = QWidget()
+        set_ui_role(choice_page, "workspace")
         choice_page_layout = QVBoxLayout(choice_page)
         choice_page_layout.setContentsMargins(0, 0, 0, 0)
         choice_page_layout.setSpacing(0)
         choice_row = QWidget()
+        set_ui_role(choice_row, "workspace")
         self.local_tool_choice_layout = QHBoxLayout(choice_row)
         self.local_tool_choice_layout.setContentsMargins(0, 0, 0, 0)
         self.local_tool_choice_layout.setSpacing(12)
