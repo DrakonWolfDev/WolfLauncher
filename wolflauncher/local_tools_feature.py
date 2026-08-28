@@ -304,10 +304,12 @@ class LocalToolsFeatureMixin:
         self.local_tool_workspace.addWidget(active_page)
         self.local_tool_cards = {"editor": editor_card, "local": local_card}
         self.local_tool_active_target = None
-        # This is the primary tab content. Give it the spare vertical space so
-        # the focused selection and installed-mod list reach the tab footer.
-        layout.addWidget(self.local_tool_workspace, 1)
+        # The session-choice cards should finish with their content, leaving
+        # the remaining tab area available for the background rather than
+        # stretching both cards to the footer.
+        layout.addWidget(self.local_tool_workspace, 0, Qt.AlignTop)
         layout.addWidget(self.local_tools_status)
+        layout.addStretch(1)
         self._refresh_local_profile_picker()
         self._refresh_editor_mod_picker()
         self._set_mod_selection_target("editor", animate=False)
