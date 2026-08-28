@@ -256,6 +256,10 @@ class LocalToolsFeatureMixin:
         self.local_tool_choice_layout = QHBoxLayout(choice_page)
         self.local_tool_choice_layout.setContentsMargins(0, 0, 0, 0)
         self.local_tool_choice_layout.setSpacing(12)
+        # Only the chooser cards should use their natural height. The stacked
+        # workspace itself remains full-height so the selected-mods screen can
+        # use the available vertical room.
+        self.local_tool_choice_layout.setAlignment(Qt.AlignTop)
         self.local_tool_choice_layout.addWidget(editor_card, 1)
         self.local_tool_choice_layout.addWidget(local_card, 1)
 
@@ -304,12 +308,10 @@ class LocalToolsFeatureMixin:
         self.local_tool_workspace.addWidget(active_page)
         self.local_tool_cards = {"editor": editor_card, "local": local_card}
         self.local_tool_active_target = None
-        # The session-choice cards should finish with their content, leaving
-        # the remaining tab area available for the background rather than
-        # stretching both cards to the footer.
-        layout.addWidget(self.local_tool_workspace, 0, Qt.AlignTop)
+        # The selected-mods screen needs the spare vertical space. The choice
+        # page above keeps its cards compact through its own top alignment.
+        layout.addWidget(self.local_tool_workspace, 1)
         layout.addWidget(self.local_tools_status)
-        layout.addStretch(1)
         self._refresh_local_profile_picker()
         self._refresh_editor_mod_picker()
         self._set_mod_selection_target("editor", animate=False)
