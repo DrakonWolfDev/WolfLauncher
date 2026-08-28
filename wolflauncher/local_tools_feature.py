@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QScrollArea,
+    QSizePolicy,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -145,6 +146,7 @@ class LocalToolsFeatureMixin:
 
         editor_card = QFrame()
         set_ui_role(editor_card, "healthGroup")
+        editor_card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         editor_layout = QHBoxLayout(editor_card)
         editor_layout.setAlignment(Qt.AlignTop)
         editor_launch_panel = QWidget()
@@ -223,6 +225,7 @@ class LocalToolsFeatureMixin:
 
         local_card = QFrame()
         set_ui_role(local_card, "healthGroup")
+        local_card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         local_layout = QVBoxLayout(local_card)
         local_layout.setAlignment(Qt.AlignTop)
         local_title = QLabel("Local Server")
