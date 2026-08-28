@@ -45,10 +45,14 @@ version_info = VSVersionInfo(
                 StringTable(
                     "040904B0",
                     [
-                        StringStruct("CompanyName", "WolfLauncher contributors"),
+                        StringStruct("CompanyName", "Wolf Forge"),
                         StringStruct("FileDescription", "WolfLauncher DayZ launcher"),
                         StringStruct("FileVersion", version),
                         StringStruct("InternalName", "WolfLauncher"),
+                        StringStruct(
+                            "LegalCopyright",
+                            "Copyright (C) 2026 Andrew Hodgson trading as Wolf Forge",
+                        ),
                         StringStruct("OriginalFilename", "WolfLauncher.exe"),
                         StringStruct("ProductName", "WolfLauncher"),
                         StringStruct("ProductVersion", version),
