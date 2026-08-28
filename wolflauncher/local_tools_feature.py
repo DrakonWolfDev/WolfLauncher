@@ -20,7 +20,6 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QScrollArea,
-    QSizePolicy,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -146,7 +145,6 @@ class LocalToolsFeatureMixin:
 
         editor_card = QFrame()
         set_ui_role(editor_card, "healthGroup")
-        editor_card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         editor_layout = QHBoxLayout(editor_card)
         editor_layout.setAlignment(Qt.AlignTop)
         editor_launch_panel = QWidget()
@@ -225,7 +223,6 @@ class LocalToolsFeatureMixin:
 
         local_card = QFrame()
         set_ui_role(local_card, "healthGroup")
-        local_card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         local_layout = QVBoxLayout(local_card)
         local_layout.setAlignment(Qt.AlignTop)
         local_title = QLabel("Local Server")
@@ -256,15 +253,19 @@ class LocalToolsFeatureMixin:
         # focused card then shares the page evenly with the mod picker.
         self.local_tool_workspace = QStackedWidget()
         choice_page = QWidget()
-        self.local_tool_choice_layout = QHBoxLayout(choice_page)
+        choice_page_layout = QVBoxLayout(choice_page)
+        choice_page_layout.setContentsMargins(0, 0, 0, 0)
+        choice_page_layout.setSpacing(0)
+        choice_row = QWidget()
+        self.local_tool_choice_layout = QHBoxLayout(choice_row)
         self.local_tool_choice_layout.setContentsMargins(0, 0, 0, 0)
         self.local_tool_choice_layout.setSpacing(12)
-        # Only the chooser cards should use their natural height. The stacked
-        # workspace itself remains full-height so the selected-mods screen can
-        # use the available vertical room.
-        self.local_tool_choice_layout.setAlignment(Qt.AlignTop)
         self.local_tool_choice_layout.addWidget(editor_card, 1)
         self.local_tool_choice_layout.addWidget(local_card, 1)
+        # The row takes the height of its tallest card, so both cards finish at
+        # one shared edge while the full-height page below remains transparent.
+        choice_page_layout.addWidget(choice_row, 0, Qt.AlignTop)
+        choice_page_layout.addStretch(1)
 
         active_page = QWidget()
         active_layout = QHBoxLayout(active_page)
