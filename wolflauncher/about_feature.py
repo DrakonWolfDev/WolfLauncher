@@ -36,14 +36,20 @@ class AboutFeatureMixin:
         set_ui_role(title, "aboutTitle")
         card_layout.addWidget(title)
 
-        tagline = QLabel("Free and open-source DayZ launcher")
+        tagline = QLabel("Free and open-source DayZ launcher for Windows & Linux")
         tagline.setAlignment(Qt.AlignCenter)
         set_ui_role(tagline, "aboutTagline")
         card_layout.addWidget(tagline)
 
-        licence = QLabel("Licensed under GNU AGPLv3")
+        licence = QLabel(
+            'Licensed under <a href="https://choosealicense.com/licenses/agpl-3.0/">'
+            "GNU AGPLv3</a>"
+        )
         licence.setAlignment(Qt.AlignCenter)
-        set_ui_role(licence, "aboutMetadata")
+        licence.setOpenExternalLinks(True)
+        licence.setToolTip("Open the full GNU AGPLv3 licence details")
+        licence.setAccessibleName("Licensed under GNU AGPLv3")
+        set_ui_role(licence, "aboutLicence")
         card_layout.addWidget(licence)
 
         links = QHBoxLayout()

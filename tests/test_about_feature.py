@@ -23,8 +23,14 @@ class AboutFeatureTests(unittest.TestCase):
         )
         self.assertIn("WOLF", title.text())
         self.assertIn("LAUNCHER", title.text())
-        self.assertIn("Free and open-source DayZ launcher", labels)
-        self.assertIn("Licensed under GNU AGPLv3", labels)
+        self.assertIn("Free and open-source DayZ launcher for Windows & Linux", labels)
+        licence = next(
+            label
+            for label in tab.findChildren(QLabel)
+            if label.accessibleName() == "Licensed under GNU AGPLv3"
+        )
+        self.assertTrue(licence.openExternalLinks())
+        self.assertIn("https://choosealicense.com/licenses/agpl-3.0/", licence.text())
         self.assertIn(f"Version {__version__}", labels)
         self.assertIn("© 2026 Andrew Hodgson t/a Wolf Forge", labels)
 
