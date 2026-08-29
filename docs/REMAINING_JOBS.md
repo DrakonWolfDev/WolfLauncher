@@ -81,10 +81,8 @@ This is a practical execution list. The authoritative ordered backlog remains
 
 ### PR-17 — Updates and retention
 
-- Decided: public package signing identity is Wolf Systems (a trading name of
-  Emberline Technologies). Establish its certificates/keys and protected CI
-  signing boundaries. Blocked externally: no Wolf Systems signing
-  certificate/key provider has been acquired yet.
+- Decided: public package signing identity is Andrew Hodgson trading as Wolf Forge. Establish its certificates/keys and protected CI
+signing boundaries. Blocked externally: no signing certificate/key provider has been acquired yet.
 - Publish signed channel manifests and assets.
 - Implement an in-app availability notice.
 - Implement a signed Windows bootstrapper with prompted verified installer

@@ -202,7 +202,7 @@ class MainWindow(
             self.launch_engine.setEnabled(False)
         self.launch_engine.currentTextChanged.connect(self.handle_launch_engine_changed)
         self.native_steam_mode = QComboBox()
-steam_modes = ["Auto", "Native Steam", "Flatpak Steam", "Snap Steam", "STEAM_ROOT Steam library"]
+        steam_modes = ["Auto", "Native Steam", "Flatpak Steam", "Snap Steam", "STEAM_ROOT Steam library"]
         self.native_steam_mode.addItems(steam_modes)
         if current_platform().capabilities.platform_id == "linux":
             self.native_steam_mode.setToolTip(

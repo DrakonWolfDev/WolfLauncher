@@ -125,8 +125,7 @@ release matrix.
   skipped), Ruff and compilation. Windows CI repeats the portable and installer
   lifecycle builds and produces checksums for both. The established Linux CI
   release matrix remains authoritative for Linux behavior.
-- The public release signing identity is Wolf Systems, a trading name of
-  Emberline Technologies. Certificates/keys and protected CI signing boundaries
+- The public release signing identity is Andrew Hodgson trading as Wolf Forge. Certificates/keys and protected CI signing boundaries
   remain PR-17 release work; no signing certificate/key provider has been
   acquired yet, and no signing secret is stored in the repository.
 - Settings now provide a persistent Stable/Experimental game-version profile.

@@ -2,7 +2,7 @@
 
 Status: approved direction; implementation remains a release gate.
 
-Current signing status: Wolf Systems (a trading name of Emberline Technologies)
+Current signing status: Andrew Hodgson trading as Wolf Forge
 is the selected public identity, but no signing certificate or key provider has
 yet been acquired. Do not publish a signed-update claim until that external
 setup and protected CI boundary exist.
@@ -51,8 +51,7 @@ extra download while the user base is small. Preserve roaming configuration
 and local cache exactly as the current installer lifecycle does.
 
 Code-sign the bootstrapper, installer and shipped executables with the stable,
-trusted publisher identity **Wolf Systems** (a trading name of **Emberline
-Technologies**) before calling Windows supported. Do not embed a long-lived
+trusted publisher identity **Andrew Hodgson trading as Wolf Forge** before calling Windows supported. Do not embed a long-lived
 signing secret in the repository or application.
 
 ## Linux
@@ -84,7 +83,7 @@ never compete for the same installation.
 
 ## Implementation order
 
-1. Establish the Wolf Systems (Emberline Technologies) release signing
+1. Establish the Andrew Hodgson trading as Wolf Forge release signing
    identities and protected CI signing boundaries.
 2. Publish versioned assets and the signed channel manifest.
 3. Add the in-app availability notice without automatic installation.
