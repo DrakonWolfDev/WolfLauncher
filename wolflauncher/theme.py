@@ -41,6 +41,15 @@ ASSETS_DIR = Path(__file__).resolve().parent / "assets"
 WOLF_MARK_PATH = ASSETS_DIR / "wolf-mark.svg"
 
 
+def brand_wordmark(separator: str = " ") -> str:
+    """Return the shared two-colour Wolf Launcher wordmark as rich text."""
+    return (
+        f'<span style="color:{COLOURS["text"]}">WOLF</span>'
+        f'<span style="color:{COLOURS["text_muted"]}">{separator}</span>'
+        f'<span style="color:{COLOURS["accent"]}">LAUNCHER</span>'
+    )
+
+
 def theme_icon(name: str) -> QIcon:
     """Return one of WolfLauncher's deliberately small native SVG icons."""
     return QIcon(str(ASSETS_DIR / f"icon-{name}.svg"))

@@ -18,7 +18,11 @@ class AboutFeatureTests(unittest.TestCase):
         tab = AboutFeatureMixin()._build_about_tab()
         labels = [label.text() for label in tab.findChildren(QLabel)]
 
-        self.assertIn("WOLF LAUNCHER", labels)
+        title = next(
+            label for label in tab.findChildren(QLabel) if label.accessibleName() == "Wolf Launcher"
+        )
+        self.assertIn("WOLF", title.text())
+        self.assertIn("LAUNCHER", title.text())
         self.assertIn("Free and open-source DayZ launcher", labels)
         self.assertIn("Licensed under GNU AGPLv3", labels)
         self.assertIn(f"Version {__version__}", labels)

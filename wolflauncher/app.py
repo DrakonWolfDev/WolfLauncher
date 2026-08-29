@@ -75,6 +75,7 @@ from .single_instance import SingleInstanceGuard, activate_window
 from .theme import (
     WOLF_MARK_PATH,
     apply_application_theme,
+    brand_wordmark,
     set_monospace,
     set_ui_role,
     theme_icon,
@@ -328,7 +329,8 @@ class MainWindow(
         mark = QLabel()
         mark.setPixmap(QIcon(str(WOLF_MARK_PATH)).pixmap(QSize(22, 22)))
         mark.setToolTip("WolfLauncher")
-        wordmark = QLabel("WOLF // LAUNCHER")
+        wordmark = QLabel(brand_wordmark(" // "))
+        wordmark.setAccessibleName("Wolf Launcher")
         set_ui_role(wordmark, "brandWordmark")
         layout.addWidget(mark)
         layout.addWidget(wordmark)

@@ -5,7 +5,7 @@ from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from . import __version__
-from .theme import WOLF_MARK_PATH, set_ui_role
+from .theme import WOLF_MARK_PATH, brand_wordmark, set_ui_role
 
 
 class AboutFeatureMixin:
@@ -30,8 +30,9 @@ class AboutFeatureMixin:
         mark.setAccessibleName("Wolf Launcher logo")
         card_layout.addWidget(mark)
 
-        title = QLabel("WOLF LAUNCHER")
+        title = QLabel(brand_wordmark())
         title.setAlignment(Qt.AlignCenter)
+        title.setAccessibleName("Wolf Launcher")
         set_ui_role(title, "aboutTitle")
         card_layout.addWidget(title)
 

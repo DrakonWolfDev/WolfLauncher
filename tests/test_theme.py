@@ -11,6 +11,7 @@ from wolflauncher.theme import (
     APPLICATION_STYLESHEET,
     COLOURS,
     apply_application_theme,
+    brand_wordmark,
     build_palette,
     configure_data_table,
     configure_priority_columns,
@@ -55,6 +56,13 @@ class ThemeTests(unittest.TestCase):
         mark = Path(__file__).resolve().parents[1] / "wolflauncher" / "assets" / "wolf-mark.svg"
         self.assertTrue(mark.is_file())
         self.assertIn("#e8a33d", mark.read_text())
+
+    def test_brand_wordmark_uses_warm_white_and_ember_orange(self):
+        wordmark = brand_wordmark(" // ")
+        self.assertIn(COLOURS["text"], wordmark)
+        self.assertIn(COLOURS["accent"], wordmark)
+        self.assertIn("WOLF", wordmark)
+        self.assertIn("LAUNCHER", wordmark)
 
     def test_restrained_icon_set_is_packaged_as_native_svg(self):
         assets = Path(__file__).resolve().parents[1] / "wolflauncher" / "assets"
