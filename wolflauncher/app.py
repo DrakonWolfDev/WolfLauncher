@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from . import __version__, server_cache
+from .about_feature import AboutFeatureMixin
 from .config import (
     CURATED_SERVERS_PATH,
     ensure_empty_servers_file,
@@ -88,6 +89,7 @@ class MainWindow(
     SettingsFeatureMixin,
     LocalToolsFeatureMixin,
     LaunchFeatureMixin,
+    AboutFeatureMixin,
     QMainWindow,
 ):
     def __init__(self):
@@ -270,6 +272,11 @@ class MainWindow(
             self._scrollable_workspace(self._build_settings_tab()),
             theme_icon("settings"),
             "Settings",
+        )
+        self.tabs.addTab(
+            self._scrollable_workspace(self._build_about_tab()),
+            theme_icon("about"),
+            "About",
         )
         for index in range(self.tabs.count()):
             self.tabs.setTabToolTip(index, f"Open {self.tabs.tabText(index)}")

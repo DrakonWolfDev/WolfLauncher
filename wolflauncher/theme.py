@@ -76,6 +76,13 @@ QLabel[uiRole="browserStar"][favourite="true"] {{ color: {c["accent"]}; }}
 QLabel[uiRole="cardTitle"] {{ color: {c["text"]}; font-weight: 600; }}
 QWidget[uiRole="brandLockup"] {{ background-color: transparent; }}
 QLabel[uiRole="brandWordmark"] {{ color: {c["text_muted"]}; font-weight: 600; letter-spacing: 1px; }}
+QFrame[uiRole="aboutCard"] {{ background-color: rgba(28, 25, 18, 244); border: 1px solid {c["border_strong"]}; border-top: 3px solid {c["accent"]}; border-radius: 10px; }}
+QLabel[uiRole="aboutTitle"] {{ color: {c["text"]}; font-size: 24px; font-weight: 700; letter-spacing: 3px; }}
+QLabel[uiRole="aboutTagline"] {{ color: {c["accent_hover"]}; font-size: 15px; font-weight: 600; }}
+QLabel[uiRole="aboutMetadata"] {{ color: {c["text_muted"]}; }}
+QLabel[uiRole="aboutCopyright"] {{ color: {c["text_muted"]}; font-size: 11px; padding-top: 4px; }}
+QLabel[uiRole="aboutLink"] {{ color: {c["accent_hover"]}; background-color: {c["surface_alt"]}; border: 1px solid {c["border_strong"]}; border-radius: 12px; padding: 5px 10px; font-weight: 600; }}
+QLabel[uiRole="aboutLink"]:hover {{ color: {c["text"]}; border-color: {c["accent"]}; }}
 QLabel[uiRole="cardMetadata"], QLabel[uiRole="cardStats"] {{ color: {c["text_muted"]}; }}
 QLabel[uiRole="pingWarning"] {{ color: {c["warning"]}; }}
 QLabel[uiRole="pingCritical"] {{ color: {c["negative"]}; }}

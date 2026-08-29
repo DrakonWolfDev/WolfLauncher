@@ -63,6 +63,7 @@ class ThemeTests(unittest.TestCase):
             "browser",
             "mods",
             "settings",
+            "about",
             "add",
             "refresh",
             "launch",
