@@ -1,25 +1,17 @@
-servers:
-- name: Drakon Expansion
-  group: Drakon
-  host: drakonwolf.ddns.net
-  game_port: 3302
-  query_port: 3303
-  favourite: true
-- name: New Dawn Cherno
-  group: New Dawn
-  host: 198.244.177.109
-  game_port: 2302
-  query_port: 2303
-  favourite: true
-- name: New Dawn DeerIsle
-  group: New Dawn
-  host: 198.244.177.109
-  game_port: 2502
-  query_port: 2503
-  favourite: true
-- name: New Dawn Pripyat
-  group: New Dawn
-  host: 198.244.177.109
-  game_port: 2702
-  query_port: 2703
-  favourite: true
+servers: []
+
+# Domain-name example:
+# - name: Example Domain Server
+#   group: Example Servers
+#   host: dayz.example.org
+#   game_port: 2302
+#   query_port: 2303
+#   favourite: true
+
+# IP-address example:
+# - name: Example IP Server
+#   group: Example Servers
+#   host: 203.0.113.10
+#   game_port: 2402
+#   query_port: 2403
+#   favourite: false
