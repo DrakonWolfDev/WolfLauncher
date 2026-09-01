@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from PySide6.QtCore import QPropertyAnimation, QProcess, Qt, QTimer, QUrl
+from PySide6.QtCore import QPropertyAnimation, QProcess, QSize, Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices, QPixmap
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWidgets import (
@@ -210,6 +210,14 @@ class LocalToolsFeatureMixin:
         editor_mods_layout.addLayout(editor_filter_row)
         self.editor_mod_picker = QListWidget()
         self.editor_mod_picker.setAccessibleName("Installed additional mods")
+        set_ui_role(self.editor_mod_picker, "modPicker")
+        # Native QListWidget check-item metrics vary considerably between Qt
+        # platform styles. In particular, Linux can otherwise collapse these
+        # rows to the bare font height and leave a long Workshop list looking
+        # like one continuous block. Keep a small, DPI-scaled reading rhythm
+        # independent of the host desktop theme.
+        self.editor_mod_picker.setSpacing(1)
+        self.editor_mod_picker.setUniformItemSizes(True)
         self.editor_mod_picker.itemChanged.connect(self._editor_mod_selection_changed)
         self.editor_mod_picker_opacity = QGraphicsOpacityEffect(self.editor_mod_picker)
         self.editor_mod_picker.setGraphicsEffect(self.editor_mod_picker_opacity)
@@ -401,6 +409,7 @@ class LocalToolsFeatureMixin:
         available.sort(key=lambda entry: ((entry[1] or entry[0]).casefold(), entry[0]))
         self.editor_mod_picker.blockSignals(True)
         self.editor_mod_picker.clear()
+        row_height = max(26, self.editor_mod_picker.fontMetrics().height() + 10)
         for workshop_id, name in available:
             available_ids.add(workshop_id)
             required = self.mod_selection_target == "editor" and workshop_id in self.editor_dependency_mod_ids
@@ -408,6 +417,7 @@ class LocalToolsFeatureMixin:
             if required:
                 label += " — auto-detected requirement"
             item = QListWidgetItem(label)
+            item.setSizeHint(QSize(0, row_height))
             item.setData(Qt.UserRole, workshop_id)
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
             item.setCheckState(

@@ -167,6 +167,10 @@ QSplitter#browserSplitter::handle:hover {{ background-color: {c["surface_alt"]};
 QListWidget[uiRole="serverCards"] {{ background-color: rgba(21, 19, 15, 88); border: 0; outline: 0; }}
 QListWidget[uiRole="serverCards"]::item {{ background-color: transparent; border: 0; padding: 3px 0; }}
 QListWidget[uiRole="serverCards"]::item:selected {{ background-color: transparent; }}
+QListWidget[uiRole="modPicker"] {{ background-color: rgba(21, 19, 15, 88); border: 1px solid {c["border"]}; outline: 0; }}
+QListWidget[uiRole="modPicker"]::item {{ padding-left: 5px; border-bottom: 1px solid rgba(58, 51, 38, 96); }}
+QListWidget[uiRole="modPicker"]::item:hover {{ background-color: {c["surface_alt"]}; }}
+QListWidget[uiRole="modPicker"]::item:selected {{ background-color: {c["table_selection"]}; color: {c["text"]}; }}
 QTabWidget::pane {{ background-color: {c["background"]}; border: 1px solid {c["border"]}; top: -1px; }}
 QTabWidget#mainTabs {{ background-color: transparent; }}
 QTabWidget#mainTabs::pane {{ background-color: {c["background"]}; border: 1px solid {c["border_strong"]}; border-bottom: 1px solid {c["accent_pressed"]}; border-image: url("{atmosphere}") 0 0 0 0 stretch stretch; top: -1px; }}
