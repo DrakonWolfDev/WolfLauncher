@@ -40,6 +40,17 @@ class ThemeTests(unittest.TestCase):
             ).is_file()
         )
 
+    def test_mod_picker_uses_opaque_rows_and_solid_amber_checks(self):
+        self.assertIn(
+            f'QListWidget[uiRole="modPicker"] {{ background-color: {COLOURS["surface"]};',
+            APPLICATION_STYLESHEET,
+        )
+        self.assertIn(
+            f'QListWidget[uiRole="modPicker"]::indicator:checked {{ background-color: {COLOURS["accent"]};',
+            APPLICATION_STYLESHEET,
+        )
+        self.assertIn("image: none;", APPLICATION_STYLESHEET)
+
     def test_atmosphere_asset_is_packaged_with_theme(self):
         self.assertTrue(
             (

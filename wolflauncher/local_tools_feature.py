@@ -218,6 +218,7 @@ class LocalToolsFeatureMixin:
         # independent of the host desktop theme.
         self.editor_mod_picker.setSpacing(1)
         self.editor_mod_picker.setUniformItemSizes(True)
+        self.editor_mod_picker.setAlternatingRowColors(True)
         self.editor_mod_picker.itemChanged.connect(self._editor_mod_selection_changed)
         self.editor_mod_picker_opacity = QGraphicsOpacityEffect(self.editor_mod_picker)
         self.editor_mod_picker.setGraphicsEffect(self.editor_mod_picker_opacity)
