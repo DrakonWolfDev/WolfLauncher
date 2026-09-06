@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Rewrote the public README around current installation, server connection,
+  Editor/local server tools and source-build workflows. Removed obsolete
+  development baselines, provider choices and global GameDig instructions.
+
 - Removed internal handoff, planning and investigation notes from the public
   clone. Kept installation/build guides and a concise source architecture map.
 
