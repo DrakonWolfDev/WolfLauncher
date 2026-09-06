@@ -8,10 +8,15 @@ The v0.8 native-launch baseline is validated and tagged; v0.9 production
 hardening is the active cycle. The native Python engine is the default and the
 vendored MIT shell launcher remains a visible compatibility fallback.
 
-The approved v1.0 Linux support contract is Debian 13, Ubuntu 24.04 LTS,
-Ubuntu 26.04 LTS and Linux Mint 22.x through native Steam. Flatpak and Snap
-Steam are not compatible and are excluded from detection, Settings and the
-release matrix.
+The newer user-local installer works across Ubuntu 22.04/24.04/26.04,
+Debian 12+, Linux Mint 21+, Pop!_OS, Fedora 40+, Nobara, Arch Linux,
+Manjaro/EndeavourOS, openSUSE Tumbleweed/Leap, NixOS, Alpine 3.20+
+(non-musl environment) and SteamOS 3/HoloISO. This distro coverage is confirmed
+by the maintainer. See [Installing on Linux](docs/INSTALL_LINUX.md).
+
+The Debian/Ubuntu/Mint matrix below describes the original `.deb` desktop
+validation baseline. It does not limit the newer installer's distro coverage.
+Steam packaging compatibility is a separate runtime concern.
 
 ## Current truth
 

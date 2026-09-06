@@ -9,7 +9,11 @@ This is a practical execution list. The authoritative ordered backlog remains
 
 ### PR-08 — Packaged-artifact desktop validation
 
-- v1.0 supported Linux matrix: Debian 13, Ubuntu 24.04 LTS, Ubuntu 26.04 LTS
+The newer user-local installer also works across the distributions in
+[the Linux installer matrix](INSTALL_LINUX.md), as confirmed by the maintainer.
+The original `.deb` rows below do not limit that installer coverage.
+
+- Original `.deb` desktop validation matrix: Debian 13, Ubuntu 24.04 LTS, Ubuntu 26.04 LTS
   and Linux Mint 22.x through native Steam. Flatpak and Snap Steam are not
   compatible and are excluded from the matrix.
 - Run or explicitly waive the applicable desktop rows for that matrix.

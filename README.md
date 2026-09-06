@@ -137,8 +137,14 @@ verify DayZ directly from Steam before trying WolfLauncher again.
 
 ## Installation
 
-These instructions target Debian 13, Linux Mint 22 and Ubuntu 24.04/26.04 LTS
-family systems.
+The newer user-local installer works across Ubuntu 22.04/24.04/26.04,
+Debian 12+, Linux Mint 21+, Pop!_OS, Fedora 40+, Nobara, Arch Linux,
+Manjaro/EndeavourOS, openSUSE Tumbleweed/Leap, NixOS, Alpine 3.20+
+(non-musl environment) and SteamOS 3/HoloISO. This distro coverage is confirmed
+by the maintainer. See [Installing on Linux](docs/INSTALL_LINUX.md).
+
+The manual package-manager commands below target Debian, Mint and Ubuntu.
+Use the newer installer for the other distributions listed above.
 
 Steam and DayZ should already be installed through Valve's native Steam package.
 Flatpak and Snap Steam are not currently compatible. WolfLauncher does not

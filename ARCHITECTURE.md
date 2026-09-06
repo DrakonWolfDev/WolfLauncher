@@ -398,10 +398,15 @@ Linux uses a signed APT repository and the system package manager. The running
 launcher may check and explain availability but must not silently replace its
 own executable or system-owned files. See `docs/UPDATE_STRATEGY.md`.
 
-Primary target:
+Linux installation coverage:
 
-- Linux Mint
-- Ubuntu/Debian family
+The newer user-local installer works across Ubuntu 22.04/24.04/26.04,
+Debian 12+, Linux Mint 21+, Pop!_OS, Fedora 40+, Nobara, Arch Linux,
+Manjaro/EndeavourOS, openSUSE Tumbleweed/Leap, NixOS, Alpine 3.20+
+(non-musl environment) and SteamOS 3/HoloISO. This distro coverage is confirmed
+by the maintainer. See [Installing on Linux](docs/INSTALL_LINUX.md).
+
+The `.deb` package remains specific to the Debian/Ubuntu family.
 
 The minimum validated functional Linux baseline is Ubuntu 24.04.4 LTS on an
 Intel Core i5-8250U with 8 GB RAM and native Steam downloaded directly from
@@ -421,4 +426,4 @@ Experimental target:
 Secondary future targets:
 
 - Steam Deck
-- Other Linux distributions
+- Additional distro-specific package formats beyond the user-local installer

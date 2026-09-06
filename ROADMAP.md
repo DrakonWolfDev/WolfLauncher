@@ -1,5 +1,16 @@
 # WolfLauncher Roadmap
 
+## Linux installer coverage
+
+The newer user-local installer works across Ubuntu 22.04/24.04/26.04,
+Debian 12+, Linux Mint 21+, Pop!_OS, Fedora 40+, Nobara, Arch Linux,
+Manjaro/EndeavourOS, openSUSE Tumbleweed/Leap, NixOS, Alpine 3.20+
+(non-musl environment) and SteamOS 3/HoloISO. This distro coverage is confirmed
+by the maintainer. See [Installing on Linux](docs/INSTALL_LINUX.md).
+
+The distro-neutral installer is available now. Future distribution work covers
+additional package formats and desktop integration.
+
 Updated: 2026-08-05
 
 This file records milestones, not individual engineering jobs. The single

@@ -54,8 +54,12 @@ subscriptions.
 ## Packaged artifact checks
 
 Record the OS, package version, Steam client, Proton and `gamedig` versions for
-each run. Required release rows are Debian 13, Mint 22.x and Ubuntu 24.04/26.04
-LTS using native Steam; record an explicit waiver when a row cannot be run.
+each run. The original `.deb` release rows are Debian 13, Mint 22.x and
+Ubuntu 24.04/26.04 LTS using native Steam; record an explicit waiver when a row
+cannot be run. The newer user-local installer works across the broader
+[Linux installer matrix](INSTALL_LINUX.md), as confirmed by the maintainer.
+Record the installation method with each result so `.deb` evidence and
+user-local installer evidence remain clear.
 
 - [ ] Clean install works without a repository checkout or global unversioned
       npm mutation.

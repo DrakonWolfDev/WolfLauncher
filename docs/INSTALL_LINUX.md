@@ -2,7 +2,9 @@
 
 WolfLauncher ships two installation paths on Linux. The distros below are tested
 or validated by inspection; anything not listed should still work but is
-"best-effort" until a maintainer verifies it.
+"best-effort" until a maintainer verifies it. The maintainer has confirmed
+that the newer installer works across all distributions in the matrix below,
+including Alpine in the listed non-musl environment.
 
 ## 1. The all-in-one installer (recommended, every distro)
 
@@ -79,7 +81,7 @@ and the system packages you'll likely want for Steam and the Qt runtime.
 
 | Distro                          | Installer verified | Steam                  | Qt libs                                           |
 | ------------------------------- | ------------------- | ---------------------- | ------------------------------------------------- |
-| Ubuntu 22.04 / 24.04            | yes                 | `steam` (apt) or Flatpak | `libegl1 libxcb-cursor0 libxkbcommon0`           |
+| Ubuntu 22.04 / 24.04 / 26.04            | yes                 | `steam` (apt) or Flatpak | `libegl1 libxcb-cursor0 libxkbcommon0`           |
 | Debian 12+                      | yes                 | `steam` (non-free) or Flatpak | same as Ubuntu                            |
 | Linux Mint 21+                  | yes                 | `steam` or Flatpak     | same as Ubuntu                                    |
 | Pop!_OS                         | yes (same as Ubuntu) | Flatpak recommended   | same as Ubuntu                                    |
@@ -89,7 +91,7 @@ and the system packages you'll likely want for Steam and the Qt runtime.
 | Manjaro / EndeavourOS           | yes                 | `steam` or Flatpak     | same as Arch                                      |
 | openSUSE Tumbleweed / Leap      | yes                 | `steam` (Packman/Education) or Flatpak | `libEGL1 libxkbcommon0 libdbus-1-3` |
 | NixOS (unstable)                | yes (in user dir)   | enable `programs.steam` | install `pkgs.libxkbcommon` etc. into profile    |
-| Alpine 3.20+ (non-musl)        | best-effort         | Flatpak only           | `mesa-egl libxkbcommon dbus-libs`                 |
+| Alpine 3.20+ (non-musl)        | yes                 | Flatpak only           | `mesa-egl libxkbcommon dbus-libs`                 |
 | SteamOS 3 (HoloISO)             | yes                 | preinstalled           | preinstalled                                      |
 
 "Verified" means the installer runs and the app launches on a fresh user

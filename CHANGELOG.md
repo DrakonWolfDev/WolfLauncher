@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Documented the newer user-local installer's maintainer-confirmed coverage
+  across Debian/Ubuntu/Mint, Fedora, Arch, SUSE, NixOS, Alpine (non-musl),
+  SteamOS and their listed derivatives. The earlier `.deb` validation matrix
+  no longer describes the overall Linux installation scope.
+
 - Simplified **Add a favourite server** to show the advertised game port by
   default; query-port editing is now an advanced override.
 - Planned the next-build discovery recovery work: a local **Add by address**

@@ -2,7 +2,7 @@
 
 A short, repeatable build guide for the two supported build platforms:
 
-- **Linux:** build a native-architecture Debian package (`.deb`).
+- **Linux:** use the distro-neutral user-local installer, or build a native-architecture Debian package (`.deb`).
 - **Windows:** build a portable ZIP, then optionally a per-user Setup installer.
 
 > [!important]
@@ -19,6 +19,17 @@ git status --short
 
 3. Start with a clean `dist/` directory if you need to know exactly which files this build produced. It is ignored by Git.
 4. The build scripts download pinned Node runtimes/dependencies as needed, so internet access is required on the first build.
+
+## Linux — user-local installer
+
+The newer user-local installer works across Ubuntu 22.04/24.04/26.04,
+Debian 12+, Linux Mint 21+, Pop!_OS, Fedora 40+, Nobara, Arch Linux,
+Manjaro/EndeavourOS, openSUSE Tumbleweed/Leap, NixOS, Alpine 3.20+
+(non-musl environment) and SteamOS 3/HoloISO. This distro coverage is confirmed
+by the maintainer. See [Installing on Linux](docs/INSTALL_LINUX.md).
+
+Run `./scripts/wolflauncher-install.sh` from the source checkout. The `.deb`
+build below remains specific to Debian/Ubuntu-family systems.
 
 ## Linux — Debian package build
 
