@@ -7,10 +7,10 @@
 #
 # Usage:
 #   ./wolflauncher-install.sh                # install (or update) from local checkout
-#   curl -fsSL <url>/wolflauncher-install.sh | bash
+#   Unpack the complete installer source archive before running this script.
 #
 # Environment overrides:
-#   WOLFLAUNCHER_PREFIX       install prefix (default: $XDG_DATA_HOME/wolflauncher)
+#   WOLFLAUNCHER_PREFIX       install prefix (default: $XDG_DATA_HOME/wolflauncher/runtime)
 #   WOLFLAUNCHER_BIN_DIR      bin dir (default: $XDG_BIN_HOME or ~/.local/bin)
 #   WOLFLAUNCHER_REPO         source dir override (default: script-adjacent checkout)
 #   WOLFLAUNCHER_VERSION      force a version string in the launcher script
@@ -77,7 +77,7 @@ fi
 : "${XDG_BIN_HOME:=$HOME/.local/bin}"
 : "${XDG_CONFIG_HOME:=$HOME/.config}"
 
-prefix="${WOLFLAUNCHER_PREFIX:-$XDG_DATA_HOME/wolflauncher}"
+prefix="${WOLFLAUNCHER_PREFIX:-$XDG_DATA_HOME/wolflauncher/runtime}"
 bin_dir="${WOLFLAUNCHER_BIN_DIR:-$XDG_BIN_HOME}"
 python_dir="$prefix/python"
 node_dir="$prefix/node"
@@ -86,7 +86,7 @@ app_dir="$prefix/app"
 share_dir="$prefix/share"
 log_dir="$prefix/log"
 
-mkdir -p "$bin_dir" "$python_dir" "$node_dir" "$node_runtime_dir" \
+mkdir -p "$bin_dir" "$python_dir" "$node_dir" "$node_runtime_dir/bin" \
          "$app_dir" "$share_dir" "$log_dir" \
          "$XDG_DATA_HOME/applications" \
          "$XDG_DATA_HOME/icons/hicolor/scalable/apps" \
@@ -214,7 +214,7 @@ python3 -m pip install \
 # metadata on newer setuptools.
 if ! python3 -m build --help >/dev/null 2>&1; then
   log "Bootstrapping build toolchain into $python_dir"
-  python3 -m pip install --disable-pip-version-check --no-compile --no-deps \
+  python3 -m pip install --disable-pip-version-check --no-compile \
     --target "$python_dir" \
     "build" "setuptools>=80" "wheel>=0.46" "pyproject_hooks" "packaging" \
     2>/dev/null \
@@ -260,7 +260,7 @@ esac
 
 if [[ -n "$node_arch" && -z "${WOLFLAUNCHER_SKIP_NODE:-}" ]]; then
   tmp="$(mktemp -d)"
-  trap 'rm -rf "$tmp"' EXIT
+  trap 'rm -rf "$wheel_dir" "$tmp"' EXIT
   archive="$tmp/node-v${node_version}-linux-${node_arch}.tar.xz"
   url="https://nodejs.org/dist/v${node_version}/node-v${node_version}-linux-${node_arch}.tar.xz"
 
@@ -282,8 +282,8 @@ if [[ -n "$node_arch" && -z "${WOLFLAUNCHER_SKIP_NODE:-}" ]]; then
   if [[ -n "$archive" && -s "$archive" ]]; then
     if printf '%s  %s\n' "$node_sha" "$archive" | sha256sum --check --status; then
       tar -xJf "$archive" -C "$tmp"
-      install -m 0755 "$tmp/node-v${node_version}-linux-${node_arch}/bin/node" \
-                     "$node_runtime_dir/bin/node"
+      cp -R "$tmp/node-v${node_version}-linux-${node_arch}/." "$node_runtime_dir/"
+      export PATH="$node_runtime_dir/bin:$PATH"
       ok "Node.js installed at $node_runtime_dir/bin/node"
     else
       warn "Node.js archive hash mismatch — refusing to use it. Falling back to system node."
@@ -304,27 +304,14 @@ if [[ -f "$repo_dir/packaging/npm/package.json" ]]; then
   install -m 0644 "$repo_dir/packaging/npm/package.json" "$node_dir/"
   install -m 0644 "$repo_dir/packaging/npm/package-lock.json" "$node_dir/"
 
-  if have_cmd npm; then
+  if [[ -n "${WOLFLAUNCHER_SKIP_GAMEDIG:-}" ]]; then
+    log "Skipping GameDig installation (WOLFLAUNCHER_SKIP_GAMEDIG=1)"
+  elif have_cmd npm; then
     log "Installing GameDig via npm (lockfile-pinned)"
     (cd "$node_dir" && npm ci --omit=dev --ignore-scripts --no-audit --no-fund --silent)
     ok "GameDig installed"
-  elif [[ -x "$node_runtime_dir/bin/node" && -z "${WOLFLAUNCHER_SKIP_GAMEDIG:-}" ]]; then
-    # Fall back to a download of gamedig's published tarball if npm is missing.
-    # This keeps the installer usable on minimal NixOS/Silverblue images.
-    warn "npm not available; falling back to gamedig npm tarball."
-    gamedig_tmp="$(mktemp -d)"
-    if ! curl -fsSL --retry 3 --max-time 30 -o "$gamedig_tmp/gamedig.tgz" \
-        "https://registry.npmjs.org/gamedig/-/gamedig-5.3.3.tgz"; then
-      warn "Could not fetch gamedig tarball; server status checks will be disabled."
-    elif [[ -s "$gamedig_tmp/gamedig.tgz" ]]; then
-      mkdir -p "$node_dir/node_modules/gamedig"
-      tar -xzf "$gamedig_tmp/gamedig.tgz" -C "$gamedig_tmp"
-      cp -r "$gamedig_tmp/package/." "$node_dir/node_modules/gamedig/"
-      ok "GameDig installed from tarball"
-    fi
-    rm -rf "$gamedig_tmp"
   else
-    warn "Neither npm nor node are available; live server status checks will be disabled."
+    warn "npm unavailable; install Node.js and npm, then rerun to enable live status checks."
   fi
 else
   warn "Repo is missing packaging/npm/package.json — skipping GameDig."
@@ -380,6 +367,7 @@ PY
 cat > "$wrapper" <<EOF
 #!/usr/bin/env bash
 # WolfLauncher $version (user install)
+export WOLFLAUNCHER_SHARE_ROOT="$share_dir"
 export PYTHONPATH="$python_dir\${PYTHONPATH:+:\$PYTHONPATH}"
 export PATH="$node_runtime_dir/bin:$node_dir/node_modules/.bin:\${PATH:+\$PATH:}"
 exec python3 -m wolflauncher "\$@"
@@ -460,7 +448,7 @@ Installation complete.
   Launch:      $wrapper
   Data dir:    $prefix
   Config dir:  $XDG_CONFIG_HOME/wolflauncher
-  Uninstall:   ./wolflauncher-uninstall.sh
+  Uninstall:   ./scripts/wolflauncher-uninstall.sh
 
 Make sure '$bin_dir' is on your PATH (most distros add ~/.local/bin automatically).
 D

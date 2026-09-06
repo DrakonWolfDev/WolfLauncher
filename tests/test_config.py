@@ -37,9 +37,9 @@ class LoadServersTests(unittest.TestCase):
     def test_load_servers_reads_yaml_server_entries(self):
         yaml_text = """
 servers:
-  - name: Drakon Expansion
-    group: Drakon
-    host: drakonwolf.ddns.net
+  - name: Example Expansion
+    group: Example Servers
+    host: dayz.example.org
     game_port: 3302
     query_port: 3303
     favourite: true
@@ -58,9 +58,9 @@ servers:
             servers,
             [
                 Server(
-                    name="Drakon Expansion",
-                    group="Drakon",
-                    host="drakonwolf.ddns.net",
+                    name="Example Expansion",
+                    group="Example Servers",
+                    host="dayz.example.org",
                     game_port=3302,
                     query_port=3303,
                     favourite=True,

@@ -513,12 +513,12 @@ class WolfApiDiscoveryTests(unittest.TestCase):
     def test_wolfapi_row_maps_to_discovered_server(self):
         server = discovered_server_from_wolfapi_row(
             {
-                "id": "81.152.152.55:3303",
-                "addr": "81.152.152.55:3303",
-                "ip": "81.152.152.55",
+                "id": "203.0.113.55:3303",
+                "addr": "203.0.113.55:3303",
+                "ip": "203.0.113.55",
                 "game_port": 3302,
                 "query_port": 3303,
-                "name": "DrakonCherno",
+                "name": "Example Chernarus",
                 "map": "chernarusplus",
                 "players": 0,
                 "max_players": 6,
@@ -533,10 +533,10 @@ class WolfApiDiscoveryTests(unittest.TestCase):
         self.assertEqual(
             server,
             DiscoveredServer(
-                name="DrakonCherno",
+                name="Example Chernarus",
                 source="wolfapi",
-                server_name="DrakonCherno",
-                host="81.152.152.55",
+                server_name="Example Chernarus",
+                host="203.0.113.55",
                 game_port=3302,
                 query_port=3303,
                 map_name="chernarusplus",

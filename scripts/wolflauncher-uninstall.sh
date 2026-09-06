@@ -12,7 +12,7 @@ shopt -s inherit_errexit 2>/dev/null || true
 : "${XDG_BIN_HOME:=$HOME/.local/bin}"
 : "${XDG_CONFIG_HOME:=$HOME/.config}"
 
-prefix="${WOLFLAUNCHER_PREFIX:-$XDG_DATA_HOME/wolflauncher}"
+prefix="${WOLFLAUNCHER_PREFIX:-$XDG_DATA_HOME/wolflauncher/runtime}"
 bin_dir="${WOLFLAUNCHER_BIN_DIR:-$XDG_BIN_HOME}"
 
 PURGE=0
@@ -32,9 +32,9 @@ H
 done
 
 if [[ -t 1 ]]; then
-  readonly C_RED=$'\033[31m' C_YELLOW=$'\033[33m' C_BLUE=$'\033[34m' C_RESET=$'\033[0m'
+  readonly C_YELLOW=$'\033[33m' C_BLUE=$'\033[34m' C_RESET=$'\033[0m'
 else
-  readonly C_RED="" C_YELLOW="" C_BLUE="" C_RESET=""
+  readonly C_YELLOW="" C_BLUE="" C_RESET=""
 fi
 log()  { printf '%s==>%s %s\n' "$C_BLUE" "$C_RESET" "$*"; }
 warn() { printf '%s  !%s %s\n' "$C_YELLOW" "$C_RESET" "$*" >&2; }

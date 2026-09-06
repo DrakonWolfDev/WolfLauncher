@@ -18,3 +18,21 @@ graphify-out/
 
 # Local curated server list. The tracked example.servers.yaml is the template.
 servers.yaml
+
+# Private runtime data, credentials, editor state and local reports.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.sqlite*
+*.db
+*.db-*
+*.log
+.ruff_cache/
+.mypy_cache/
+.vscode/
+.idea/
+.DS_Store

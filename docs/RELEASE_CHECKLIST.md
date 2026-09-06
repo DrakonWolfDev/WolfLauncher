@@ -110,15 +110,15 @@ user-local installer evidence remain clear.
   directory through the Windows registry and Steam library manifests.
 - An unmodded curated server completed the Steam handoff and reached a visible
   `DayZ_x64.exe` loading screen.
-- A read-only Steamworks check for New Dawn Cherno returned all 58 required
+- A read-only Steamworks check for the Chernarus test server returned all 58 required
   Workshop items as installed, including item names, IDs, sizes and previews.
 - The 58-mod launch used direct absolute Workshop paths, passed the guarded
-  handoff, loaded DayZ Expansion and connected to `198.244.177.109:2302`.
+  handoff, loaded DayZ Expansion and connected to `203.0.113.10:2302`.
   The DayZ RPT recorded live world-entity loading from the server session.
 - The first transition from the unmodded run to the BattlEye server requested
   a game restart. Repeating the identical guarded launch after closing DayZ
   proceeded normally; no command or path change was required.
-- New Dawn DeerIsle initially reported 59 of 62 required items ready. After
+- The Deer Isle test server initially reported 59 of 62 required items ready. After
   explicit confirmation, the native Steamworks helper subscribed to and
   downloaded Tent Actions Fix, DayZ-Expansion-Bundle and
   Community-Online-Tools while reporting live progress for the 2.6 GiB batch.
@@ -127,7 +127,7 @@ user-local installer evidence remain clear.
   with no missing, update-pending or download-pending items.
 - The guarded DeerIsle launch completed through native Steam. The running
   `DayZ_x64.exe` command line contained exactly 62 absolute Workshop paths and
-  `-connect=198.244.177.109:2502`.
+  `-connect=203.0.113.10:2502`.
 - No Workshop items were removed or unsubscribed during validation.
 - The portable `0.9.0.dev0` one-folder artifact built with pinned Python and npm
   dependencies plus the official Node 24.14.0 Windows runtime. Its packaged GUI
@@ -157,8 +157,8 @@ user-local installer evidence remain clear.
   servers.
 - Curated status refresh and unmodded native-Steam/DayZ handoff passed.
 - DNS-hosted launch displayed and handed off the resolved numeric connect target
-  (`95.146.83.17:3302`); a separate raw-IP server handed off its configured
-  `198.244.177.109:2302` target.
+  (`203.0.113.20:3302`); a separate raw-IP server handed off its configured
+  `203.0.113.10:2302` target.
 - With native Steam fully exited, Connect started Steam without manual
   intervention and completed the DayZ handoff.
 - The external compatibility engine remained selectable, resolved the existing

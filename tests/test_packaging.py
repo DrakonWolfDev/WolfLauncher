@@ -19,6 +19,11 @@ class PackagingMetadataTests(unittest.TestCase):
         self.assertNotIn('version = "0.9.0b1"', text)
         self.assertEqual(wolflauncher.__version__, "0.9.0b1")
 
+    def test_wheel_declares_server_query_dependency_and_map_metadata(self):
+        text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        self.assertIn('"python-a2s>=1.4.2,<2"', text)
+        self.assertIn('"assets/*.json"', text)
+
     def test_desktop_entry_names_installed_command_and_icon(self):
         parser = configparser.ConfigParser(interpolation=None)
         parser.read(ROOT / "packaging/linux/wolflauncher.desktop", encoding="utf-8")

@@ -7,6 +7,13 @@
   SteamOS and their listed derivatives. The earlier `.deb` validation matrix
   no longer describes the overall Linux installation scope.
 
+- Prepared public source downloads: replaced personal server examples and test
+  fixtures with documentation addresses, excluded local artifacts and added a
+  complete source-distribution manifest including map metadata.
+- Fixed the Linux installer bundle, installed-resource lookup,
+  Node/npm dependency installation and CI release gating. Installation files
+  now live in a runtime subdirectory so uninstall preserves cached user data.
+
 - Simplified **Add a favourite server** to show the advertised game port by
   default; query-port editing is now an advanced override.
 - Planned the next-build discovery recovery work: a local **Add by address**
@@ -603,7 +610,7 @@
 - Added data-aware Server Browser sorting for numeric ports, players, ping, status and freshness columns.
 - Added fuller NVIDIA PRIME and Steam launch-option troubleshooting guidance.
 - Added Server Browser result-limit controls and clearer matching-vs-cached summary text.
-- Added WolfAPI as a discovered-server cache provider, backed by `https://api.drakonwolf.ddns.net/api/servers`.
+- Added WolfAPI as a discovered-server cache provider, backed by the legacy WolfAPI `/api/servers` endpoint.
 - Added name-derived Server Browser style filtering for PvE and PvP servers.
 - Added Server Browser source filtering, reset controls and cache summary counts.
 - Added Server Browser double-click promotion and a copy-host context action.

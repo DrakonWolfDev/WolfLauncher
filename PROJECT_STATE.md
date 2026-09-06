@@ -1,6 +1,6 @@
 # WolfLauncher Project State
 
-Updated: 2026-08-01
+Updated: 2026-09-06
 
 WolfLauncher is a Linux-primary DayZ launcher GUI built with Python and PySide6,
 with experimental portable and installed Windows builds.
@@ -17,6 +17,30 @@ by the maintainer. See [Installing on Linux](docs/INSTALL_LINUX.md).
 The Debian/Ubuntu/Mint matrix below describes the original `.deb` desktop
 validation baseline. It does not limit the newer installer's distro coverage.
 Steam packaging compatibility is a separate runtime concern.
+
+## Public source release preparation
+
+Personal server names, addresses and developer home paths have been replaced in
+tracked examples, tests and validation notes. Validation-note IPs are now
+illustrative documentation addresses. Copyright, upstream attribution and
+public project URLs remain intact. Historical commits have not been rewritten;
+older versions may still contain the original examples.
+
+The user-local Linux installer uses a complete source distribution,
+with runtime files separate from cached user data. Its workflow must pass unit
+and installation smoke checks before uploading a tag's installer archive.
+See `docs/INSTALL_LINUX.md`; this is source preparation, not a new release tag or
+a replacement for the dated desktop validation records.
+
+## Release cleanup validation (2026-09-06)
+
+The source distribution builds into a wheel from an extracted archive. An
+installation outside the checkout imports the GUI, finds the server template,
+legacy fallback and map metadata, and runs the Qt event loop. Installer tests
+cover preservation of settings and cached data; ShellCheck passes. The full
+suite still has baseline failures in settings migration, table sizing and
+single-instance checks. These also reproduce on the committed baseline and
+remain release-validation work; no new release tag has been published.
 
 ## Current truth
 

@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 concurrency:
   group: installer-${{ github.ref }}
@@ -21,25 +20,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@9c091bbbb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Run shellcheck on installer scripts
-        uses: ludeeus/action-shellcheck@00b27aa7cb85167568cb48a3838b75f4265f2bca # pin: 2024-06-20
-        with:
-          scandir: ./scripts
-          additional_files: wolflauncher-install.sh wolflauncher-uninstall.sh
-          ignore: SC1091,SC2086,SC2155
-        # SC1091: sourcing /etc/os-release which is distro-supplied
-        # SC2086: we already quote carefully where it matters; the rule
-        #         still flags a few intentional unquoted globs.
-        # SC2155: declare-and-assign in one line is intentional here.
+        run: shellcheck -S warning scripts/wolflauncher-install.sh scripts/wolflauncher-uninstall.sh
 
   unit-tests:
     name: Installer unit tests
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@9c091bbbb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
@@ -52,13 +43,15 @@ jobs:
         run: python -m unittest tests.test_installer_scripts -v
 
   bundle:
+    permissions:
+      contents: write
     name: Build installer release bundle
-    needs: [lint, unit-tests]
+    needs: [lint, unit-tests, smoke-install]
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@9c091bbbb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Resolve version
         id: version
@@ -68,58 +61,14 @@ jobs:
           # installer tarball matches the in-tree __version__).
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
 
-      - name: Stage installer payload
-        run: |
-          staging="$(mktemp -d)"
-          mkdir -p "${staging}/wolflauncher-${version}/scripts"
-          mkdir -p "${staging}/wolflauncher-${version}/packaging/linux"
-          mkdir -p "${staging}/wolflauncher-${version}/packaging/npm"
-          mkdir -p "${staging}/wolflauncher-${version}/external/dayz-linux-cli-launcher"
-          mkdir -p "${staging}/wolflauncher-${version}/wolflauncher/assets"
-          mkdir -p "${staging}/wolflauncher-${version}/docs"
-
-          cp scripts/wolflauncher-install.sh   "${staging}/wolflauncher-${version}/scripts/"
-          cp scripts/wolflauncher-uninstall.sh "${staging}/wolflauncher-${version}/scripts/"
-          cp packaging/linux/wolflauncher.desktop "${staging}/wolflauncher-${version}/packaging/linux/"
-          cp packaging/linux/wolflauncher.svg     "${staging}/wolflauncher-${version}/packaging/linux/"
-          cp packaging/npm/package.json           "${staging}/wolflauncher-${version}/packaging/npm/"
-          cp packaging/npm/package-lock.json      "${staging}/wolflauncher-${version}/packaging/npm/"
-          cp external/dayz-linux-cli-launcher/dayz-launcher.sh \
-             "${staging}/wolflauncher-${version}/external/dayz-linux-cli-launcher/"
-          cp example.servers.yaml                 "${staging}/wolflauncher-${version}/"
-          cp README.md CHANGELOG.md LICENSE COPYRIGHT THIRD_PARTY_NOTICES.md \
-             "${staging}/wolflauncher-${version}/"
-          cp docs/INSTALL_LINUX.md docs/RELEASE_CHECKLIST.md \
-             "${staging}/wolflauncher-${version}/docs/"
-          cp -r wolflauncher/assets              "${staging}/wolflauncher-${version}/wolflauncher/"
-          # Pyproject + manifest so the installer's wheel build is reproducible.
-          cp pyproject.toml requirements.txt "${staging}/wolflauncher-${version}/"
-
-          # Drop a tiny README so anyone who unpacks the bundle knows what it is.
-          cat > "${staging}/wolflauncher-${version}/README-INSTALLER-BUNDLE.txt" <<EOF
-          WolfLauncher installer bundle (version ${version})
-
-          This bundle contains the source files required by the distro-neutral
-          user-local installer. Unpack it, then run:
-
-              ./scripts/wolflauncher-install.sh
-
-          See docs/INSTALL_LINUX.md for details and supported distros.
-          EOF
-
-          tar -C "${staging}" -czf "wolflauncher-${version}-installer-source.tar.gz" \
-            "wolflauncher-${version}"
-          (cd . && sha256sum "wolflauncher-${version}-installer-source.tar.gz" \
-            > "wolflauncher-${version}-installer-source.tar.gz.sha256")
-          # Also publish the standalone installer scripts so users can
-          # `curl ... | bash` without unpacking the tarball.
-          cp scripts/wolflauncher-install.sh   "wolflauncher-install.sh"
-          cp scripts/wolflauncher-uninstall.sh "wolflauncher-uninstall.sh"
-          sha256sum "wolflauncher-install.sh" "wolflauncher-uninstall.sh" \
-            > "wolflauncher-installer-scripts.sha256"
-          echo "staging_dir=${staging}" >> "${GITHUB_ENV}"
+      - name: Build complete installer source archive
         env:
           version: ${{ steps.version.outputs.version }}
+        run: |
+          python3 -m pip install -r requirements-dev.txt
+          python3 -m build --sdist --no-isolation
+          cp "dist/wolflauncher-${version}.tar.gz" "wolflauncher-${version}-installer-source.tar.gz"
+          sha256sum "wolflauncher-${version}-installer-source.tar.gz" > "wolflauncher-${version}-installer-source.tar.gz.sha256"
 
       - name: Publish installer source archive as workflow artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
@@ -128,12 +77,10 @@ jobs:
           path: |
             wolflauncher-*-installer-source.tar.gz
             wolflauncher-*-installer-source.tar.gz.sha256
-            wolflauncher-install.sh
-            wolflauncher-uninstall.sh
-            wolflauncher-installer-scripts.sha256
           if-no-files-found: error
 
       - name: Upload installer bundle to GitHub release
+        if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ github.ref_name }}
@@ -142,9 +89,6 @@ jobs:
           files: |
             wolflauncher-*-installer-source.tar.gz
             wolflauncher-*-installer-source.tar.gz.sha256
-            wolflauncher-install.sh
-            wolflauncher-uninstall.sh
-            wolflauncher-installer-scripts.sha256
           fail_on_unmatched_files: true
 
   smoke-install:
@@ -163,7 +107,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Check out repository
-        uses: actions/checkout@9c091bbbb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Set up Python
         uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
@@ -194,14 +138,12 @@ jobs:
           HOME: ${{ runner.temp }}/wl-smoke-home
         run: |
           export PATH="${HOME}/.local/bin:${PATH}"
-          # The wrapper sets PYTHONPATH for us; this just confirms the
-          # binary lands in the expected place.
           test -x "${HOME}/.local/bin/wolflauncher"
-          "${HOME}/.local/bin/wolflauncher" --help >/dev/null 2>&1 || true
           python - <<'PY'
-          import os
+          import os, sys
           py_dir = os.path.join(os.environ["HOME"], ".local", "share",
-                                "wolflauncher", "python")
+                                "wolflauncher", "runtime", "python")
+          os.environ["WOLFLAUNCHER_SHARE_ROOT"] = os.path.join(os.path.dirname(py_dir), "share")
           sys.path.insert(0, py_dir)
           from PySide6.QtCore import QTimer
           from PySide6.QtWidgets import QApplication
@@ -218,5 +160,5 @@ jobs:
           HOME: ${{ runner.temp }}/wl-smoke-home
         run: |
           ./scripts/wolflauncher-uninstall.sh
-          test ! -d "${HOME}/.local/share/wolflauncher"
+          test ! -d "${HOME}/.local/share/wolflauncher/runtime"
           test ! -e "${HOME}/.local/bin/wolflauncher"

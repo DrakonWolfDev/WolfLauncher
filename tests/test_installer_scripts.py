@@ -17,9 +17,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
-import sys
 import tempfile
-import textwrap
 import unittest
 from pathlib import Path
 from typing import Iterable
@@ -39,64 +37,64 @@ def _stub_bin_dir() -> tuple[Path, list[str]]:
     bin_dir = Path(tempfile.mkdtemp(prefix="wl-install-stub-"))
     py_stub = bin_dir / "python3"
     py_stub.write_text(
-        '#!/bin/bash\n'
-        '# Minimal python3 stub for installer tests.\n'
+        "#!/bin/bash\n"
+        "# Minimal python3 stub for installer tests.\n"
         'cmd_log="${WOLF_STUB_LOG:-/tmp/wl-stub.log}"\n'
         'echo "INVOKED args=$@" >> "$cmd_log"\n'
         'case "$1" in\n'
-        '  -c)\n'
+        "  -c)\n"
         '    src="$2"\n'
         '    case "$src" in\n'
-        '      *sys.version_info*)\n'
+        "      *sys.version_info*)\n"
         '        echo "3.12.7"\n'
-        '        exit 0\n'
-        '        ;;\n'
-        '      *wolflauncher.__version__*)\n'
+        "        exit 0\n"
+        "        ;;\n"
+        "      *wolflauncher.__version__*)\n"
         '        echo "0.9.0b1"\n'
-        '        exit 0\n'
-        '        ;;\n'
-        '    esac\n'
-        '    exit 0\n'
-        '    ;;\n'
-        '  -m)\n'
-        '    shift\n'
+        "        exit 0\n"
+        "        ;;\n"
+        "    esac\n"
+        "    exit 0\n"
+        "    ;;\n"
+        "  -m)\n"
+        "    shift\n"
         '    subcmd="$1"\n'
         '    case "$subcmd" in\n'
-        '      pip)\n'
+        "      pip)\n"
         '        : > "${WOLF_STUB_PIP_MARKER:-/dev/null}"\n'
-        '        exit 0\n'
-        '        ;;\n'
-        '      ensurepip|wolflauncher)\n'
-        '        exit 0\n'
-        '        ;;\n'
-        '      build)\n'
-        '        # Drop a fake wheel at --outdir if present.\n'
+        "        exit 0\n"
+        "        ;;\n"
+        "      ensurepip|wolflauncher)\n"
+        "        exit 0\n"
+        "        ;;\n"
+        "      build)\n"
+        "        # Drop a fake wheel at --outdir if present.\n"
         '        outdir=""\n'
         '        prev=""\n'
         '        for arg in "$@"; do\n'
         '          if [ "$prev" = "--outdir" ]; then\n'
         '            outdir="$arg"\n'
-        '            break\n'
-        '          fi\n'
+        "            break\n"
+        "          fi\n"
         '          prev="$arg"\n'
-        '        done\n'
+        "        done\n"
         '        echo "STUB build outdir=$outdir" >> "$cmd_log"\n'
         '        if [ -n "$outdir" ]; then\n'
         '          mkdir -p "$outdir"\n'
         '          touch "$outdir/wolflauncher-0.9.0-py3-none-any.whl"\n'
         '          echo "STUB build wrote wheel to $outdir" >> "$cmd_log"\n'
-        '        fi\n'
-        '        exit 0\n'
-        '        ;;\n'
-        '    esac\n'
-        '    exit 0\n'
-        '    ;;\n'
-        '  -)\n'
-        '    python3 -c "import sys; print(\'0.9.0b1\')"\n'
-        '    exit 0\n'
-        '    ;;\n'
-        'esac\n'
-        'exit 0\n'
+        "        fi\n"
+        "        exit 0\n"
+        "        ;;\n"
+        "    esac\n"
+        "    exit 0\n"
+        "    ;;\n"
+        "  -)\n"
+        "    python3 -c \"import sys; print('0.9.0b1')\"\n"
+        "    exit 0\n"
+        "    ;;\n"
+        "esac\n"
+        "exit 0\n"
     )
     py_stub.chmod(0o755)
 
@@ -127,7 +125,12 @@ def _stub_bin_dir() -> tuple[Path, list[str]]:
     unzip.write_text("#!/usr/bin/sh\nexit 0\n")
     unzip.chmod(0o755)
 
-    return bin_dir, [str(bin_dir), "/usr/bin", "/bin", *os.environ.get("PATH", "").split(os.pathsep)]
+    return bin_dir, [
+        str(bin_dir),
+        "/usr/bin",
+        "/bin",
+        *os.environ.get("PATH", "").split(os.pathsep),
+    ]
 
 
 class InstallerScriptsTestCase(unittest.TestCase):
@@ -173,18 +176,17 @@ class InstallerScriptsTestCase(unittest.TestCase):
         result = self._run([str(INSTALLER)])
         # Installer may exit non-zero only if the network/Node step fails; we
         # only care that the script was reachable.
-        self.assertTrue(result.stdout or result.stderr,
-                        msg="installer produced no output at all")
+        self.assertEqual(result.returncode, 0, msg="installer produced no output at all")
 
     def test_installer_creates_wrapper_and_layout(self) -> None:
-        result = self._run([str(INSTALLER), "exit 0 || true"])
-        # We allow failure on network steps; the layout is what we test.
-        prefix = self._env["XDG_DATA_HOME"] + "/wolflauncher"
+        result = self._run([str(INSTALLER)])
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        prefix = self._env["XDG_DATA_HOME"] + "/wolflauncher/runtime"
         bin_dir = self._env["XDG_BIN_HOME"]
         for required in (
             f"{prefix}/python",
             f"{prefix}/node",
-            f"{prefix}/node-runtime",
+            f"{prefix}/node-runtime/bin",
             f"{prefix}/app",
             f"{prefix}/share",
             f"{bin_dir}/wolflauncher",
@@ -195,13 +197,14 @@ class InstallerScriptsTestCase(unittest.TestCase):
             )
 
     def test_wrapper_is_executable_and_includes_paths(self) -> None:
-        self._run([str(INSTALLER), "exit 0 || true"])
+        self._run([str(INSTALLER)])
         wrapper = Path(self._env["XDG_BIN_HOME"]) / "wolflauncher"
         self.assertTrue(wrapper.is_file())
         mode = wrapper.stat().st_mode
         self.assertTrue(mode & 0o111, msg="wrapper must be executable")
         text = wrapper.read_text()
         self.assertIn("PYTHONPATH=", text)
+        self.assertIn("WOLFLAUNCHER_SHARE_ROOT=", text)
         self.assertIn("node-runtime/bin", text)
         self.assertIn("python3 -m wolflauncher", text)
 
@@ -232,8 +235,8 @@ class InstallerScriptsTestCase(unittest.TestCase):
 
     def test_uninstaller_removes_wrapper_and_prefix(self) -> None:
         # First run the installer (best effort).
-        self._run([str(INSTALLER), "exit 0 || true"])
-        prefix = Path(self._env["XDG_DATA_HOME"]) / "wolflauncher"
+        self._run([str(INSTALLER)])
+        prefix = Path(self._env["XDG_DATA_HOME"]) / "wolflauncher" / "runtime"
         wrapper = Path(self._env["XDG_BIN_HOME"]) / "wolflauncher"
         self.assertTrue(prefix.exists())
         self.assertTrue(wrapper.exists())
@@ -255,8 +258,17 @@ class InstallerScriptsTestCase(unittest.TestCase):
             msg=f"prefix not removed: stdout={result.stdout}\nstderr={result.stderr}",
         )
 
+    def test_uninstaller_preserves_cached_data(self) -> None:
+        result = self._run([str(INSTALLER)])
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        cache = Path(self._env["XDG_DATA_HOME"]) / "wolflauncher" / "servers.sqlite3"
+        cache.write_bytes(b"personal cache sentinel")
+        result = self._run([str(UNINSTALLER)])
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertEqual(cache.read_bytes(), b"personal cache sentinel")
+
     def test_uninstaller_keeps_config_without_purge(self) -> None:
-        self._run([str(INSTALLER), "exit 0 || true"])
+        self._run([str(INSTALLER)])
         # Drop a sentinel file into the config dir.
         cfg = Path(self._env["XDG_CONFIG_HOME"]) / "wolflauncher"
         cfg.mkdir(parents=True, exist_ok=True)
@@ -273,7 +285,7 @@ class InstallerScriptsTestCase(unittest.TestCase):
         self.assertTrue(sentinel.exists(), "settings.json should be preserved without --purge")
 
     def test_uninstaller_purge_removes_config(self) -> None:
-        self._run([str(INSTALLER), "exit 0 || true"])
+        self._run([str(INSTALLER)])
         cfg = Path(self._env["XDG_CONFIG_HOME"]) / "wolflauncher"
         cfg.mkdir(parents=True, exist_ok=True)
         sentinel = cfg / "settings.json"
@@ -298,8 +310,9 @@ class InstallerScriptsTestCase(unittest.TestCase):
             text=True,
             timeout=30,
         )
-        self.assertEqual(result.returncode, 0,
-                         msg=f"stderr={result.stderr}\nstdout={result.stdout}")
+        self.assertEqual(
+            result.returncode, 0, msg=f"stderr={result.stderr}\nstdout={result.stdout}"
+        )
 
 
 if __name__ == "__main__":

@@ -408,7 +408,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         running.isRunning.return_value = True
         window = SimpleNamespace(
             browser_servers=[],
-            browser_search=Mock(text=Mock(return_value="new dawn")),
+            browser_search=Mock(text=Mock(return_value="example community")),
             results_freshness_worker=running,
             pending_results_freshness=False,
             initial_results_freshness_batches_remaining=0,
@@ -419,7 +419,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         MainWindow.schedule_results_freshness_check(window)
 
         self.assertTrue(window.pending_results_freshness)
-        self.assertEqual(window.results_freshness_context, "new dawn")
+        self.assertEqual(window.results_freshness_context, "example community")
         self.assertEqual(window.results_freshness_attempted_keys, set())
         running.cancel.assert_called_once_with()
 

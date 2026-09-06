@@ -23,6 +23,7 @@ dependencies = [
   "PySide6>=6.6",
   "PyYAML>=6.0",
   "keyring>=25.0",
+  "python-a2s>=1.4.2,<2",
 ]
 
 [project.scripts]
@@ -38,7 +39,7 @@ version = {attr = "wolflauncher.__version__"}
 include = ["wolflauncher*"]
 
 [tool.setuptools.package-data]
-wolflauncher = ["assets/*.svg", "assets/*.png", "assets/*.jpg"]
+wolflauncher = ["assets/*.svg", "assets/*.png", "assets/*.jpg", "assets/*.json"]
 
 [tool.setuptools.data-files]
 "share/applications" = ["packaging/linux/wolflauncher.desktop"]

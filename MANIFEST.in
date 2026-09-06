@@ -1,0 +1,18 @@
+include README.md CHANGELOG.md BUILD_GUIDE.md LICENSE COPYRIGHT THIRD_PARTY_NOTICES.md
+include main.py example.servers.yaml requirements*.txt
+recursive-include wolflauncher *.py *.svg *.png *.jpg *.json
+recursive-include packaging *.desktop *.svg *.json *.ps1 *.spec *.iss *.py
+recursive-exclude packaging/npm/node_modules *
+recursive-include tests *.py
+recursive-include scripts *.sh *.py *.ps1
+recursive-include docs *.md
+recursive-include examples *.yaml
+recursive-include external/dayz-linux-cli-launcher *.sh LICENSE *.md
+include *.md *.bat *.cmd
+exclude AGENTS.md
+prune graphify-out
+prune build
+prune dist
+prune .venv
+prune venv
+global-exclude __pycache__ *.py[cod] *.log

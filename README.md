@@ -137,6 +137,10 @@ verify DayZ directly from Steam before trying WolfLauncher again.
 
 ## Installation
 
+For the user-local Linux installer, see [Installing on Linux](docs/INSTALL_LINUX.md).
+For package builds and forks, see [BUILD_GUIDE.md](BUILD_GUIDE.md).
+Source downloads contain a generic empty server template; add your own servers.
+
 The newer user-local installer works across Ubuntu 22.04/24.04/26.04,
 Debian 12+, Linux Mint 21+, Pop!_OS, Fedora 40+, Nobara, Arch Linux,
 Manjaro/EndeavourOS, openSUSE Tumbleweed/Leap, NixOS, Alpine 3.20+
@@ -386,9 +390,9 @@ Example:
 
 ```yaml
 servers:
-  - name: Drakon Expansion
-    group: Drakon
-    host: drakonwolf.ddns.net
+  - name: Example Expansion
+    group: Example Servers
+    host: dayz.example.org
     game_port: 3302
     query_port: 3303
     favourite: true

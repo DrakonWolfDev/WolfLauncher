@@ -177,7 +177,7 @@ class PlatformDetectionTests(unittest.TestCase):
         {
             "0"
             {
-                "path" "/home/andi/.local/share/Steam"
+                "path" "/home/user/.local/share/Steam"
             }
             "1"
             {
@@ -193,7 +193,7 @@ class PlatformDetectionTests(unittest.TestCase):
         self.assertEqual(
             parse_libraryfolders_paths(text),
             [
-                Path("/home/andi/.local/share/Steam"),
+                Path("/home/user/.local/share/Steam"),
                 Path("/mnt/Games/SteamLibrary"),
                 Path("D:\\SteamLibrary"),
             ],
