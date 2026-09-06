@@ -5,11 +5,10 @@ recursive-include packaging *.desktop *.svg *.json *.ps1 *.spec *.iss *.py
 recursive-exclude packaging/npm/node_modules *
 recursive-include tests *.py
 recursive-include scripts *.sh *.py *.ps1
-recursive-include docs *.md
+include docs/INSTALL_LINUX.md
 recursive-include examples *.yaml
 recursive-include external/dayz-linux-cli-launcher *.sh LICENSE *.md
-include *.md *.bat *.cmd
-exclude AGENTS.md
+include ARCHITECTURE.md *.bat *.cmd
 prune graphify-out
 prune build
 prune dist

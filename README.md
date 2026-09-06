@@ -164,7 +164,7 @@ digitally signed.
 
 Planned updates use a signed evergreen bootstrapper and prompted installer on
 Windows, and a signed APT repository through the normal system update manager
-on Linux. See [`docs/UPDATE_STRATEGY.md`](docs/UPDATE_STRATEGY.md).
+on Linux.
 
 At startup, WolfLauncher checks the selected Steam installation and warns once
 if Steam is stopped or unavailable. Server browsing remains available, but
@@ -511,15 +511,17 @@ completion without rebuilding the whole results table.
 
 | File | Purpose |
 | --- | --- |
-| `AGENTS.md` | Quick orientation for future coding agents |
-| `PROJECT_STATE.md` | Current development snapshot and handoff notes |
-| `ARCHITECTURE.md` | Design decisions, module map and launch contract |
-| `ROADMAP.md` | Planned features and future milestones |
-| `DISCOVERY_FRESHNESS_HANDOFF.md` | WolfAPI v1 contract, rollout state and launcher adoption choices |
-| `CHANGELOG.md` | Version history and release notes |
-| `docs/RELEASE_CHECKLIST.md` | Automated and real-world release checks |
-| `external/dayz-linux-cli-launcher/` | Vendored MIT legacy launcher reference |
-| `THIRD_PARTY_NOTICES.md` | Third-party license notices |
+| [BUILD_GUIDE.md](BUILD_GUIDE.md) | Build packages from a clone |
+| [docs/INSTALL_LINUX.md](docs/INSTALL_LINUX.md) | Install and uninstall on Linux |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Source layout and runtime overview |
+| [CHANGELOG.md](CHANGELOG.md) | Version history and release notes |
+| [example.servers.yaml](example.servers.yaml) | Generic server configuration template |
+| [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) | Third-party license notices |
+
+This clone contains the launcher source, tests, assets and packaging tools.
+A sibling WolfAPI checkout is not required to build or run it; public discovery
+uses the configured hosted service. Internal planning and handoff records are
+maintained in the separate development repository.
 
 ## Application Locations
 
@@ -558,17 +560,6 @@ Possible future system installation:
 ```
 
 or via a native `.deb` package.
-
-## Roadmap
-
-Next active target: v0.9 production hardening.
-
-The authoritative ordered work list is in
-`PRODUCTION_READINESS_REVIEW.md`; `ROADMAP.md` records release milestones.
-Current gates cover XDG user-data placement, recoverable persistence, shutdown
-lifecycle, credential/report security, reproducible packaging, expanded CI and
-packaged-artifact desktop validation. NVIDIA PRIME investigation remains
-evidence-driven.
 
 ## License
 

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Removed internal handoff, planning and investigation notes from the public
+  clone. Kept installation/build guides and a concise source architecture map.
+
 - Documented the newer user-local installer's maintainer-confirmed coverage
   across Debian/Ubuntu/Mint, Fedora, Arch, SUSE, NixOS, Alpine (non-musl),
   SteamOS and their listed derivatives. The earlier `.deb` validation matrix
@@ -645,7 +648,6 @@
 - Added a read-only Server Browser tab backed by the SQLite discovered-server cache.
 - Started v0.6 SQL foundations with a SQLite discovered-server cache module and tests.
 - Added the MIT license for WolfLauncher and third-party notices for vendored code.
-- Added `AGENTS.md` as the quick project orientation and coding-agent handoff file.
 - Vendored the MIT-licensed `dayz-linux-cli-launcher` under `external/dayz-linux-cli-launcher/`.
 - Added the vendored launcher as the final default launcher path fallback.
 - Added a standard-library unit test suite for launch command generation, launcher path discovery and YAML server loading.
@@ -724,9 +726,7 @@
 ## v0.2.1 - Project state files
 
 - Added `CHANGELOG.md`.
-- Added `ROADMAP.md`.
 - Added `ARCHITECTURE.md`.
-- Added `PROJECT_STATE.md`.
 - Updated README for handoff and continuation.
 
 ## v0.2.0 - Server browser refinement
