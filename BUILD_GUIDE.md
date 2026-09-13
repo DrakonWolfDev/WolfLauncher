@@ -20,6 +20,34 @@ git status --short
 3. Start with a clean `dist/` directory if you need to know exactly which files this build produced. It is ignored by Git.
 4. The build scripts download pinned Node runtimes/dependencies as needed, so internet access is required on the first build.
 
+## Repository inputs
+
+The requirements files have separate purposes; install the set for your task:
+
+| File | Purpose | Used by |
+| --- | --- | --- |
+| `requirements.txt` | Runtime dependencies for running from source | README setup, user-local Linux installer, unit-test CI |
+| `requirements-dev.txt` | Runtime dependencies plus pinned Python build tools | Wheel/source archive and Debian builds |
+| `requirements-quality.txt` | Pinned lint, type-check and dependency-audit tools | Quality CI, alongside runtime dependencies |
+| `requirements-release.txt` | Exact runtime versions and package hashes | Debian payload and release dependency audit |
+| `requirements-windows-release.txt` | Release runtime set plus pinned Windows freezer dependencies | Windows portable bundle build |
+
+`pyproject.toml` declares installed-package metadata and runtime dependencies.
+Keep its dependency ranges aligned with `requirements.txt`. The release files
+lock a tested dependency set and include transitive packages and hashes.
+
+The Windows build has two stages: `scripts/build-windows.ps1` creates and
+smoke-tests the portable bundle; `scripts/build-windows-installer.ps1` packages
+that bundle with Inno Setup. `scripts/install-inno-setup.ps1` obtains the verified
+compiler, and `scripts/test-windows-installer.ps1` checks the installer lifecycle.
+The commands below are the supported entry points and are also used by CI.
+
+The public repository includes tests, CI, build scripts, examples and licence
+notices so contributors can build and verify releases. Generated `build/`,
+`dist/`, virtual environments, local agent settings and `graphify-out/` are
+excluded from version control and source distributions. Publish the versioned
+artifacts produced by the build scripts, rather than a copy of a working folder.
+
 ## Linux — user-local installer
 
 The newer user-local installer works across Ubuntu 22.04/24.04/26.04,
@@ -93,13 +121,6 @@ wolflauncher
 ## Windows — portable ZIP build
 
 Build this on 64-bit Windows using PowerShell.
-
-### Quick ZIP + installer button
-
-After completing the one-time Python preparation below, double-click
-`Build-Windows-Release.cmd` in the repository root. It builds the portable
-ZIP, ensures the hash-pinned Inno Setup compiler is available, then builds the
-per-user Setup executable and SHA-256 sidecars in `dist\windows`.
 
 ### Dependencies
 

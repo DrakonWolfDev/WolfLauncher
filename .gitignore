@@ -13,6 +13,10 @@ dist/
 *.egg-info/
 packaging/npm/node_modules/
 
+# Local agent settings.
+.agents/
+.codex/
+
 # Local Graphify knowledge graph and generated reports.
 graphify-out/
 
