@@ -1,5 +1,7 @@
 """About-page presentation for WolfLauncher."""
 
+from html import escape
+
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QIcon
 from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
@@ -56,17 +58,22 @@ class AboutFeatureMixin:
         links.setContentsMargins(0, 12, 0, 8)
         links.setSpacing(8)
         links.setAlignment(Qt.AlignCenter)
-        for label in ("◌  Website", "<>  GitHub", "#  Discord"):
+        for label, url, description in (
+            ("◌  Website", None, "Coming soon"),
+            (
+                "<>  GitHub",
+                "https://github.com/DrakonWolfDev/WolfLauncher",
+                "Open the WolfLauncher GitHub repository",
+            ),
+            ("#  Discord", "https://discord.gg/ukquqMfbS9", "Join the WolfLauncher Discord"),
+        ):
             link = QLabel(label)
             link.setAlignment(Qt.AlignCenter)
-            if label == "#  Discord":
-                url = "https://discord.gg/ukquqMfbS9"
-                link.setText(f'<a href="{url}">{label}</a>')
+            if url:
+                link.setText(f'<a href="{url}">{escape(label)}</a>')
                 link.setOpenExternalLinks(True)
-                link.setToolTip("Join the WolfLauncher Discord")
-                link.setAccessibleName("Join the WolfLauncher Discord")
-            else:
-                link.setToolTip("Coming soon")
+                link.setAccessibleName(description)
+            link.setToolTip(description)
             set_ui_role(link, "aboutLink")
             links.addWidget(link)
         card_layout.addLayout(links)
