@@ -37,6 +37,8 @@ class BuildLaunchCommandTests(unittest.TestCase):
                 "-n",
                 "PlayerOne",
                 "--launch",
+                "--steam",
+                "steam",
             ],
         )
         resolve_host.assert_called_once_with("dayz.example.test")

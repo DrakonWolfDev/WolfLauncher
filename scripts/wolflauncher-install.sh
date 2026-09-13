@@ -397,45 +397,44 @@ case "$distro" in
   debian)
     cat <<D
   - Steam: install with 'sudo apt install steam' (enable the non-free/multiverse
-    repo if needed) or use Flatpak ('flatpak install flathub com.valvesoftware.Steam').
+    repo if needed).
   - Qt libs (sudo apt install): $qt_pkg_hint
 D
     ;;
   rhel)
     cat <<D
-  - Steam: enable RPM Fusion nonfree and 'sudo dnf install steam', or use Flatpak.
+  - Steam: enable RPM Fusion nonfree and 'sudo dnf install steam'.
   - Qt libs (sudo dnf install): $qt_pkg_hint
 D
     ;;
   arch)
     cat <<D
-  - Steam: 'sudo pacman -S steam' or use Flatpak.
+  - Steam: 'sudo pacman -S steam'.
   - Qt libs (sudo pacman -S): $qt_pkg_hint
   - AUR users: a 'wolflauncher' AUR package can wrap this installer.
 D
     ;;
   suse)
     cat <<D
-  - Steam: 'sudo zypper install steam' (Packman/Education repos may be required),
-    or use Flatpak.
+  - Steam: 'sudo zypper install steam' (Packman/Education repos may be required).
   - Qt libs (sudo zypper install): $qt_pkg_hint
 D
     ;;
   nix)
     cat <<D
-  - Steam: enable 'programs.steam' in configuration.nix or use Flatpak.
+  - Steam: enable 'programs.steam' in configuration.nix.
   - Qt libs come from your system profile automatically.
 D
     ;;
   alpine)
     cat <<D
-  - Steam: not officially supported on Alpine; Flatpak may work in a non-musl chroot.
+  - Steam: not officially supported on Alpine; this version requires native Steam.
   - Qt libs (sudo apk add): $qt_pkg_hint
 D
     ;;
   *)
     cat <<D
-  - Install Steam via your distribution's package manager or Flatpak.
+  - Install Steam via your distribution's package manager.
   - If the GUI fails to start, install: $qt_pkg_hint
 D
     ;;

@@ -56,13 +56,10 @@ def normalize_settings(data: Any) -> dict[str, Any]:
         version = 0
     if version < 0:
         version = 0
-# Version 4 removes legacy Flatpak/Snap Steam selections so an old setting
-        # cannot reactivate a retired installation path.
-        # NOTE: Flatpak and Snap support is being re-added, so this migration
-        # is commented out for now.
-        # if version <= SETTINGS_SCHEMA_VERSION:
-        #     if migrated.get("native_steam_mode") in {"flatpak", "snap"}:
-        #         migrated["native_steam_mode"] = "auto"
+    if version <= SETTINGS_SCHEMA_VERSION:
+        # Retire packaged Steam selections, including settings from this version.
+        if migrated.get("native_steam_mode") in {"flatpak", "snap"}:
+            migrated["native_steam_mode"] = "auto"
         if version < 3:
             migrated.setdefault("hide_quality_flagged", True)
         if version < 5:

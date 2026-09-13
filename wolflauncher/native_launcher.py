@@ -20,13 +20,6 @@ from .platforms import current_platform
 from .redaction import redact_support_text
 from .status import resolve_host
 
-# Flatpak Steam parameters (matching the external launcher)
-FLATPAK_PARAMS = (
-    "--branch=stable",
-    "--arch=x86_64",
-    "--command=/app/bin/steam-wrapper",
-)
-
 
 class NativeLaunchError(RuntimeError):
     def __init__(
@@ -725,28 +718,34 @@ def prepare_mod_links(
 
 
 def _steam_command_prefix(install: SteamInstall) -> list[str]:
-        if not install.executable:
-            if install.mode == "STEAM_ROOT env":
-                guidance = (
-                    "STEAM_ROOT points WolfLauncher at a Steam library, but the native Steam executable "
-                    "was not found. Install native Steam or make the steam command available on PATH."
-                )
-            else:
-                guidance = (
-                    "Install native Steam, make the steam command available on PATH, "
-                    "then select Auto, Flatpak Steam, or Snap Steam."
-                )
-            raise NativeLaunchError(
-                f"{install.mode} Steam executable not detected",
-                stage="Steam detection",
-                guidance=guidance,
+    if (
+        install.mode in {"flatpak", "snap"}
+        or install.executable in {"flatpak", "snap"}
+        or "snap" in Path(install.executable).parts
+    ):
+        raise NativeLaunchError(
+            "Flatpak and Snap Steam are not supported in this version",
+            stage="Steam detection",
+            guidance="Install native Steam, then select Auto or Native Steam.",
+        )
+    if not install.executable:
+        if install.mode == "STEAM_ROOT env":
+            guidance = (
+                "STEAM_ROOT points WolfLauncher at a Steam library, but the native Steam executable "
+                "was not found. Install native Steam or make the steam command available on PATH."
             )
-        
-        # Handle flatpak steam
-        if install.executable == "flatpak":
-            return ["flatpak", "run", *FLATPAK_PARAMS, "com.valvesoftware.Steam"]
-        
-        return [install.executable]
+        else:
+            guidance = (
+                "Install native Steam, make the steam command available on PATH, "
+                "then select Auto or Native Steam."
+            )
+        raise NativeLaunchError(
+            f"{install.mode} Steam executable not detected",
+            stage="Steam detection",
+            guidance=guidance,
+        )
+
+    return [install.executable]
 
 
 def _require_dir(path: Path | None, label: str) -> Path:

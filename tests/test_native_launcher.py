@@ -221,6 +221,15 @@ class NativeLauncherTests(unittest.TestCase):
         self.assertIn("-useBE", command)
         self.assertLess(command.index("-useBE"), command.index("-nolauncher"))
 
+    def test_packaged_steam_launch_requests_are_rejected(self):
+        for mode, executable in (("flatpak", "flatpak"), ("snap", "/snap/bin/steam")):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as tmpdir:
+                install = make_install(Path(tmpdir))
+                install.mode = mode
+                install.executable = executable
+                with self.assertRaisesRegex(NativeLaunchError, "not supported"):
+                    build_steam_launch_command(install, make_server("203.0.113.10"), "PlayerOne", [])
+
     def test_build_native_command_requires_detected_steam_executable(self):
         install = SteamInstall(
             mode="native",
@@ -577,6 +586,8 @@ class NativeLauncherTests(unittest.TestCase):
                     "-n",
                     "PlayerOne",
                     "--launch",
+                    "--steam",
+                    "steam",
                 ],
             )
             self.assertIn("-connect=203.0.113.10:2302", report.preview.command)
@@ -1052,7 +1063,7 @@ class ExperimentalNativeLauncherTests(unittest.TestCase):
         linux = SimpleNamespace(
             capabilities=SimpleNamespace(platform_id="linux", mod_link_strategy="relative_symlink")
         )
-        for executable in ("steam", "flatpak", "snap"):
+        for executable in ("steam", "/usr/bin/steam"):
             with self.subTest(executable=executable), tempfile.TemporaryDirectory() as tmpdir:
                 root = Path(tmpdir)
                 install = make_install(root)
@@ -1075,8 +1086,6 @@ class ExperimentalNativeLauncherTests(unittest.TestCase):
                     )
                 command = prepared.command
                 self.assertEqual(command[0], executable)
-                if executable == "flatpak":
-                    self.assertIn("com.valvesoftware.Steam", command)
                 self.assertEqual(command[command.index("-applaunch") + 1], "1024020")
                 self.assertNotIn("221100", command)
                 self.assertIn("-connect=203.0.113.10:2302", command)

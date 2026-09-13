@@ -493,5 +493,28 @@ class PlatformDetectionTests(unittest.TestCase):
         self.assertEqual(check.detail, "No known DayZ process detected")
 
 
+class LinuxNativeSteamTests(unittest.TestCase):
+    def test_detection_only_looks_up_native_steam(self):
+        from wolflauncher.platforms.linux import LinuxPlatformBackend
+
+        with patch("wolflauncher.platforms.linux.shutil.which", return_value="/usr/bin/steam") as which:
+            self.assertEqual(LinuxPlatformBackend().native_steam_executable(), "/usr/bin/steam")
+        which.assert_called_once_with("steam")
+
+    def test_snap_shim_is_not_native_steam(self):
+        from wolflauncher.platforms.linux import LinuxPlatformBackend
+
+        with patch("wolflauncher.platforms.linux.shutil.which", return_value="/snap/bin/steam"):
+            self.assertEqual(LinuxPlatformBackend().native_steam_executable(), "")
+
+    def test_native_roots_exclude_installed_packaged_clients(self):
+        from wolflauncher.platforms.linux import LinuxPlatformBackend
+
+        with patch("pathlib.Path.home", return_value=Path("/home/test")), patch("pathlib.Path.exists", return_value=True):
+            self.assertEqual(LinuxPlatformBackend().native_steam_roots(), (
+                Path("/home/test/.local/share/Steam"), Path("/home/test/.steam/steam"),
+            ))
+
+
 if __name__ == "__main__":
     unittest.main()

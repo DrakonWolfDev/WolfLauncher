@@ -6,6 +6,8 @@ Manjaro/EndeavourOS, openSUSE Tumbleweed/Leap, NixOS, Alpine 3.20+
 (non-musl environment) and SteamOS 3/HoloISO. This distro coverage is confirmed
 by the maintainer. See [Installing on Linux](INSTALL_LINUX.md).
 
+This version requires native Steam. Flatpak and Snap Steam are not supported.
+
 ## Distro matrix
 
 The installer is distro-neutral; the table below lists what's been verified
@@ -13,17 +15,17 @@ and the system packages you'll likely want for Steam and the Qt runtime.
 
 | Distro                          | Installer verified | Steam                  | Qt libs                                           |
 | ------------------------------- | ------------------- | ---------------------- | ------------------------------------------------- |
-| Ubuntu 22.04 / 24.04 / 26.04            | yes                 | `steam` (apt) or Flatpak | `libegl1 libxcb-cursor0 libxkbcommon0`           |
-| Debian 12+                      | yes                 | `steam` (non-free) or Flatpak | same as Ubuntu                            |
-| Linux Mint 21+                  | yes                 | `steam` or Flatpak     | same as Ubuntu                                    |
-| Pop!_OS                         | yes (same as Ubuntu) | Flatpak recommended   | same as Ubuntu                                    |
-| Fedora 40+                      | yes                 | `steam` (RPM Fusion) or Flatpak | `mesa-libEGL libxkbcommon dbus-libs`        |
+| Ubuntu 22.04 / 24.04 / 26.04            | yes                 | `steam` (apt) | `libegl1 libxcb-cursor0 libxkbcommon0`           |
+| Debian 12+                      | yes                 | `steam` (non-free) | same as Ubuntu                            |
+| Linux Mint 21+                  | yes                 | `steam`     | same as Ubuntu                                    |
+| Pop!_OS                         | yes (same as Ubuntu) | `steam` (apt)   | same as Ubuntu                                    |
+| Fedora 40+                      | yes                 | `steam` (RPM Fusion) | `mesa-libEGL libxkbcommon dbus-libs`        |
 | Nobara                          | yes                 | preinstalled           | preinstalled                                      |
-| Arch Linux                      | yes                 | `steam` (pacman) or Flatpak | `libegl libxkbcommon libxcursor dbus`        |
-| Manjaro / EndeavourOS           | yes                 | `steam` or Flatpak     | same as Arch                                      |
-| openSUSE Tumbleweed / Leap      | yes                 | `steam` (Packman/Education) or Flatpak | `libEGL1 libxkbcommon0 libdbus-1-3` |
+| Arch Linux                      | yes                 | `steam` (pacman) | `libegl libxkbcommon libxcursor dbus`        |
+| Manjaro / EndeavourOS           | yes                 | `steam`     | same as Arch                                      |
+| openSUSE Tumbleweed / Leap      | yes                 | `steam` (Packman/Education) | `libEGL1 libxkbcommon0 libdbus-1-3` |
 | NixOS (unstable)                | yes (in user dir)   | enable `programs.steam` | install `pkgs.libxkbcommon` etc. into profile    |
-| Alpine 3.20+ (non-musl)        | yes                 | Flatpak only           | `mesa-egl libxkbcommon dbus-libs`                 |
+| Alpine 3.20+ (non-musl)        | yes                 | unsupported this version           | `mesa-egl libxkbcommon dbus-libs`                 |
 | SteamOS 3 (HoloISO)             | yes                 | preinstalled           | preinstalled                                      |
 
 ## Install from source

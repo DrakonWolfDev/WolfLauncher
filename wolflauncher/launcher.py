@@ -42,6 +42,8 @@ def build_launch_command(launcher_path: str, player_name: str, server: Server) -
         "-n",
         safe_name,
         "--launch",
+        "--steam",
+        "steam",
     ]
 
 

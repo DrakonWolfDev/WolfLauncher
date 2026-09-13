@@ -66,8 +66,8 @@ source-archive installation, path overrides and uninstall instructions.
 Debian/Ubuntu-family users can also build a `.deb` using the
 [build guide](BUILD_GUIDE.md#linux--debian-package-build).
 
-Native Steam is supported. Flatpak and Snap Steam are exposed as experimental
-options in the current launcher. Check the detected installation in
+Native Steam is supported. Flatpak and Snap Steam are not supported in this
+version. Check the detected installation in
 **Settings → Check health** before connecting.
 
 ### Windows

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Removed Flatpak and Snap Steam options and automatic detection for this version.
+  Saved selections return to Auto; Linux launches require native Steam.
+
 - Rewrote the public README around current installation, server connection,
   Editor/local server tools and source-build workflows. Removed obsolete
   development baselines, provider choices and global GameDig instructions.
