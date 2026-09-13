@@ -59,7 +59,14 @@ class AboutFeatureMixin:
         for label in ("◌  Website", "<>  GitHub", "#  Discord"):
             link = QLabel(label)
             link.setAlignment(Qt.AlignCenter)
-            link.setToolTip("Coming soon")
+            if label == "#  Discord":
+                url = "https://discord.gg/ukquqMfbS9"
+                link.setText(f'<a href="{url}">{label}</a>')
+                link.setOpenExternalLinks(True)
+                link.setToolTip("Join the WolfLauncher Discord")
+                link.setAccessibleName("Join the WolfLauncher Discord")
+            else:
+                link.setToolTip("Coming soon")
             set_ui_role(link, "aboutLink")
             links.addWidget(link)
         card_layout.addLayout(links)
