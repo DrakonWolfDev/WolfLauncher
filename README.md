@@ -4,9 +4,9 @@ WolfLauncher is a DayZ desktop launcher built with Python and PySide6. Browse
 public servers, save favourites, check Workshop mods, and connect through Steam.
 It also includes DayZ Editor and local server tools.
 
-Linux is the primary platform. The user-local installer works across the Linux
-distributions listed below. Windows Setup and portable builds are available as
-experimental packaging options. The current source version is **0.9.0b1**;
+Linux and Windows are supported platforms. Linux offers a user-local installer
+and Debian packages; Windows offers a Setup installer and portable ZIP builds.
+The current source version is **0.9.0b1**;
 see the [changelog](CHANGELOG.md) for version history and unreleased changes.
 
 ## Features
@@ -14,7 +14,7 @@ see the [changelog](CHANGELOG.md) for version history and unreleased changes.
 - **Server Browser:** search and filter the hosted WolfAPI directory, inspect
   servers, and keep cached results available offline. Steam Master is an
   alternative discovery provider.
-- **Favourite servers:** add servers by hostname or IP address, organise them
+- **Favourite servers:** add servers by hostname or IPv4 address, organise them
   into groups, and connect from the Servers tab.
 - **Workshop checks:** query the selected server's required mods and compare
   them with installed Workshop content. Subscribe, download or update through
@@ -67,8 +67,8 @@ Debian/Ubuntu-family users can also build a `.deb` using the
 [build guide](BUILD_GUIDE.md#linux--debian-package-build).
 
 Native Steam is supported. Flatpak and Snap Steam are exposed as experimental
-options in the current launcher; choose the appropriate installation in
-Settings and check its health before connecting.
+options in the current launcher. Check the detected installation in
+**Settings → Check health** before connecting.
 
 ### Windows
 
@@ -76,13 +76,21 @@ Check the [GitHub releases](https://github.com/DrakonWolfDev/WolfLauncher/releas
 for the version you want. Where provided, use the Windows Setup executable or
 extract the portable ZIP and run `WolfLauncher.exe`.
 
-Windows builds remain experimental and unsigned. To build your own Setup or
+Windows packages target 64-bit Windows. The Setup installer requires Windows
+10 version 1809 or later, installs per user without administrator privileges,
+and offers an optional desktop shortcut. Both package formats bundle Python,
+Qt and Node.js/GameDig, so you do not need to install those separately.
+
+The build scripts produce unsigned packages. To build your own Setup or
 portable package, follow the [Windows build instructions](BUILD_GUIDE.md#windows--portable-zip-build).
 
 ## Join a server
 
+For DayZ Stable:
+
 1. Open **Settings** and use **Check health** to confirm the selected Steam,
-   DayZ and Workshop installation. Set your player name if needed.
+   DayZ and Workshop installation. Set your player name on the **Servers** tab
+   if needed; Windows also provides this field in **Settings**.
 2. Find a server in **Server Browser**, or use **Add a favourite server** on
    the **Servers** tab. New installations start with an empty favourites list.
 3. Select **Connect**. WolfLauncher checks the server and required mods. If
@@ -94,8 +102,11 @@ that DayZ finished starting or joined the server. If connecting fails, check
 **Mods**, **Settings → Check health**, and the saved launch report.
 
 **Game version** in Settings switches between DayZ Stable and DayZ Experimental
-with separate server and launch contexts. DayZ Experimental launch is currently
-implemented for Windows; Linux Experimental launch remains unavailable.
+with separate favourites, server caches, mod sources and launch history.
+On Windows, Experimental launches through `DayZ_BE.exe` using existing local
+mods, including Stable's `DayZ/!Workshop` folders. Install and launch
+Experimental through Steam once to complete its BattlEye setup before using
+WolfLauncher. Linux Experimental launch remains unavailable.
 
 ## Editor and local servers
 
@@ -174,7 +185,8 @@ Settings and caches are kept separate from those installed files.
 
 Use the UI to manage favourite servers, or use
 [example.servers.yaml](example.servers.yaml) as a reference for your own curated
-YAML. Hosts can be DNS names or IP addresses. Discovered-server imports use a
+YAML. Hosts can be DNS names or IPv4 addresses; IPv6 endpoints are not supported.
+Discovered-server imports use a
 separate cache; an [example import file](examples/discovered_servers.sample.yaml)
 is included.
 
