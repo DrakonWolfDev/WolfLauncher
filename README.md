@@ -103,10 +103,17 @@ that DayZ finished starting or joined the server. If connecting fails, check
 
 **Game version** in Settings switches between DayZ Stable and DayZ Experimental
 with separate favourites, server caches, mod sources and launch history.
-On Windows, Experimental launches through `DayZ_BE.exe` using existing local
-mods, including Stable's `DayZ/!Workshop` folders. Install and launch
-Experimental through Steam once to complete its BattlEye setup before using
-WolfLauncher. Linux Experimental launch remains unavailable.
+Experimental launch support is implemented on Linux and Windows. Install and
+launch Experimental through Steam once to complete its BattlEye setup before
+using WolfLauncher, then select **DayZ Experimental** in Settings.
+
+- **Linux:** WolfLauncher launches Experimental through Steam using app ID
+  `1024020` and creates mod symlinks in the Experimental install pointing to the
+  configured Stable Workshop content. Steam handles Proton using Experimental's
+  compatibility settings. Launch preparation is covered by automated tests;
+  starting the game and joining a server still need end-to-end verification.
+- **Windows:** Experimental launches through `DayZ_BE.exe` using existing local
+  mods, including Stable's `DayZ/!Workshop` folders.
 
 ## Editor and local servers
 

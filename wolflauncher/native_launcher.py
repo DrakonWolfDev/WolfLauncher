@@ -10,7 +10,6 @@ from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
 from .models import Server
 from .mods import RequiredMod, fetch_required_mods
 from .platform_detection import (
-    STEAM_APP_ID_DAYZ,
     SteamInstall,
     install_label,
     proton_compatdata_detail,
@@ -162,7 +161,7 @@ def build_steam_launch_command(
 ) -> list[str]:
     safe_name = player_name.strip() or DEFAULT_PLAYER_NAME
     command = _steam_command_prefix(install)
-    command.extend(["-applaunch", str(STEAM_APP_ID_DAYZ)])
+    command.extend(["-applaunch", str(install.product.client_app_id)])
 
     if mod_links:
         command.append(f"-mod={';'.join(mod_links)}")
@@ -191,7 +190,7 @@ def build_steam_local_launch_command(
     """
     safe_name = player_name.strip() or DEFAULT_PLAYER_NAME
     command = _steam_command_prefix(install)
-    command.extend(["-applaunch", str(STEAM_APP_ID_DAYZ)])
+    command.extend(["-applaunch", str(install.product.client_app_id)])
     if mod_links:
         command.append(f"-mod={';'.join(mod_links)}")
     if Path(install.executable).suffix.lower() == ".exe":
@@ -264,7 +263,7 @@ def prepare_native_launch(
     else:
         mods = required_mods
 
-    if install.product.experimental:
+    if install.product.experimental and current_platform().capabilities.platform_id != "linux":
         return _prepare_experimental_native_launch(install, launch_server, mods, extra_params)
 
     mod_setup = prepare_mod_links(dayz_dir, workshop_dir, mods)
@@ -362,7 +361,7 @@ def prepare_native_launch_preview(
 ) -> NativeLaunchPreview:
     """Prepare installed mod links and return a non-executing launch preview."""
     launch_server = _resolved_server(server)
-    if install.product.experimental:
+    if install.product.experimental and current_platform().capabilities.platform_id != "linux":
         prepared = _prepare_experimental_native_launch(
             install, launch_server, required_mods, extra_params
         )
@@ -745,7 +744,7 @@ def _steam_command_prefix(install: SteamInstall) -> list[str]:
         
         # Handle flatpak steam
         if install.executable == "flatpak":
-            return ["flatpak", "run"] + FLATPAK_PARAMS + ["com.valvesoftware.Steam"]
+            return ["flatpak", "run", *FLATPAK_PARAMS, "com.valvesoftware.Steam"]
         
         return [install.executable]
 

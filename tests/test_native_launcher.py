@@ -1047,6 +1047,70 @@ class NativeLauncherTests(unittest.TestCase):
 
 
 class ExperimentalNativeLauncherTests(unittest.TestCase):
+    @unittest.skipIf(os.name == "nt", "Linux launch uses filesystem symlinks")
+    def test_linux_experimental_launch_and_preview_use_selected_app_and_mod_links(self):
+        linux = SimpleNamespace(
+            capabilities=SimpleNamespace(platform_id="linux", mod_link_strategy="relative_symlink")
+        )
+        for executable in ("steam", "flatpak", "snap"):
+            with self.subTest(executable=executable), tempfile.TemporaryDirectory() as tmpdir:
+                root = Path(tmpdir)
+                install = make_install(root)
+                stable_dir = install.dayz_dir
+                exp_dir = root / "steamapps" / "common" / "DayZ Exp"
+                exp_dir.mkdir()
+                install.dayz_dir = exp_dir
+                install.product = EXPERIMENTAL
+                install.executable = executable
+                mod_dir = install.workshop_dir / "123"
+                mod_dir.mkdir()
+                (mod_dir / "meta.cpp").write_text('name = "Test Mod";')
+                mods = [RequiredMod("123")]
+                with patch("wolflauncher.native_launcher.current_platform", return_value=linux):
+                    prepared = prepare_native_launch(
+                        install, make_server("203.0.113.10"), "PlayerOne", mods, ["-nosplash"]
+                    )
+                    preview = prepare_native_launch_preview(
+                        install, make_server("203.0.113.10"), "PlayerOne", mods, ["-nosplash"]
+                    )
+                command = prepared.command
+                self.assertEqual(command[0], executable)
+                if executable == "flatpak":
+                    self.assertIn("com.valvesoftware.Steam", command)
+                self.assertEqual(command[command.index("-applaunch") + 1], "1024020")
+                self.assertNotIn("221100", command)
+                self.assertIn("-connect=203.0.113.10:2302", command)
+                self.assertIn("-name=PlayerOne", command)
+                self.assertIn("-nolauncher", command)
+                self.assertIn("-nosplash", command)
+                link_name = compact_mod_link_name("123")
+                self.assertIn(f"-mod={link_name}", command)
+                self.assertEqual((exp_dir / link_name).resolve(), mod_dir)
+                self.assertFalse((stable_dir / link_name).exists())
+                self.assertEqual(preview.command, command)
+                self.assertTrue(preview.ready)
+
+    def test_linux_experimental_launch_without_mods_and_missing_mod_preview(self):
+        linux = SimpleNamespace(
+            capabilities=SimpleNamespace(platform_id="linux", mod_link_strategy="relative_symlink")
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            install = make_install(Path(tmpdir))
+            install.product = EXPERIMENTAL
+            server = make_server("203.0.113.10")
+            with patch("wolflauncher.native_launcher.current_platform", return_value=linux):
+                prepared = prepare_native_launch(install, server, "PlayerOne", [])
+                self.assertEqual(prepared.command[:3], ["steam", "-applaunch", "1024020"])
+                self.assertFalse(any(arg.startswith("-mod=") for arg in prepared.command))
+                with self.assertRaisesRegex(NativeLaunchError, "Missing mod directories"):
+                    prepare_native_launch(install, server, "PlayerOne", [RequiredMod("123")])
+                preview = prepare_native_launch_preview(
+                    install, server, "PlayerOne", [RequiredMod("123")]
+                )
+                self.assertFalse(preview.ready)
+                self.assertEqual(preview.command, [])
+                self.assertEqual(preview.mod_setup.missing_mod_ids, ["123"])
+
     def test_windows_experimental_launch_uses_battleye_and_local_workshop_path(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
