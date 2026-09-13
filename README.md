@@ -111,7 +111,7 @@ using WolfLauncher, then select **DayZ Experimental** in Settings.
   `1024020` and creates mod symlinks in the Experimental install pointing to the
   configured Stable Workshop content. Steam handles Proton using Experimental's
   compatibility settings. Launch preparation is covered by automated tests;
-  starting the game and joining a server still need end-to-end verification.
+  game startup and server joining have also been confirmed in a Linux user test.
 - **Windows:** Experimental launches through `DayZ_BE.exe` using existing local
   mods, including Stable's `DayZ/!Workshop` folders.
 
