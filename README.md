@@ -179,6 +179,11 @@ For wheels, source archives, `.deb` files and Windows packages, see
 [BUILD_GUIDE.md](BUILD_GUIDE.md). That guide identifies the requirements files
 and build scripts used by each packaging path.
 
+### Implementation plans
+
+- [Combined Stable/Experimental browser and automatic launching](docs/COMBINED_BROWSER_IMPLEMENTATION_PLAN.md)
+  — proposed phases, migration safeguards, detailed tests, and release acceptance criteria.
+
 ## Your settings and server lists
 
 | Data | Linux default | Windows default |

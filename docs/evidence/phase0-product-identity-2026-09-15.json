@@ -1,0 +1,372 @@
+{
+  "observed_date_utc": "2026-09-15",
+  "method": "Bounded public HTTP GETs; six A2S_INFO probes; installed GameDig CLI on two endpoints. Public operational samples, not exhaustive coverage or authentication of server claims.",
+  "http": [
+    {
+      "case": "all_list",
+      "count": 5,
+      "total_count": 224433,
+      "coverage_eligible": 224433,
+      "products": [
+        "stable"
+      ],
+      "sample": [
+        {
+          "ip": "31.76.65.204",
+          "game_port": 2452,
+          "query_port": 2452,
+          "product": "stable",
+          "version": "1.29.163047"
+        },
+        {
+          "ip": "31.76.65.204",
+          "game_port": 2362,
+          "query_port": 2362,
+          "product": "stable",
+          "version": "1.29.163047"
+        },
+        {
+          "ip": "31.76.65.204",
+          "game_port": 2372,
+          "query_port": 2372,
+          "product": "stable",
+          "version": "1.29.163047"
+        }
+      ]
+    },
+    {
+      "case": "exp_page",
+      "count": 100,
+      "total_count": 640,
+      "coverage_eligible": 224433,
+      "products": [
+        "experimental"
+      ],
+      "sample": [
+        {
+          "ip": "5.101.164.234",
+          "game_port": 11100,
+          "query_port": 11101,
+          "product": "experimental",
+          "version": "1.29.163401"
+        },
+        {
+          "ip": "85.190.148.92",
+          "game_port": 2402,
+          "query_port": 27017,
+          "product": "experimental",
+          "version": "1.30.163975"
+        },
+        {
+          "ip": "195.82.158.109",
+          "game_port": 11400,
+          "query_port": 11401,
+          "product": "experimental",
+          "version": "1.29.163401"
+        }
+      ]
+    },
+    {
+      "case": "stable_page",
+      "count": 50,
+      "total_count": 2002,
+      "coverage_eligible": 224433,
+      "products": [
+        "stable"
+      ],
+      "sample": [
+        {
+          "ip": "31.76.6.51",
+          "game_port": 2612,
+          "query_port": 2612,
+          "product": "stable",
+          "version": "1.29.163047"
+        },
+        {
+          "ip": "31.76.6.51",
+          "game_port": 2692,
+          "query_port": 2692,
+          "product": "stable",
+          "version": "1.29.163047"
+        },
+        {
+          "ip": "144.31.107.44",
+          "game_port": 2352,
+          "query_port": 2352,
+          "product": "stable",
+          "version": "1.29.163047"
+        }
+      ]
+    },
+    {
+      "case": "stable_resolve_stable",
+      "count": 1,
+      "total_count": 1,
+      "coverage_eligible": 224433,
+      "products": [
+        "stable"
+      ],
+      "sample": [
+        {
+          "ip": "31.76.65.204",
+          "game_port": 2452,
+          "query_port": 2452,
+          "product": "stable",
+          "version": "1.29.163047"
+        }
+      ]
+    },
+    {
+      "case": "stable_resolve_experimental",
+      "count": 0,
+      "total_count": 0,
+      "coverage_eligible": 224433,
+      "products": [],
+      "sample": []
+    },
+    {
+      "case": "stable_resolve_all",
+      "count": 1,
+      "total_count": 1,
+      "coverage_eligible": 224433,
+      "products": [
+        "stable"
+      ],
+      "sample": [
+        {
+          "ip": "31.76.65.204",
+          "game_port": 2452,
+          "query_port": 2452,
+          "product": "stable",
+          "version": "1.29.163047"
+        }
+      ]
+    },
+    {
+      "case": "stable_search",
+      "count": 1,
+      "total_count": 1,
+      "coverage_eligible": 224433,
+      "products": [
+        "stable"
+      ],
+      "sample": [
+        {
+          "ip": "31.76.65.204",
+          "game_port": 2452,
+          "query_port": 2452,
+          "product": "stable",
+          "version": "1.29.163047"
+        }
+      ]
+    },
+    {
+      "case": "experimental_resolve_stable",
+      "count": 1,
+      "total_count": 1,
+      "coverage_eligible": 224433,
+      "products": [
+        "stable"
+      ],
+      "sample": [
+        {
+          "ip": "5.101.164.234",
+          "game_port": 11100,
+          "query_port": 11101,
+          "product": "stable",
+          "version": "1.29.163401"
+        }
+      ]
+    },
+    {
+      "case": "experimental_resolve_experimental",
+      "count": 1,
+      "total_count": 1,
+      "coverage_eligible": 224433,
+      "products": [
+        "experimental"
+      ],
+      "sample": [
+        {
+          "ip": "5.101.164.234",
+          "game_port": 11100,
+          "query_port": 11101,
+          "product": "experimental",
+          "version": "1.29.163401"
+        }
+      ]
+    },
+    {
+      "case": "experimental_resolve_all",
+      "count": 2,
+      "total_count": 2,
+      "coverage_eligible": 224433,
+      "products": [
+        "experimental",
+        "stable"
+      ],
+      "sample": [
+        {
+          "ip": "5.101.164.234",
+          "game_port": 11100,
+          "query_port": 11101,
+          "product": "experimental",
+          "version": "1.29.163401"
+        },
+        {
+          "ip": "5.101.164.234",
+          "game_port": 11100,
+          "query_port": 11101,
+          "product": "stable",
+          "version": "1.29.163401"
+        }
+      ]
+    },
+    {
+      "case": "experimental_search",
+      "count": 2,
+      "total_count": 2,
+      "coverage_eligible": 224433,
+      "products": [
+        "experimental",
+        "stable"
+      ],
+      "sample": [
+        {
+          "ip": "5.101.164.234",
+          "game_port": 11100,
+          "query_port": 11101,
+          "product": "experimental",
+          "version": "1.29.163401"
+        },
+        {
+          "ip": "5.101.164.234",
+          "game_port": 11100,
+          "query_port": 11101,
+          "product": "stable",
+          "version": "1.29.163401"
+        }
+      ]
+    },
+    {
+      "case": "missing_resolve",
+      "count": 0,
+      "total_count": 0,
+      "coverage_eligible": 224433,
+      "products": [],
+      "sample": []
+    }
+  ],
+  "a2s": [
+    {
+      "label": "stable",
+      "host": "31.76.6.51",
+      "query_port": 2612,
+      "provider_version": "1.29.163047",
+      "name": "GROZA 5 | CHERNO 3PP | VANILLA++ | RU | PVP | WIPE 10.08",
+      "map": "chernarusplus",
+      "folder": "dayz",
+      "game": "DayZ",
+      "short_app_id": 0,
+      "version": "1.29.163047",
+      "steam_id": 90292726706547736,
+      "keywords": "battleye,external,privHive,shardABC123,lqs0,etm2.000000,entm6.000000,mod,06:14",
+      "game_id": 221100,
+      "full_app_id": 221100,
+      "edf": 177
+    },
+    {
+      "label": "stable",
+      "host": "31.76.6.51",
+      "query_port": 2692,
+      "provider_version": "1.29.163047",
+      "name": "GROZA 9 | CHERNO 3PP | VANILLA++ | RU | PVP | WIPE 10.08",
+      "map": "chernarusplus",
+      "folder": "dayz",
+      "game": "DayZ",
+      "short_app_id": 0,
+      "version": "1.29.163047",
+      "steam_id": 90292726706787352,
+      "keywords": "battleye,external,privHive,shardABC123,lqs0,etm2.000000,entm6.000000,mod,06:14",
+      "game_id": 221100,
+      "full_app_id": 221100,
+      "edf": 177
+    },
+    {
+      "label": "stable",
+      "host": "144.31.107.44",
+      "query_port": 2352,
+      "provider_version": "1.29.163047",
+      "name": "MIDNIGHT PLUS 3PP | CHERNARUS | WIPE 25.08",
+      "map": "chernarusplus",
+      "folder": "dayz",
+      "game": "DayZ",
+      "short_app_id": 0,
+      "version": "1.29.163047",
+      "steam_id": 90291554248931347,
+      "keywords": "battleye,external,privHive,shardABC123,lqs0,entm10.000000,mod,10:43",
+      "game_id": 221100,
+      "full_app_id": 221100,
+      "edf": 177
+    },
+    {
+      "label": "experimental",
+      "host": "5.101.164.234",
+      "query_port": 11101,
+      "provider_version": "1.29.163401",
+      "name": "0679 | EUROPE - DE | Many Cars",
+      "map": "chernarusplus",
+      "folder": "dayz",
+      "game": "Official DayZ Experimental game server with increased car spawn",
+      "short_app_id": 0,
+      "version": "1.29.163401",
+      "steam_id": 90292797056806939,
+      "keywords": "battleye,shard003,lqs0,etm4.200000,entm4.000000,17:32",
+      "game_id": 1024020,
+      "full_app_id": 1024020,
+      "edf": 177
+    },
+    {
+      "label": "experimental",
+      "host": "85.190.148.92",
+      "query_port": 27017,
+      "provider_version": "1.30.163975",
+      "error": "timed out"
+    },
+    {
+      "label": "experimental",
+      "host": "195.82.158.109",
+      "query_port": 11401,
+      "provider_version": "1.29.163401",
+      "name": "3536 | EUROPE - DE | 1st Person Only",
+      "map": "chernarusplus",
+      "folder": "dayz",
+      "game": "Official DayZ Experimental game server",
+      "short_app_id": 0,
+      "version": "1.29.163401",
+      "steam_id": 90292796977218589,
+      "keywords": "battleye,no3rd,shard001,lqs0,etm4.200000,entm4.000000,02:31",
+      "game_id": 1024020,
+      "full_app_id": 1024020,
+      "edf": 177
+    }
+  ],
+  "gamedig": [
+    {
+      "endpoint": "31.76.6.51:2612",
+      "exit_code": 0,
+      "name": "GROZA 5 | CHERNO 3PP | VANILLA++ | RU | PVP | WIPE 10.08",
+      "appId": 221100,
+      "version": null,
+      "error": null
+    },
+    {
+      "endpoint": "5.101.164.234:11101",
+      "exit_code": 0,
+      "name": "0679 | EUROPE - DE | Many Cars",
+      "appId": 1024020,
+      "version": null,
+      "error": null
+    }
+  ]
+}
