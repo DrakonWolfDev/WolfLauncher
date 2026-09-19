@@ -53,7 +53,12 @@ class ServerBrowserTableTests(unittest.TestCase):
             unflagged_only=True,
             product="stable",
         )
-        worker.discovery_ready.connect.assert_called_once_with(window.handle_wolfapi_ready)
+        callback = worker.discovery_ready.connect.call_args.args[0]
+        callback([], "")
+        window.handle_wolfapi_ready.assert_called_once_with([], "")
+        window.browser_generation = 1
+        callback(["stale"], "")
+        self.assertEqual(window.handle_wolfapi_ready.call_count, 1)
         worker.start.assert_called_once_with()
 
     def test_manual_wolfapi_refresh_waits_to_start_freshness(self):
@@ -627,6 +632,8 @@ class ServerBrowserTableTests(unittest.TestCase):
 
     def test_compact_columns_follow_the_requested_scan_order(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        # Reproduce styles whose default minimum would clamp the lock column.
+        table.horizontalHeader().setMinimumSectionSize(48)
         checkbox = QCheckBox()
         window = SimpleNamespace(
             browser_table=table,

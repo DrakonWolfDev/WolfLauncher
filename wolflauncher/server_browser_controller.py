@@ -14,6 +14,7 @@ class BrowserQuery:
     version: str = ""
     source: str = ""
     source_namespace: str = ""
+    products: tuple[str, ...] | None = None
     style_terms: tuple[str, ...] = ()
     modded: bool | None = None
     hide_quality_flagged: bool = False
@@ -38,6 +39,7 @@ def load_browser_snapshot(connection: Any, query: BrowserQuery) -> BrowserSnapsh
         "version": query.version,
         "source": query.source,
         "source_namespace": query.source_namespace,
+        "products": query.products,
         "style_terms": list(query.style_terms),
         "modded": query.modded,
         "hide_quality_flagged": query.hide_quality_flagged,
@@ -53,21 +55,23 @@ def load_browser_snapshot(connection: Any, query: BrowserQuery) -> BrowserSnapsh
     return BrowserSnapshot(
         servers=servers,
         match_count=server_cache.count_search_servers(connection, **filters),
-        cache_summary=server_cache.cache_summary(connection),
+        cache_summary=server_cache.cache_summary(connection, products=query.products),
     )
 
 
-def browser_filter_options(connection: Any, source_namespace: str = "") -> dict[str, list[str]]:
+def browser_filter_options(
+    connection: Any, source_namespace: str = "", products: tuple[str, ...] | None = None
+) -> dict[str, list[str]]:
     map_labels = {}
-    for value in server_cache.distinct_values(connection, "map"):
+    for value in server_cache.distinct_values(connection, "map", products=products):
         label = display_map_name(value)
         if label:
             map_labels.setdefault(label.casefold(), label)
-    sources = server_cache.distinct_values(connection, "source")
+    sources = server_cache.distinct_values(connection, "source", products=products)
     if source_namespace:
         sources = [source for source in sources if source.endswith(source_namespace)]
     return {
         "map": sorted(map_labels.values(), key=str.casefold),
-        "version": server_cache.distinct_values(connection, "version"),
+        "version": server_cache.distinct_values(connection, "version", products=products),
         "source": sources,
     }

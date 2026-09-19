@@ -1,5 +1,7 @@
 """Qt presentation and command preparation for native and fallback launches."""
 
+from dataclasses import replace
+
 from PySide6.QtWidgets import QMessageBox
 
 from .launch_dialogs import LaunchDialog, NativeLaunchPreviewDialog
@@ -14,6 +16,7 @@ from .native_launcher import (
     prepare_native_launch,
     prepare_native_launch_parity_report,
 )
+from .product_availability import installation_still_present
 from .settings import server_key
 
 
@@ -24,6 +27,25 @@ class LaunchExecutionCoordinator:
         self.window = window
 
     def preview_native(self):
+        window = self.window
+        if hasattr(window, "server_launch"):
+            server = window.active_server_context()
+            if server:
+                window.server_launch.prepare(
+                    server,
+                    lambda context: window.server_launch.check_mods(
+                        context,
+                        lambda result: (
+                            window.server_launch.revalidate(context, self._preview_resolved)
+                            if result.ok
+                            else None
+                        ),
+                    ),
+                )
+            return
+        self._preview_resolved(None)
+
+    def _preview_resolved(self, context):
         window = self.window
         if not window.last_mod_result or not window.last_mod_result.ok:
             QMessageBox.warning(
@@ -36,6 +58,12 @@ class LaunchExecutionCoordinator:
         if not server:
             QMessageBox.warning(window, "No server selected", "Select a favourite server first.")
             return
+        if context is not None:
+            if not window.server_launch.current(context):
+                return
+            context = replace(context, engine="native")
+            window.server_launch.context = context
+            server = context.server
         if server_key(server) != server_key(window.last_mod_result.server):
             QMessageBox.warning(
                 window,
@@ -43,7 +71,7 @@ class LaunchExecutionCoordinator:
                 "Recheck selected server mods before preparing a native launch preview.",
             )
             return
-        install = window.selected_steam_install()
+        install = context.install if context is not None else window.selected_steam_install()
         if not install:
             QMessageBox.critical(
                 window,
@@ -68,11 +96,33 @@ class LaunchExecutionCoordinator:
             f"Native launch preview for {server.name}",
             format_native_launch_parity_report(report),
             report.preview.command,
+            **(
+                {"launch_callback": lambda: self._launch_from_preview(context)}
+                if context is not None
+                else {}
+            ),
         )
+        if context is not None:
+            dialog.launch_callback = lambda: (dialog.accept(), self._launch_from_preview(context))
         dialog.exec()
+
+    def _launch_from_preview(self, context):
+        if not self.window.server_launch.current(context, require_fresh=False):
+            QMessageBox.warning(
+                self.window,
+                "Preview no longer current",
+                "Server selection changed. Prepare a new preview before joining.",
+            )
+            return
+        self.window.connect_preflight.start(
+            self.window.active_server_context(), engine_override="native"
+        )
 
     def perform(self, server):
         window = self.window
+        if hasattr(window, "server_launch"):
+            window.connect_preflight.start(server)
+            return
         try:
             command = self.build_command(server)
         except NativeLaunchError as exc:
@@ -92,8 +142,8 @@ class LaunchExecutionCoordinator:
             record_launch(server)
             if hasattr(window, "refresh_recent_servers"):
                 window.refresh_recent_servers()
-        except OSError:
-            pass
+        except (OSError, ValueError) as exc:
+            QMessageBox.warning(window, "Could not save recent server", str(exc))
         try:
             window.save_last_launch_report(dialog.copyable_output_text())
         except OSError as exc:
@@ -104,8 +154,49 @@ class LaunchExecutionCoordinator:
                 f"{exc}",
             )
 
-    def build_command(self, server, row: int | None = None) -> list[str]:
+    def build_command(self, server, row: int | None = None, *, context=None) -> list[str]:
         window = self.window
+        if hasattr(window, "server_launch"):
+            context = context or window.server_launch.context
+            if not window.server_launch.current(context) or not context.matches(server):
+                raise LaunchError(
+                    "A fresh identity check is required for this exact server. Retry Join."
+                )
+            if not installation_still_present(context.install):
+                raise LaunchError(
+                    "The selected installation is no longer complete. Rescan and retry."
+                )
+            result = window.last_mod_result
+            if (
+                result is None
+                or not result.ok
+                or result.request_id != context.request_id
+                or result.launch_context_key != context.mod_context_key
+            ):
+                raise LaunchError(
+                    "Required mods were not checked for this launch context. Retry Join."
+                )
+            launch_server = context.server
+            player_name = window.player_name.text().strip() or DEFAULT_PLAYER_NAME
+            if context.engine == "external":
+                steamapps = context.install.dayz_dir.parent.parent
+                if (
+                    context.install.dayz_dir != steamapps / "common" / "DayZ"
+                    or context.install.workshop_dir != steamapps / "workshop" / "content" / "221100"
+                ):
+                    raise LaunchError(
+                        "The external launcher requires DayZ and Workshop in the same Steam "
+                        "library with the default DayZ directory name. Choose Native launcher "
+                        "for this installation layout."
+                    )
+                return [
+                    "env",
+                    f"STEAM_ROOT={steamapps.parent}",
+                    *build_launch_command(window.launcher_path.text(), player_name, launch_server),
+                ]
+            return prepare_native_launch(
+                context.install, launch_server, player_name, result.required_mods
+            ).command
         if row is None and window.active_discovered_server is None:
             row = window.table.currentRow()
         resolved_item = window.table.item(row, 5) if row is not None and row >= 0 else None

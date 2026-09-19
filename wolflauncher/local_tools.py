@@ -9,7 +9,6 @@ DAYZ_EDITOR_MODS = (
 )
 
 
-
 @dataclass(frozen=True)
 class LocalToolProfile:
     name: str

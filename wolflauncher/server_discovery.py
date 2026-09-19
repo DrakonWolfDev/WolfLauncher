@@ -10,6 +10,7 @@ from datetime import datetime, timezone
 from .http_client import HttpClientError, fetch_json
 from .models import DiscoveredServer
 from .server_display import display_map_name
+from .server_identity import product_from_app_id, provider_identity
 
 DAYZ_APP_ID = 221100
 STEAM_WEB_API_SERVER_LIST_URL = "https://api.steampowered.com/IGameServersService/GetServerList/v1/"
@@ -71,9 +72,12 @@ class WolfApiError(RuntimeError):
 class WolfApiServerList(list):
     """Server rows plus the whole-directory size reported by WolfAPI v1."""
 
-    def __init__(self, servers=(), *, directory_total: int | None = None):
+    def __init__(
+        self, servers=(), *, directory_total: int | None = None, filtered_total: int | None = None
+    ):
         super().__init__(servers)
         self.directory_total = directory_total
+        self.filtered_total = filtered_total
 
 
 def build_master_server_request(
@@ -237,7 +241,12 @@ def _discover_dayz_servers_from_master(
         if endpoint.address in seen:
             continue
         seen.add(endpoint.address)
-        servers.append(discovered_server_from_endpoint(endpoint, now))
+        servers.append(
+            replace(
+                discovered_server_from_endpoint(endpoint, now),
+                **provider_identity(product_from_app_id(app_id), "steam_master", now),
+            )
+        )
     return servers
 
 
@@ -289,7 +298,19 @@ def discover_dayz_servers_web_api(
     except HttpClientError as exc:
         raise SteamWebApiError(f"Steam Web API {exc}") from exc
 
-    return parse_steam_web_api_servers(data)
+    return [
+        replace(
+            server,
+            **provider_identity(
+                product_from_app_id(app_id)
+                if not filter_text or filter_text == f"\\appid\\{app_id}"
+                else "unknown",
+                "steam_web_api",
+                server.last_checked,
+            ),
+        )
+        for server in parse_steam_web_api_servers(data)
+    ]
 
 
 def parse_steam_web_api_servers(data: dict) -> list[DiscoveredServer]:
@@ -549,12 +570,14 @@ def _fetch_wolfapi_servers(
         raise WolfApiError(f"WolfAPI {exc}") from exc
 
     if require_v1:
-        if expected_product == "experimental":
+        if expected_product in {"stable", "experimental"}:
             rows = data.get("servers", []) if isinstance(data, dict) else []
             if any(
                 not isinstance(row, dict) or row.get("product") != expected_product for row in rows
             ):
-                raise WolfApiError("WolfAPI did not return an isolated Experimental directory.")
+                raise WolfApiError(
+                    f"WolfAPI did not return an isolated {expected_product.title()} directory."
+                )
         return parse_wolfapi_v1_servers(data, limit=limit)
     return parse_wolfapi_servers(data, limit=limit)
 
@@ -579,9 +602,13 @@ def parse_wolfapi_v1_servers(data, limit: int = 500) -> list[DiscoveredServer]:
         raise WolfApiError("WolfAPI returned an invalid eligible directory count.") from exc
     if directory_total < 0:
         raise WolfApiError("WolfAPI returned an invalid eligible directory count.")
+    filtered_total = _optional_int(data.get("total_count"))
+    if "total_count" in data and (filtered_total is None or filtered_total < 0):
+        raise WolfApiError("WolfAPI returned an invalid filtered total.")
     return WolfApiServerList(
         parse_wolfapi_servers(data, limit=limit),
         directory_total=directory_total,
+        filtered_total=filtered_total,
     )
 
 
@@ -606,7 +633,7 @@ def parse_wolfapi_servers(data, limit: int = 10000) -> list[DiscoveredServer]:
     limit = max(1, int(limit))
     for row in rows:
         server = discovered_server_from_wolfapi_row(row, timestamp)
-        identity = server.stable_server_id if server else ""
+        identity = (server.product, server.stable_server_id or server.cache_key) if server else ""
         identity = identity or (server.cache_key if server else "")
         if not server or identity in seen:
             continue
@@ -685,6 +712,7 @@ def discovered_server_from_wolfapi_row(row: dict, timestamp: str = "") -> Discov
     return DiscoveredServer(
         name=name,
         source="wolfapi",
+        **provider_identity(row.get("product"), "wolfapi", timestamp),
         server_name=name,
         host=host,
         game_port=game_port,

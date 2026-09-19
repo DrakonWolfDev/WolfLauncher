@@ -4,6 +4,7 @@ from dataclasses import replace
 from datetime import datetime, timezone
 
 from .models import DiscoveredServer, Server
+from .server_identity import saved_server_fields
 from .status import ServerStatus
 
 COMMON_DAYZ_QUERY_PORT = 27016
@@ -74,6 +75,7 @@ def local_enrichment_due(
 def enrichment_probe_servers(server: DiscoveredServer) -> list[Server]:
     return [
         Server(
+            **saved_server_fields(server),
             name=server.name,
             group="Discovered",
             host=server.host,

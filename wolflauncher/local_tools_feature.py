@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from PySide6.QtCore import QPropertyAnimation, QProcess, QSize, Qt, QTimer, QUrl
+from PySide6.QtCore import QProcess, QPropertyAnimation, QSize, Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices, QPixmap
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWidgets import (
@@ -63,6 +63,13 @@ DAYZ_EDITOR_IMAGE_URL = (
 
 
 class LocalToolsFeatureMixin:
+    def selected_local_tool_install(self, *, editor=None):
+        from .dayz_product import STABLE
+        from .platform_detection import detect_steam, select_steam_install
+
+        # Local tools stay on Stable independently of server browser selection.
+        return select_steam_install(self.native_steam_mode_key(), detect_steam(STABLE))
+
     def _build_local_tools_tab(self) -> QWidget:
         widget = QWidget()
         set_ui_role(widget, "workspace")
@@ -174,7 +181,9 @@ class LocalToolsFeatureMixin:
         verify_editor.clicked.connect(lambda: self._verify_local_tool_mods(editor=True))
         self.editor_session_button = QPushButton("Choose DayZ Editor")
         set_ui_role(self.editor_session_button, "primary")
-        self.editor_session_button.clicked.connect(lambda: self._choose_local_tool_session("editor"))
+        self.editor_session_button.clicked.connect(
+            lambda: self._choose_local_tool_session("editor")
+        )
         editor_actions.addWidget(verify_editor)
         editor_actions.addStretch(1)
         editor_actions.addWidget(self.editor_session_button)
@@ -222,7 +231,9 @@ class LocalToolsFeatureMixin:
         self.editor_mod_picker.itemChanged.connect(self._editor_mod_selection_changed)
         self.editor_mod_picker_opacity = QGraphicsOpacityEffect(self.editor_mod_picker)
         self.editor_mod_picker.setGraphicsEffect(self.editor_mod_picker_opacity)
-        self.editor_mod_picker_animation = QPropertyAnimation(self.editor_mod_picker_opacity, b"opacity", self)
+        self.editor_mod_picker_animation = QPropertyAnimation(
+            self.editor_mod_picker_opacity, b"opacity", self
+        )
         self.editor_mod_picker_animation.setDuration(180)
         editor_mods_layout.addWidget(self.editor_mod_picker)
         self.editor_image_manager = QNetworkAccessManager(self)
@@ -391,7 +402,7 @@ class LocalToolsFeatureMixin:
     def _refresh_editor_mod_picker(self):
         if not hasattr(self, "editor_mod_picker"):
             return
-        install = self.selected_steam_install()
+        install = self.selected_local_tool_install()
         installed = scan_installed_mods(install.workshop_dir if install else None)
         fixed_ids = {workshop_id for workshop_id, _name in DAYZ_EDITOR_MODS}
         known_names = {
@@ -404,7 +415,9 @@ class LocalToolsFeatureMixin:
             if workshop_id not in fixed_ids
         ]
         available_ids = {workshop_id for workshop_id, _name in available}
-        for workshop_id in self.editor_dependency_mod_ids if self.mod_selection_target == "editor" else ():
+        for workshop_id in (
+            self.editor_dependency_mod_ids if self.mod_selection_target == "editor" else ()
+        ):
             if workshop_id not in available_ids and workshop_id not in fixed_ids:
                 available.append((workshop_id, known_names.get(workshop_id, "")))
         available.sort(key=lambda entry: ((entry[1] or entry[0]).casefold(), entry[0]))
@@ -413,7 +426,10 @@ class LocalToolsFeatureMixin:
         row_height = max(26, self.editor_mod_picker.fontMetrics().height() + 10)
         for workshop_id, name in available:
             available_ids.add(workshop_id)
-            required = self.mod_selection_target == "editor" and workshop_id in self.editor_dependency_mod_ids
+            required = (
+                self.mod_selection_target == "editor"
+                and workshop_id in self.editor_dependency_mod_ids
+            )
             label = f"{name or workshop_id}  ({workshop_id})"
             if required:
                 label += " — auto-detected requirement"
@@ -464,7 +480,11 @@ class LocalToolsFeatureMixin:
         return tuple(sorted(self.local_extra_mod_ids, key=int))
 
     def _active_extra_mod_ids(self) -> set[str]:
-        return self.editor_extra_mod_ids if self.mod_selection_target == "editor" else self.local_extra_mod_ids
+        return (
+            self.editor_extra_mod_ids
+            if self.mod_selection_target == "editor"
+            else self.local_extra_mod_ids
+        )
 
     def _choose_local_tool_session(self, target: str):
         """Focus one session card and reveal its mod workspace beside it."""
@@ -596,7 +616,7 @@ class LocalToolsFeatureMixin:
 
     def _enabled_mod_entries(self, *, editor: bool) -> list[str]:
         """Return readable entries for the selected launch mode."""
-        install = self.selected_steam_install()
+        install = self.selected_local_tool_install(editor=editor)
         installed = scan_installed_mods(install.workshop_dir if install else None)
         dependency_names = {
             workshop_id: str(detail.get("title") or "")
@@ -677,7 +697,7 @@ class LocalToolsFeatureMixin:
         worker.deleteLater()
 
     def _local_required_mods(self, *, editor: bool) -> list[RequiredMod]:
-        install = self.selected_steam_install()
+        install = self.selected_local_tool_install(editor=editor)
         installed = scan_installed_mods(install.workshop_dir if install else None)
         if editor:
             names = dict(DAYZ_EDITOR_MODS)
@@ -716,14 +736,7 @@ class LocalToolsFeatureMixin:
             QDesktopServices.openUrl(QUrl(mod.workshop_url))
 
     def _native_local_install(self):
-        if self.launch_engine_key() != "native":
-            QMessageBox.information(
-                self,
-                "Native launcher required",
-                "Editor and Local Development use WolfLauncher’s native Steam handoff. Choose Native launcher in Settings first.",
-            )
-            return None
-        install = self.selected_steam_install()
+        install = self.selected_local_tool_install()
         if not install:
             QMessageBox.warning(
                 self,
@@ -733,6 +746,7 @@ class LocalToolsFeatureMixin:
         return install
 
     def _launch_local_editor(self):
+        self.mod_selection_target = "editor"
         install = self._native_local_install()
         if not install:
             return
@@ -754,7 +768,7 @@ class LocalToolsFeatureMixin:
 
     def _wait_for_editor_steam(self):
         self.local_editor_steam_attempts += 1
-        install = self.selected_steam_install()
+        install = self.selected_local_tool_install(editor=True)
         if install and install.running:
             self._start_editor_workshop_resolution(install)
             return
@@ -837,7 +851,7 @@ class LocalToolsFeatureMixin:
                 result.error or "Steam did not finish every required DayZ Editor item.",
             )
             return
-        install = self.selected_steam_install()
+        install = self.selected_local_tool_install(editor=True)
         if not install:
             QMessageBox.warning(
                 self,
@@ -1000,7 +1014,7 @@ class LocalToolsFeatureMixin:
     def _install_server_with_steam(self):
         if current_platform().capabilities.platform_id != "windows":
             return
-        install = self.selected_steam_install()
+        install = self.selected_local_tool_install()
         if not install or not install.root:
             QMessageBox.warning(
                 self, "Steam not detected", "Open Steam, then try the Steam-owned install again."
@@ -1023,7 +1037,7 @@ class LocalToolsFeatureMixin:
         )
 
     def _poll_steam_server_install(self):
-        install = self.selected_steam_install()
+        install = self.selected_local_tool_install()
         libraries = list(getattr(install, "library_steamapps", []) or []) if install else []
         if install and install.steamapps and install.steamapps not in libraries:
             libraries.append(install.steamapps)

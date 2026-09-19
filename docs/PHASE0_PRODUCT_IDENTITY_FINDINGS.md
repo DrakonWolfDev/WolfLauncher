@@ -206,6 +206,11 @@ tests freshness and exact context without pretending that UI integration exists.
 - Whole-tree Ruff is not clean: seven existing lint errors also reproduce on the
   unchanged commit, alongside existing formatting issues. Only the new code was
   formatted; unrelated files were not rewritten.
+- Follow-up: the single-instance test passes outside the socket-restricted sandbox.
+  The column-width failure was fixed by explicitly allowing the 32-pixel password
+  column instead of inheriting Qt's larger style minimum; its test now forces a
+  larger initial minimum. After that fix, the full suite outside the sandbox passes:
+  **632 tests, five skips, no failures**. Lint and whitespace checks pass for the fix.
 - Validation environment was created under `/tmp`; no dependency or lockfile changes.
 - Live checks are dated observations. The new-release canary remains a release-time
   validation task; it cannot be completed before that release is available.

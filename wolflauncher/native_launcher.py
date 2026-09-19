@@ -18,6 +18,7 @@ from .platform_detection import (
 )
 from .platforms import current_platform
 from .redaction import redact_support_text
+from .server_identity import saved_server_fields
 from .status import resolve_host
 
 
@@ -864,6 +865,7 @@ def _resolved_server(server: Server) -> Server:
             guidance="Check the server address, network connection and DNS before launching.",
         ) from exc
     return Server(
+        **saved_server_fields(server),
         name=server.name,
         group=server.group,
         host=host,

@@ -130,6 +130,10 @@ QFrame[uiRole="serverCard"] {{ background-color: {c["surface"]}; border: 1px sol
 QFrame[uiRole="serverCard"][onlineState="online"] {{ border-left-color: {c["positive"]}; }}
 QFrame[uiRole="serverCard"][onlineState="offline"] {{ border-left-color: {c["negative"]}; }}
 QFrame[uiRole="serverCard"][selected="true"] {{ background-color: {c["table_selection"]}; border-color: {c["accent"]}; }}
+QFrame[uiRole="serverCard"][stable="true"] {{ background-color: qlineargradient(x1:1, y1:0, x2:0, y2:0, stop:0 #1e2020, stop:0.55 #1d1c18, stop:1 {c["surface"]}); }}
+QFrame[uiRole="serverCard"][stable="true"][selected="true"] {{ background-color: qlineargradient(x1:1, y1:0, x2:0, y2:0, stop:0 #40362e, stop:0.55 #453623, stop:1 {c["table_selection"]}); border-color: {c["accent"]}; }}
+QFrame[uiRole="serverCard"][experimental="true"] {{ background-color: qlineargradient(x1:1, y1:0, x2:0, y2:0, stop:0 #291a15, stop:0.55 #221913, stop:1 {c["surface"]}); }}
+QFrame[uiRole="serverCard"][experimental="true"][selected="true"] {{ background-color: qlineargradient(x1:1, y1:0, x2:0, y2:0, stop:0 #493021, stop:0.55 #49331e, stop:1 {c["table_selection"]}); border-color: {c["accent"]}; }}
 QFrame[uiRole="emptyState"] {{ background-color: #0e0d0b; border: 1px solid {c["border"]}; border-left: 3px solid {c["accent_pressed"]}; border-radius: 7px; }}
 QFrame[uiRole="modDetail"] {{ background-color: {c["surface"]}; border: 1px solid {c["border"]}; border-left: 3px solid {c["accent_pressed"]}; border-radius: 7px; }}
 QFrame[uiRole="modDetail"][modStatus="ready"] {{ border-left-color: {c["positive"]}; }}
@@ -155,6 +159,8 @@ QFrame[uiRole="healthGroup"][healthStatus="MISSING"] {{ border-left-color: {c["n
 QLabel[uiRole="healthBadge"] {{ color: {c["positive"]}; background-color: #1e3a2e; border-radius: 8px; padding: 2px 7px; font-size: 10px; font-weight: 600; }}
 QLabel[uiRole="healthBadge"][healthStatus="WARN"] {{ color: {c["warning"]}; background-color: #3a301e; }}
 QLabel[uiRole="healthBadge"][healthStatus="MISSING"] {{ color: {c["negative"]}; background-color: #3a1e1e; }}
+QFrame[uiRole="healthGroup"][healthStatus="OPTIONAL"] {{ border-left-color: {c["text_muted"]}; }}
+QLabel[uiRole="healthBadge"][healthStatus="OPTIONAL"] {{ color: {c["text_muted"]}; background-color: {c["surface_alt"]}; }}
 QLabel[uiRole="modThumbnail"] {{ background-color: {c["surface_alt"]}; color: {c["text_muted"]}; border: 1px solid {c["border"]}; border-radius: 4px; }}
 QFrame[uiRole="selectedModPill"] {{ background-color: {c["surface_alt"]}; border: 1px solid {c["border_strong"]}; border-radius: 12px; }}
 QFrame[uiRole="selectedModPill"]:hover {{ border-color: {c["accent"]}; }}

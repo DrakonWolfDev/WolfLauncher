@@ -1,6 +1,6 @@
 import os
 
-from PySide6.QtCore import QPoint, Qt, QTimer
+from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QAction
 from PySide6.QtWidgets import (
     QApplication,
@@ -15,7 +15,6 @@ from PySide6.QtWidgets import (
     QLineEdit,
     QMenu,
     QMessageBox,
-    QProgressDialog,
     QPushButton,
     QSizePolicy,
     QSpinBox,
@@ -25,8 +24,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from . import server_cache
-from .dayz_product import product_from_key, product_warning
 from .diagnostics import (
     format_settings_health_report,
     run_diagnostics,
@@ -34,7 +31,6 @@ from .diagnostics import (
 from .known_issues import known_external_issues_text
 from .launch_history import load_last_launch_report, save_last_launch_report
 from .launcher import DEFAULT_PLAYER_NAME
-from .lifecycle import active_workers
 from .platform_detection import (
     steam_mode_label,
 )
@@ -47,7 +43,6 @@ from .settings import (
     DEFAULT_DISCOVERY_PROVIDER,
     save_favourites,
     save_settings,
-    server_key,
 )
 from .settings_health_presenter import GROUP_SPECS, settings_health_groups
 from .theme import (
@@ -63,26 +58,12 @@ class SettingsFeatureMixin:
         set_ui_role(widget, "workspace")
         layout = QVBoxLayout(widget)
 
-        self.system_summary = QLabel("Checking Steam and DayZ installation...")
-        set_ui_role(self.system_summary, "summary")
-        layout.addWidget(self.system_summary)
+        # Retain the summary for support reports, outside the visible settings flow.
+        self.system_summary = QLabel("Checking Steam and DayZ installation...", widget)
+        self.system_summary.hide()
 
         capabilities = current_platform().capabilities
         launcher_settings = QFormLayout()
-        self.dayz_product_selector = QComboBox()
-        self.dayz_product_selector.addItem("DayZ Stable", "stable")
-        self.dayz_product_selector.addItem("DayZ Experimental", "experimental")
-        current_product = product_from_key(self.settings.get("dayz_product", "stable"))
-        self.dayz_product_selector.setCurrentIndex(
-            self.dayz_product_selector.findData(current_product.key)
-        )
-        self.dayz_product_selector.currentIndexChanged.connect(self.handle_dayz_product_changed)
-        launcher_settings.addRow("Game version", self.dayz_product_selector)
-        self.experimental_settings_notice = QLabel(product_warning(current_product))
-        self.experimental_settings_notice.setWordWrap(True)
-        self.experimental_settings_notice.setVisible(current_product.experimental)
-        set_ui_role(self.experimental_settings_notice, "experimentalWarning")
-        launcher_settings.addRow("", self.experimental_settings_notice)
         if capabilities.supports_external_launcher:
             launcher_controls = QWidget()
             launcher_controls_layout = QHBoxLayout(launcher_controls)
@@ -341,7 +322,13 @@ class SettingsFeatureMixin:
             card.setProperty("healthStatus", group.status)
             badge.setProperty("healthStatus", group.status)
             badge.setText(
-                "READY" if group.status == "OK" else "CHECK" if group.status == "WARN" else "ISSUE"
+                "READY"
+                if group.status == "OK"
+                else "CHECK"
+                if group.status == "WARN"
+                else "OPTIONAL"
+                if group.status == "OPTIONAL"
+                else "ISSUE"
             )
             card.style().unpolish(card)
             card.style().polish(card)
@@ -409,132 +396,14 @@ class SettingsFeatureMixin:
             self, "Launch engine changed. Rechecking selected server mods..."
         )
 
-    def handle_dayz_product_changed(self, *_args):
-        product = product_from_key(self.dayz_product_selector.currentData())
-        if self.dayz_product_key() == product.key:
-            return
-        dialog = QProgressDialog(f"Switching to {product.label}…", "", 0, 0, self)
-        dialog.setWindowTitle("Switching game version")
-        dialog.setCancelButton(None)
-        dialog.setWindowModality(Qt.WindowModal)
-        dialog.setMinimumDuration(0)
-        dialog.setAutoClose(False)
-        dialog.setAutoReset(False)
-        dialog.show()
-        QApplication.processEvents()
-        try:
-            self._apply_dayz_product_switch(product)
-        finally:
-            dialog.close()
-            dialog.deleteLater()
-
-    def _defer_dayz_product_switch(self, product) -> bool:
-        """Keep profile-owned worker references alive before replacing their context."""
-        workers = active_workers(self)
-        if not workers:
-            return False
-        self._pending_dayz_product_key = product.key
-        current_index = self.dayz_product_selector.findData(self.dayz_product_key())
-        self.dayz_product_selector.blockSignals(True)
-        self.dayz_product_selector.setCurrentIndex(current_index)
-        self.dayz_product_selector.blockSignals(False)
-        for worker in workers:
-            cancel = getattr(worker, "cancel", None)
-            if callable(cancel):
-                cancel()
-            request_interruption = getattr(worker, "requestInterruption", None)
-            if callable(request_interruption):
-                request_interruption()
-        self.statusBar().showMessage(
-            "Finishing current background checks before changing DayZ version…", 5000
-        )
-        QTimer.singleShot(50, self._complete_deferred_dayz_product_switch)
-        return True
-
-    def _complete_deferred_dayz_product_switch(self):
-        product_key = getattr(self, "_pending_dayz_product_key", "")
-        if not product_key:
-            return
-        if active_workers(self):
-            QTimer.singleShot(50, self._complete_deferred_dayz_product_switch)
-            return
-        self._pending_dayz_product_key = ""
-        index = self.dayz_product_selector.findData(product_key)
-        if index >= 0:
-            self.dayz_product_selector.setCurrentIndex(index)
-
-    def _apply_dayz_product_switch(self, product):
-        if product.experimental and not self.settings.get("experimental_wolfapi_cache_cleared_v1"):
-            connection = server_cache.connect(server_cache.SERVER_CACHE_PATH)
-            try:
-                server_cache.clear_source_servers(connection, "wolfapi_experimental")
-            finally:
-                connection.close()
-            self.settings["experimental_wolfapi_cache_cleared_v1"] = True
-        self.settings["dayz_product"] = product.key
-        self.product = product
-        self.setWindowTitle(
-            "WolfLauncher — DayZ Experimental" if product.experimental else "WolfLauncher"
-        )
-        self.experimental_notice.setText(product_warning(product))
-        self.experimental_notice.setVisible(product.experimental)
-        self.experimental_settings_notice.setText(product_warning(product))
-        self.experimental_settings_notice.setVisible(product.experimental)
-        if product.experimental and hasattr(self, "discovery_provider"):
-            # WolfAPI now serves Experimental rows. Keep this profile on the
-            # normal hosted directory while retaining Steam Master as a manual fallback.
-            self.discovery_provider.setCurrentText("WolfAPI")
-        if product.experimental and hasattr(self, "launch_engine"):
-            self.launch_engine.setCurrentText("Native launcher")
-            self.launch_engine.setEnabled(False)
-        elif hasattr(self, "launch_engine"):
-            self.launch_engine.setEnabled(True)
-        if hasattr(self, "mod_view"):
-            self.mod_view.setItemText(
-                1,
-                "Available local mods" if product.experimental else "Installed Workshop library",
-            )
-            for name in (
-                "subscribe_missing_button",
-                "force_update_button",
-                "update_installed_mods_button",
-            ):
-                if hasattr(self, name):
-                    getattr(self, name).setVisible(
-                        self.viewing_installed_workshop_library()
-                        if name == "update_installed_mods_button"
-                        else True
-                    )
-        from .settings import curated_servers_path, load_favourites
-
-        self.favourites = load_favourites(product.key)
-        self.config_path = curated_servers_path(product.key)
-        from .config import ensure_empty_servers_file, ensure_servers_file, load_servers
-
-        (ensure_empty_servers_file if product.experimental else ensure_servers_file)(
-            self.config_path
-        )
-        self.servers = load_servers(self.config_path)
-        for server in self.servers:
-            server.favourite = server_key(server) in self.favourites
-        if hasattr(self, "reload_curated_servers"):
-            self.reload_curated_servers()
-        if hasattr(self, "browser_servers"):
-            self.browser_servers = []
-            self.active_discovered_server = None
-            self.active_discovered_cache_key = ""
-            self.refresh_server_browser()
-        SettingsFeatureMixin._recheck_after_mod_context_change(
-            self,
-            f"{product.label} selected. Rechecking the selected server in the new game context...",
-        )
-
     def handle_native_steam_mode_changed(self, *_args):
         SettingsFeatureMixin._recheck_after_mod_context_change(
             self, "Steam install changed. Rechecking selected server mods..."
         )
 
     def _recheck_after_mod_context_change(self, message: str):
+        if hasattr(self, "server_launch"):
+            self.server_launch.invalidate()
         self.last_mod_result = None
         self.workshop_recovery_ids = ()
         if hasattr(self, "mod_summary"):
@@ -576,10 +445,10 @@ class SettingsFeatureMixin:
             if key.startswith("last_") and key.endswith("_auto_refresh_at")
         }
         updated_settings = {
+            **self.settings,
             "launcher_path": self.launcher_path.text(),
             "player_name": self.player_name.text(),
             "launch_engine": self.launch_engine_key(),
-            "dayz_product": self.dayz_product_key(),
             "native_steam_mode": self.native_steam_mode_key(),
             "refresh_seconds": self.refresh_seconds.value(),
             "last_selected_row": self.table.currentRow(),
@@ -643,8 +512,11 @@ class SettingsFeatureMixin:
                 if hasattr(self, "dayz_product_key")
                 else str(getattr(self, "settings", {}).get("dayz_product", "stable"))
             )
-            save_favourites(self.favourites, product_key)
-        except OSError as exc:
+            if hasattr(self, "saved_server_repository"):
+                self.saved_server_repository.save_favourites(self.favourites)
+            else:
+                save_favourites(self.favourites, product_key)
+        except (OSError, ValueError) as exc:
             QMessageBox.warning(
                 self,
                 "Could not save favourites",

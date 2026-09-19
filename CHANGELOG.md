@@ -2,6 +2,19 @@
 
 ## Unreleased
 
+- The server browser now starts on Stable with a visible Stable / Experimental
+  selector. Favourites and recent servers stay mixed with edition/readiness tags.
+- Server joins verify the live game ID and carry the selected installation through
+  mod checks, preview and launch. Experimental uses native launching while the
+  Stable engine preference is retained. Stale checks cannot launch another target.
+- Added background installation scans and Experimental setup guidance. Existing
+  saved profiles are combined without a startup rewrite, with transactional cache
+  migration, backup/recovery support and identity-aware history.
+- Retired the global Settings game switch. Editor and local profiles remain on
+  Stable, with their original interface and no Experimental selector.
+  Real-game release checks are tracked in the combined browser
+  validation notes.
+
 - Removed Flatpak and Snap Steam options and automatic detection for this version.
   Saved selections return to Auto; Linux launches require native Steam.
 

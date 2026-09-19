@@ -2,7 +2,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
-from .dayz_product import product_from_key
+from .dayz_product import STABLE
 from .launch_preflight import (
     LaunchPreflightAction,
     build_launch_preflight_state,
@@ -32,15 +32,12 @@ from .theme import (
 
 class LaunchFeatureMixin:
     def dayz_product(self):
-        return product_from_key(self.settings.get("dayz_product", "stable"))
+        return STABLE
 
     def dayz_product_key(self) -> str:
         return self.dayz_product().key
 
     def launch_engine_key(self) -> str:
-        if self.dayz_product().experimental:
-            # The vendored shell launcher only understands Stable DayZ.
-            return "native"
         if not hasattr(self, "launch_engine"):
             return str(self.settings.get("launch_engine") or "native")
         return "native" if self.launch_engine.currentText() == "Native launcher" else "external"
@@ -58,7 +55,10 @@ class LaunchFeatureMixin:
     def selected_steam_install(self) -> SteamInstall | None:
         from .platform_detection import detect_steam
 
-        return select_steam_install(self.native_steam_mode_key(), detect_steam(self.dayz_product()))
+        coordinator = getattr(self, "server_launch", None)
+        if coordinator and coordinator.current(coordinator.context, require_fresh=False):
+            return coordinator.context.install
+        return select_steam_install(self.native_steam_mode_key(), detect_steam(STABLE))
 
     def selected_browser_preview_install(self) -> SteamInstall | None:
         """Reuse the latest health snapshot so browsing never scans Steam on the UI thread."""

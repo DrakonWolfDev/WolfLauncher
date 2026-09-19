@@ -302,11 +302,14 @@ class PreflightLaunchDialog(QDialog):
 
 
 class NativeLaunchPreviewDialog(PostHandoffProcessCheckMixin, QDialog):
-    def __init__(self, parent, title: str, preview_text: str, command: list[str]):
+    def __init__(
+        self, parent, title: str, preview_text: str, command: list[str], launch_callback=None
+    ):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.resize(860, 540)
         self.command = command
+        self.launch_callback = launch_callback
         self.command_text = format_launch_command(command) if command else ""
         self.process = QProcess(self)
         self.process.setProcessChannelMode(QProcess.MergedChannels)
@@ -349,6 +352,9 @@ class NativeLaunchPreviewDialog(PostHandoffProcessCheckMixin, QDialog):
             QApplication.clipboard().setText(self.command_text)
 
     def launch_native(self):
+        if self.launch_callback is not None:
+            self.launch_callback()
+            return
         reply = QMessageBox.warning(
             self,
             "Launch native command",

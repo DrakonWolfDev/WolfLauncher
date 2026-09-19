@@ -16,10 +16,20 @@ class CuratedServerCard(QFrame):
     favourite_requested = Signal(int)
     context_requested = Signal(int, QPoint)
 
-    def __init__(self, row: int, values: list[str], parent: QWidget | None = None):
+    def __init__(
+        self,
+        row: int,
+        values: list[str],
+        parent: QWidget | None = None,
+        *,
+        experimental: bool = False,
+        stable: bool = False,
+    ):
         super().__init__(parent)
         self.row = row
         self.setProperty("uiRole", "serverCard")
+        self.setProperty("experimental", experimental)
+        self.setProperty("stable", stable)
         self.setProperty("onlineState", self._online_state(values[8]))
         self.setCursor(Qt.PointingHandCursor)
         name = values[3] or values[2] or "Unnamed server"

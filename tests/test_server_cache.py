@@ -65,7 +65,12 @@ class ServerCacheTests(unittest.TestCase):
     def test_schema_v6_migrates_local_game_time_additively(self):
         connection = server_cache.sqlite3.connect(":memory:")
         self.addCleanup(connection.close)
-        connection.execute("CREATE TABLE discovered_servers (cache_key TEXT PRIMARY KEY)")
+        connection.execute(
+            "CREATE TABLE discovered_servers (cache_key TEXT PRIMARY KEY, stable_server_id TEXT NOT NULL DEFAULT '', host TEXT, game_port INTEGER, query_port INTEGER, display_name TEXT)"
+        )
+        connection.execute(
+            "CREATE TABLE discovered_server_aliases (endpoint_id TEXT PRIMARY KEY, cache_key TEXT NOT NULL REFERENCES discovered_servers(cache_key) ON UPDATE CASCADE ON DELETE CASCADE)"
+        )
         connection.execute("PRAGMA user_version = 6")
 
         server_cache.initialize(connection)
@@ -82,7 +87,12 @@ class ServerCacheTests(unittest.TestCase):
     def test_schema_v5_migrates_country_metadata_additively(self):
         connection = server_cache.sqlite3.connect(":memory:")
         self.addCleanup(connection.close)
-        connection.execute("CREATE TABLE discovered_servers (cache_key TEXT PRIMARY KEY)")
+        connection.execute(
+            "CREATE TABLE discovered_servers (cache_key TEXT PRIMARY KEY, stable_server_id TEXT NOT NULL DEFAULT '', host TEXT, game_port INTEGER, query_port INTEGER, display_name TEXT)"
+        )
+        connection.execute(
+            "CREATE TABLE discovered_server_aliases (endpoint_id TEXT PRIMARY KEY, cache_key TEXT NOT NULL REFERENCES discovered_servers(cache_key) ON UPDATE CASCADE ON DELETE CASCADE)"
+        )
         connection.execute("PRAGMA user_version = 5")
 
         server_cache.initialize(connection)
@@ -98,7 +108,12 @@ class ServerCacheTests(unittest.TestCase):
     def test_schema_v4_migrates_quality_flags_additively(self):
         connection = server_cache.sqlite3.connect(":memory:")
         self.addCleanup(connection.close)
-        connection.execute("CREATE TABLE discovered_servers (cache_key TEXT PRIMARY KEY)")
+        connection.execute(
+            "CREATE TABLE discovered_servers (cache_key TEXT PRIMARY KEY, stable_server_id TEXT NOT NULL DEFAULT '', host TEXT, game_port INTEGER, query_port INTEGER, display_name TEXT)"
+        )
+        connection.execute(
+            "CREATE TABLE discovered_server_aliases (endpoint_id TEXT PRIMARY KEY, cache_key TEXT NOT NULL REFERENCES discovered_servers(cache_key) ON UPDATE CASCADE ON DELETE CASCADE)"
+        )
         connection.execute("PRAGMA user_version = 4")
 
         server_cache.initialize(connection)
@@ -176,7 +191,12 @@ class ServerCacheTests(unittest.TestCase):
     def test_schema_v1_migrates_required_count_and_status_source(self):
         connection = server_cache.sqlite3.connect(":memory:")
         self.addCleanup(connection.close)
-        connection.execute("CREATE TABLE discovered_servers (cache_key TEXT PRIMARY KEY)")
+        connection.execute(
+            "CREATE TABLE discovered_servers (cache_key TEXT PRIMARY KEY, stable_server_id TEXT NOT NULL DEFAULT '', host TEXT, game_port INTEGER, query_port INTEGER, display_name TEXT)"
+        )
+        connection.execute(
+            "CREATE TABLE discovered_server_aliases (endpoint_id TEXT PRIMARY KEY, cache_key TEXT NOT NULL REFERENCES discovered_servers(cache_key) ON UPDATE CASCADE ON DELETE CASCADE)"
+        )
         connection.execute("PRAGMA user_version = 1")
 
         server_cache.initialize(connection)
@@ -196,6 +216,7 @@ class ServerCacheTests(unittest.TestCase):
             """
             CREATE TABLE discovered_servers (
                 cache_key TEXT PRIMARY KEY,
+                host TEXT, game_port INTEGER, query_port INTEGER, display_name TEXT,
                 required_mod_count INTEGER,
                 status_source TEXT NOT NULL DEFAULT 'provider'
             )
@@ -220,6 +241,7 @@ class ServerCacheTests(unittest.TestCase):
             """
             CREATE TABLE discovered_servers (
                 cache_key TEXT PRIMARY KEY,
+                host TEXT, game_port INTEGER, query_port INTEGER, display_name TEXT,
                 stable_server_id TEXT NOT NULL DEFAULT '',
                 endpoint_aliases TEXT NOT NULL DEFAULT '[]'
             )

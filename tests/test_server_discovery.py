@@ -893,7 +893,7 @@ class WolfApiDiscoveryTests(unittest.TestCase):
                     b'"validation_policy":{"live_for_seconds":1800},'
                     b'"coverage":{"eligible":1},'
                     b'"validation_queue":{"ready":1},'
-                    b'"servers":[{"ip":"203.0.113.10","game_port":2302,"query_port":27016}]}'
+                    b'"servers":[{"product":"stable","ip":"203.0.113.10","game_port":2302,"query_port":27016}]}'
                 )
 
         return FakeResponse()

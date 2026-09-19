@@ -318,7 +318,7 @@ class ModsFeatureMixin:
     def show_installed_workshop_library(self):
         install = (
             self.selected_steam_install()
-            if self.launch_engine_key() == "native"
+            if hasattr(self, "server_launch") or self.launch_engine_key() == "native"
             else best_install()
         )
         self.mod_server_title.setText("Installed DayZ Workshop library")
@@ -395,6 +395,8 @@ class ModsFeatureMixin:
         self.check_selected_server_mods(silent=True)
 
     def handle_server_selection_changed(self):
+        if hasattr(self, "server_launch"):
+            self.server_launch.invalidate()
         self.active_discovered_server = None
         self.active_discovered_cache_key = ""
         self._sync_curated_card_selection()
@@ -420,6 +422,16 @@ class ModsFeatureMixin:
         self.check_server_mods(server, silent=silent, force=force)
 
     def check_server_mods(self, server: Server, silent: bool = False, force: bool = False):
+        if hasattr(self, "server_launch"):
+            self.server_launch.prepare(
+                server,
+                lambda context: self.server_launch.check_mods(
+                    context, lambda result: None, force=force
+                ),
+                silent=silent,
+                force=force,
+            )
+            return
         if not hasattr(self, "mod_summary") or not hasattr(self, "mods_table"):
             return
         selected_key = server_key(server)
@@ -431,7 +443,7 @@ class ModsFeatureMixin:
         self.force_update_button.setEnabled(False)
         install = (
             self.selected_steam_install()
-            if self.launch_engine_key() == "native"
+            if hasattr(self, "server_launch") or self.launch_engine_key() == "native"
             else best_install()
         )
         workshop_dir = install.workshop_dir if install else None
@@ -490,7 +502,7 @@ class ModsFeatureMixin:
         current_server = self.active_server_context()
         install = (
             self.selected_steam_install()
-            if self.launch_engine_key() == "native"
+            if hasattr(self, "server_launch") or self.launch_engine_key() == "native"
             else best_install()
         )
         workshop_dir = install.workshop_dir if install else None
@@ -939,7 +951,7 @@ class ModsFeatureMixin:
             return
         install = (
             self.selected_steam_install()
-            if self.launch_engine_key() == "native"
+            if hasattr(self, "server_launch") or self.launch_engine_key() == "native"
             else best_install()
         )
         if not install or not install.workshop_dir or not install.running:
@@ -1146,7 +1158,7 @@ class ModsFeatureMixin:
 
         install = (
             self.selected_steam_install()
-            if self.launch_engine_key() == "native"
+            if hasattr(self, "server_launch") or self.launch_engine_key() == "native"
             else best_install()
         )
         workshop_dir = install.workshop_dir if install else None
@@ -1181,7 +1193,7 @@ class ModsFeatureMixin:
             return None
         install = (
             self.selected_steam_install()
-            if self.launch_engine_key() == "native"
+            if hasattr(self, "server_launch") or self.launch_engine_key() == "native"
             else best_install()
         )
         workshop_dir = install.workshop_dir if install else None

@@ -64,6 +64,7 @@ from .server_discovery import parse_master_address
 from .server_enrichment import (
     local_enrichment_due,
 )
+from .server_identity import saved_server_fields
 from .server_map_atmosphere import ServerMapAtmosphereFrame
 from .settings import (
     DEFAULT_DISCOVERY_PROVIDER,
@@ -111,16 +112,123 @@ def persist_enriched_server(connection, old_cache_key: str, server: DiscoveredSe
 
 
 class ServerBrowserMixin:
+    def browser_product_key(self) -> str:
+        selector = getattr(self, "browser_edition", None)
+        return str(selector.currentData() or "stable") if selector is not None else "stable"
+
+    def browser_product(self):
+        from .dayz_product import product_from_key
+
+        return product_from_key(ServerBrowserMixin.browser_product_key(self))
+
+    def _browser_callback(self, callback):
+        generation = getattr(self, "browser_generation", 0)
+        scoped_query = getattr(callback, "__name__", "") in {
+            "handle_remote_wolfapi_search",
+            "handle_remote_wolfapi_map",
+        }
+        signature = ServerBrowserMixin._browser_filter_signature(self) if scoped_query else None
+        return lambda *args: (
+            callback(*args)
+            if (
+                generation == getattr(self, "browser_generation", 0)
+                and not getattr(self, "_shutting_down", False)
+                and (
+                    not scoped_query
+                    or signature == ServerBrowserMixin._browser_filter_signature(self)
+                )
+            )
+            else None
+        )
+
+    def _browser_filter_signature(self):
+        return (
+            self.browser_search.text(),
+            self.browser_map.currentText(),
+            self.browser_version.currentText(),
+            self.browser_hide_quality_flagged.isChecked(),
+        )
+
+    def change_browser_edition(self, *_args):
+        self.browser_generation = getattr(self, "browser_generation", 0) + 1
+        if hasattr(self, "server_launch"):
+            self.server_launch.invalidate()
+        self.active_discovered_server = None
+        self.active_discovered_cache_key = ""
+        self.browser_table.clearSelection()
+        self.pending_wolfapi_search = ""
+        self.pending_wolfapi_map = ""
+        self.browser_mod_results.clear()
+        for name in ("remote_search_timer", "remote_map_timer", "browser_selection_timer"):
+            getattr(self, name).stop()
+        self.wolfapi_map_catalog = []
+        self.wolfapi_directory_total = self._saved_wolfapi_directory_total()
+        self.wolfapi_filtered_total = self.settings.get(
+            f"wolfapi_filtered_total_{ServerBrowserMixin.browser_product_key(self)}"
+        )
+        self.refresh_server_browser()
+        self.update_browser_edition_notice()
+        self._set_database_refresh_enabled(True)
+        # A previous edition's worker may still occupy the discovery slot.
+        # Once it exits, retry the current edition without accepting its result.
+        for name in (
+            "discovery_worker",
+            "web_api_worker",
+            "battlemetrics_worker",
+            "wolfapi_worker",
+            "wolfapi_cache_worker",
+        ):
+            worker = getattr(self, name, None)
+            if worker is not None and worker.isRunning():
+                worker.finished.connect(
+                    ServerBrowserMixin._browser_callback(
+                        self, self.maybe_auto_refresh_configured_provider
+                    )
+                )
+        self.maybe_auto_refresh_configured_provider()
+        self.schedule_remote_wolfapi_search(self.browser_search.text())
+
+    def update_browser_edition_notice(self):
+        if not hasattr(self, "browser_edition_notice"):
+            return
+        product = ServerBrowserMixin.browser_product(self)
+        state = getattr(self, "product_availability", {}).get(product.key)
+        detail = f"Showing {product.label} servers only."
+        if state is not None and not state.detected:
+            detail += (
+                " Installation required to join."
+                if state.state != "error"
+                else " Installation check unavailable; rescan in Settings."
+            )
+        self.browser_edition_notice.setText(detail)
+
     def discovery_source_name(self, source: str) -> str:
         """Keep disposable discovered-server cache rows isolated by game product."""
         return (
-            source if self.dayz_product_key() == "stable" else f"{source}_{self.dayz_product_key()}"
+            source
+            if ServerBrowserMixin.browser_product_key(self) == "stable"
+            else f"{source}_{ServerBrowserMixin.browser_product_key(self)}"
         )
 
     def _build_server_browser_tab(self) -> QWidget:
         widget = QWidget()
         set_ui_role(widget, "workspace")
         layout = QVBoxLayout(widget)
+
+        self.browser_generation = 0
+        self.browser_edition = QComboBox()
+        self.browser_edition.setFixedWidth(150)
+        self.browser_edition.addItem("Version", "stable")
+        self.browser_edition.addItem("Stable", "stable")
+        self.browser_edition.addItem("Experimental", "experimental")
+        self.browser_edition.setAccessibleName("Server browser version")
+        self.browser_edition.setToolTip(
+            "Browse one edition at a time. Favourites and joining select their own edition."
+        )
+        self.browser_edition.currentIndexChanged.connect(self.change_browser_edition)
+        self.browser_edition_notice = QLabel("Showing DayZ Stable servers only.")
+        self.browser_edition_notice.setWordWrap(True)
+        set_ui_role(self.browser_edition_notice, "metadata")
 
         filters = QHBoxLayout()
         self.browser_search = QLineEdit()
@@ -143,9 +251,7 @@ class ServerBrowserMixin:
         self.browser_map.setFixedWidth(180)
         self.browser_map.addItem("Any map")
         self.browser_map.currentTextChanged.connect(self.refresh_server_browser)
-        self.browser_map.currentTextChanged.connect(
-            self.schedule_remote_wolfapi_map
-        )
+        self.browser_map.currentTextChanged.connect(self.schedule_remote_wolfapi_map)
         filters.addWidget(self.browser_map)
         QTimer.singleShot(0, self.refresh_wolfapi_map_catalog)
 
@@ -162,6 +268,7 @@ class ServerBrowserMixin:
         self.browser_style.addItems(["Any game style", "PvE", "PvP"])
         self.browser_style.currentTextChanged.connect(self.refresh_server_browser)
         filters.insertWidget(2, self.browser_style)
+        filters.insertWidget(1, self.browser_edition)
 
         self.browser_version = QComboBox()
         self.browser_version.addItem("Any version")
@@ -187,6 +294,7 @@ class ServerBrowserMixin:
         self.browser_limit.addItems(["200", "500", "1000"])
         self.browser_limit.currentTextChanged.connect(self.refresh_server_browser)
         layout.addLayout(filters)
+        layout.addWidget(self.browser_edition_notice)
         layout.addWidget(self.browser_summary)
 
         self.browser_advanced_toggle = QPushButton()
@@ -518,9 +626,11 @@ class ServerBrowserMixin:
         self.discovery_worker = SteamDiscoveryWorker(
             max_batches=1,
             master_addresses=master_addresses,
-            app_id=self.dayz_product().client_app_id,
+            app_id=ServerBrowserMixin.browser_product(self).client_app_id,
         )
-        self.discovery_worker.discovery_ready.connect(self.handle_steam_discovery_ready)
+        self.discovery_worker.discovery_ready.connect(
+            ServerBrowserMixin._browser_callback(self, self.handle_steam_discovery_ready)
+        )
         self.discovery_worker.start()
 
     def steam_master_addresses(self):
@@ -563,9 +673,11 @@ class ServerBrowserMixin:
         self.web_api_worker = SteamWebApiDiscoveryWorker(
             api_key=api_key,
             limit=self.discovery_limit.value(),
-            app_id=self.dayz_product().client_app_id,
+            app_id=ServerBrowserMixin.browser_product(self).client_app_id,
         )
-        self.web_api_worker.discovery_ready.connect(self.handle_steam_web_api_ready)
+        self.web_api_worker.discovery_ready.connect(
+            ServerBrowserMixin._browser_callback(self, self.handle_steam_web_api_ready)
+        )
         self.web_api_worker.start()
 
     def handle_steam_web_api_ready(self, servers, error: str):
@@ -594,7 +706,9 @@ class ServerBrowserMixin:
         self.browser_summary.setText("Cached discovered servers: querying BattleMetrics...")
         self._set_database_refresh_enabled(False)
         self.battlemetrics_worker = BattleMetricsDiscoveryWorker(limit=self.discovery_limit.value())
-        self.battlemetrics_worker.discovery_ready.connect(self.handle_battlemetrics_ready)
+        self.battlemetrics_worker.discovery_ready.connect(
+            ServerBrowserMixin._browser_callback(self, self.handle_battlemetrics_ready)
+        )
         self.battlemetrics_worker.start()
 
     def refresh_from_wolfapi(self):
@@ -615,9 +729,11 @@ class ServerBrowserMixin:
             limit=self.discovery_limit.value(),
             automatic=automatic,
             unflagged_only=self.browser_hide_quality_flagged.isChecked(),
-            product=self.dayz_product_key(),
+            product=ServerBrowserMixin.browser_product_key(self),
         )
-        self.wolfapi_worker.discovery_ready.connect(self.handle_wolfapi_ready)
+        self.wolfapi_worker.discovery_ready.connect(
+            ServerBrowserMixin._browser_callback(self, self.handle_wolfapi_ready)
+        )
         self.wolfapi_worker.start()
 
     def maybe_auto_refresh_configured_provider(self):
@@ -653,7 +769,9 @@ class ServerBrowserMixin:
                 page_delay=2.0,
                 automatic=True,
             )
-            self.battlemetrics_worker.discovery_ready.connect(self.handle_battlemetrics_ready)
+            self.battlemetrics_worker.discovery_ready.connect(
+                ServerBrowserMixin._browser_callback(self, self.handle_battlemetrics_ready)
+            )
             self.battlemetrics_worker.start()
         elif provider == "steam_web_api":
             api_key = self.steam_web_api_key.text().strip()
@@ -663,9 +781,11 @@ class ServerBrowserMixin:
             self.web_api_worker = SteamWebApiDiscoveryWorker(
                 api_key=api_key,
                 limit=self.discovery_limit.value(),
-                app_id=self.dayz_product().client_app_id,
+                app_id=ServerBrowserMixin.browser_product(self).client_app_id,
             )
-            self.web_api_worker.discovery_ready.connect(self.handle_auto_web_api_ready)
+            self.web_api_worker.discovery_ready.connect(
+                ServerBrowserMixin._browser_callback(self, self.handle_auto_web_api_ready)
+            )
             self.web_api_worker.start()
         elif provider == "steam_master":
             try:
@@ -677,9 +797,11 @@ class ServerBrowserMixin:
             self.discovery_worker = SteamDiscoveryWorker(
                 max_batches=1,
                 master_addresses=master_addresses,
-                app_id=self.dayz_product().client_app_id,
+                app_id=ServerBrowserMixin.browser_product(self).client_app_id,
             )
-            self.discovery_worker.discovery_ready.connect(self.handle_auto_steam_discovery_ready)
+            self.discovery_worker.discovery_ready.connect(
+                ServerBrowserMixin._browser_callback(self, self.handle_auto_steam_discovery_ready)
+            )
             self.discovery_worker.start()
 
     def handle_main_tab_changed(self, index: int):
@@ -696,15 +818,25 @@ class ServerBrowserMixin:
         QTimer.singleShot(0, self.maybe_auto_refresh_configured_provider)
 
     def should_auto_refresh_provider(self, provider: str) -> bool:
-        return auto_refresh_due(self.settings.get(f"last_{provider}_auto_refresh_at"))
+        return auto_refresh_due(
+            self.settings.get(
+                f"last_{provider}_{ServerBrowserMixin.browser_product_key(self)}_auto_refresh_at"
+            )
+        )
 
     def mark_auto_refresh(self, provider: str):
-        self.settings[f"last_{provider}_auto_refresh_at"] = auto_refresh_timestamp()
+        self.settings[
+            f"last_{provider}_{ServerBrowserMixin.browser_product_key(self)}_auto_refresh_at"
+        ] = auto_refresh_timestamp()
         self.save_user_settings(silent=True)
 
     def _saved_wolfapi_directory_total(self) -> int | None:
         try:
-            total = int(self.settings.get("wolfapi_directory_total"))
+            total = int(
+                self.settings.get(
+                    f"wolfapi_directory_total_{ServerBrowserMixin.browser_product_key(self)}"
+                )
+            )
         except (TypeError, ValueError):
             return None
         return total if total >= 0 else None
@@ -719,7 +851,9 @@ class ServerBrowserMixin:
         if total < 0 or total == self.wolfapi_directory_total:
             return
         self.wolfapi_directory_total = total
-        self.settings["wolfapi_directory_total"] = total
+        self.settings[f"wolfapi_directory_total_{ServerBrowserMixin.browser_product_key(self)}"] = (
+            total
+        )
         self.save_user_settings(silent=True)
 
     def handle_auto_steam_discovery_ready(self, servers, error: str):
@@ -817,6 +951,11 @@ class ServerBrowserMixin:
                 f"{error}\n\nExisting cached WolfAPI rows were kept.",
             )
             return
+        self.record_wolfapi_directory_total(getattr(servers, "directory_total", None))
+        self.wolfapi_filtered_total = getattr(servers, "filtered_total", None)
+        self.settings[f"wolfapi_filtered_total_{ServerBrowserMixin.browser_product_key(self)}"] = (
+            self.wolfapi_filtered_total
+        )
         self.browser_summary.setText(f"Cached discovered servers: updating {label} results…")
         self.wolfapi_cache_context = (automatic, label, provider)
         self.wolfapi_cache_worker = WolfApiCacheMergeWorker(
@@ -825,7 +964,9 @@ class ServerBrowserMixin:
             bounded_v1=provider == "wolfapi_v1",
             source=self.discovery_source_name("wolfapi"),
         )
-        self.wolfapi_cache_worker.merge_ready.connect(self.handle_wolfapi_cache_ready)
+        self.wolfapi_cache_worker.merge_ready.connect(
+            ServerBrowserMixin._browser_callback(self, self.handle_wolfapi_cache_ready)
+        )
         self.wolfapi_cache_worker.start()
 
     def handle_wolfapi_cache_ready(self, inserted: int, removed: int, error: str):
@@ -871,11 +1012,7 @@ class ServerBrowserMixin:
     def schedule_remote_wolfapi_map(self, map_name: str):
         self.remote_map_timer.stop()
         map_name = " ".join(map_name.split())
-        if (
-            self.discovery_provider_key() != "wolfapi_v1"
-            or not map_name
-            or map_name == "Any map"
-        ):
+        if self.discovery_provider_key() != "wolfapi_v1" or not map_name or map_name == "Any map":
             self.pending_wolfapi_map = ""
             return
         self.pending_wolfapi_map = map_name
@@ -887,7 +1024,9 @@ class ServerBrowserMixin:
         if self.wolfapi_map_catalog_worker and self.wolfapi_map_catalog_worker.isRunning():
             return
         self.wolfapi_map_catalog_worker = WolfApiMapCatalogWorker()
-        self.wolfapi_map_catalog_worker.catalog_ready.connect(self.handle_wolfapi_map_catalog)
+        self.wolfapi_map_catalog_worker.catalog_ready.connect(
+            ServerBrowserMixin._browser_callback(self, self.handle_wolfapi_map_catalog)
+        )
         self.wolfapi_map_catalog_worker.finished.connect(self.finish_wolfapi_map_catalog)
         self.wolfapi_map_catalog_worker.start()
 
@@ -911,9 +1050,11 @@ class ServerBrowserMixin:
             map_name,
             limit=500,
             unflagged_only=self.browser_hide_quality_flagged.isChecked(),
-            product=self.dayz_product_key(),
+            product=ServerBrowserMixin.browser_product_key(self),
         )
-        self.wolfapi_map_worker.map_ready.connect(self.handle_remote_wolfapi_map)
+        self.wolfapi_map_worker.map_ready.connect(
+            ServerBrowserMixin._browser_callback(self, self.handle_remote_wolfapi_map)
+        )
         self.wolfapi_map_worker.finished.connect(self.finish_remote_wolfapi_map)
         self.statusBar().showMessage(f'Loading WolfAPI map "{map_name}"…')
         self.wolfapi_map_worker.start()
@@ -921,10 +1062,9 @@ class ServerBrowserMixin:
     def handle_remote_wolfapi_map(self, map_name: str, servers, error: str):
         if error:
             self.statusBar().showMessage(
-                f'WolfAPI map lookup unavailable; showing cached results: {error}', 7000
+                f"WolfAPI map lookup unavailable; showing cached results: {error}", 7000
             )
             return
-        self.record_wolfapi_directory_total(getattr(servers, "directory_total", None))
         merged = server_cache.merge_source_servers(
             self.server_cache, self.discovery_source_name("wolfapi"), servers
         )
@@ -966,9 +1106,11 @@ class ServerBrowserMixin:
             map_name=map_name,
             version=version,
             unflagged_only=self.browser_hide_quality_flagged.isChecked(),
-            product=self.dayz_product_key(),
+            product=ServerBrowserMixin.browser_product_key(self),
         )
-        self.wolfapi_search_worker.search_ready.connect(self.handle_remote_wolfapi_search)
+        self.wolfapi_search_worker.search_ready.connect(
+            ServerBrowserMixin._browser_callback(self, self.handle_remote_wolfapi_search)
+        )
         self.wolfapi_search_worker.finished.connect(self.finish_remote_wolfapi_search)
         self.statusBar().showMessage(f'Searching WolfAPI v1 for "{query}"…')
         self.wolfapi_search_worker.start()
@@ -982,7 +1124,8 @@ class ServerBrowserMixin:
                     7000,
                 )
             return
-        self.record_wolfapi_directory_total(getattr(servers, "directory_total", None))
+        if query != current_query:
+            return
         merged = server_cache.merge_source_servers(
             self.server_cache, self.discovery_source_name("wolfapi"), servers
         )
@@ -1201,6 +1344,10 @@ class ServerBrowserMixin:
         self.schedule_selected_discovered_server_check()
 
     def start_selected_server_mod_preview(self, discovered: DiscoveredServer):
+        if hasattr(self, "server_launch"):
+            # Browsing uses provider mod counts. Local readiness requires the
+            # live identity/context path invoked by Join or Check mods.
+            return
         cache_key = discovered.cache_key
         cached = self.browser_mod_results.get(cache_key)
         now = time.monotonic()
@@ -1301,6 +1448,7 @@ class ServerBrowserMixin:
             return
 
         curated = Server(
+            **saved_server_fields(server),
             name=name,
             group=dialog.curated_group(),
             host=server.host,
@@ -1309,7 +1457,7 @@ class ServerBrowserMixin:
             favourite=True,
         )
         try:
-            add_curated_server(self.config_path, curated)
+            add_curated_server(getattr(self, "saved_server_repository", self.config_path), curated)
         except ValueError as exc:
             QMessageBox.warning(self, "Could not promote server", str(exc))
             return
@@ -1333,6 +1481,7 @@ class ServerBrowserMixin:
     def discovered_server_context(server: DiscoveredServer) -> Server:
         """Create a read-only, in-memory launch context from a discovered row."""
         return Server(
+            **saved_server_fields(server),
             name=server.server_name or server.name or server.connect_target,
             group="Discovered (read-only)",
             host=server.host,
@@ -1351,6 +1500,10 @@ class ServerBrowserMixin:
         return self.activate_discovered_server(discovered)
 
     def activate_discovered_server(self, discovered: DiscoveredServer) -> Server:
+        if hasattr(self, "server_launch") and not self.server_launch.current(
+            self.server_launch.context, require_fresh=False
+        ):
+            self.server_launch.invalidate()
         self.active_discovered_server = self.discovered_server_context(discovered)
         self.active_discovered_cache_key = discovered.cache_key
         self.update_launch_button_text()
@@ -1423,13 +1576,6 @@ class ServerBrowserMixin:
         version = self._combo_filter_value(self.browser_version, "Any version")
         source = self._combo_filter_value(self.browser_source, "Any source")
         source_namespace = ""
-        if self.dayz_product().experimental:
-            # Never let a retained Stable source selection bypass Experimental's
-            # disposable cache namespace. This also permits manual Experimental
-            # Steam-source rows when the user selects them explicitly.
-            source_namespace = f"_{self.dayz_product_key()}"
-            if source and not source.endswith(source_namespace):
-                source = ""
         style_terms = browser_style_terms(self.browser_style.currentText())
         limit = int(self.browser_limit.currentText())
 
@@ -1442,6 +1588,7 @@ class ServerBrowserMixin:
                 version=version,
                 source=source,
                 source_namespace=source_namespace,
+                products=(ServerBrowserMixin.browser_product_key(self),),
                 style_terms=tuple(style_terms),
                 modded=modded,
                 hide_quality_flagged=self.browser_hide_quality_flagged.isChecked(),
@@ -1451,6 +1598,11 @@ class ServerBrowserMixin:
             ),
         )
         servers = snapshot.servers
+        if selected_key and selected_key not in {server.cache_key for server in servers}:
+            if hasattr(self, "server_launch"):
+                self.server_launch.invalidate()
+            self.active_discovered_server = None
+            self.active_discovered_cache_key = ""
         self.browser_servers = servers
 
         populate_browser_table(
@@ -1485,6 +1637,11 @@ class ServerBrowserMixin:
                 else None,
             )
         )
+        if getattr(self, "wolfapi_filtered_total", None) is not None:
+            self.browser_summary.setText(
+                self.browser_summary.text()
+                + f" · {self.wolfapi_filtered_total:,} in selected edition directory"
+            )
         self.browser_summary.setToolTip(browser_summary_tooltip(snapshot.cache_summary))
         self.update_browser_selection_context()
 
@@ -1492,6 +1649,13 @@ class ServerBrowserMixin:
         if not hasattr(self, "browser_promote_button"):
             return
         selected = self.selected_discovered_server()
+        if getattr(self, "active_discovered_cache_key", "") and (
+            selected is None or selected.cache_key != self.active_discovered_cache_key
+        ):
+            if hasattr(self, "server_launch"):
+                self.server_launch.invalidate()
+            self.active_discovered_server = None
+            self.active_discovered_cache_key = ""
         enabled = selected is not None
         for button_name in (
             "browser_promote_button",
@@ -1503,6 +1667,20 @@ class ServerBrowserMixin:
                 button.setEnabled(enabled)
         launch_button = getattr(self, "browser_launch_button", None)
         if launch_button is not None:
+            availability = getattr(self, "product_availability", {}).get(
+                ServerBrowserMixin.browser_product_key(self)
+            )
+            if availability is not None and availability.state in {
+                "missing",
+                "steam_missing",
+                "incomplete",
+            }:
+                launch_button.setEnabled(False)
+                launch_button.setToolTip(
+                    "Install this DayZ edition, launch it once through Steam, then rescan in Settings."
+                )
+            else:
+                launch_button.setToolTip("")
             launch_button.setText(
                 f"Launch {display_server_name(selected)}" if selected else "Launch selected server"
             )
@@ -1606,6 +1784,8 @@ class ServerBrowserMixin:
             stretch_columns=(),
         )
         header = self.browser_table.horizontalHeader()
+        # Some Qt styles default to a minimum wider than the 32px lock column.
+        header.setMinimumSectionSize(32)
         header.setSectionResizeMode(BROWSER_FAVOURITE_COLUMN, QHeaderView.Fixed)
         self.browser_table.setColumnWidth(BROWSER_FAVOURITE_COLUMN, 48)
         header.setSectionResizeMode(BROWSER_PASSWORD_COLUMN, QHeaderView.Fixed)
@@ -1619,8 +1799,16 @@ class ServerBrowserMixin:
             header.setSectionResizeMode(BROWSER_NAME_COLUMN, QHeaderView.Stretch)
 
     def _refresh_browser_filter_options(self):
-        source_namespace = f"_{self.dayz_product_key()}" if self.dayz_product().experimental else ""
-        options = browser_filter_options(self.server_cache, source_namespace)
+        source_namespace = (
+            f"_{ServerBrowserMixin.browser_product_key(self)}"
+            if ServerBrowserMixin.browser_product(self).experimental
+            else ""
+        )
+        options = browser_filter_options(
+            self.server_cache,
+            source_namespace,
+            products=(ServerBrowserMixin.browser_product_key(self),),
+        )
         self._set_combo_filter_options(
             self.browser_map,
             "Any map",
@@ -1682,6 +1870,7 @@ class ServerBrowserMixin:
                     self.toggle_favourite(index)
                 return
         curated = Server(
+            **saved_server_fields(discovered),
             name=discovered.server_name or discovered.name or discovered.connect_target,
             group="Favourites",
             host=discovered.host,
@@ -1690,7 +1879,7 @@ class ServerBrowserMixin:
             favourite=True,
         )
         try:
-            add_curated_server(self.config_path, curated)
+            add_curated_server(getattr(self, "saved_server_repository", self.config_path), curated)
         except ValueError as exc:
             QMessageBox.warning(self, "Could not add favourite", str(exc))
             return

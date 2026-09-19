@@ -25,14 +25,13 @@ from .config import (
     ensure_empty_servers_file,
     ensure_servers_file,
     find_default_launcher_path,
-    load_servers,
 )
 from .connect_preflight import ConnectPreflightCoordinator
 from .curated_servers_controller import CuratedServersMixin
 from .curated_status_cache import (
     load_status_cache,
 )
-from .dayz_product import product_from_key, product_warning
+from .dayz_product import STABLE
 from .launch_dialogs import (
     LaunchDialog as LaunchDialog,
 )
@@ -65,7 +64,6 @@ from .server_browser_feature import (
 )
 from .settings import (
     curated_servers_path,
-    load_favourites,
     load_settings,
     server_key,
 )
@@ -103,22 +101,26 @@ class MainWindow(
         self.shutdown_coordinator = RuntimeShutdownCoordinator(self)
         self.connect_preflight = ConnectPreflightCoordinator(self)
         self.launch_execution = LaunchExecutionCoordinator(self)
+        from .server_launch_coordinator import ServerLaunchCoordinator
+
+        self.server_launch = ServerLaunchCoordinator(self)
         self.settings_health = SettingsHealthCoordinator(self)
         self.workshop_resolution = WorkshopResolutionCoordinator(self)
         self._shutdown_dialog = None
         self.settings = load_settings()
-        self.product = product_from_key(self.settings.get("dayz_product", "stable"))
+        self.product = STABLE
         self.config_path = curated_servers_path(self.product.key)
         (ensure_empty_servers_file if self.product.experimental else ensure_servers_file)(
             self.config_path
         )
-        self.servers = load_servers(self.config_path)
+        from .saved_servers import SavedServerRepository
+
+        self.saved_server_repository = SavedServerRepository(self.config_path.parent)
+        self.servers = self.saved_server_repository.load()
         self.curated_status_cache = load_status_cache()
-        if self.product.experimental:
-            self.setWindowTitle("WolfLauncher — DayZ Experimental")
         self.secret_store = SecretStore()
         self.steam_api_key = load_steam_api_key(self.settings, self.secret_store)
-        self.favourites = load_favourites(self.product.key)
+        self.favourites = {server_key(s) for s in self.servers if s.favourite}
         self.detected_steam_installs = []
         self.worker = None
         self.mod_worker = None
@@ -152,6 +154,7 @@ class MainWindow(
         self.pending_wolfapi_search = ""
         self.pending_wolfapi_map = ""
         self.wolfapi_directory_total = self._saved_wolfapi_directory_total()
+        self.wolfapi_filtered_total = self.settings.get("wolfapi_filtered_total_stable")
         self.selection_enrichment_workers = {}
         self.pending_selection_checks = {}
         self.results_freshness_worker = None
@@ -171,24 +174,22 @@ class MainWindow(
         self.browser_servers = []
         self.server_cache, self.recovered_server_cache_path = server_cache.connect_recovering()
 
-        for server in self.servers:
-            key = server_key(server)
-            if self.favourites:
-                server.favourite = key in self.favourites
-            elif server.favourite:
-                self.favourites.add(key)
-        if self.favourites:
-            self._save_favourites_index()
+        if self.saved_server_repository.errors:
+            QTimer.singleShot(
+                0,
+                lambda: QMessageBox.warning(
+                    self,
+                    "Saved servers need attention",
+                    "Recoverable entries were loaded. Damaged files have been kept unchanged.\n\n"
+                    + "\n".join(self.saved_server_repository.errors),
+                ),
+            )
 
         self.launcher_path = QLineEdit(
             str(self.settings.get("launcher_path") or find_default_launcher_path())
         )
         set_monospace(self.launcher_path)
         self.player_name = QLineEdit(str(self.settings.get("player_name") or DEFAULT_PLAYER_NAME))
-        self.experimental_notice = QLabel(product_warning(self.product))
-        self.experimental_notice.setWordWrap(True)
-        set_ui_role(self.experimental_notice, "experimentalWarning")
-        self.experimental_notice.setVisible(self.product.experimental)
         self.launch_engine = QComboBox()
         self.launch_engine.addItem("Native launcher")
         if current_platform().capabilities.supports_external_launcher:
@@ -200,17 +201,12 @@ class MainWindow(
             or not current_platform().capabilities.supports_external_launcher
             else "External launcher"
         )
-        if self.product.experimental:
-            self.launch_engine.setCurrentText("Native launcher")
-            self.launch_engine.setEnabled(False)
         self.launch_engine.currentTextChanged.connect(self.handle_launch_engine_changed)
         self.native_steam_mode = QComboBox()
         steam_modes = ["Auto", "Native Steam", "STEAM_ROOT Steam library"]
         self.native_steam_mode.addItems(steam_modes)
         if current_platform().capabilities.platform_id == "linux":
-            self.native_steam_mode.setToolTip(
-                "This version supports native Steam only."
-            )
+            self.native_steam_mode.setToolTip("This version supports native Steam only.")
         self.native_steam_mode.setCurrentText(
             self._native_steam_mode_label(str(self.settings.get("native_steam_mode") or "auto"))
         )
@@ -283,7 +279,6 @@ class MainWindow(
         self.active_main_tab_index = self.tabs.currentIndex()
         self.tabs.currentChanged.connect(self.handle_main_tab_changed)
         self.setCentralWidget(self.tabs)
-        self.statusBar().addPermanentWidget(self.experimental_notice, 1)
 
         self.apply_refresh_timer()
         self.refresh_statuses()

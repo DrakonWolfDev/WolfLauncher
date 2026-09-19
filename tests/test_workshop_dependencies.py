@@ -3,8 +3,8 @@ from unittest.mock import patch
 
 from wolflauncher.mods import (
     _WorkshopRequiredItemsParser,
-    cached_workshop_dependency_graphs,
     cached_workshop_dependencies,
+    cached_workshop_dependency_graphs,
     resolve_workshop_dependencies,
 )
 
@@ -23,9 +23,7 @@ class WorkshopDependencyResolutionTests(unittest.TestCase):
         with patch("wolflauncher.mods.fetch_json", return_value=payload) as fetch_json:
             resolved, metadata = cached_workshop_dependencies(["2572331007"])
 
-        self.assertEqual(
-            resolved, ("2572331007", "1559212036", "2545327648", "2116157322")
-        )
+        self.assertEqual(resolved, ("2572331007", "1559212036", "2545327648", "2116157322"))
         self.assertEqual(metadata, {"1559212036": {"title": "CF"}})
         self.assertIn("ids=2572331007", fetch_json.call_args.args[0])
 
@@ -44,9 +42,7 @@ class WorkshopDependencyResolutionTests(unittest.TestCase):
             graphs, missing = cached_workshop_dependency_graphs(["2572331007", "3711024720"])
 
         self.assertEqual(missing, ("3711024720",))
-        self.assertEqual(
-            graphs["2572331007"][0], ("2572331007", "2116157322")
-        )
+        self.assertEqual(graphs["2572331007"][0], ("2572331007", "2116157322"))
 
     def test_resolves_nested_dependencies_once_and_preserves_selection_order(self):
         responses = {
@@ -60,8 +56,9 @@ class WorkshopDependencyResolutionTests(unittest.TestCase):
             self.assertTrue(include_children)
             return {item: responses[item] for item in ids if item in responses}
 
-        with patch("wolflauncher.mods.fetch_workshop_metadata", side_effect=metadata), patch(
-            "wolflauncher.mods.fetch_workshop_page_required_items", return_value=()
+        with (
+            patch("wolflauncher.mods.fetch_workshop_metadata", side_effect=metadata),
+            patch("wolflauncher.mods.fetch_workshop_page_required_items", return_value=()),
         ):
             resolved, _metadata = resolve_workshop_dependencies(["100", "100"])
 
@@ -79,9 +76,14 @@ class WorkshopDependencyResolutionTests(unittest.TestCase):
         self.assertEqual(resolved, ("100", "200"))
 
     def test_uses_required_items_page_links_when_steam_metadata_has_no_children(self):
-        with patch("wolflauncher.mods.fetch_workshop_metadata", return_value={}), patch(
-            "wolflauncher.mods.fetch_workshop_page_required_items",
-            side_effect=lambda workshop_id: {"2878980498": ("3556131153",)}.get(workshop_id, ()),
+        with (
+            patch("wolflauncher.mods.fetch_workshop_metadata", return_value={}),
+            patch(
+                "wolflauncher.mods.fetch_workshop_page_required_items",
+                side_effect=lambda workshop_id: {"2878980498": ("3556131153",)}.get(
+                    workshop_id, ()
+                ),
+            ),
         ):
             resolved, _metadata = resolve_workshop_dependencies(["2878980498"])
 
@@ -94,6 +96,7 @@ class WorkshopDependencyResolutionTests(unittest.TestCase):
             '<div class="requiredItemsContainer"><a href="?id=200">Core</a></div>'
         )
         self.assertEqual(parser.workshop_ids, ["200"])
+
 
 if __name__ == "__main__":
     unittest.main()

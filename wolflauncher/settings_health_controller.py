@@ -3,9 +3,10 @@
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QTableWidgetItem
 
-from .platform_detection import detect_steam
+from .availability_worker import AvailabilityWorker
+from .dayz_product import STABLE
 from .settings_health import build_settings_health_snapshot
-from .theme import STATUS_COLOURS
+from .theme import COLOURS, STATUS_COLOURS
 
 
 class SettingsHealthCoordinator:
@@ -13,12 +14,43 @@ class SettingsHealthCoordinator:
 
     def __init__(self, window):
         self.window = window
+        self.generation = 0
+        self.snapshot = {}
 
     def refresh(self):
         window = self.window
         if not hasattr(window, "health_table"):
             return
-        install_rows = detect_steam(window.dayz_product())
+        self.generation += 1
+        generation = self.generation
+        if not hasattr(window, "availability_workers"):
+            window.availability_workers = {}
+        for previous in window.availability_workers.values():
+            previous.requestInterruption()
+        worker = AvailabilityWorker(generation, window.native_steam_mode_key())
+        window.availability_workers[generation] = worker
+        worker.ready.connect(self.apply_availability)
+        worker.finished.connect(lambda: window.availability_workers.pop(generation, None))
+        worker.start()
+
+    def apply_availability(self, generation, snapshot):
+        window = self.window
+        if generation != self.generation or getattr(window, "_shutting_down", False):
+            return
+        self.snapshot = snapshot
+        window.product_availability = snapshot
+        experimental = snapshot.get("experimental")
+        experimental_detected = bool(experimental and experimental.detected)
+        experimental_row = (
+            "DayZ Experimental",
+            "OK" if experimental_detected else "OPTIONAL",
+            str(experimental.install.dayz_dir)
+            if experimental_detected
+            else "Not detected (optional)"
+            if experimental is None or experimental.state in {"missing", "steam_missing"}
+            else experimental.detail,
+        )
+        install_rows = list(snapshot[STABLE.key].candidates)
         window.detected_steam_installs = install_rows
         provider_status, provider_detail = self._provider_health()
         snapshot = build_settings_health_snapshot(
@@ -28,10 +60,10 @@ class SettingsHealthCoordinator:
             provider_status,
             provider_detail,
             install_rows,
-            product=window.dayz_product(),
+            product=STABLE,
         )
         window.system_summary.setText(snapshot.summary)
-        rows = snapshot.rows
+        rows = snapshot.rows + (experimental_row,)
         window.health_table.setRowCount(len(rows))
         for row, (name, status, details) in enumerate(rows):
             self._set_item(row, 0, name)
@@ -39,6 +71,10 @@ class SettingsHealthCoordinator:
             self._set_item(row, 2, details)
         window.health_table.resizeColumnsToContents()
         window.update_settings_health_groups(rows)
+        if hasattr(window, "refresh_curated_server_cards"):
+            window.refresh_curated_server_cards()
+        if hasattr(window, "update_browser_edition_notice"):
+            window.update_browser_edition_notice()
 
     def _provider_health(self) -> tuple[str, str]:
         window = self.window
@@ -71,6 +107,8 @@ class SettingsHealthCoordinator:
     def colour(status: str) -> str:
         if status == "OK":
             return STATUS_COLOURS["positive"]
+        if status == "OPTIONAL":
+            return COLOURS["text_muted"]
         if status == "WARN":
             return STATUS_COLOURS["warning"]
         return STATUS_COLOURS["negative"]

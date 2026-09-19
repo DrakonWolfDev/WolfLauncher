@@ -8,6 +8,7 @@ import yaml
 from .models import Server
 from .persistence import atomic_write_text, ensure_private_file
 from .platforms import current_platform
+from .server_identity import saved_server_fields
 from .settings import CURATED_SERVERS_PATH
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -118,6 +119,10 @@ def find_default_launcher_path() -> str:
 
 
 def load_servers(path: Path) -> list[Server]:
+    from .saved_servers import SavedServerRepository
+
+    if isinstance(path, SavedServerRepository):
+        return path.load()
     data = _load_server_yaml(path)
     rows = data.get("servers", [])
     if not isinstance(rows, list):
@@ -136,6 +141,7 @@ def load_servers(path: Path) -> list[Server]:
                     game_port=int(item["game_port"]),
                     query_port=int(item["query_port"]),
                     favourite=bool(item.get("favourite", False)),
+                    **saved_server_fields(item),
                 )
             )
         except (KeyError, TypeError, ValueError) as exc:
@@ -144,6 +150,10 @@ def load_servers(path: Path) -> list[Server]:
 
 
 def add_curated_server(path: Path, server: Server) -> None:
+    from .saved_servers import SavedServerRepository
+
+    if isinstance(path, SavedServerRepository):
+        return path.add(server)
     validate_dayz_host(server.host)
     data = _load_server_yaml(path)
     servers = data.setdefault("servers", [])
@@ -168,12 +178,17 @@ def add_curated_server(path: Path, server: Server) -> None:
             "game_port": server.game_port,
             "query_port": server.query_port,
             "favourite": server.favourite,
+            **saved_server_fields(server),
         }
     )
     _write_server_yaml(path, data)
 
 
 def remove_curated_server(path: Path, server: Server) -> bool:
+    from .saved_servers import SavedServerRepository
+
+    if isinstance(path, SavedServerRepository):
+        return path.remove(server)
     data = _load_server_yaml(path)
     servers = data.setdefault("servers", [])
     if not isinstance(servers, list):
@@ -195,6 +210,10 @@ def remove_curated_server(path: Path, server: Server) -> bool:
 
 
 def update_curated_server(path: Path, original: Server, updated: Server) -> bool:
+    from .saved_servers import SavedServerRepository
+
+    if isinstance(path, SavedServerRepository):
+        return path.update(original, updated)
     validate_dayz_host(updated.host)
     data = _load_server_yaml(path)
     servers = data.setdefault("servers", [])
@@ -221,12 +240,14 @@ def update_curated_server(path: Path, original: Server, updated: Server) -> bool
             )
 
     servers[match_index] = {
+        **servers[match_index],
         "name": updated.name,
         "group": updated.group,
         "host": updated.host,
         "game_port": updated.game_port,
         "query_port": updated.query_port,
         "favourite": updated.favourite,
+        **saved_server_fields(updated),
     }
     _write_server_yaml(path, data)
     return True
@@ -234,6 +255,10 @@ def update_curated_server(path: Path, original: Server, updated: Server) -> bool
 
 def reorder_curated_servers(path: Path, ordered_servers: list[Server]) -> None:
     """Persist an explicit curated-server order without dropping extra YAML fields."""
+    from .saved_servers import SavedServerRepository
+
+    if isinstance(path, SavedServerRepository):
+        return path.reorder(ordered_servers)
     data = _load_server_yaml(path)
     entries = data.setdefault("servers", [])
     if not isinstance(entries, list):

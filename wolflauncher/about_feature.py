@@ -44,8 +44,7 @@ class AboutFeatureMixin:
         card_layout.addWidget(tagline)
 
         licence = QLabel(
-            'Licensed under <a href="https://choosealicense.com/licenses/agpl-3.0/">'
-            "GNU AGPLv3</a>"
+            'Licensed under <a href="https://choosealicense.com/licenses/agpl-3.0/">GNU AGPLv3</a>'
         )
         licence.setAlignment(Qt.AlignCenter)
         licence.setOpenExternalLinks(True)

@@ -31,10 +31,15 @@ class SettingsSchemaTests(unittest.TestCase):
         )
 
     def test_unsupported_packaged_steam_modes_migrate_to_auto(self):
-        for mode, version in ((mode, version) for mode in ("flatpak", "snap")
-                              for version in (1, SETTINGS_SCHEMA_VERSION)):
+        for mode, version in (
+            (mode, version)
+            for mode in ("flatpak", "snap")
+            for version in (1, SETTINGS_SCHEMA_VERSION)
+        ):
             with self.subTest(mode=mode, version=version):
-                settings = normalize_settings({"schema_version": version, "native_steam_mode": mode})
+                settings = normalize_settings(
+                    {"schema_version": version, "native_steam_mode": mode}
+                )
                 self.assertEqual(settings["native_steam_mode"], "auto")
                 self.assertEqual(settings["schema_version"], SETTINGS_SCHEMA_VERSION)
 

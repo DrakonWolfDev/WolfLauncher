@@ -7,16 +7,16 @@ from PySide6.QtCore import QThread, Signal
 
 from . import server_cache
 from .models import Server
-from .server_display import map_filter_key
 from .mods import (
     WORKSHOP_URL,
+    ModCheckResult,
     RequiredMod,
     apply_workshop_install_timestamps,
     apply_workshop_item_states,
     apply_workshop_metadata,
     cached_workshop_dependency_graphs,
-    contribute_workshop_dependency_graph,
     check_server_mods,
+    contribute_workshop_dependency_graph,
     fetch_workshop_metadata,
     resolve_workshop_dependencies,
     scan_experimental_local_mods,
@@ -25,15 +25,16 @@ from .mods import (
 )
 from .server_discovery import (
     WolfApiServerList,
-    discover_wolfapi_v1_maps,
     discover_dayz_servers,
     discover_dayz_servers_battlemetrics,
     discover_dayz_servers_web_api,
     discover_dayz_servers_wolfapi_v1,
+    discover_wolfapi_v1_maps,
     parse_exact_server_endpoint,
     resolve_dayz_server_wolfapi_v1,
     search_dayz_servers_wolfapi_v1,
 )
+from .server_display import map_filter_key
 from .server_enrichment import enrich_discovered_server, enrichment_probe_servers
 from .status import ServerStatus, check_server
 from .workshop_subscription import (
@@ -91,6 +92,7 @@ class ModWorker(QThread):
         steam_context: str = "",
         workshop_install=None,
         include_metadata: bool = True,
+        launch_context=None,
     ):
         super().__init__()
         self.server = server
@@ -98,8 +100,26 @@ class ModWorker(QThread):
         self.steam_context = steam_context
         self.workshop_install = workshop_install
         self.include_metadata = include_metadata
+        self.launch_context = launch_context
+
+    def cancel(self):
+        self.requestInterruption()
 
     def run(self):
+        try:
+            result = self._check()
+        except Exception as exc:
+            result = ModCheckResult(False, self.server, [], error=str(exc))
+        if result is None or self.isInterruptionRequested():
+            return
+        if self.launch_context is not None:
+            result.request_id = self.launch_context.request_id
+            result.launch_context_key = self.launch_context.mod_context_key
+        self.mods_ready.emit(result)
+
+    def _check(self):
+        if self.isInterruptionRequested():
+            return
         install = self.workshop_install
         installed_mods = (
             scan_experimental_local_mods(install.dayz_dir, self.workshop_dir)
@@ -109,6 +129,8 @@ class ModWorker(QThread):
         result = check_server_mods(
             self.server, self.workshop_dir, self.steam_context, installed_mods
         )
+        if self.isInterruptionRequested():
+            return
         if self.include_metadata and result.ok and result.required_mods:
             apply_workshop_metadata(
                 result,
@@ -116,6 +138,8 @@ class ModWorker(QThread):
             )
             if install:
                 apply_workshop_install_timestamps(result, workshop_install_timestamps(install))
+        if self.isInterruptionRequested():
+            return
         if result.ok and result.required_mods and install and install.running:
             states = query_workshop_item_states_isolated(
                 (mod.workshop_id for mod in result.required_mods), install
@@ -124,7 +148,7 @@ class ModWorker(QThread):
                 result.workshop_state_error = states.error
             else:
                 apply_workshop_item_states(result, states.items)
-        self.mods_ready.emit(result)
+        return result
 
 
 def load_installed_workshop_library(install) -> tuple[list[RequiredMod], str]:
@@ -401,6 +425,7 @@ def discover_wolfapi_v1_pages(
     target = max(1, int(limit))
     servers = []
     directory_total = None
+    filtered_total = None
     offset = 0
     while len(servers) < target:
         page_limit = min(WOLFAPI_V1_PAGE_SIZE, target - len(servers))
@@ -410,11 +435,15 @@ def discover_wolfapi_v1_pages(
         page = discover_dayz_servers_wolfapi_v1(**kwargs)
         if getattr(page, "directory_total", None) is not None:
             directory_total = page.directory_total
+        if getattr(page, "filtered_total", None) is not None:
+            filtered_total = page.filtered_total
         servers.extend(page)
         if len(page) < page_limit:
             break
         offset += len(page)
-    return WolfApiServerList(servers[:target], directory_total=directory_total)
+    return WolfApiServerList(
+        servers[:target], directory_total=directory_total, filtered_total=filtered_total
+    )
 
 
 class WolfApiSearchWorker(QThread):
@@ -482,8 +511,11 @@ class WolfApiMapWorker(QThread):
     map_ready = Signal(str, object, str)
 
     def __init__(
-        self, map_name: str, limit: int = 500,
-        unflagged_only: bool = False, product: str = "stable",
+        self,
+        map_name: str,
+        limit: int = 500,
+        unflagged_only: bool = False,
+        product: str = "stable",
     ):
         super().__init__()
         self.map_name = " ".join(map_name.split())

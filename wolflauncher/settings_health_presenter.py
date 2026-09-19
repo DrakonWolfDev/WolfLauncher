@@ -17,7 +17,12 @@ GROUP_SPECS = (
     (
         "steam",
         "Steam and DayZ",
-        ("Selected Steam", "DayZ Stable", "DayZ Experimental", "Workshop"),
+        ("Selected Steam", "DayZ Stable", "Workshop"),
+    ),
+    (
+        "experimental",
+        "DayZ Experimental",
+        ("DayZ Experimental",),
     ),
     (
         "launcher",
@@ -38,6 +43,8 @@ def aggregate_health_status(rows: tuple[HealthRow, ...]) -> str:
         return "MISSING"
     if "WARN" in statuses:
         return "WARN"
+    if "OPTIONAL" in statuses:
+        return "OPTIONAL"
     return "OK"
 
 

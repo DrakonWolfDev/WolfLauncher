@@ -37,6 +37,7 @@ class ServerStatus:
     modded: bool = False
     connect: str = ""
     error: str = ""
+    app_id: object = None
 
 
 def resolve_host(host: str) -> str:
@@ -130,7 +131,7 @@ def check_server(
 
     # Some restart/offline states can produce a partial response. Treat those
     # as unavailable instead of showing ONLINE with Unknown / 0/? fields.
-    if not data.get("name") or data.get("maxplayers") is None:
+    if not isinstance(data, dict) or not data.get("name") or data.get("maxplayers") is None:
         return ServerStatus(
             False, resolved_ip=ip, error="offline, restarting, or incomplete query response"
         )
@@ -163,6 +164,7 @@ def check_server(
         password=bool(data.get("password", False)),
         modded=modded,
         connect=str(connect),
+        app_id=raw.get("appId"),
     )
 
 

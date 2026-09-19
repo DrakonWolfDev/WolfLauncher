@@ -228,7 +228,9 @@ class NativeLauncherTests(unittest.TestCase):
                 install.mode = mode
                 install.executable = executable
                 with self.assertRaisesRegex(NativeLaunchError, "not supported"):
-                    build_steam_launch_command(install, make_server("203.0.113.10"), "PlayerOne", [])
+                    build_steam_launch_command(
+                        install, make_server("203.0.113.10"), "PlayerOne", []
+                    )
 
     def test_build_native_command_requires_detected_steam_executable(self):
         install = SteamInstall(

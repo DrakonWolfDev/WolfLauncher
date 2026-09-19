@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+from .server_identity import identity_fields, identity_key
+
 
 @dataclass
 class Server:
@@ -9,6 +11,15 @@ class Server:
     game_port: int
     query_port: int
     favourite: bool = False
+    stable_server_id: str = ""
+    endpoint_aliases: tuple[str, ...] = ()
+    product: str = "unknown"
+    identity_state: str = ""
+    identity_evidence: tuple[dict, ...] = ()
+
+    def __post_init__(self):
+        for key, value in identity_fields(self).items():
+            setattr(self, key, value)
 
     @property
     def connect_target(self) -> str:
@@ -56,10 +67,17 @@ class DiscoveredServer:
     game_time: str = ""
     day_acceleration: float | None = None
     night_acceleration: float | None = None
+    product: str = "unknown"
+    identity_state: str = ""
+    identity_evidence: tuple[dict, ...] = ()
+
+    def __post_init__(self):
+        for key, value in identity_fields(self).items():
+            setattr(self, key, value)
 
     @property
     def cache_key(self) -> str:
-        return f"{self.host}:{self.game_port}:{self.query_port}"
+        return identity_key(self)
 
     @property
     def connect_target(self) -> str:

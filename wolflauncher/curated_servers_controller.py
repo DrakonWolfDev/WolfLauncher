@@ -41,6 +41,7 @@ from .server_display import display_map_name, display_server_flags, ping_severit
 from .server_enrichment import (
     parse_connect_port,
 )
+from .server_identity import saved_edition_label, saved_server_fields
 from .settings import (
     server_key,
 )
@@ -241,11 +242,25 @@ class CuratedServersMixin:
                     row["host"],
                     int(row["game_port"]),
                     int(row["query_port"]),
+                    **saved_server_fields(row),
                 )
             except (KeyError, TypeError, ValueError):
                 continue
             line = QHBoxLayout()
-            line.addWidget(QLabel(f"{server.name}  ·  {server.connect_target}"), 1)
+            line.addWidget(
+                QLabel(
+                    "  ·  ".join(
+                        part
+                        for part in (
+                            server.name,
+                            saved_edition_label(server, getattr(self, "product_availability", {})),
+                            server.connect_target,
+                        )
+                        if part
+                    )
+                ),
+                1,
+            )
             launch = QPushButton("Launch")
             launch.clicked.connect(
                 lambda _checked=False, target=server: self.launch_recent_server(target)
@@ -267,7 +282,9 @@ class CuratedServersMixin:
         reordered = list(self.servers)
         reordered[row], reordered[target] = reordered[target], reordered[row]
         try:
-            reorder_curated_servers(self.config_path, reordered)
+            reorder_curated_servers(
+                getattr(self, "saved_server_repository", self.config_path), reordered
+            )
         except (OSError, ValueError) as exc:
             QMessageBox.warning(self, "Could not reorder favourite servers", str(exc))
             return
@@ -398,7 +415,20 @@ class CuratedServersMixin:
         self.server_cards.clear()
         for row in range(self.table.rowCount()):
             values = [self._server_cell(row, column) for column in range(16)]
-            card = CuratedServerCard(row, values, self.server_cards)
+            experimental = False
+            stable = False
+            if row < len(self.servers):
+                server = self.servers[row]
+                label = saved_edition_label(server, getattr(self, "product_availability", {}))
+                if label:
+                    values[3] = (values[3] or values[2] or "Unnamed server") + "  ·  " + label
+                experimental = (
+                    server.product == "experimental" and server.identity_state != "conflict"
+                )
+                stable = server.product == "stable" and server.identity_state != "conflict"
+            card = CuratedServerCard(
+                row, values, self.server_cards, experimental=experimental, stable=stable
+            )
             card.selected.connect(self._select_curated_card)
             card.activated.connect(self._launch_curated_card)
             card.favourite_requested.connect(self.toggle_favourite)
@@ -496,7 +526,7 @@ class CuratedServersMixin:
             return
 
         try:
-            add_curated_server(self.config_path, server)
+            add_curated_server(getattr(self, "saved_server_repository", self.config_path), server)
         except (OSError, ValueError) as exc:
             QMessageBox.warning(self, "Could not add server", str(exc))
             return
@@ -571,7 +601,9 @@ class CuratedServersMixin:
                 return
 
         try:
-            removed = remove_curated_server(self.config_path, server)
+            removed = remove_curated_server(
+                getattr(self, "saved_server_repository", self.config_path), server
+            )
         except (OSError, ValueError) as exc:
             QMessageBox.warning(self, "Could not remove server", str(exc))
             return
@@ -613,7 +645,9 @@ class CuratedServersMixin:
             return
 
         try:
-            changed = update_curated_server(self.config_path, original, updated)
+            changed = update_curated_server(
+                getattr(self, "saved_server_repository", self.config_path), original, updated
+            )
         except (OSError, ValueError) as exc:
             QMessageBox.warning(self, "Could not edit server", str(exc))
             return
@@ -653,6 +687,7 @@ class CuratedServersMixin:
             return
 
         updated = Server(
+            **saved_server_fields(original),
             name=original.name,
             group=original.group,
             host=original.host,
@@ -661,7 +696,9 @@ class CuratedServersMixin:
             favourite=original.favourite,
         )
         try:
-            changed = update_curated_server(self.config_path, original, updated)
+            changed = update_curated_server(
+                getattr(self, "saved_server_repository", self.config_path), original, updated
+            )
         except (OSError, ValueError) as exc:
             QMessageBox.warning(self, "Could not update server port", str(exc))
             return
@@ -756,7 +793,9 @@ class CuratedServersMixin:
 
         updated = replace(server, favourite=becoming_favourite)
         try:
-            changed = update_curated_server(self.config_path, server, updated)
+            changed = update_curated_server(
+                getattr(self, "saved_server_repository", self.config_path), server, updated
+            )
         except (OSError, ValueError) as exc:
             QMessageBox.warning(self, "Could not update favourite", str(exc))
             return

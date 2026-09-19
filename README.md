@@ -101,11 +101,16 @@ A successful handoff means Steam received the launch request. It does not prove
 that DayZ finished starting or joined the server. If connecting fails, check
 **Mods**, **Settings → Check health**, and the saved launch report.
 
-**Game version** in Settings switches between DayZ Stable and DayZ Experimental
-with separate favourites, server caches, mod sources and launch history.
-Experimental launch support is implemented on Linux and Windows. Install and
-launch Experimental through Steam once to complete its BattlEye setup before
-using WolfLauncher, then select **DayZ Experimental** in Settings.
+The server browser starts on **Stable**. Use its visible **Stable / Experimental**
+selector to browse either edition. Favourites and recent servers remain together,
+with edition tags. Before joining, WolfLauncher verifies the server's live game ID
+and selects that installation automatically; unresolved identity blocks the launch.
+Your Stable external-launcher preference is retained; Experimental uses native launching.
+
+Install **DayZ Experimental** in the Steam Library, launch it through Steam once to
+complete initial/BattlEye setup, close it, then use **Settings → Rescan installations**.
+Experimental can be browsed without an installation; saved EXP entries remain visible
+with installation guidance. Detection alone does not verify first-run setup.
 
 - **Linux:** WolfLauncher launches Experimental through Steam using app ID
   `1024020` and creates mod symlinks in the Experimental install pointing to the
@@ -120,7 +125,9 @@ using WolfLauncher, then select **DayZ Experimental** in Settings.
 The **Editor / Local Tools** tab provides DayZ Editor sessions and saved local
 development profiles. Select installed Workshop mods for your session and use
 the verification controls to check requirements before launching. DayZ Editor,
-CF and Dabs Framework form the Editor's automatic baseline.
+CF and Dabs Framework form the Editor's automatic baseline. Editor and local
+development profiles use **Stable**, independently of the server browser selection.
+Experimental support for this section is out of scope for now.
 
 Local server controls can use an existing server installation, a Steam-owned
 Windows server installation, or a SteamCMD installation at a chosen path.
@@ -233,3 +240,5 @@ Copyright © 2026 Andrew Hodgson trading as Wolf Forge.
 
 The vendored `dayz-linux-cli-launcher` is MIT-licensed; its licence and
 attribution remain in `external/dayz-linux-cli-launcher/`.
+
+Saved-data migration and restoration are described in the [combined browser validation notes](docs/COMBINED_BROWSER_VALIDATION.md#saved-data-and-restoration).

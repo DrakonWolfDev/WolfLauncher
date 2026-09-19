@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
 
 from .config import normalize_server_endpoint
 from .models import Server
+from .server_identity import saved_server_fields
 from .theme import set_monospace, set_ui_role
 from .ui_sections import set_disclosure_state
 
@@ -46,6 +47,7 @@ class PromoteServerDialog(QDialog):
 class EditCuratedServerDialog(QDialog):
     def __init__(self, parent, server: Server, title: str = "Edit a favourite server"):
         super().__init__(parent)
+        self._identity_source = server
         self.setWindowTitle(title)
         self.resize(440, 215)
 
@@ -105,6 +107,16 @@ class EditCuratedServerDialog(QDialog):
             self.query_port.value(),
         )
         return Server(
+            **saved_server_fields(
+                self._identity_source
+                if (host, game_port, query_port)
+                == (
+                    self._identity_source.host,
+                    self._identity_source.game_port,
+                    self._identity_source.query_port,
+                )
+                else {}
+            ),
             name=self.name.text().strip(),
             group=self.group.text().strip() or "Community",
             host=host,

@@ -204,8 +204,17 @@ class WorkshopResolutionCoordinator:
             [mod.workshop_id for mod in mods], install, force_update=force_update
         )
         window.workshop_subscription_worker = worker
-        worker.progress_ready.connect(window.update_workshop_subscription_progress)
-        worker.subscription_ready.connect(window.finish_workshop_subscription)
+        context = window.server_launch.context if hasattr(window, "server_launch") else None
+
+        def valid():
+            return context is None or window.server_launch.current(context, require_fresh=False)
+
+        worker.progress_ready.connect(
+            lambda result: window.update_workshop_subscription_progress(result) if valid() else None
+        )
+        worker.subscription_ready.connect(
+            lambda result: window.finish_workshop_subscription(result) if valid() else None
+        )
         worker.finished.connect(window.clear_workshop_subscription_worker)
         dialog.canceled.connect(window.stop_workshop_subscription_monitoring)
         window.launch_button.setEnabled(False)
@@ -215,6 +224,6 @@ class WorkshopResolutionCoordinator:
         window = self.window
         return (
             window.selected_steam_install()
-            if window.launch_engine_key() == "native"
+            if hasattr(window, "server_launch") or window.launch_engine_key() == "native"
             else best_install()
         )

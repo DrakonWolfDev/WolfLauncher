@@ -6,7 +6,6 @@ from pathlib import Path
 from .dayz_product import STABLE, DayZProduct
 from .platforms import current_platform
 
-
 STEAM_APP_ID_DAYZ = 221100
 DAYZ_PROCESS_PATTERNS = (
     "DayZ_x64.exe",

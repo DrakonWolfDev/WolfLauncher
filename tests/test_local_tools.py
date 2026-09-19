@@ -25,7 +25,6 @@ class LocalToolsTests(unittest.TestCase):
             ("123", "456"),
         )
 
-
     def test_parse_local_endpoint(self):
         self.assertEqual(parse_local_endpoint("192.168.1.25:2302"), ("192.168.1.25", 2302))
         with self.assertRaisesRegex(ValueError, "host:game-port"):

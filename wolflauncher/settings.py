@@ -10,7 +10,7 @@ SETTINGS_PATH = APP_DIR / "settings.json"
 FAVOURITES_PATH = APP_DIR / "favourites.json"
 CURATED_SERVERS_PATH = APP_DIR / "servers.yaml"
 DEFAULT_DISCOVERY_PROVIDER = "wolfapi_v1"
-SETTINGS_SCHEMA_VERSION = 9
+SETTINGS_SCHEMA_VERSION = 10
 
 
 def ensure_app_dir() -> None:
@@ -32,7 +32,7 @@ def save_json(path: Path, data: Any) -> None:
     serialized = json.dumps(data, indent=2) + "\n"
     # Validate the complete representation before replacing the live file.
     json.loads(serialized)
-    atomic_write_text(path, serialized)
+    atomic_write_text(path, serialized, backup=True)
 
 
 def load_settings() -> dict[str, Any]:
@@ -41,6 +41,15 @@ def load_settings() -> dict[str, Any]:
 
 
 def save_settings(data: dict[str, Any]) -> None:
+    if SETTINGS_PATH.exists():
+        try:
+            existing = json.loads(SETTINGS_PATH.read_text(encoding="utf-8"))
+            if not isinstance(existing, dict):
+                raise ValueError("settings must contain an object")
+        except (ValueError, UnicodeError) as exc:
+            raise OSError(
+                f"Settings contain damaged data. Repair or restore {SETTINGS_PATH} before saving."
+            ) from exc
     save_json(SETTINGS_PATH, normalize_settings(data))
 
 
@@ -74,12 +83,17 @@ def normalize_settings(data: Any) -> dict[str, Any]:
             migrated.setdefault("dayz_product", "stable")
         if version < 9 and migrated.get("discovery_provider") == "wolfapi":
             migrated["discovery_provider"] = DEFAULT_DISCOVERY_PROVIDER
+        if version < 10:
+            migrated.setdefault("hide_experimental", False)
+            migrated.setdefault("local_tool_product", migrated.get("dayz_product", "stable"))
         migrated["schema_version"] = SETTINGS_SCHEMA_VERSION
     return migrated
 
 
 def server_key(server) -> str:
-    return f"{server.host}:{server.game_port}:{server.query_port}:{server.name}"
+    from .server_identity import identity_key
+
+    return identity_key(server)
 
 
 def favourites_path(product_key: str = "stable") -> Path:
@@ -97,9 +111,20 @@ def curated_servers_path(product_key: str = "stable") -> Path:
 def load_favourites(product_key: str = "stable") -> set[str]:
     data = load_json(favourites_path(product_key), [])
     if isinstance(data, list):
-        return {str(item) for item in data}
+        return {normalize_favourite_key(str(item)) for item in data}
     return set()
 
 
 def save_favourites(keys: set[str], product_key: str = "stable") -> None:
     save_json(favourites_path(product_key), sorted(keys))
+
+
+def normalize_favourite_key(key: str) -> str:
+    """Legacy keys append a display name; names never identify a server."""
+    scope, separator, endpoint = key.partition("|")
+    if not separator:
+        endpoint, scope = scope, ""
+    parts = endpoint.split(":", 3)
+    if len(parts) >= 3 and parts[1].isdigit() and parts[2].isdigit():
+        endpoint = ":".join((parts[0].strip().lower(), parts[1], parts[2]))
+    return f"{scope}|{endpoint}" if separator else endpoint

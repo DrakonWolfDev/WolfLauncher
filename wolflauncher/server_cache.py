@@ -13,8 +13,9 @@ import yaml
 from .models import DiscoveredServer
 from .paths import user_data_dir
 from .persistence import ensure_private_directory
+from .server_identity import identity_fields, merge_identity, normalize_product
 
-SCHEMA_VERSION = 7
+SCHEMA_VERSION = 8
 SQLITE_BUSY_TIMEOUT_MS = 5000
 DATA_DIR = user_data_dir()
 SERVER_CACHE_PATH = DATA_DIR / "server_cache.sqlite3"
@@ -114,6 +115,9 @@ def _initialize_schema_v1(connection: sqlite3.Connection) -> None:
         CREATE TABLE IF NOT EXISTS discovered_servers (
             cache_key TEXT PRIMARY KEY,
             source TEXT NOT NULL DEFAULT 'discovered',
+            product TEXT NOT NULL DEFAULT 'unknown',
+            identity_state TEXT NOT NULL DEFAULT 'unknown',
+            identity_evidence TEXT NOT NULL DEFAULT '[]',
             display_name TEXT NOT NULL,
             server_name TEXT NOT NULL DEFAULT '',
             host TEXT NOT NULL,
@@ -170,18 +174,32 @@ def _initialize_schema_v1(connection: sqlite3.Connection) -> None:
     )
     connection.execute(
         "CREATE UNIQUE INDEX IF NOT EXISTS idx_discovered_servers_stable_server_id "
-        "ON discovered_servers(stable_server_id) WHERE stable_server_id != ''"
+        "ON discovered_servers(product, stable_server_id) WHERE stable_server_id != ''"
     )
     _initialize_alias_schema(connection)
+    _initialize_identity_indexes(connection)
     connection.execute(f"PRAGMA user_version = {SCHEMA_VERSION}")
+
+
+def _initialize_identity_indexes(connection):
+    connection.execute(
+        "CREATE INDEX IF NOT EXISTS idx_discovered_endpoint "
+        "ON discovered_servers(host, game_port, query_port)"
+    )
+    connection.execute(
+        "CREATE INDEX IF NOT EXISTS idx_discovered_product_name "
+        "ON discovered_servers(product, display_name COLLATE NOCASE)"
+    )
 
 
 def _initialize_alias_schema(connection: sqlite3.Connection) -> None:
     connection.execute(
         """
         CREATE TABLE IF NOT EXISTS discovered_server_aliases (
-            endpoint_id TEXT PRIMARY KEY,
+            endpoint_id TEXT NOT NULL,
+            product TEXT NOT NULL DEFAULT 'unknown',
             cache_key TEXT NOT NULL,
+            PRIMARY KEY(product, endpoint_id),
             FOREIGN KEY(cache_key) REFERENCES discovered_servers(cache_key)
                 ON UPDATE CASCADE ON DELETE CASCADE
         )
@@ -258,6 +276,30 @@ def _migrate(connection: sqlite3.Connection, current_version: int, target_versio
             connection.execute(f"ALTER TABLE discovered_servers ADD COLUMN {definition}")
         connection.execute("PRAGMA user_version = 7")
         current_version = 7
+    if current_version == 7 and target_version >= 8:
+        for definition in (
+            "product TEXT NOT NULL DEFAULT 'unknown'",
+            "identity_state TEXT NOT NULL DEFAULT 'unknown'",
+            "identity_evidence TEXT NOT NULL DEFAULT '[]'",
+        ):
+            connection.execute(f"ALTER TABLE discovered_servers ADD COLUMN {definition}")
+        # Historical source labels are hints, not proof of the live game.
+        connection.execute("DROP INDEX IF EXISTS idx_discovered_servers_stable_server_id")
+        connection.execute(
+            "CREATE UNIQUE INDEX idx_discovered_servers_stable_server_id "
+            "ON discovered_servers(product, stable_server_id) WHERE stable_server_id != ''"
+        )
+        connection.execute("ALTER TABLE discovered_server_aliases RENAME TO legacy_aliases")
+        connection.execute("DROP INDEX IF EXISTS idx_discovered_server_aliases_cache_key")
+        _initialize_alias_schema(connection)
+        connection.execute(
+            "INSERT INTO discovered_server_aliases(endpoint_id, cache_key) "
+            "SELECT endpoint_id, cache_key FROM legacy_aliases"
+        )
+        connection.execute("DROP TABLE legacy_aliases")
+        _initialize_identity_indexes(connection)
+        connection.execute("PRAGMA user_version = 8")
+        current_version = 8
     if current_version != target_version:
         raise RuntimeError(
             f"Unsupported server cache migration from version {current_version} to {target_version}."
@@ -265,27 +307,74 @@ def _migrate(connection: sqlite3.Connection, current_version: int, target_versio
 
 
 def upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> None:
-    _upsert_server(connection, server)
-    connection.commit()
+    with connection:
+        _upsert_server(connection, server)
 
 
 def replace_server_key(
     connection: sqlite3.Connection, old_cache_key: str, server: DiscoveredServer
 ) -> None:
     """Upsert an enriched row and remove its obsolete pre-correction key."""
-    _upsert_server(connection, server)
-    if old_cache_key and old_cache_key != server.cache_key:
-        connection.execute("DELETE FROM discovered_servers WHERE cache_key = ?", (old_cache_key,))
-    connection.commit()
+    with connection:
+        _upsert_server(connection, server)
+        if old_cache_key and old_cache_key != server.cache_key:
+            connection.execute(
+                "DELETE FROM discovered_servers WHERE cache_key = ?", (old_cache_key,)
+            )
 
 
 def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> None:
+    previous = get_server(connection, server.cache_key)
+    if previous:
+        server = replace(
+            server,
+            **merge_identity(previous, server),
+            endpoint_aliases=tuple(
+                dict.fromkeys((*server.endpoint_aliases, *previous.endpoint_aliases))
+            ),
+        )
+    others = connection.execute(
+        "SELECT * FROM discovered_servers WHERE host = ? AND game_port = ? "
+        "AND query_port = ? AND product != ? AND product != 'unknown'",
+        (server.host, server.game_port, server.query_port, server.product),
+    ).fetchall()
+    if server.product != "unknown":
+        for row in others:
+            other = _row_to_server(row)
+            merged = merge_identity(other, server)
+            connection.execute(
+                "UPDATE discovered_servers SET identity_state = ?, identity_evidence = ?, "
+                "required_mod_count = NULL, mod_manifest_hash = '', mod_metadata_status = '' "
+                "WHERE cache_key = ?",
+                (
+                    merged["identity_state"],
+                    json.dumps(merged["identity_evidence"]),
+                    other.cache_key,
+                ),
+            )
+            server = replace(
+                server,
+                **merge_identity(server, other),
+                required_mod_count=None,
+                mod_manifest_hash="",
+                mod_metadata_status="",
+            )
     if server.stable_server_id:
         existing = connection.execute(
-            "SELECT cache_key, game_time, day_acceleration, night_acceleration "
-            "FROM discovered_servers WHERE stable_server_id = ?",
-            (server.stable_server_id,),
+            "SELECT * FROM discovered_servers WHERE stable_server_id = ? AND product = ?",
+            (server.stable_server_id, server.product),
         ).fetchone()
+        if existing:
+            prior = _row_to_server(existing)
+            server = replace(
+                server,
+                **merge_identity(prior, server),
+                endpoint_aliases=tuple(
+                    dict.fromkeys(
+                        (*server.endpoint_aliases, *prior.endpoint_aliases, prior.cache_key)
+                    )
+                ),
+            )
         if existing and server.status_source != "local":
             server = replace(
                 server,
@@ -307,6 +396,7 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
     connection.execute(
         """
         INSERT INTO discovered_servers (
+            product, identity_state, identity_evidence,
             cache_key, source, display_name, server_name, host, game_port, query_port,
             map_name, players_current, players_max, ping_ms, version, password,
             modded, online, last_checked, last_seen, required_mod_count,
@@ -320,6 +410,7 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             day_acceleration, night_acceleration
         )
         VALUES (
+            :product, :identity_state, :identity_evidence,
             :cache_key, :source, :display_name, :server_name, :host, :game_port, :query_port,
             :map_name, :players_current, :players_max, :ping_ms, :version, :password,
             :modded, :online, :last_checked, :last_seen, :required_mod_count,
@@ -333,6 +424,8 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             :day_acceleration, :night_acceleration
         )
         ON CONFLICT(cache_key) DO UPDATE SET
+            identity_state = excluded.identity_state,
+            identity_evidence = excluded.identity_evidence,
             source = excluded.source,
             display_name = excluded.display_name,
             server_name = excluded.server_name,
@@ -379,26 +472,36 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
         """,
         _server_params(server),
     )
-    if server.stable_server_id:
-        aliases = {server.cache_key, *server.endpoint_aliases}
-        connection.execute(
-            "DELETE FROM discovered_server_aliases WHERE cache_key = ?",
-            (server.cache_key,),
-        )
-        connection.executemany(
-            """
-            INSERT INTO discovered_server_aliases (endpoint_id, cache_key)
-            VALUES (?, ?)
-            ON CONFLICT(endpoint_id) DO UPDATE SET cache_key = excluded.cache_key
-            """,
-            [(alias, server.cache_key) for alias in sorted(aliases) if alias],
-        )
+    aliases = {
+        server.cache_key,
+        f"{server.host}:{server.game_port}:{server.query_port}",
+        *server.endpoint_aliases,
+    }
+    for alias in aliases:
+        owner = connection.execute(
+            "SELECT cache_key FROM discovered_server_aliases WHERE product = ? AND endpoint_id = ?",
+            (server.product, alias),
+        ).fetchone()
+        if owner is not None and owner["cache_key"] != server.cache_key:
+            raise ValueError(f"Endpoint alias {alias!r} belongs to another server in this edition.")
+    connection.execute(
+        "DELETE FROM discovered_server_aliases WHERE cache_key = ?",
+        (server.cache_key,),
+    )
+    connection.executemany(
+        """
+        INSERT INTO discovered_server_aliases (endpoint_id, cache_key, product)
+        VALUES (?, ?, ?)
+        ON CONFLICT(product, endpoint_id) DO UPDATE SET cache_key = excluded.cache_key
+        """,
+        [(alias, server.cache_key, server.product) for alias in sorted(aliases) if alias],
+    )
 
 
 def upsert_servers(connection: sqlite3.Connection, servers: list[DiscoveredServer]) -> int:
-    for server in servers:
-        _upsert_server(connection, server)
-    connection.commit()
+    with connection:
+        for server in servers:
+            _upsert_server(connection, server)
     return len(servers)
 
 
@@ -419,23 +522,40 @@ def sync_source_servers(
     connection: sqlite3.Connection,
     source: str,
     servers: list[DiscoveredServer],
+    product: str | None = None,
+) -> tuple[int, int]:
+    with connection:
+        return _sync_source_servers(connection, source, servers, product)
+
+
+def _sync_source_servers(
+    connection: sqlite3.Connection,
+    source: str,
+    servers: list[DiscoveredServer],
+    product: str | None = None,
 ) -> tuple[int, int]:
     source = source.strip()
     if not source:
         raise ValueError("Discovery source is required.")
 
+    if product is not None and any(
+        server.product != normalize_product(product) for server in servers
+    ):
+        raise ValueError("Server identity does not match source sync scope.")
+    scope = "source = ?" + (" AND product = ?" if product is not None else "")
+    scope_params = (source, normalize_product(product)) if product is not None else (source,)
     normalized = [replace(server, source=source) for server in servers]
     keys = {server.cache_key for server in normalized}
     before = connection.execute(
-        "SELECT COUNT(*) FROM discovered_servers WHERE source = ?",
-        (source,),
+        f"SELECT COUNT(*) FROM discovered_servers WHERE {scope}",
+        scope_params,
     ).fetchone()[0]
     existing_stable_ids = {
-        row["stable_server_id"]
+        (row["product"], row["stable_server_id"])
         for row in connection.execute(
-            "SELECT stable_server_id FROM discovered_servers "
-            "WHERE source = ? AND stable_server_id != ''",
-            (source,),
+            "SELECT product, stable_server_id FROM discovered_servers "
+            f"WHERE {scope} AND stable_server_id != ''",
+            scope_params,
         ).fetchall()
     }
 
@@ -454,12 +574,12 @@ def sync_source_servers(
         )
 
     connection.execute(
-        """
+        f"""
         DELETE FROM discovered_servers
-        WHERE source = ?
+        WHERE {scope}
         AND cache_key NOT IN (SELECT cache_key FROM current_source_keys)
         """,
-        (source,),
+        scope_params,
     )
 
     existing_keys = {
@@ -471,7 +591,7 @@ def sync_source_servers(
     inserted = 0
     for server in normalized:
         if server.stable_server_id:
-            if server.stable_server_id not in existing_stable_ids:
+            if (server.product, server.stable_server_id) not in existing_stable_ids:
                 inserted += 1
             continue
         if server.cache_key in existing_keys:
@@ -481,26 +601,24 @@ def sync_source_servers(
         inserted += 1
 
     after = connection.execute(
-        "SELECT COUNT(*) FROM discovered_servers WHERE source = ?",
-        (source,),
+        f"SELECT COUNT(*) FROM discovered_servers WHERE {scope}",
+        scope_params,
     ).fetchone()[0]
     connection.execute("DELETE FROM current_source_keys")
-    connection.commit()
     removed = max(0, before + inserted - after)
     return inserted, removed
 
 
-def clear_source_servers(connection: sqlite3.Connection, source: str) -> int:
+def clear_source_servers(
+    connection: sqlite3.Connection, source: str, product: str | None = None
+) -> int:
     source = source.strip()
     if not source:
         raise ValueError("Discovery source is required.")
-    before = connection.execute(
-        "SELECT COUNT(*) FROM discovered_servers WHERE source = ?",
-        (source,),
-    ).fetchone()[0]
-    connection.execute("DELETE FROM discovered_servers WHERE source = ?", (source,))
-    connection.commit()
-    return int(before)
+    scope = "source = ?" + (" AND product = ?" if product is not None else "")
+    params = (source, normalize_product(product)) if product is not None else (source,)
+    with connection:
+        return connection.execute(f"DELETE FROM discovered_servers WHERE {scope}", params).rowcount
 
 
 def import_servers_from_file(connection: sqlite3.Connection, path: Path) -> int:
@@ -516,7 +634,11 @@ def load_discovered_servers(path: Path) -> list[DiscoveredServer]:
     return [_server_from_import_item(item, index) for index, item in enumerate(items, start=1)]
 
 
-def get_server(connection: sqlite3.Connection, cache_key: str) -> DiscoveredServer | None:
+def get_server(
+    connection: sqlite3.Connection, cache_key: str, product: str | None = None
+) -> DiscoveredServer | None:
+    if product is not None and normalize_product(product) != "unknown" and "|" not in cache_key:
+        cache_key = f"{normalize_product(product)}|{cache_key}"
     row = connection.execute(
         "SELECT * FROM discovered_servers WHERE cache_key = ?",
         (cache_key,),
@@ -527,18 +649,17 @@ def get_server(connection: sqlite3.Connection, cache_key: str) -> DiscoveredServ
 def get_server_by_endpoint_alias(
     connection: sqlite3.Connection,
     endpoint_id: str,
+    product: str | None = None,
 ) -> DiscoveredServer | None:
-    row = connection.execute(
-        """
-        SELECT discovered_servers.*
-        FROM discovered_server_aliases
-        JOIN discovered_servers
-            ON discovered_servers.cache_key = discovered_server_aliases.cache_key
-        WHERE discovered_server_aliases.endpoint_id = ?
-        """,
-        (endpoint_id,),
-    ).fetchone()
-    return _row_to_server(row) if row else None
+    clause = " AND discovered_server_aliases.product = ?" if product is not None else ""
+    params = (endpoint_id, normalize_product(product)) if product is not None else (endpoint_id,)
+    rows = connection.execute(
+        "SELECT discovered_servers.* FROM discovered_server_aliases "
+        "JOIN discovered_servers ON discovered_servers.cache_key = discovered_server_aliases.cache_key "
+        "WHERE discovered_server_aliases.endpoint_id = ?" + clause,
+        params,
+    ).fetchall()
+    return _row_to_server(rows[0]) if len(rows) == 1 else None
 
 
 def search_servers(
@@ -549,6 +670,7 @@ def search_servers(
     version: str = "",
     source: str = "",
     source_namespace: str = "",
+    products: tuple[str, ...] | None = None,
     style_terms: list[str] | None = None,
     modded: bool | None = None,
     hide_quality_flagged: bool = False,
@@ -564,6 +686,7 @@ def search_servers(
         version=version,
         source=source,
         source_namespace=source_namespace,
+        products=products,
         style_terms=style_terms,
         modded=modded,
         hide_quality_flagged=hide_quality_flagged,
@@ -593,6 +716,7 @@ def count_search_servers(
     version: str = "",
     source: str = "",
     source_namespace: str = "",
+    products: tuple[str, ...] | None = None,
     style_terms: list[str] | None = None,
     modded: bool | None = None,
     hide_quality_flagged: bool = False,
@@ -605,6 +729,7 @@ def count_search_servers(
         version=version,
         source=source,
         source_namespace=source_namespace,
+        products=products,
         style_terms=style_terms,
         modded=modded,
         hide_quality_flagged=hide_quality_flagged,
@@ -621,16 +746,21 @@ def count_search_servers(
     return int(row["count"])
 
 
-def cache_summary(connection: sqlite3.Connection) -> dict[str, int]:
+def cache_summary(
+    connection: sqlite3.Connection, products: tuple[str, ...] | None = None
+) -> dict[str, int]:
+    where, params = _search_where(products=products)
     row = connection.execute(
-        """
+        f"""
         SELECT
             COUNT(*) AS total,
             COALESCE(SUM(CASE WHEN online = 1 THEN 1 ELSE 0 END), 0) AS online,
             COALESCE(SUM(CASE WHEN TRIM(last_checked) != '' THEN 1 ELSE 0 END), 0) AS checked,
             COALESCE(SUM(CASE WHEN TRIM(last_seen) != '' THEN 1 ELSE 0 END), 0) AS seen
         FROM discovered_servers
-        """
+        {where}
+        """,
+        params,
     ).fetchone()
     return {
         "total": int(row["total"]),
@@ -640,20 +770,32 @@ def cache_summary(connection: sqlite3.Connection) -> dict[str, int]:
     }
 
 
-def distinct_values(connection: sqlite3.Connection, field: str, limit: int = 250) -> list[str]:
+def distinct_values(
+    connection: sqlite3.Connection,
+    field: str,
+    limit: int = 250,
+    products: tuple[str, ...] | None = None,
+) -> list[str]:
     column = FILTER_COLUMNS.get(field)
     if not column:
         raise ValueError(f"Unsupported distinct server field: {field}")
     limit = max(1, min(int(limit), 1000))
+    product_clause = (
+        " AND product IN (" + ",".join("?" for _ in products) + ")"
+        if products
+        else " AND 0"
+        if products is not None
+        else ""
+    )
     rows = connection.execute(
         f"""
         SELECT DISTINCT {column} AS value
         FROM discovered_servers
-        WHERE {column} IS NOT NULL AND TRIM({column}) != ''
+        WHERE {column} IS NOT NULL AND TRIM({column}) != '' {product_clause}
         ORDER BY {column} COLLATE NOCASE ASC
         LIMIT ?
         """,
-        (limit,),
+        (*[normalize_product(p) for p in products or ()], limit),
     ).fetchall()
     return [str(row["value"]) for row in rows]
 
@@ -665,6 +807,7 @@ def _search_where(
     version: str = "",
     source: str = "",
     source_namespace: str = "",
+    products: tuple[str, ...] | None = None,
     style_terms: list[str] | None = None,
     modded: bool | None = None,
     hide_quality_flagged: bool = False,
@@ -672,6 +815,9 @@ def _search_where(
 ) -> tuple[str, list[Any]]:
     clauses = []
     params: list[Any] = []
+    if products is not None:
+        clauses.append("product IN (" + ",".join("?" for _ in products) + ")" if products else "0")
+        params.extend(normalize_product(p) for p in products)
 
     text = text.strip()
     if text:
@@ -734,6 +880,8 @@ def _search_where(
 
 def _server_params(server: DiscoveredServer) -> dict[str, Any]:
     return {
+        **identity_fields(server),
+        "identity_evidence": json.dumps(server.identity_evidence),
         "cache_key": server.cache_key,
         "source": server.source,
         "display_name": server.name,
@@ -802,6 +950,7 @@ def _server_from_import_item(item: Any, index: int) -> DiscoveredServer:
         country_source = ""
 
     return DiscoveredServer(
+        **identity_fields(item),
         name=name,
         source=str(item.get("source") or "import"),
         server_name=str(item.get("server_name") or ""),
@@ -902,6 +1051,9 @@ def _quality_flags(value: Any) -> tuple[str, ...]:
 
 def _row_to_server(row: sqlite3.Row) -> DiscoveredServer:
     return DiscoveredServer(
+        product=row["product"],
+        identity_state=row["identity_state"],
+        identity_evidence=tuple(json.loads(row["identity_evidence"])),
         name=str(row["display_name"]),
         source=str(row["source"]),
         server_name=str(row["server_name"]),

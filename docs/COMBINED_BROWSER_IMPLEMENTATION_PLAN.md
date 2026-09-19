@@ -1,7 +1,9 @@
 # Combined Stable and Experimental browser and launch plan
 
-Status: Phase 0 complete; Phases 1–5 pending. A tested pure identity contract is
-available, but automatic routing and the combined browser are not yet integrated.
+Status: Phases 1–4 implemented with automated coverage; Phase 5 integration and
+release documentation implemented. **Manual release validation remains open** for
+the Linux/Windows runtime matrix. See the
+[implementation and validation record](COMBINED_BROWSER_VALIDATION.md).
 
 Phase 0 feasibility investigated on 15 September 2026: **launcher work can proceed
 without a WolfAPI contract change**, using live game identity to handle conflicting
@@ -9,17 +11,28 @@ directory labels. Combined `product=all` endpoints are already deployed. See
 [findings and evidence](PHASE0_PRODUCT_IDENTITY_FINDINGS.md) for the observed conflict,
 successful GameDig checks, final freshness/retry contract, and test results.
 
+## Revised requirements — 16 September 2026
+
+The browser starts on Stable and has a visible Stable / Experimental selector. It
+shows only the selected edition, so browser rows do not need EXP tags. Favourites
+and recent servers stay mixed and retain edition/readiness tags. The browser choice
+does not choose the launch product or the editor product. Experimental remains
+selectable when not installed, with setup guidance and joining disabled.
+
+Editor / Local Tools retains its original interface and uses Stable only.
+Experimental support for this section is out of scope for the current work.
+
 ## Goal and agreed behaviour
 
 WolfLauncher identifies each server's DayZ edition, checks mods against the correct
 installation, and launches that edition automatically. Users browse one directory
 and keep one visible collection of favourites and recent servers.
 
-- Both editions installed: show both in the browser by default, mark Experimental
-  servers **EXP**, and remember a **Hide Experimental** filter.
-- Experimental missing: omit known Experimental servers from general discovery and
-  hide the browser filter. Settings shows installation instructions and a rescan
-  action. A previous filter preference survives temporary uninstallation.
+- The server browser starts on **Stable** on each startup. A visible
+  **Stable / Experimental** selector shows only the chosen edition. Browser rows
+  need no edition badge. This selector never controls launch routing.
+- Experimental remains browsable when it is not installed. Setup guidance explains
+  installation and browser Join is disabled until detection succeeds.
 - Existing Experimental favourites and recent entries remain visible, labelled
   **EXP · Installation required**. Joining explains setup instead of launching Stable.
 - Setup instructions: install **DayZ Experimental** from the Steam Library, launch
@@ -30,29 +43,23 @@ and keep one visible collection of favourites and recent servers.
 - Unknown or conflicting identity is resolved before installation/mod preparation.
   If it cannot be resolved, explain the issue and offer retry; never silently use
   Stable or infer Experimental from a name or release number.
-- Local tools without a target server retain an explicit edition choice. This
-  choice does not control server joining or the combined browser.
+- Local tools without a target server use Stable independently of server
+  joining and the combined browser.
 
 ## Current implementation and scope
 
-The current code already defines both Steam products in `wolflauncher/dayz_product.py`,
-detects product-specific installations in `platform_detection.py`, and supports
-Experimental in `native_launcher.py`. Reuse these implementations.
+Both Steam products are defined in `dayz_product.py`. Product-specific detection
+and native launch preparation are reused. Server joining now resolves a fresh live
+identity and captures an immutable installation/context before mod preparation.
 
-The principal coupling is `LaunchFeatureMixin.dayz_product()`, which reads global
-settings. `SettingsFeatureMixin._apply_dayz_product_switch()` reloads favourites,
-replaces browser context, and changes mod/launch settings. Do not call that method
-automatically when selecting or joining a row.
+`server_launch_coordinator.py` owns request invalidation and stale callback guards.
+The Settings global game switch has been removed. The browser selector scopes
+discovery only; local profiles and Editor use Stable without an edition selector.
 
-`Server` and `DiscoveredServer` currently have no explicit product field. WolfAPI
-Experimental responses are checked for a `product` value, but the row converter
-does not preserve it. Discovery uses product-specific requests/source namespaces.
-Cache keys, favourite keys, and recent-history keys have different definitions;
-audit all three before changing identity semantics.
-
-Existing persisted state includes separate curated/favourite files per product,
-a shared discovery cache, and a shared recent-history file. In particular, history
-currently lacks a product field; do not assume it is already isolated by edition.
+Models, discovery workers, schema-8 cache records, saved profiles, and launch history
+carry identity/evidence. `saved_servers.py` combines the two legacy profiles without
+a startup rewrite. Legacy entries remain unknown until a successful live query;
+profile location, server names, and version numbers are not launch authority.
 
 This is an incremental refactor. Automatic game installation, automatic first-run
 completion, a replacement Workshop system, and redesigning unrelated UI are out of scope.
@@ -173,7 +180,7 @@ Work:
 4. Preserve stars across legacy name-based keys and new identity matching. Avoid
    losing a star after a server rename. Decide and test duplicate merging explicitly.
 5. Extend history entries with product/evidence as needed. Legacy history is unknown
-   until resolved. Add settings migration for filter preference and local-tool edition;
+   until resolved. Ignore legacy local-tool edition settings;
    preserve unrelated/unknown keys and existing Stable engine preference.
 6. Back up authoritative user files before any format rewrite. Make migrations
    repeatable and atomic; do not delete legacy files on first successful startup.
@@ -215,7 +222,7 @@ Tests (`test_platform_detection.py`, settings-health/controller/presenter suites
   selected Steam mode, inaccessible libraries, missing executable and stale manifest.
 - Rescan observes installation/removal without restart and rejects stale scan results.
 - Detection errors are distinct from confirmed absence; a temporary scan failure
-  does not erase favourites or a remembered filter preference.
+  does not erase favourites or remove the browser edition selector.
 - Setup text includes install, first Steam launch, close game, and rescan; UI never
   claims first-run completion based solely on a manifest/directory.
 
@@ -264,59 +271,38 @@ Gate / first useful milestone: automatic routing and saved-server badges work wi
 the existing browser arrangement. There is no remaining server launch decision
 based on the global edition setting.
 
-### Phase 4 — Combine discovery, queries, and presentation
+### Phase 4 — Scope discovery, queries, and presentation
 
-Work:
+Implemented behaviour:
 
-1. Use WolfAPI `product=all` when both installations are available, with `stable`
-   when Experimental is excluded. Use separate product requests only for providers
-   that need them. Combine results through product-aware cache queries, not by
-   invoking the Settings switch twice. Preserve separate filtered totals and global
-   coverage counts as described in the Phase 0 findings.
-2. Extend refresh workers/process messages and remote search/endpoint resolution with
-   product plus request generation. Preserve independent per-product refresh status.
-3. Apply one inclusion policy to displayed rows, counts, pagination, map/source filters,
-   and remote results. Count matching records before pagination; avoid page starvation
-   from concatenating two independently limited lists.
-4. Add accessible EXP labels in table/cards/details and a persisted Hide Experimental
-   toggle. Labels use text as well as colour. Filtering affects the general browser;
-   saved favourites/recent entries remain available with readiness labels.
-5. Handle partial provider failure explicitly: keep useful cached results with freshness
-   indicators, show which edition failed, and never erase a directory on timeout.
-6. Keep selection by identity. If the selected row is filtered out, clear its join
-   context or retain a clearly visible separate selection; choose one and test it.
-   Prefer clearing the browser selection and disabling Join.
+1. Request the selected `stable` or `experimental` directory and preserve explicit
+   product metadata. `product=all` remains available for manual identity resolution.
+   Keep selected-edition totals separate from global directory coverage.
+2. Carry edition generations through discovery, search, map and cache callbacks.
+   Reject responses for an old edition or obsolete search/filter combination.
+3. Use the same product/filter predicates for rows and matching counts before the
+   display limit. Scope map/source/version options and cache summaries by product.
+4. Default to Stable and keep the two-edition selector visible without row badges.
+   Mixed favourites/recent servers retain edition and installation-readiness tags.
+5. Preserve cached rows on provider errors. Refresh each edition independently.
+   A delayed old-edition worker cannot replace the current view.
+6. Preserve selection by identity; clearing/filtering the selection invalidates
+   outstanding join preparation.
 
-Tests (browser controller/presenter/table, workers, discovery-refresh and cache suites):
+Automated coverage includes product-scoped row/count queries, source sync, identity
+collisions, stale directory callbacks, edition switching, sorting/selection and
+mixed saved profiles. Performance evidence for 20,000 cached rows is recorded in
+[validation](COMBINED_BROWSER_VALIDATION.md). Runtime network outage and full user
+interaction checks remain in the manual release matrix.
 
-- Both available + fresh settings shows both; toggle removes only Experimental;
-  restarting preserves preference. Missing Experimental hides its general rows/toggle.
-- Uninstall/reinstall changes availability without losing the saved hide preference.
-- EXP favourites remain visible and cannot join when their installation is missing.
-- Text, map, population, quality, password/mod filters and source filtering compose
-  with product inclusion; counts and page boundaries match actual visible rows.
-- Same-name servers of different editions show correct badges and join targets;
-  provider ID/endpoint conflicts follow the Phase 0 policy.
-- Search request A finishing after B, filter changes during refresh, cancellation,
-  and a delayed Experimental response cannot replace the current view incorrectly.
-- One directory times out while the other succeeds: successful rows appear, cache
-  for the failed directory survives, and retry does not duplicate rows.
-- A verified empty result clears only the intended source/product scope.
-- Unknown rows are not falsely labelled Stable/EXP; joining still resolves identity.
-- Refresh and sorting preserve selection identity; hiding the selected row disables
-  Join and invalidates outstanding preparation for that selection.
-- Record baseline rendering/query timing on a realistic cached dataset, then compare
-  combined data of the same total size. Set an explicit acceptable budget before
-  merging; assert bounded concurrency/requests and no per-row Steam scanning.
-
-Gate: one browser supports both editions, all visible counts/filters agree, and the
-automatic routing milestone remains green.
+Gate: one browser supports both editions independently; rows, counts and filters
+agree, and automatic routing tests remain green.
 
 ### Phase 5 — Retire global server mode and complete release validation
 
 Work:
 
-1. Remove the server-browser edition switch and global Experimental-mode warning.
+1. Remove the global Settings game-edition switch and Experimental-mode warning.
    Replace Settings with availability/setup, retaining a clearly scoped local-tools
    edition selector where necessary. Remove obsolete profile-switch worker plumbing
    only after auditing callers.
@@ -341,10 +327,10 @@ must not be required for ordinary CI. Use Qt offscreen mode in headless environm
 Run focused suites for each phase, then the existing CI checks at integration gates:
 
 ```bash
-QT_QPA_PLATFORM=offscreen PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest discover -v
-.venv/bin/ruff format --check wolflauncher tests main.py scripts/render-windows-icon.py
-.venv/bin/ruff check wolflauncher tests main.py scripts/render-windows-icon.py
-.venv/bin/mypy wolflauncher/paths.py wolflauncher/persistence.py wolflauncher/redaction.py wolflauncher/secret_store.py
+QT_QPA_PLATFORM=offscreen PYTHONDONTWRITEBYTECODE=1 venv/bin/python -m unittest discover -v
+venv/bin/ruff format --check wolflauncher tests main.py scripts/render-windows-icon.py
+venv/bin/ruff check wolflauncher tests main.py scripts/render-windows-icon.py
+venv/bin/mypy wolflauncher/paths.py wolflauncher/persistence.py wolflauncher/redaction.py wolflauncher/secret_store.py
 ```
 
 Use the Windows virtual-environment equivalent on Windows. Follow the current CI
@@ -363,10 +349,10 @@ compatible with the installed build; report that separately from command correct
 | --- | --- |
 | Stable only | Stable directory usable; Settings gives Experimental setup; saved EXP entry remains but cannot launch |
 | Experimental only | Experimental usable without a Stable game install when existing mod-source prerequisites are met; missing prerequisites explained |
-| Both installed | Combined rows and EXP badge; join Stable, EXP, Stable without visiting Settings |
+| Both installed | Stable default; toggle to EXP and back; join Stable, EXP, Stable without visiting Settings |
 | Separate Steam libraries | Each join uses its own game path and the intended Workshop source |
 | Experimental freshly installed | Setup instructions remain accurate; incomplete first-run setup is not reported as verified ready |
-| Install/rescan and uninstall/rescan | Rows/toggle/readiness update; favourites and filter preference survive |
+| Install/rescan and uninstall/rescan | Readiness updates; selector and mixed favourites remain available |
 | Manual EXP favourite added while formerly in Stable mode | Resolves to EXP, keeps its star after restart, launches EXP |
 | Offline/unknown/conflicting manual server | Clear retry/error; no guessed edition and no wrong-game launch |
 | Vanilla and modded server of each edition | Correct preflight and mod paths; no cross-edition reuse |
@@ -375,22 +361,24 @@ compatible with the installed build; report that separately from command correct
 | Existing user upgrade | Both profiles and recent records recoverable; no lost stars; legacy ambiguous records resolve before joining |
 | Preview, favourite, recent, browser Join | All paths agree on edition and installation |
 | Game already running | Second launch blocked with existing actionable guidance |
-| Local tools and Stable external engine | Explicit tool edition and Stable preference still work after EXP joining |
+| Local tools and Stable external engine | Stable tools and engine preference still work after EXP joining |
 
 ## Definition of done
 
 - [x] Phase 0 identity contract and representative evidence are recorded.
-- [ ] No release-number or server-name heuristic selects an edition.
-- [ ] Models, cache, favourites, aliases, workers, and history preserve identity.
-- [ ] Migration/retry/failure tests preserve user data; restoration is documented.
-- [ ] Every server launch path selects its context before mods and uses it through handoff.
-- [ ] Stale callbacks and cached mod results cannot cross launch contexts.
-- [ ] Missing Experimental provides setup guidance and preserves saved entries.
-- [ ] One browser displays both editions with EXP badges and a remembered filter.
-- [ ] Remote/local filtering, counts, pagination, and partial refresh failures agree.
-- [ ] Global server mode is retired; local tools retain explicit edition control.
-- [ ] Automated gates pass and the manual matrix has recorded outcomes/limitations.
-- [ ] README/help and release notes describe the delivered behaviour accurately.
+- [x] No release-number or server-name heuristic selects an edition.
+- [x] Models, cache, favourites, aliases, workers, and history preserve identity.
+- [x] Migration/retry/failure tests preserve user data; restoration is documented.
+- [x] Server launch entry points select a context before mods and carry it through handoff; runtime matrix pending.
+- [x] Request/context guards reject stale callbacks and cached mod results, with regression coverage.
+- [x] Missing Experimental provides setup guidance and preserves saved entries.
+- [x] Browser defaults to Stable with a visible Stable / Experimental selector; favourites stay mixed.
+- [x] Edition-scoped queries, counts and stale-response guards are implemented and covered by automated tests.
+- [x] Global server mode is retired; local tools remain Stable-only.
+- [x] Automated gates pass; commands, results and limitations are recorded in the validation notes.
+- [ ] Complete the real-game manual release matrix on Linux and Windows.
+- [x] Restore the original Editor / Local Tools interface; Experimental tools are out of scope.
+- [x] README/help and release notes describe the delivered behaviour accurately.
 
 Completion evidence should include implementation commits, test commands/results,
 manual matrix results, migration notes, and any remaining external dependency.

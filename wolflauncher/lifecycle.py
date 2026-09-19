@@ -26,6 +26,10 @@ WORKER_ATTRIBUTES = (
 )
 
 WORKER_COLLECTION_ATTRIBUTES = (
+    "availability_workers",
+    "identity_workers",
+    "context_mod_workers",
+    "preflight_workers",
     "selection_enrichment_workers",
     "browser_mod_workers",
 )

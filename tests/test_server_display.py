@@ -2,9 +2,9 @@ import unittest
 
 from wolflauncher.server_display import (
     display_map_name,
-    map_filter_key,
     display_required_mod_count,
     display_server_flags,
+    map_filter_key,
     ping_severity,
 )
 

@@ -1,8 +1,8 @@
+import os
 import re
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from html.parser import HTMLParser
-import os
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
@@ -53,7 +53,9 @@ def fetch_workshop_page_required_items(workshop_id: str) -> tuple[str, ...]:
     if not str(workshop_id).isdigit():
         return ()
     try:
-        page = fetch_html(WORKSHOP_URL.format(mod_id=workshop_id), timeout=10, max_bytes=2 * 1024 * 1024)
+        page = fetch_html(
+            WORKSHOP_URL.format(mod_id=workshop_id), timeout=10, max_bytes=2 * 1024 * 1024
+        )
     except HttpClientError:
         return ()
     parser = _WorkshopRequiredItemsParser()
@@ -115,6 +117,8 @@ class ModCheckResult:
     steam_context: str = ""
     workshop_dir: str = ""
     workshop_state_error: str = ""
+    request_id: str = ""
+    launch_context_key: tuple = ()
 
     @property
     def missing_mods(self) -> list[RequiredMod]:
@@ -272,10 +276,15 @@ def cached_workshop_dependency_graphs(
     ready graphs here means one new cache miss cannot hide dependencies already
     known for another selected mod.
     """
-    roots = tuple(dict.fromkeys(str(item).strip() for item in workshop_ids if str(item).strip().isdigit()))
+    roots = tuple(
+        dict.fromkeys(str(item).strip() for item in workshop_ids if str(item).strip().isdigit())
+    )
     if not roots:
         return {}, ()
-    endpoint = os.environ.get("WOLFLAUNCHER_WOLFAPI_WORKSHOP_DEPENDENCIES_URL", "") or WOLFAPI_WORKSHOP_DEPENDENCIES_URL
+    endpoint = (
+        os.environ.get("WOLFLAUNCHER_WOLFAPI_WORKSHOP_DEPENDENCIES_URL", "")
+        or WOLFAPI_WORKSHOP_DEPENDENCIES_URL
+    )
     try:
         query = "&".join(f"ids={item}" for item in roots)
         payload = fetch_json(f"{endpoint}?{query}", timeout=2)
@@ -301,7 +310,9 @@ def cached_workshop_dependency_graphs(
     return ready_graphs, tuple(missing)
 
 
-def cached_workshop_dependencies(workshop_ids) -> tuple[tuple[str, ...], dict[str, dict[str, Any]]] | None:
+def cached_workshop_dependencies(
+    workshop_ids,
+) -> tuple[tuple[str, ...], dict[str, dict[str, Any]]] | None:
     """Read a completely ready WolfAPI graph set for callers needing one result."""
     cached = cached_workshop_dependency_graphs(workshop_ids)
     if cached is None:
@@ -310,7 +321,9 @@ def cached_workshop_dependencies(workshop_ids) -> tuple[tuple[str, ...], dict[st
     if missing:
         return None
     resolved, metadata = [], {}
-    for root in tuple(dict.fromkeys(str(item).strip() for item in workshop_ids if str(item).strip().isdigit())):
+    for root in tuple(
+        dict.fromkeys(str(item).strip() for item in workshop_ids if str(item).strip().isdigit())
+    ):
         graph_resolved, graph_metadata = graphs[root]
         for item in graph_resolved:
             if item not in resolved:
@@ -327,7 +340,8 @@ def contribute_workshop_dependency_graph(
     if not root.isdigit():
         return
     dependencies = [
-        item for item in dict.fromkeys(str(item).strip() for item in resolved)
+        item
+        for item in dict.fromkeys(str(item).strip() for item in resolved)
         if item.isdigit() and item != root
     ][:500]
     safe_metadata = {
@@ -338,7 +352,10 @@ def contribute_workshop_dependency_graph(
         for item, detail in metadata.items()
         if str(item).isdigit() and str(item) in {root, *dependencies} and isinstance(detail, dict)
     }
-    endpoint = os.environ.get("WOLFLAUNCHER_WOLFAPI_WORKSHOP_DEPENDENCIES_URL", "") or WOLFAPI_WORKSHOP_DEPENDENCIES_URL
+    endpoint = (
+        os.environ.get("WOLFLAUNCHER_WOLFAPI_WORKSHOP_DEPENDENCIES_URL", "")
+        or WOLFAPI_WORKSHOP_DEPENDENCIES_URL
+    )
     try:
         post_json(
             endpoint,
