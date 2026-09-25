@@ -32,7 +32,8 @@ class AboutFeatureTests(unittest.TestCase):
         self.assertTrue(licence.openExternalLinks())
         self.assertIn("https://choosealicense.com/licenses/agpl-3.0/", licence.text())
         self.assertIn(f"Version {__version__}", labels)
-        self.assertIn("© 2026 Andrew Hodgson t/a Wolf Forge", labels)
+        self.assertIn("© 2026 Wolf Forge", labels)
+        self.assertIn("A WOLF FORGE PROJECT 🐾", labels)
 
 
 if __name__ == "__main__":

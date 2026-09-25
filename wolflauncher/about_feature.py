@@ -82,10 +82,15 @@ class AboutFeatureMixin:
         set_ui_role(version, "aboutMetadata")
         card_layout.addWidget(version)
 
-        copyright_notice = QLabel("© 2026 Andrew Hodgson t/a Wolf Forge")
+        copyright_notice = QLabel("© 2026 Wolf Forge")
         copyright_notice.setAlignment(Qt.AlignCenter)
         set_ui_role(copyright_notice, "aboutCopyright")
         card_layout.addWidget(copyright_notice)
+
+        project_signature = QLabel("A WOLF FORGE PROJECT 🐾")
+        project_signature.setAlignment(Qt.AlignCenter)
+        set_ui_role(project_signature, "aboutCopyright")
+        card_layout.addWidget(project_signature)
 
         layout.addWidget(card)
         return widget
