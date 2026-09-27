@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QProcess, QTimer
 from PySide6.QtWidgets import QApplication
 
 from wolflauncher import app
@@ -63,7 +63,7 @@ class LaunchDialogModuleTests(unittest.TestCase):
 
         with (
             patch(
-                "wolflauncher.launch_dialogs.dayz_process_check",
+                "wolflauncher.launch_dialogs.dayz_game_process_check",
                 return_value=ProcessCheck(True, "Detected known DayZ process: DayZ_x64.exe"),
             ),
             patch(
@@ -84,3 +84,43 @@ class LaunchDialogModuleTests(unittest.TestCase):
 
         self.assertFalse(dialog.isVisible())
         self.assertEqual(minimized, [True])
+
+    def test_direct_battleye_launch_offers_guarded_retry_after_stall(self):
+        dialog = PreflightLaunchDialog(None, "Example")
+        dialog.command = [r"C:\DayZ Exp\DayZ_BE.exe", "0", "1", "1"]
+        dialog.command_text = format_launch_command(dialog.command)
+        dialog.process_check_attempt = dialog.BATTLEYE_STALL_ATTEMPTS - 1
+        dialog.show()
+
+        with (
+            patch(
+                "wolflauncher.launch_dialogs.dayz_game_process_check",
+                return_value=ProcessCheck(False, "No DayZ game process detected"),
+            ),
+            patch(
+                "wolflauncher.launch_dialogs.dayz_battleye_process_check",
+                return_value=ProcessCheck(True, "Detected BattlEye bootstrap process: DayZ_BE.exe"),
+            ),
+            patch("wolflauncher.launch_dialogs.QTimer.singleShot"),
+        ):
+            dialog.check_dayz_process()
+
+        self.assertTrue(dialog.retry_button.isVisible())
+        self.assertIn("appears stalled", dialog.output.toPlainText())
+
+    def test_retry_stops_only_the_owned_battleye_process(self):
+        dialog = PreflightLaunchDialog(None, "Example")
+        dialog.command = [r"C:\DayZ Exp\DayZ_BE.exe", "0", "1", "1"]
+
+        with (
+            patch.object(dialog.process, "state", return_value=QProcess.Running),
+            patch.object(dialog.process, "terminate") as terminate,
+            patch("wolflauncher.launch_dialogs.QTimer.singleShot") as single_shot,
+        ):
+            dialog.retry_battleye_launch()
+
+        terminate.assert_called_once_with()
+        self.assertTrue(dialog.retrying_battleye)
+        single_shot.assert_called_once_with(
+            dialog.BATTLEYE_STOP_TIMEOUT_MS, dialog._kill_stalled_battleye_if_needed
+        )

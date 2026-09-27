@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Windows BattlEye launches now wait for the real `DayZ_x64.exe` client instead
+  of treating the `DayZ_BE.exe` bootstrapper as a completed start. If that
+  bootstrapper remains stalled for 30 seconds, the Connect dialog offers to stop
+  only WolfLauncher's launch attempt and retry it.
 - The server browser now starts on Stable with a visible Stable / Experimental
   selector. Favourites and recent servers stay mixed with edition/readiness tags.
 - Server joins verify the live game ID and carry the selected installation through

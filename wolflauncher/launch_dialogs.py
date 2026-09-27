@@ -15,7 +15,11 @@ from PySide6.QtWidgets import (
 )
 
 from .diagnostics import format_launch_output_report
-from .platform_detection import dayz_process_check
+from .platform_detection import (
+    dayz_battleye_process_check,
+    dayz_game_process_check,
+    dayz_process_check,
+)
 from .theme import set_monospace, set_ui_role
 
 POST_HANDOFF_PROCESS_CHECK_INTERVAL_MS = 5000
@@ -164,6 +168,8 @@ class PreflightLaunchDialog(QDialog):
 
     PROCESS_CHECK_INTERVAL_MS = 2000
     PROCESS_CHECK_ATTEMPTS = 30
+    BATTLEYE_STALL_ATTEMPTS = 15
+    BATTLEYE_STOP_TIMEOUT_MS = 2000
     SUCCESS_CLOSE_DELAY_MS = 3000
 
     def __init__(self, parent, server_name: str):
@@ -178,6 +184,9 @@ class PreflightLaunchDialog(QDialog):
         self.process_check_attempt = 0
         self.dayz_detected = False
         self.command_text = ""
+        self.command = []
+        self.battleye_stall_reported = False
+        self.retrying_battleye = False
 
         layout = QVBoxLayout(self)
         intro = QLabel(f"Preparing <b>{server_name}</b>")
@@ -205,7 +214,11 @@ class PreflightLaunchDialog(QDialog):
         buttons = QHBoxLayout()
         self.close_button = QPushButton("Cancel")
         self.close_button.clicked.connect(self.close)
+        self.retry_button = QPushButton("Stop stalled BattlEye and retry")
+        self.retry_button.setVisible(False)
+        self.retry_button.clicked.connect(self.retry_battleye_launch)
         buttons.addStretch(1)
+        buttons.addWidget(self.retry_button)
         buttons.addWidget(self.close_button)
         layout.addLayout(buttons)
 
@@ -228,10 +241,19 @@ class PreflightLaunchDialog(QDialog):
         self.close_button.setText("Close")
 
     def start_launch(self, command: list[str]):
+        self.command = list(command)
         self.command_text = format_launch_command(command)
         self.output.append("Starting Steam launch handoff…")
         self.set_complete("launcher", "Sending the launch instructions to Steam…")
         self.process.start(command[0], command[1:])
+        if self._is_direct_battleye_launch():
+            self.process_check_attempt = 0
+            self.battleye_stall_reported = False
+            self.retry_button.setVisible(False)
+            QTimer.singleShot(self.PROCESS_CHECK_INTERVAL_MS, self.check_dayz_process)
+
+    def _is_direct_battleye_launch(self) -> bool:
+        return bool(self.command) and self.command[0].lower().endswith("dayz_be.exe")
 
     def copyable_output_text(self) -> str:
         return format_launch_output_report(self.command_text, self.output.toPlainText())
@@ -248,6 +270,16 @@ class PreflightLaunchDialog(QDialog):
 
     def handle_finished(self, exit_code: int, _exit_status):
         self.read_output()
+        if self.retrying_battleye:
+            self.retrying_battleye = False
+            self.output.append("Stopped the stalled BattlEye bootstrap. Retrying launch…")
+            self.process_check_attempt = 0
+            self.battleye_stall_reported = False
+            self.retry_button.setVisible(False)
+            self.retry_button.setEnabled(True)
+            self.set_working("game", "Retrying BattlEye and waiting for DayZ…")
+            self.process.start(self.command[0], self.command[1:])
+            return
         if exit_code != 0:
             self.output.append(f"Steam launch handoff exited with code {exit_code}.")
             self.set_failed("launcher", f"Steam launch handoff exited with code {exit_code}.")
@@ -256,14 +288,15 @@ class PreflightLaunchDialog(QDialog):
         self.output.append("Steam accepted the launch handoff.")
         self.set_working("game", "Steam accepted the launch. Waiting for the DayZ process…")
         self.emit_launch_report()
-        self.process_check_attempt = 0
-        QTimer.singleShot(self.PROCESS_CHECK_INTERVAL_MS, self.check_dayz_process)
+        if not self._is_direct_battleye_launch():
+            self.process_check_attempt = 0
+            QTimer.singleShot(self.PROCESS_CHECK_INTERVAL_MS, self.check_dayz_process)
 
     def check_dayz_process(self):
         if self.dayz_detected:
             return
         self.process_check_attempt += 1
-        check = dayz_process_check()
+        check = dayz_game_process_check()
         if check.running:
             self.dayz_detected = True
             self.output.append(f"DayZ process check: {check.detail}")
@@ -276,6 +309,24 @@ class PreflightLaunchDialog(QDialog):
             self.emit_launch_report()
             QTimer.singleShot(self.SUCCESS_CLOSE_DELAY_MS, self.close_and_minimize_launcher)
             return
+        battleye = dayz_battleye_process_check()
+        if (
+            self._is_direct_battleye_launch()
+            and battleye.running
+            and self.process_check_attempt >= self.BATTLEYE_STALL_ATTEMPTS
+            and not self.battleye_stall_reported
+        ):
+            self.battleye_stall_reported = True
+            self.retry_button.setEnabled(True)
+            self.retry_button.setVisible(True)
+            self.detail.setText(
+                "BattlEye is still running, but the DayZ game client has not appeared. "
+                "You can stop only this launch attempt and retry it."
+            )
+            self.output.append(
+                "BattlEye bootstrap appears stalled: DayZ_x64.exe was not detected after 30 seconds."
+            )
+            self.emit_launch_report()
         if self.process_check_attempt < self.PROCESS_CHECK_ATTEMPTS:
             QTimer.singleShot(self.PROCESS_CHECK_INTERVAL_MS, self.check_dayz_process)
             return
@@ -286,6 +337,20 @@ class PreflightLaunchDialog(QDialog):
         )
         self.output.append("No known DayZ process was detected within 60 seconds.")
         self.emit_launch_report()
+
+    def retry_battleye_launch(self):
+        if not self._is_direct_battleye_launch() or self.process.state() == QProcess.NotRunning:
+            return
+        self.retry_button.setEnabled(False)
+        self.retrying_battleye = True
+        self.output.append("Stopping the stalled BattlEye bootstrap at your request…")
+        self.process.terminate()
+        QTimer.singleShot(self.BATTLEYE_STOP_TIMEOUT_MS, self._kill_stalled_battleye_if_needed)
+
+    def _kill_stalled_battleye_if_needed(self):
+        if self.retrying_battleye and self.process.state() != QProcess.NotRunning:
+            self.output.append("BattlEye did not stop cleanly; ending this launch attempt now.")
+            self.process.kill()
 
     def close_and_minimize_launcher(self):
         """Complete a verified handoff without leaving an extra window on screen."""

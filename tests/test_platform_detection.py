@@ -9,6 +9,8 @@ from wolflauncher.platform_detection import (
     SteamInstall,
     best_install,
     best_install_from,
+    dayz_battleye_process_check,
+    dayz_game_process_check,
     dayz_process_check,
     detect_steam,
     install_label,
@@ -481,6 +483,17 @@ class PlatformDetectionTests(unittest.TestCase):
 
         self.assertFalse(check.running)
         self.assertEqual(check.detail, "No known DayZ process detected")
+
+    @patch("wolflauncher.platform_detection._matching_process_lines")
+    def test_game_and_battleye_process_checks_are_independent(self, matching):
+        matching.side_effect = [["DayZ_BE.exe"], ["DayZ_BE.exe"]]
+
+        game = dayz_game_process_check()
+        battleye = dayz_battleye_process_check()
+
+        self.assertFalse(game.running)
+        self.assertTrue(battleye.running)
+        self.assertIn("DayZ_BE.exe", battleye.detail)
 
     @unittest.skipIf(os.name == "nt", "Linux pgrep behavior is validated on Linux")
     @patch("wolflauncher.platforms.linux.subprocess.run")

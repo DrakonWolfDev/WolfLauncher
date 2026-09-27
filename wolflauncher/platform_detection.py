@@ -11,6 +11,8 @@ DAYZ_PROCESS_PATTERNS = (
     "DayZ_x64.exe",
     "DayZ_BE.exe",
 )
+DAYZ_GAME_PROCESS_PATTERNS = ("DayZ_x64.exe",)
+DAYZ_BATTLEYE_PROCESS_PATTERNS = ("DayZ_BE.exe",)
 
 
 @dataclass
@@ -369,6 +371,33 @@ def dayz_process_check() -> ProcessCheck:
     if not names:
         return ProcessCheck(False, "No known DayZ process detected")
     detail = "Detected known DayZ process: " + ", ".join(names)
+    if len(lines) > len(names):
+        detail += f" ({len(lines)} matching process lines)"
+    return ProcessCheck(True, detail)
+
+
+def dayz_game_process_check() -> ProcessCheck:
+    """Report only the actual game client, not its BattlEye bootstrapper."""
+    return _named_process_check(DAYZ_GAME_PROCESS_PATTERNS, "DayZ game")
+
+
+def dayz_battleye_process_check() -> ProcessCheck:
+    """Report the BattlEye bootstrapper independently from the game client."""
+    return _named_process_check(DAYZ_BATTLEYE_PROCESS_PATTERNS, "BattlEye bootstrap")
+
+
+def _named_process_check(patterns: tuple[str, ...], label: str) -> ProcessCheck:
+    lines = _matching_process_lines(patterns)
+    if not lines:
+        return ProcessCheck(False, f"No {label} process detected")
+    names = [
+        pattern
+        for pattern in patterns
+        if any(pattern.lower() in line.lower() for line in lines)
+    ]
+    if not names:
+        return ProcessCheck(False, f"No {label} process detected")
+    detail = f"Detected {label} process: " + ", ".join(names)
     if len(lines) > len(names):
         detail += f" ({len(lines)} matching process lines)"
     return ProcessCheck(True, detail)
