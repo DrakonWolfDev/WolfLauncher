@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Added a checksum-pinned Linux AppImage build that bundles Python, Qt, Node.js
+  and GameDig and performs an off-screen packaged startup smoke test.
 - Windows BattlEye launches now wait for the real `DayZ_x64.exe` client instead
   of treating the `DayZ_BE.exe` bootstrapper as a completed start. If that
   bootstrapper remains stalled for 30 seconds, the Connect dialog offers to stop

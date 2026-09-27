@@ -2,7 +2,8 @@
 
 A short, repeatable build guide for the two supported build platforms:
 
-- **Linux:** use the distro-neutral user-local installer, or build a native-architecture Debian package (`.deb`).
+- **Linux:** use the distro-neutral user-local installer, build a portable
+  AppImage, or build a native-architecture Debian package (`.deb`).
 - **Windows:** build a portable ZIP, then optionally a per-user Setup installer.
 
 > [!important]
@@ -58,6 +59,44 @@ by the maintainer. See [Installing on Linux](docs/INSTALL_LINUX.md).
 
 Run `./scripts/wolflauncher-install.sh` from the source checkout. The `.deb`
 build below remains specific to Debian/Ubuntu-family systems.
+
+## Linux — AppImage build
+
+The AppImage bundles Python, Qt, Node.js and GameDig into one executable. Build
+it on the oldest glibc-based Linux baseline you intend to support: AppImage
+removes package-manager dependencies, but it does not make a binary compatible
+with glibc versions older than the build host.
+
+Install the runtime and AppImage build dependencies:
+
+```bash
+python3 -m venv venv
+venv/bin/python -m pip install -r requirements.txt -r requirements-appimage.txt
+./scripts/build-appimage.sh
+```
+
+The script downloads checksum-pinned Node.js 20.20.2, appimagetool 1.9.1 and
+the AppImage type-2 runtime, builds a PyInstaller payload, runs an off-screen
+packaged startup smoke test, and writes these files under `dist/`:
+
+```text
+WolfLauncher-<version>-x86_64.AppImage
+WolfLauncher-<version>-x86_64.AppImage.sha256
+```
+
+Run it with:
+
+```bash
+chmod +x dist/WolfLauncher-*.AppImage
+./dist/WolfLauncher-*.AppImage
+```
+
+Verify its checksum with:
+
+```bash
+cd dist
+sha256sum --check WolfLauncher-*.AppImage.sha256
+```
 
 ## Linux — Debian package build
 

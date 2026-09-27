@@ -1,0 +1,3 @@
+# Linux-only tooling used to freeze the AppImage payload.
+PyInstaller==6.21.0
+pyinstaller-hooks-contrib==2026.6
