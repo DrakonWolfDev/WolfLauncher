@@ -79,6 +79,11 @@ jobs:
           cp "dist/wolflauncher-${version}.tar.gz" "wolflauncher-${version}-installer-source.tar.gz"
           sha256sum "wolflauncher-${version}-installer-source.tar.gz" > "wolflauncher-${version}-installer-source.tar.gz.sha256"
 
+      - name: Install Qt runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libegl1 libxcb-cursor0 libxkbcommon0 libdbus-1-3
+
       - name: Build AppImage-backed user installer
         run: |
           python3 -m pip install -r requirements.txt -r requirements-appimage.txt
