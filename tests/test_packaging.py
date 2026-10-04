@@ -17,7 +17,7 @@ class PackagingMetadataTests(unittest.TestCase):
         text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
         self.assertIn('version = {attr = "wolflauncher.__version__"}', text)
         self.assertNotIn('version = "0.9.0b1"', text)
-        self.assertEqual(wolflauncher.__version__, "0.9.0b1")
+        self.assertEqual(wolflauncher.__version__, "0.9.0b2")
 
     def test_wheel_declares_server_query_dependency_and_map_metadata(self):
         text = (ROOT / "pyproject.toml").read_text(encoding="utf-8")

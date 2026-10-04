@@ -101,6 +101,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: ${{ github.ref_name }}
+          prerelease: true
           generate_release_notes: false
           files: |
             dist/WolfLauncher-*-linux-x86_64-installer.tar.gz

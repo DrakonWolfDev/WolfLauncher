@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.9.0b2 — 2026-10-04
+
 - The Linux user-local installer can now install a bundled AppImage without
   downloading Python or Node dependencies. Release bundles include permanent
   launch/uninstall commands, desktop-menu integration and an uninstall action.
