@@ -7,3 +7,9 @@ Icon=wolflauncher
 Terminal=false
 Categories=Game;
 StartupNotify=true
+Actions=Uninstall;
+
+[Desktop Action Uninstall]
+Name=Uninstall WolfLauncher
+Exec=wolflauncher-uninstall
+Terminal=true

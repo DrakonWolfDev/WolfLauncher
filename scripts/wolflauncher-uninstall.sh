@@ -47,6 +47,12 @@ if [[ -e "$bin_dir/wolflauncher" ]]; then
   removed_any=1
 fi
 
+if [[ -e "$bin_dir/wolflauncher-uninstall" ]]; then
+  log "Removing uninstaller $bin_dir/wolflauncher-uninstall"
+  rm -f "$bin_dir/wolflauncher-uninstall"
+  removed_any=1
+fi
+
 if [[ -e "$prefix" ]]; then
   log "Removing installation at $prefix"
   rm -rf "$prefix"

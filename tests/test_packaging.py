@@ -31,6 +31,8 @@ class PackagingMetadataTests(unittest.TestCase):
         self.assertEqual(entry["Exec"], "wolflauncher")
         self.assertEqual(entry["Icon"], "wolflauncher")
         self.assertEqual(entry["Terminal"], "false")
+        self.assertEqual(entry["Actions"], "Uninstall;")
+        self.assertEqual(parser["Desktop Action Uninstall"]["Exec"], "wolflauncher-uninstall")
 
     def test_source_resource_paths_remain_available(self):
         self.assertTrue(config.EXAMPLE_SERVERS_PATH.is_file())

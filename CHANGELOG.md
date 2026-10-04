@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- The Linux user-local installer can now install a bundled AppImage without
+  downloading Python or Node dependencies. Release bundles include permanent
+  launch/uninstall commands, desktop-menu integration and an uninstall action.
 - Added a checksum-pinned Linux AppImage build that bundles Python, Qt, Node.js
   and GameDig and performs an off-screen packaged startup smoke test.
 - Windows BattlEye launches now wait for the real `DayZ_x64.exe` client instead

@@ -12,6 +12,7 @@
 # Environment overrides:
 #   WOLFLAUNCHER_PREFIX       install prefix (default: $XDG_DATA_HOME/wolflauncher/runtime)
 #   WOLFLAUNCHER_BIN_DIR      bin dir (default: $XDG_BIN_HOME or ~/.local/bin)
+#   WOLFLAUNCHER_APPIMAGE     AppImage payload to install instead of building from source
 #   WOLFLAUNCHER_REPO         source dir override (default: script-adjacent checkout)
 #   WOLFLAUNCHER_VERSION      force a version string in the launcher script
 #   WOLFLAUNCHER_SKIP_SYSTEM  skip suggestions for apt/dnf/pacman/etc.
@@ -57,18 +58,35 @@ else
   script_dir="$(cd "$(pwd)/$(dirname "$script_path")" && pwd)"
 fi
 
-if [[ -n "${WOLFLAUNCHER_REPO:-}" ]]; then
-  repo_dir="$WOLFLAUNCHER_REPO"
-elif [[ -f "$script_dir/pyproject.toml" && -f "$script_dir/main.py" ]]; then
-  repo_dir="$script_dir"
-elif [[ -f "$script_dir/../pyproject.toml" && -f "$script_dir/../main.py" ]]; then
-  repo_dir="$(cd "$script_dir/.." && pwd)"
-else
-  die 1 "Could not locate WolfLauncher checkout. Set WOLFLAUNCHER_REPO."
+appimage_source="${WOLFLAUNCHER_APPIMAGE:-}"
+if [[ -z "$appimage_source" ]]; then
+  shopt -s nullglob
+  appimage_candidates=("$script_dir"/WolfLauncher-*.AppImage)
+  shopt -u nullglob
+  if [[ ${#appimage_candidates[@]} -eq 1 ]]; then
+    appimage_source="${appimage_candidates[0]}"
+  elif [[ ${#appimage_candidates[@]} -gt 1 ]]; then
+    die 1 "Multiple WolfLauncher AppImages found beside the installer. Keep only one."
+  fi
 fi
 
-[[ -f "$repo_dir/pyproject.toml" ]] || die 1 "pyproject.toml missing in $repo_dir"
-[[ -f "$repo_dir/main.py" ]]        || die 1 "main.py missing in $repo_dir"
+repo_dir=""
+if [[ -z "$appimage_source" ]]; then
+  if [[ -n "${WOLFLAUNCHER_REPO:-}" ]]; then
+    repo_dir="$WOLFLAUNCHER_REPO"
+  elif [[ -f "$script_dir/pyproject.toml" && -f "$script_dir/main.py" ]]; then
+    repo_dir="$script_dir"
+  elif [[ -f "$script_dir/../pyproject.toml" && -f "$script_dir/../main.py" ]]; then
+    repo_dir="$(cd "$script_dir/.." && pwd)"
+  else
+    die 1 "Could not locate an AppImage payload or WolfLauncher checkout."
+  fi
+  [[ -f "$repo_dir/pyproject.toml" ]] || die 1 "pyproject.toml missing in $repo_dir"
+  [[ -f "$repo_dir/main.py" ]]        || die 1 "main.py missing in $repo_dir"
+else
+  [[ -f "$appimage_source" ]] || die 1 "AppImage payload not found: $appimage_source"
+  appimage_source="$(cd "$(dirname "$appimage_source")" && pwd)/$(basename "$appimage_source")"
+fi
 
 # ---------------------------------------------------------------------------
 # Paths (XDG-aware, all user-local)
@@ -85,6 +103,8 @@ node_runtime_dir="$prefix/node-runtime"
 app_dir="$prefix/app"
 share_dir="$prefix/share"
 log_dir="$prefix/log"
+installed_appimage="$prefix/WolfLauncher.AppImage"
+qt_pkg_hint=""
 
 mkdir -p "$bin_dir" "$python_dir" "$node_dir" "$node_runtime_dir/bin" \
          "$app_dir" "$share_dir" "$log_dir" \
@@ -142,6 +162,7 @@ confirm() {
 # ---------------------------------------------------------------------------
 # Prerequisite checks
 # ---------------------------------------------------------------------------
+if [[ -z "$appimage_source" ]]; then
 hdr "Checking prerequisites"
 need_cmd python3 "Install Python 3.10+ from your distribution or https://python.org."
 
@@ -333,27 +354,53 @@ fi
 if [[ -f "$repo_dir/example.servers.yaml" ]]; then
   install -m 0644 "$repo_dir/example.servers.yaml" "$share_dir/"
 fi
+else
+  hdr "Installing bundled application"
+  install -m 0755 "$appimage_source" "$installed_appimage"
+  ok "AppImage installed at $installed_appimage"
+fi
 
 # ---------------------------------------------------------------------------
 # Desktop entry + icon
 # ---------------------------------------------------------------------------
 hdr "Installing desktop entry"
-if [[ -f "$repo_dir/packaging/linux/wolflauncher.desktop" ]]; then
-  install -m 0644 "$repo_dir/packaging/linux/wolflauncher.desktop" \
+desktop_source="$script_dir/wolflauncher.desktop"
+icon_source="$script_dir/wolflauncher.svg"
+uninstaller_source="$script_dir/uninstall.sh"
+if [[ -n "$repo_dir" ]]; then
+  desktop_source="$repo_dir/packaging/linux/wolflauncher.desktop"
+  icon_source="$repo_dir/packaging/linux/wolflauncher.svg"
+  uninstaller_source="$repo_dir/scripts/wolflauncher-uninstall.sh"
+fi
+if [[ -f "$desktop_source" ]]; then
+  install -m 0644 "$desktop_source" \
                  "$XDG_DATA_HOME/applications/wolflauncher.desktop"
 fi
-if [[ -f "$repo_dir/packaging/linux/wolflauncher.svg" ]]; then
-  install -m 0644 "$repo_dir/packaging/linux/wolflauncher.svg" \
+if [[ -f "$icon_source" ]]; then
+  install -m 0644 "$icon_source" \
                  "$XDG_DATA_HOME/icons/hicolor/scalable/apps/wolflauncher.svg"
 fi
 ok "Desktop entry installed (refresh icon cache or re-login if needed)"
+
+if [[ -f "$uninstaller_source" ]]; then
+  install -m 0755 "$uninstaller_source" "$bin_dir/wolflauncher-uninstall"
+  ok "Uninstaller installed at $bin_dir/wolflauncher-uninstall"
+fi
 
 # ---------------------------------------------------------------------------
 # Launcher wrapper
 # ---------------------------------------------------------------------------
 hdr "Creating launcher command"
 wrapper="$bin_dir/wolflauncher"
-version="${WOLFLAUNCHER_VERSION:-$(python3 - <<PY
+if [[ -n "$appimage_source" ]]; then
+  version="${WOLFLAUNCHER_VERSION:-$(basename "$appimage_source" | sed -E 's/^WolfLauncher-(.*)-[^-]+\.AppImage$/\1/')}"
+  cat > "$wrapper" <<EOF
+#!/usr/bin/env bash
+# WolfLauncher $version (AppImage user install)
+exec "$installed_appimage" "\$@"
+EOF
+else
+  version="${WOLFLAUNCHER_VERSION:-$(python3 - <<PY
 import sys, importlib.util
 sys.path.insert(0, "$python_dir")
 try:
@@ -364,7 +411,7 @@ except Exception:
     print(getattr(spec, "name", "0.0.0") if spec else "0.0.0")
 PY
 )}"
-cat > "$wrapper" <<EOF
+  cat > "$wrapper" <<EOF
 #!/usr/bin/env bash
 # WolfLauncher $version (user install)
 export WOLFLAUNCHER_SHARE_ROOT="$share_dir"
@@ -372,6 +419,7 @@ export PYTHONPATH="$python_dir\${PYTHONPATH:+:\$PYTHONPATH}"
 export PATH="$node_runtime_dir/bin:$node_dir/node_modules/.bin:\${PATH:+\$PATH:}"
 exec python3 -m wolflauncher "\$@"
 EOF
+fi
 chmod 0755 "$wrapper"
 ok "Launcher created at $wrapper"
 
@@ -381,6 +429,18 @@ ok "Launcher created at $wrapper"
 hdr "Verifying installation"
 if [[ -n "${WOLFLAUNCHER_SKIP_VERIFY:-}" ]]; then
   log "Skipping launcher verify (WOLFLAUNCHER_SKIP_VERIFY=1)"
+elif [[ -n "$appimage_source" ]]; then
+  smoke_root="$(mktemp -d)"
+  smoke_log="$log_dir/install-smoke.log"
+  : > "$smoke_log"
+  if XDG_CONFIG_HOME="$smoke_root/config" XDG_DATA_HOME="$smoke_root/data" \
+    QT_QPA_PLATFORM=offscreen WOLFLAUNCHER_SMOKE_TEST=1 \
+    "$wrapper" --appimage-extract-and-run >"$smoke_log" 2>&1; then
+    ok "Packaged launcher smoke test passed"
+  else
+    warn "Packaged launcher smoke test failed. Review $smoke_log or run '$wrapper'."
+  fi
+  rm -rf "$smoke_root"
 elif timeout 2 "$wrapper" --help >/dev/null 2>&1 || timeout 2 "$wrapper" --version >/dev/null 2>&1; then
   ok "Launcher responds"
 elif timeout 2 "$wrapper" >/dev/null 2>&1 &
@@ -393,6 +453,12 @@ fi
 # Distro-specific follow-ups (advisory)
 # ---------------------------------------------------------------------------
 hdr "Distro-specific suggestions ($distro)"
+if [[ -n "$appimage_source" ]]; then
+  cat <<D
+  - Install native Steam through your distribution and launch DayZ once before
+    using WolfLauncher. Flatpak and Snap Steam are not supported in this version.
+D
+else
 case "$distro" in
   debian)
     cat <<D
@@ -439,6 +505,7 @@ D
 D
     ;;
 esac
+fi
 
 cat <<D
 
@@ -447,7 +514,7 @@ Installation complete.
   Launch:      $wrapper
   Data dir:    $prefix
   Config dir:  $XDG_CONFIG_HOME/wolflauncher
-  Uninstall:   ./scripts/wolflauncher-uninstall.sh
+  Uninstall:   $bin_dir/wolflauncher-uninstall
 
 Make sure '$bin_dir' is on your PATH (most distros add ~/.local/bin automatically).
 D

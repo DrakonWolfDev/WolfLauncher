@@ -23,11 +23,15 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
 
       - name: Run shellcheck on installer scripts
-        run: shellcheck -S warning scripts/wolflauncher-install.sh scripts/wolflauncher-uninstall.sh
+        run: >-
+          shellcheck -S warning
+          scripts/wolflauncher-install.sh
+          scripts/wolflauncher-uninstall.sh
+          scripts/build-linux-installer.sh
 
   unit-tests:
     name: Installer unit tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: Check out repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
@@ -61,6 +65,11 @@ jobs:
           # installer tarball matches the in-tree __version__).
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
 
+      - name: Set up Python
+        uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.10"
+
       - name: Build complete installer source archive
         env:
           version: ${{ steps.version.outputs.version }}
@@ -70,11 +79,18 @@ jobs:
           cp "dist/wolflauncher-${version}.tar.gz" "wolflauncher-${version}-installer-source.tar.gz"
           sha256sum "wolflauncher-${version}-installer-source.tar.gz" > "wolflauncher-${version}-installer-source.tar.gz.sha256"
 
+      - name: Build AppImage-backed user installer
+        run: |
+          python3 -m pip install -r requirements.txt -r requirements-appimage.txt
+          ./scripts/build-linux-installer.sh
+
       - name: Publish installer source archive as workflow artifact
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: wolflauncher-installer-${{ steps.version.outputs.version }}-${{ github.sha }}
           path: |
+            dist/WolfLauncher-*-linux-x86_64-installer.tar.gz
+            dist/WolfLauncher-*-linux-x86_64-installer.tar.gz.sha256
             wolflauncher-*-installer-source.tar.gz
             wolflauncher-*-installer-source.tar.gz.sha256
           if-no-files-found: error
@@ -87,6 +103,8 @@ jobs:
           name: ${{ github.ref_name }}
           generate_release_notes: false
           files: |
+            dist/WolfLauncher-*-linux-x86_64-installer.tar.gz
+            dist/WolfLauncher-*-linux-x86_64-installer.tar.gz.sha256
             wolflauncher-*-installer-source.tar.gz
             wolflauncher-*-installer-source.tar.gz.sha256
           fail_on_unmatched_files: true

@@ -190,6 +190,7 @@ class InstallerScriptsTestCase(unittest.TestCase):
             f"{prefix}/app",
             f"{prefix}/share",
             f"{bin_dir}/wolflauncher",
+            f"{bin_dir}/wolflauncher-uninstall",
         ):
             self.assertTrue(
                 os.path.exists(required),
@@ -207,6 +208,65 @@ class InstallerScriptsTestCase(unittest.TestCase):
         self.assertIn("WOLFLAUNCHER_SHARE_ROOT=", text)
         self.assertIn("node-runtime/bin", text)
         self.assertIn("python3 -m wolflauncher", text)
+
+    def test_appimage_payload_installs_without_python_or_network_bootstrap(self) -> None:
+        appimage = self._tmp / "WolfLauncher-0.9.0b1-x86_64.AppImage"
+        appimage.write_text("#!/usr/bin/env bash\nexit 0\n")
+        appimage.chmod(0o755)
+        env = {**self._env, "WOLFLAUNCHER_APPIMAGE": str(appimage)}
+        env.pop("WOLFLAUNCHER_REPO", None)
+        pip_marker = Path(env["WOLF_STUB_PIP_MARKER"])
+
+        result = subprocess.run(
+            [str(INSTALLER)],
+            env=env,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        installed = (
+            Path(env["XDG_DATA_HOME"]) / "wolflauncher" / "runtime" / "WolfLauncher.AppImage"
+        )
+        wrapper = Path(env["XDG_BIN_HOME"]) / "wolflauncher"
+        self.assertTrue(installed.is_file())
+        self.assertTrue(installed.stat().st_mode & 0o111)
+        self.assertIn(str(installed), wrapper.read_text())
+        self.assertFalse(pip_marker.exists(), "AppImage installation must not invoke pip")
+
+    def test_successful_appimage_verification_keeps_qt_warnings_in_log(self) -> None:
+        appimage = self._tmp / "WolfLauncher-0.9.0b1-x86_64.AppImage"
+        appimage.write_text(
+            "#!/usr/bin/env bash\n"
+            'echo "This plugin does not support propagateSizeHints()" >&2\n'
+            "exit 0\n"
+        )
+        appimage.chmod(0o755)
+        env = {**self._env, "WOLFLAUNCHER_APPIMAGE": str(appimage)}
+        env.pop("WOLFLAUNCHER_REPO", None)
+        env.pop("WOLFLAUNCHER_SKIP_VERIFY", None)
+
+        result = subprocess.run(
+            [str(INSTALLER)],
+            env=env,
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+
+        self.assertEqual(result.returncode, 0, msg=result.stderr)
+        self.assertNotIn("propagateSizeHints", result.stdout + result.stderr)
+        smoke_log = (
+            Path(env["XDG_DATA_HOME"])
+            / "wolflauncher"
+            / "runtime"
+            / "log"
+            / "install-smoke.log"
+        )
+        self.assertIn("propagateSizeHints", smoke_log.read_text())
 
     def test_overrides_are_honoured(self) -> None:
         custom_prefix = self._tmp / "custom-prefix"
@@ -238,8 +298,10 @@ class InstallerScriptsTestCase(unittest.TestCase):
         self._run([str(INSTALLER)])
         prefix = Path(self._env["XDG_DATA_HOME"]) / "wolflauncher" / "runtime"
         wrapper = Path(self._env["XDG_BIN_HOME"]) / "wolflauncher"
+        installed_uninstaller = Path(self._env["XDG_BIN_HOME"]) / "wolflauncher-uninstall"
         self.assertTrue(prefix.exists())
         self.assertTrue(wrapper.exists())
+        self.assertTrue(installed_uninstaller.exists())
 
         result = subprocess.run(
             [str(UNINSTALLER)],
@@ -257,6 +319,7 @@ class InstallerScriptsTestCase(unittest.TestCase):
             prefix.exists(),
             msg=f"prefix not removed: stdout={result.stdout}\nstderr={result.stderr}",
         )
+        self.assertFalse(installed_uninstaller.exists())
 
     def test_uninstaller_preserves_cached_data(self) -> None:
         result = self._run([str(INSTALLER)])

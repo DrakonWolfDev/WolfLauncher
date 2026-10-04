@@ -57,8 +57,10 @@ Manjaro/EndeavourOS, openSUSE Tumbleweed/Leap, NixOS, Alpine 3.20+
 (non-musl environment) and SteamOS 3/HoloISO. This distro coverage is confirmed
 by the maintainer. See [Installing on Linux](docs/INSTALL_LINUX.md).
 
-Run `./scripts/wolflauncher-install.sh` from the source checkout. The `.deb`
-build below remains specific to Debian/Ubuntu-family systems.
+Run `./scripts/wolflauncher-install.sh` from the source checkout. For a release
+installer backed by the AppImage, run `./scripts/build-linux-installer.sh` after
+the AppImage build. The `.deb` build below remains specific to
+Debian/Ubuntu-family systems.
 
 ## Linux — AppImage build
 
@@ -96,6 +98,19 @@ Verify its checksum with:
 ```bash
 cd dist
 sha256sum --check WolfLauncher-*.AppImage.sha256
+```
+
+Build the user-local installer archive around that AppImage:
+
+```bash
+./scripts/build-linux-installer.sh
+```
+
+This writes the following files under `dist/`:
+
+```text
+WolfLauncher-<version>-linux-x86_64-installer.tar.gz
+WolfLauncher-<version>-linux-x86_64-installer.tar.gz.sha256
 ```
 
 ## Linux — Debian package build

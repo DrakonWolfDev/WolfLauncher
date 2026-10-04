@@ -41,19 +41,16 @@ Linux Mint 21+, Pop!_OS, Fedora 40+, Nobara, Arch Linux, Manjaro/EndeavourOS,
 openSUSE Tumbleweed/Leap, NixOS, Alpine 3.20+ in a non-musl environment, and
 SteamOS 3/HoloISO.
 
-Install Python 3.10 or newer, pip and the Qt system libraries for your distro,
-then run:
+Download the versioned Linux installer archive from Releases, verify its
+checksum, extract it and run:
 
 ```bash
-git clone https://github.com/DrakonWolfDev/WolfLauncher.git
-cd WolfLauncher
-./scripts/wolflauncher-install.sh
+./install.sh
 ```
 
-The installer downloads the Python dependencies and a private Node.js/GameDig
-runtime, installs a desktop entry, and creates `~/.local/bin/wolflauncher`.
-It installs into your user account without requiring `sudo` for the application.
-System prerequisites may need your distribution's package manager.
+The installer copies the bundled AppImage, adds a desktop entry and creates
+`~/.local/bin/wolflauncher` and `wolflauncher-uninstall`. It installs into your
+user account without requiring `sudo` or downloading application dependencies.
 
 Launch WolfLauncher from the desktop menu or run:
 

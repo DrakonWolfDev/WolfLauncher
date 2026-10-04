@@ -28,6 +28,35 @@ and the system packages you'll likely want for Steam and the Qt runtime.
 | Alpine 3.20+ (non-musl)        | yes                 | unsupported this version           | `mesa-egl libxkbcommon dbus-libs`                 |
 | SteamOS 3 (HoloISO)             | yes                 | preinstalled           | preinstalled                                      |
 
+## Install the release bundle
+
+Download `WolfLauncher-<version>-linux-x86_64-installer.tar.gz` and its
+`.sha256` sidecar from the chosen GitHub release, then run:
+
+```bash
+sha256sum -c WolfLauncher-<version>-linux-x86_64-installer.tar.gz.sha256
+tar -xzf WolfLauncher-<version>-linux-x86_64-installer.tar.gz
+cd WolfLauncher-<version>-linux-x86_64
+./install.sh
+```
+
+The bundle contains the complete AppImage payload. Installation does not need
+Python, pip, npm or a network connection and does not require `sudo`.
+
+The installer places the AppImage under
+`~/.local/share/wolflauncher/runtime/`, adds a desktop entry and creates both
+`~/.local/bin/wolflauncher` and `~/.local/bin/wolflauncher-uninstall`.
+Personal settings and curated servers stay under `~/.config/wolflauncher/`;
+cached server data stays outside the installation's `runtime` directory.
+
+```bash
+wolflauncher-uninstall          # preserve settings and cached data
+wolflauncher-uninstall --purge  # also remove configuration
+```
+
+Supporting desktop environments also show **Uninstall WolfLauncher** in the
+application entry's actions menu.
+
 ## Install from source
 
 Install Python 3.10 or newer, pip, and the Qt system libraries first. On
@@ -54,17 +83,17 @@ Replace `<version>` with the release version. The installer needs the complete
 source checkout or archive; downloading the shell script alone is insufficient.
 Internet access is required for Python dependencies and Node.js/GameDig.
 
-The installer places the application and private Node.js/GameDig runtime under
-`~/.local/share/wolflauncher/runtime/`, adds a desktop entry and creates
-`~/.local/bin/wolflauncher`. Add `~/.local/bin` to your `PATH` if necessary.
+The source installer places the application and private Node.js/GameDig runtime
+under `~/.local/share/wolflauncher/runtime/` and creates the same menu and
+launcher commands. Add `~/.local/bin` to your `PATH` if necessary.
 Personal settings and curated servers stay under `~/.config/wolflauncher/`;
 cached server data stays outside the installation's `runtime` directory.
 New installations start with an empty server list. Add your own favourites or
 use the Server Browser.
 
 ```bash
-./scripts/wolflauncher-uninstall.sh          # preserve settings and cached data
-./scripts/wolflauncher-uninstall.sh --purge  # also remove configuration
+wolflauncher-uninstall          # preserve settings and cached data
+wolflauncher-uninstall --purge  # also remove configuration
 ```
 
 Use the same path overrides when installing and uninstalling:
@@ -73,6 +102,7 @@ Use the same path overrides when installing and uninstalling:
 | --- | --- |
 | `WOLFLAUNCHER_PREFIX` | Installation directory, default `$XDG_DATA_HOME/wolflauncher/runtime` |
 | `WOLFLAUNCHER_BIN_DIR` | Launcher directory, default `$XDG_BIN_HOME` or `~/.local/bin` |
+| `WOLFLAUNCHER_APPIMAGE` | Explicit AppImage payload for a binary installation |
 | `WOLFLAUNCHER_REPO` | Source checkout or unpacked archive directory |
 | `WOLFLAUNCHER_SKIP_SYSTEM` | Suppress distribution-specific package hints |
 
@@ -81,8 +111,8 @@ Keep the installation directory separate from personal data directories.
 
 ## Build packages or develop your own version
 
-See [BUILD_GUIDE.md](../BUILD_GUIDE.md) for the `.deb` build and experimental
-Windows packaging, and [README.md](../README.md) for development setup.
+See [BUILD_GUIDE.md](../BUILD_GUIDE.md) for AppImage, installer bundle, `.deb`
+and Windows packaging, and [README.md](../README.md) for development setup.
 The repository retains source, tests, build scripts and license notices so
 forks can build and validate their own changes. Generated build outputs,
 virtual environments, local graphs, credentials and personal databases are
