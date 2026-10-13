@@ -260,11 +260,7 @@ class InstallerScriptsTestCase(unittest.TestCase):
         self.assertEqual(result.returncode, 0, msg=result.stderr)
         self.assertNotIn("propagateSizeHints", result.stdout + result.stderr)
         smoke_log = (
-            Path(env["XDG_DATA_HOME"])
-            / "wolflauncher"
-            / "runtime"
-            / "log"
-            / "install-smoke.log"
+            Path(env["XDG_DATA_HOME"]) / "wolflauncher" / "runtime" / "log" / "install-smoke.log"
         )
         self.assertIn("propagateSizeHints", smoke_log.read_text())
 

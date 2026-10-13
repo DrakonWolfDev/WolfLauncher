@@ -535,7 +535,9 @@ def unsubscribe_workshop_item(
     """Ask Steam to unsubscribe one item and wait for its subscription state to clear."""
     item_id = str(workshop_id).strip()
     if not item_id.isdigit() or int(item_id) <= 0:
-        return WorkshopUnsubscribeResult(item_id, error="The selected mod has an invalid Workshop ID.")
+        return WorkshopUnsubscribeResult(
+            item_id, error="The selected mod has an invalid Workshop ID."
+        )
     library_path = find_steam_api_library(install)
     if not library_path:
         return WorkshopUnsubscribeResult(

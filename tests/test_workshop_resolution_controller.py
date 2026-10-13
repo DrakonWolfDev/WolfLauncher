@@ -33,9 +33,7 @@ class WorkshopResolutionCoordinatorTests(unittest.TestCase):
         "wolflauncher.workshop_resolution_controller.QMessageBox.question",
         return_value=QMessageBox.Yes,
     )
-    def test_library_force_update_uses_selected_installed_mod_without_server_check(
-        self, _question
-    ):
+    def test_library_force_update_uses_selected_installed_mod_without_server_check(self, _question):
         mod = RequiredMod("111", name="Library Mod", installed=True)
         install = SimpleNamespace(workshop_dir=object(), running=True)
         window = SimpleNamespace(

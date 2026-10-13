@@ -83,8 +83,10 @@ Windows packages target 64-bit Windows. The Setup installer requires Windows
 and offers an optional desktop shortcut. Both package formats bundle Python,
 Qt and Node.js/GameDig, so you do not need to install those separately.
 
-The build scripts produce unsigned packages. To build your own Setup or
-portable package, follow the [Windows build instructions](BUILD_GUIDE.md#windows--portable-zip-build).
+The build scripts produce unsigned packages. Code signing is planned as a
+post-1.0 distribution improvement and does not block the 1.0 release through
+GitHub and the official WolfLauncher website. To build your own Setup or portable
+package, follow the [Windows build instructions](BUILD_GUIDE.md#windows--portable-zip-build).
 
 ## Join a server
 

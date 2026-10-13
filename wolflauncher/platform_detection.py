@@ -391,9 +391,7 @@ def _named_process_check(patterns: tuple[str, ...], label: str) -> ProcessCheck:
     if not lines:
         return ProcessCheck(False, f"No {label} process detected")
     names = [
-        pattern
-        for pattern in patterns
-        if any(pattern.lower() in line.lower() for line in lines)
+        pattern for pattern in patterns if any(pattern.lower() in line.lower() for line in lines)
     ]
     if not names:
         return ProcessCheck(False, f"No {label} process detected")

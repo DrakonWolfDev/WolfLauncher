@@ -150,9 +150,7 @@ class ServerLaunchContextTests(unittest.TestCase):
         coordinator.identity_status_message = message
         continuation = Mock()
 
-        coordinator._ready(
-            "request", self.server, self.resolve(), "", continuation, True
-        )
+        coordinator._ready("request", self.server, self.resolve(), "", continuation, True)
 
         status_bar.clearMessage.assert_called_once_with()
         continuation.assert_called_once()

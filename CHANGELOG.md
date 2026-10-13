@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Recorded code signing as post-1.0 distribution work. Unsigned packages published
+  through GitHub and the official WolfLauncher website do not block the 1.0 release.
 - Added notification-only WolfLauncher update checks. GitHub Releases supplies
   version and release-note information; **View Update** opens the configured
   official WolfLauncher page at

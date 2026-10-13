@@ -73,9 +73,7 @@ class WorkerTests(unittest.TestCase):
 
         worker.run()
 
-        check_server.assert_called_once_with(
-            sample_server(), cancel_event=worker._cancel_event
-        )
+        check_server.assert_called_once_with(sample_server(), cancel_event=worker._cancel_event)
 
     def test_status_worker_interruption_sets_query_cancellation(self):
         worker = StatusWorker([sample_server()])

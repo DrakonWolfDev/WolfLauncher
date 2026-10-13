@@ -19,9 +19,7 @@ class InstalledWorkshopLibraryTests(unittest.TestCase):
                 update_installed_mods_button=Mock(),
                 mod_detail_uninstall_button=Mock(),
                 recheck_mods_button=Mock(),
-                dayz_product=Mock(
-                    return_value=SimpleNamespace(experimental=experimental)
-                ),
+                dayz_product=Mock(return_value=SimpleNamespace(experimental=experimental)),
             )
 
         required_view = window(False)
@@ -77,6 +75,7 @@ class InstalledWorkshopLibraryTests(unittest.TestCase):
         ModsFeatureMixin.uninstall_selected_workshop_mod(window)
 
         worker_type.assert_not_called()
+
     def test_experimental_can_start_confirmed_missing_mod_resolution(self):
         resolution = Mock()
         window = SimpleNamespace(workshop_resolution=resolution)
