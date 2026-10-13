@@ -7,6 +7,7 @@ from unittest.mock import call, patch
 from wolflauncher.models import Server
 from wolflauncher.status import (
     ServerStatus,
+    ServerStatusOutcome,
     _hidden_process_kwargs,
     _run_cancellable,
     check_server,
@@ -135,24 +136,25 @@ class CheckServerTests(unittest.TestCase):
 
         status = check_server(self.make_server())
 
-        self.assertEqual(
-            status,
-            ServerStatus(
-                online=True,
-                resolved_ip="203.0.113.10",
-                server_name="Example DayZ",
-                map_name="chernarusplus",
-                players="12/60",
-                time="10:30",
-                day_acceleration=6,
-                night_acceleration=4,
-                version="1.26",
-                ping="42",
-                password=True,
-                modded=True,
-                connect="203.0.113.10:2302",
-            ),
+        expected = ServerStatus(
+            online=True,
+            resolved_ip="203.0.113.10",
+            server_name="Example DayZ",
+            map_name="chernarusplus",
+            players="12/60",
+            time="10:30",
+            day_acceleration=6,
+            night_acceleration=4,
+            version="1.26",
+            ping="42",
+            password=True,
+            modded=True,
+            connect="203.0.113.10:2302",
         )
+        expected.query_started_at = status.query_started_at
+        expected.duration_ms = status.duration_ms
+        expected.last_successful_query = status.last_successful_query
+        self.assertEqual(status, expected)
         resolve_host_mock.assert_called_once_with("dayz.example.test")
         which.assert_has_calls([call("node"), call("gamedig")])
         run.assert_called_once()
@@ -176,6 +178,10 @@ class CheckServerTests(unittest.TestCase):
 
         self.assertTrue(status.online)
         self.assertEqual(status.server_name, "测试 DayZ")
+        self.assertTrue(status.query_started_at.endswith("+00:00"))
+        self.assertGreaterEqual(status.duration_ms, 0)
+        self.assertEqual(status.last_successful_query, status.query_started_at)
+        self.assertEqual(status.consecutive_failures, 0)
 
     @patch("wolflauncher.status.resolve_host", return_value="203.0.113.10")
     @patch("wolflauncher.status.shutil.which", return_value="/usr/bin/gamedig")
@@ -203,18 +209,22 @@ class CheckServerTests(unittest.TestCase):
         self.assertEqual(status.time, "N/A")
 
     @patch("wolflauncher.status.resolve_host", side_effect=OSError("no host"))
-    def test_dns_failure_returns_offline_status(self, resolve_host_mock):
+    def test_dns_failure_returns_unknown_network_status(self, resolve_host_mock):
         status = check_server(self.make_server())
 
         self.assertFalse(status.online)
+        self.assertIs(status.outcome, ServerStatusOutcome.NETWORK_ERROR)
+        self.assertEqual(status.display_state, "UNKNOWN")
+        self.assertIn("Unable to check server", status.user_message())
         self.assertIn("DNS failed", status.error)
 
     @patch("wolflauncher.status.resolve_host", return_value="203.0.113.10")
     @patch("wolflauncher.status.shutil.which", return_value=None)
-    def test_missing_gamedig_returns_offline_status(self, which, resolve_host_mock):
+    def test_missing_gamedig_returns_unknown_check_status(self, which, resolve_host_mock):
         status = check_server(self.make_server())
 
         self.assertFalse(status.online)
+        self.assertIs(status.outcome, ServerStatusOutcome.CHECK_ERROR)
         self.assertEqual(status.resolved_ip, "203.0.113.10")
         self.assertEqual(status.error, "gamedig not installed")
 
@@ -223,12 +233,38 @@ class CheckServerTests(unittest.TestCase):
     @patch(
         "wolflauncher.status.subprocess.run", side_effect=subprocess.TimeoutExpired("gamedig", 5)
     )
-    def test_gamedig_timeout_returns_offline_status(self, run, which, resolve_host_mock):
+    def test_gamedig_timeout_returns_unknown_timeout_status(self, run, which, resolve_host_mock):
         status = check_server(self.make_server())
 
         self.assertFalse(status.online)
+        self.assertIs(status.outcome, ServerStatusOutcome.TIMEOUT)
+        self.assertIn("isn't responding", status.user_message())
         self.assertEqual(status.resolved_ip, "203.0.113.10")
         self.assertEqual(status.error, "status check timed out")
+
+    @patch("wolflauncher.status.resolve_host", return_value="203.0.113.10")
+    @patch("wolflauncher.status.shutil.which", return_value="/usr/bin/gamedig")
+    @patch("wolflauncher.status.subprocess.run", side_effect=OSError("process unavailable"))
+    def test_process_failure_returns_unknown_check_status(self, _run, _which, _resolve_host):
+        status = check_server(self.make_server())
+
+        self.assertFalse(status.online)
+        self.assertIs(status.outcome, ServerStatusOutcome.CHECK_ERROR)
+        self.assertIn("process unavailable", status.error)
+        self.assertTrue(status.query_started_at)
+
+    @patch("wolflauncher.status.resolve_host", return_value="203.0.113.10")
+    @patch("wolflauncher.status.shutil.which", return_value="/usr/bin/gamedig")
+    @patch("wolflauncher.status._run_cancellable", return_value=None)
+    def test_cancelled_query_returns_unknown_cancelled_status(
+        self, _run_cancellable_mock, _which, _resolve_host
+    ):
+        status = check_server(self.make_server(), cancel_event=threading.Event())
+
+        self.assertFalse(status.online)
+        self.assertIs(status.outcome, ServerStatusOutcome.CANCELLED)
+        self.assertEqual(status.display_state, "UNKNOWN")
+        self.assertEqual(status.user_message(), "Status check cancelled")
 
     @patch("wolflauncher.status.resolve_host", return_value="203.0.113.10")
     @patch("wolflauncher.status.shutil.which", return_value="/usr/bin/gamedig")
@@ -244,6 +280,7 @@ class CheckServerTests(unittest.TestCase):
         status = check_server(self.make_server())
 
         self.assertFalse(status.online)
+        self.assertIs(status.outcome, ServerStatusOutcome.CHECK_ERROR)
         self.assertEqual(status.resolved_ip, "203.0.113.10")
         self.assertEqual(status.error, "socket closed")
 
@@ -261,13 +298,14 @@ class CheckServerTests(unittest.TestCase):
         status = check_server(self.make_server())
 
         self.assertFalse(status.online)
+        self.assertIs(status.outcome, ServerStatusOutcome.INVALID_RESPONSE)
         self.assertEqual(status.resolved_ip, "203.0.113.10")
         self.assertEqual(status.error, "invalid gamedig response")
 
     @patch("wolflauncher.status.resolve_host", return_value="203.0.113.10")
     @patch("wolflauncher.status.shutil.which", return_value="/usr/bin/gamedig")
     @patch("wolflauncher.status.subprocess.run")
-    def test_partial_restart_response_returns_offline_status(self, run, which, resolve_host_mock):
+    def test_partial_restart_response_returns_unknown_status(self, run, which, resolve_host_mock):
         run.return_value = subprocess.CompletedProcess(
             args=[],
             returncode=0,
@@ -278,6 +316,7 @@ class CheckServerTests(unittest.TestCase):
         status = check_server(self.make_server())
 
         self.assertFalse(status.online)
+        self.assertIs(status.outcome, ServerStatusOutcome.INVALID_RESPONSE)
         self.assertEqual(status.resolved_ip, "203.0.113.10")
         self.assertEqual(status.error, "offline, restarting, or incomplete query response")
 

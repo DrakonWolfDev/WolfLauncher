@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- Added notification-only WolfLauncher update checks. GitHub Releases supplies
+  version and release-note information; **View Update** opens the configured
+  official WolfLauncher page at
+  `https://wolf-forge.co.uk/wolf-launcher.html` in the default browser.
+- Added quiet post-startup checks, a manual **Check for Updates** action on the
+  About page, stable/experimental release filtering, proper prerelease version
+  ordering, once-per-24-hours automatic throttling and dismissed-version state.
+  Manual checks bypass throttling and still show a previously dismissed release.
+- Added a non-modal update banner with inert plain-text release notes, optional
+  expansion for lengthy notes, **View Update** and **Dismiss** actions. GitHub
+  release links and asset URLs never control the browser destination.
+- Kept application updates notification-only: WolfLauncher does not download,
+  select, execute or install Windows or Linux packages and does not fall back to
+  GitHub if the official website cannot be opened.
+- Included the reusable `wolf_update` package in source, wheel, Linux AppImage
+  and Windows PyInstaller discovery. The shared core has no WolfLauncher or Qt
+  dependency; its optional PySide6 adapter keeps network checks off the UI thread.
+- Fixed a native Qt crash after update checks by replacing cross-thread worker
+  object destruction with a bounded `QThreadPool` task. Repeated manual checks
+  and 25 rapid worker-completion cycles now pass without a crash.
+
 ## 0.9.0b2 — 2026-10-04
 
 - The Linux user-local installer can now install a bundled AppImage without

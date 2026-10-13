@@ -19,6 +19,7 @@ Linux is the primary platform; Windows builds remain experimental. See
 | Launch preparation and handoff | `connect_preflight.py`, `launch_preflight.py`, `native_launcher.py`, `launch_execution.py` |
 | Platform-specific behavior | `platforms/linux.py`, `platforms/windows.py`, `platform_detection.py` |
 | Settings and local data | `settings.py`, `paths.py`, `persistence.py`, `secret_store.py` |
+| Update notifications | `update_feature.py`, top-level `wolf_update/` package |
 | UI assets | `wolflauncher/assets/` |
 | Packaging and tests | `packaging/`, `scripts/`, `tests/` |
 
@@ -48,6 +49,26 @@ Linux also exposes the vendored shell launcher as a compatibility fallback.
 Its sources and license remain under `external/dayz-linux-cli-launcher/`.
 A successful launcher exit means control was handed to Steam; it does not prove
 that DayZ finished starting or connected to the server.
+
+## Application update notifications
+
+WolfLauncher configures the reusable top-level `wolf_update` package with its
+live `wolflauncher.__version__`, GitHub repository, experimental channel and
+official HTTPS destination. GitHub is used only to discover versions and obtain
+displayable release notes. The sole **View Update** destination is the separately
+configured Wolf Forge page.
+
+The shared core performs release parsing, PEP 440 comparison, channel filtering,
+throttling, dismissal policy and destination validation without depending on
+WolfLauncher or PySide6. `wolf_update.qt` uses a one-task `QThreadPool` so network
+access never blocks the GUI. WolfLauncher's `update_feature.py` owns the banner,
+manual About-page action and persistence through the existing settings mapping.
+
+The updater has no artifact-selection, download, installer, AppImage replacement
+or rollback path. Release-note markup is converted to inert text and cannot
+provide a navigation destination. See
+[the update-notification guide](docs/UPDATE_NOTIFICATIONS.md) for behavior and
+release testing.
 
 ## Building and testing
 

@@ -36,7 +36,7 @@ from .server_discovery import (
 )
 from .server_display import map_filter_key
 from .server_enrichment import enrich_discovered_server, enrichment_probe_servers
-from .status import ServerStatus, check_server
+from .status import ServerStatus, ServerStatusOutcome, check_server
 from .workshop_subscription import (
     WorkshopSubscriptionResult,
     query_workshop_item_states_isolated,
@@ -52,7 +52,11 @@ def _checked_server_status(server: Server) -> ServerStatus:
     try:
         return check_server(server)
     except Exception as exc:
-        return ServerStatus(False, error=f"status check failed: {exc}")
+        return ServerStatus(
+            False,
+            error=f"status check failed: {exc}",
+            outcome=ServerStatusOutcome.CHECK_ERROR,
+        )
 
 
 class StatusWorker(QThread):

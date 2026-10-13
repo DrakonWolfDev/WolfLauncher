@@ -229,12 +229,10 @@ class LocalToolsFeatureMixin:
         self.editor_mod_picker.setUniformItemSizes(True)
         self.editor_mod_picker.setAlternatingRowColors(True)
         self.editor_mod_picker.itemChanged.connect(self._editor_mod_selection_changed)
-        self.editor_mod_picker_opacity = QGraphicsOpacityEffect(self.editor_mod_picker)
-        self.editor_mod_picker.setGraphicsEffect(self.editor_mod_picker_opacity)
-        self.editor_mod_picker_animation = QPropertyAnimation(
-            self.editor_mod_picker_opacity, b"opacity", self
-        )
-        self.editor_mod_picker_animation.setDuration(180)
+        # Do not put a graphics effect on the item view. QGraphicsEffect renders
+        # a widget through an intermediate pixmap, which can retain an incomplete
+        # viewport while a long, virtualized list scrolls. The resulting blank
+        # rows look like lost mods even though the model is still intact.
         editor_mods_layout.addWidget(self.editor_mod_picker)
         self.editor_image_manager = QNetworkAccessManager(self)
         self.editor_image_manager.finished.connect(self._finish_editor_image_load)
@@ -341,7 +339,7 @@ class LocalToolsFeatureMixin:
         layout.addWidget(self.local_tools_status)
         self._refresh_local_profile_picker()
         self._refresh_editor_mod_picker()
-        self._set_mod_selection_target("editor", animate=False)
+        self._set_mod_selection_target("editor")
         return widget
 
     def _refresh_local_profile_picker(self):
@@ -523,7 +521,7 @@ class LocalToolsFeatureMixin:
         self.local_tool_active_target = None
         self.local_tool_workspace.setCurrentIndex(0)
 
-    def _set_mod_selection_target(self, target: str, *, animate: bool = True):
+    def _set_mod_selection_target(self, target: str):
         self.mod_selection_target = target
         if target == "editor":
             self.mod_selection_detail.setText(
@@ -533,11 +531,6 @@ class LocalToolsFeatureMixin:
             self.mod_selection_detail.setText(
                 "Choose the installed Workshop mods required by the active local development profile. Local folders are added from the profile on the left."
             )
-        if animate:
-            self.editor_mod_picker_animation.stop()
-            self.editor_mod_picker_animation.setStartValue(0.35)
-            self.editor_mod_picker_animation.setEndValue(1.0)
-            self.editor_mod_picker_animation.start()
         self._refresh_editor_mod_picker()
 
     def _editor_mod_selection_changed(self, item):

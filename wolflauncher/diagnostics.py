@@ -22,7 +22,8 @@ from .platform_detection import (
 )
 from .platforms import current_platform
 from .redaction import redact_support_text
-from .status import resolve_host
+from .settings import server_key
+from .status import ServerStatus, resolve_host
 
 
 @dataclass(frozen=True)
@@ -156,6 +157,7 @@ def run_diagnostics(
     selected_steam_mode: str = "auto",
     launch_engine: str = "",
     generated_at: datetime | None = None,
+    server_statuses: dict[str, ServerStatus] | None = None,
 ) -> str:
     lines: list[str] = []
     lines.append("WolfLauncher diagnostics")
@@ -249,6 +251,24 @@ def run_diagnostics(
             lines.append(f"  {server.name}: {server.host} -> {ip}")
         except OSError as exc:
             lines.append(f"  {server.name}: {server.host} -> DNS failed: {exc}")
+
+    if server_statuses:
+        lines.extend(["", "Latest favourite-server status checks:"])
+        for server in servers:
+            status = server_statuses.get(server_key(server))
+            if status is None:
+                lines.append(f"  {server.name}: {server.host}:{server.query_port} -> not checked")
+                continue
+            lines.append(f"  {server.name}: {server.host}:{server.query_port}")
+            lines.append(f"    outcome: {status.outcome.value}")
+            lines.append(f"    query started: {status.query_started_at or 'unknown'}")
+            lines.append(f"    duration: {status.duration_ms} ms")
+            lines.append(
+                f"    last successful query: {status.last_successful_query or 'none recorded'}"
+            )
+            lines.append(f"    consecutive failures: {status.consecutive_failures}")
+            if status.error:
+                lines.append(f"    detail: {status.error}")
 
     return redact_support_text("\n".join(lines))
 

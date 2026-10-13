@@ -4,6 +4,7 @@ from PySide6.QtCore import QSize, Qt
 from PySide6.QtWidgets import QListWidgetItem
 
 from .curated_server_cards import CuratedServerCard
+from .curated_server_presenter import curated_status_counts
 
 
 class CuratedServerCardsCoordinator:
@@ -21,10 +22,11 @@ class CuratedServerCardsCoordinator:
             for row in range(window.table.rowCount())
             if window.table.item(row, 8)
         ]
-        online = statuses.count("ONLINE")
-        offline = statuses.count("OFFLINE")
+        online, offline, unknown = curated_status_counts(statuses)
         window.curated_online_summary.setText(f"{online} online")
         window.curated_offline_summary.setText(f"{offline} offline")
+        if hasattr(window, "curated_unknown_summary"):
+            window.curated_unknown_summary.setText(f"{unknown} unknown")
 
     def refresh_cards(self):
         window = self.window

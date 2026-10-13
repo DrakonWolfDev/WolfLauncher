@@ -580,6 +580,7 @@ class SettingsFeatureMixin:
                 self.servers,
                 self.native_steam_mode_key(),
                 self.launch_engine_key(),
+                server_statuses=self.curated_status_cache,
             ),
             "Diagnostics report",
         )

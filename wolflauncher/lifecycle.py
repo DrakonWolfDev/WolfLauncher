@@ -23,6 +23,7 @@ WORKER_ATTRIBUTES = (
     "workshop_library_worker",
     "editor_dependency_worker",
     "editor_addon_dependency_worker",
+    "update_thread",
 )
 
 WORKER_COLLECTION_ATTRIBUTES = (

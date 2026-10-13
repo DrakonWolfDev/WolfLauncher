@@ -28,8 +28,8 @@ def curated_server_row(server: Server, status: ServerStatus | None = None) -> li
 
     values[5] = status.resolved_ip
     if not status.online:
-        values[8] = "OFFLINE"
-        values[9] = status.error
+        values[8] = status.display_state
+        values[9] = status.user_message()
         return values
 
     configured_name = server.name if is_displayable_server_name(server.name) else server.host
@@ -46,3 +46,21 @@ def curated_server_row(server: Server, status: ServerStatus | None = None) -> li
     values[14] = display_server_flags(status.password, status.modded)
     values[15] = status.connect
     return values
+
+
+def curated_status_counts(statuses: list[str]) -> tuple[int, int, int]:
+    return (
+        statuses.count("ONLINE"),
+        statuses.count("OFFLINE"),
+        sum(status not in {"ONLINE", "OFFLINE"} for status in statuses),
+    )
+
+
+def all_status_checks_unknown(
+    outcomes: dict[int, str], expected_rows: set[int], *, minimum_checks: int = 2
+) -> bool:
+    return (
+        len(expected_rows) >= minimum_checks
+        and expected_rows.issubset(outcomes)
+        and all(outcomes[row] == "UNKNOWN" for row in expected_rows)
+    )

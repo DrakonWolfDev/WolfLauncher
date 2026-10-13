@@ -23,6 +23,7 @@ dependencies = [
   "PySide6>=6.6",
   "PyYAML>=6.0",
   "keyring>=25.0",
+  "packaging>=24",
   "python-a2s>=1.4.2,<2",
 ]
 
@@ -36,7 +37,7 @@ Repository = "https://github.com/DrakonWolfDev/WolfLauncher"
 version = {attr = "wolflauncher.__version__"}
 
 [tool.setuptools.packages.find]
-include = ["wolflauncher*"]
+include = ["wolflauncher*", "wolf_update*"]
 
 [tool.setuptools.package-data]
 wolflauncher = ["assets/*.svg", "assets/*.png", "assets/*.jpg", "assets/*.json"]

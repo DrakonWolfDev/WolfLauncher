@@ -13,6 +13,8 @@ from wolflauncher.diagnostics import (
 )
 from wolflauncher.models import Server
 from wolflauncher.platform_detection import ProcessCheck, SteamInstall
+from wolflauncher.settings import server_key
+from wolflauncher.status import ServerStatus, ServerStatusOutcome
 
 
 class DiagnosticsTests(unittest.TestCase):
@@ -60,6 +62,31 @@ class DiagnosticsTests(unittest.TestCase):
         )
         self.assertEqual("OK", report.status)
         self.assertIn("Selected Steam mode: Native Steam", report.details)
+
+    def test_diagnostics_include_safe_server_query_history(self):
+        server = Server("Example", "Tests", "example.test", 2302, 27016)
+        status = ServerStatus(
+            False,
+            error="DNS failed: no host",
+            outcome=ServerStatusOutcome.NETWORK_ERROR,
+            query_started_at="2026-10-13T10:00:00+00:00",
+            duration_ms=42,
+            last_successful_query="2026-10-12T09:00:00+00:00",
+            consecutive_failures=3,
+        )
+        with patch("wolflauncher.diagnostics.detect_steam", return_value=[]):
+            with patch("wolflauncher.diagnostics.resolve_host", return_value="203.0.113.10"):
+                report = run_diagnostics(
+                    "",
+                    [server],
+                    server_statuses={server_key(server): status},
+                )
+
+        self.assertIn("Latest favourite-server status checks:", report)
+        self.assertIn("example.test:27016", report)
+        self.assertIn("outcome: network_error", report)
+        self.assertIn("duration: 42 ms", report)
+        self.assertIn("consecutive failures: 3", report)
 
 
 if __name__ == "__main__":

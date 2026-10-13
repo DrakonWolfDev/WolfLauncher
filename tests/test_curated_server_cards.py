@@ -62,6 +62,16 @@ class CuratedServerCardTests(unittest.TestCase):
         self.assertIn("offline or no response", card.metadata_label.text())
         self.assertFalse(card.connect_button.isEnabled())
 
+    def test_unknown_card_explains_failure_without_claiming_offline(self):
+        values = card_values("UNKNOWN")
+        values[9] = "Unable to check server: DNS failed"
+
+        card = CuratedServerCard(0, values)
+
+        self.assertEqual(card.property("onlineState"), "unknown")
+        self.assertIn("Unable to check server", card.metadata_label.text())
+        self.assertFalse(card.connect_button.isEnabled())
+
     def test_card_exposes_server_specific_accessibility_labels(self):
         card = CuratedServerCard(0, card_values())
 

@@ -4,7 +4,7 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from wolflauncher.models import DiscoveredServer, Server
-from wolflauncher.status import ServerStatus
+from wolflauncher.status import ServerStatus, ServerStatusOutcome
 from wolflauncher.workers import (
     ServerEnrichmentWorker,
     StatusWorker,
@@ -63,6 +63,7 @@ class WorkerTests(unittest.TestCase):
         status = _checked_server_status(sample_server())
 
         self.assertFalse(status.online)
+        self.assertIs(status.outcome, ServerStatusOutcome.CHECK_ERROR)
         self.assertEqual(status.error, "status check failed: broken query")
 
     @patch("wolflauncher.workers.discover_dayz_servers", side_effect=OSError("network down"))

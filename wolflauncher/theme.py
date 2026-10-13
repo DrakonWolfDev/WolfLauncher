@@ -79,6 +79,7 @@ QLabel[uiRole="experimentalWarning"] {{ color: {c["warning"]}; background-color:
 QLabel[uiRole="metadata"] {{ color: {c["text_muted"]}; }}
 QLabel[uiRole="statusPositive"] {{ color: {c["positive"]}; background-color: #1e3a2e; border-radius: 9px; padding: 3px 9px; }}
 QLabel[uiRole="statusNegative"] {{ color: {c["negative"]}; background-color: #3a1e1e; border-radius: 9px; padding: 3px 9px; }}
+QLabel[uiRole="statusWarning"] {{ color: {c["warning"]}; background-color: #3a321e; border-radius: 9px; padding: 3px 9px; }}
 QLabel[uiRole="passwordLock"] {{ color: {c["negative"]}; font-size: 15px; }}
 QLabel[uiRole="browserStar"] {{ color: {c["text_muted"]}; font-size: 15px; }}
 QLabel[uiRole="browserStar"][favourite="true"] {{ color: {c["accent"]}; }}
@@ -86,6 +87,7 @@ QLabel[uiRole="cardTitle"] {{ color: {c["text"]}; font-weight: 600; }}
 QWidget[uiRole="brandLockup"] {{ background-color: transparent; }}
 QLabel[uiRole="brandWordmark"] {{ color: {c["text_muted"]}; font-weight: 600; letter-spacing: 1px; }}
 QFrame[uiRole="aboutCard"] {{ background-color: rgba(28, 25, 18, 244); border: 1px solid {c["border_strong"]}; border-top: 3px solid {c["accent"]}; border-radius: 10px; }}
+QFrame[uiRole="updateBanner"] {{ background-color: {c["surface"]}; border-bottom: 1px solid {c["accent"]}; }}
 QLabel[uiRole="aboutTitle"] {{ color: {c["text"]}; font-size: 24px; font-weight: 700; letter-spacing: 3px; }}
 QLabel[uiRole="aboutTagline"] {{ color: {c["accent_hover"]}; font-size: 15px; font-weight: 600; }}
 QLabel[uiRole="aboutMetadata"] {{ color: {c["text_muted"]}; }}

@@ -15,6 +15,7 @@ from PySide6.QtWidgets import (
     QScrollArea,
     QSpinBox,
     QTabWidget,
+    QVBoxLayout,
     QWidget,
 )
 
@@ -78,6 +79,7 @@ from .theme import (
     set_ui_role,
     theme_icon,
 )
+from .update_feature import UpdateFeatureMixin
 from .workshop_resolution_controller import WorkshopResolutionCoordinator
 
 
@@ -88,6 +90,7 @@ class MainWindow(
     SettingsFeatureMixin,
     LocalToolsFeatureMixin,
     LaunchFeatureMixin,
+    UpdateFeatureMixin,
     AboutFeatureMixin,
     QMainWindow,
 ):
@@ -278,7 +281,16 @@ class MainWindow(
             self.tabs.setTabToolTip(index, f"Open {self.tabs.tabText(index)}")
         self.active_main_tab_index = self.tabs.currentIndex()
         self.tabs.currentChanged.connect(self.handle_main_tab_changed)
-        self.setCentralWidget(self.tabs)
+        central = QWidget()
+        central_layout = QVBoxLayout(central)
+        central_layout.setContentsMargins(0, 0, 0, 0)
+        central_layout.setSpacing(0)
+        self.update_banner = self._build_update_banner()
+        central_layout.addWidget(self.update_banner)
+        central_layout.addWidget(self.tabs)
+        self.setCentralWidget(central)
+
+        self.setup_update_feature()
 
         self.apply_refresh_timer()
         self.refresh_statuses()
@@ -287,6 +299,7 @@ class MainWindow(
         QTimer.singleShot(0, self.show_server_cache_recovery_notice)
         QTimer.singleShot(0, self.check_startup_steam_state)
         QTimer.singleShot(0, self.check_initial_server_mods)
+        QTimer.singleShot(1500, self.start_automatic_update_check)
         QTimer.singleShot(30000, self.maybe_auto_refresh_configured_provider)
 
     @staticmethod

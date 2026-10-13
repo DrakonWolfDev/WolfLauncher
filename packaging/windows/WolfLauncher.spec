@@ -74,6 +74,7 @@ datas.extend(
 )
 
 hiddenimports = collect_submodules("keyring.backends")
+hiddenimports.extend(collect_submodules("wolf_update"))
 hiddenimports.extend(
     collect_submodules(
         "win32ctypes", filter=lambda name: not name.startswith("win32ctypes.tests")

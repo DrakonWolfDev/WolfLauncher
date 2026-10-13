@@ -194,5 +194,41 @@ class FavouriteProfileReloadTests(unittest.TestCase):
         window.refresh_recent_servers.assert_called_once()
 
 
+class StatusRefreshNoticeTests(unittest.TestCase):
+    def window(self):
+        status_bar = Mock()
+        return SimpleNamespace(
+            table=Mock(),
+            last_refresh_label=Mock(),
+            _status_refresh_rows={0, 1},
+            _status_refresh_outcomes={0: "UNKNOWN", 1: "UNKNOWN"},
+            _status_failure_notice_shown=False,
+            _set_status_refresh_enabled=Mock(),
+            statusBar=Mock(return_value=status_bar),
+            update_launch_button_text=Mock(),
+        )
+
+    def test_widespread_failure_notice_is_once_per_streak_and_resets_on_recovery(self):
+        window = self.window()
+
+        MainWindow.handle_refresh_finished(window)
+        self.assertEqual(window.statusBar.return_value.showMessage.call_count, 1)
+
+        window._status_refresh_rows = {0, 1}
+        window._status_refresh_outcomes = {0: "UNKNOWN", 1: "UNKNOWN"}
+        MainWindow.handle_refresh_finished(window)
+        self.assertEqual(window.statusBar.return_value.showMessage.call_count, 1)
+
+        window._status_refresh_rows = {0, 1}
+        window._status_refresh_outcomes = {0: "ONLINE", 1: "UNKNOWN"}
+        MainWindow.handle_refresh_finished(window)
+        self.assertFalse(window._status_failure_notice_shown)
+
+        window._status_refresh_rows = {0, 1}
+        window._status_refresh_outcomes = {0: "UNKNOWN", 1: "UNKNOWN"}
+        MainWindow.handle_refresh_finished(window)
+        self.assertEqual(window.statusBar.return_value.showMessage.call_count, 2)
+
+
 if __name__ == "__main__":
     unittest.main()

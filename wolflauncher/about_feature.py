@@ -4,7 +4,7 @@ from html import escape
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
 
 from . import __version__
 from .theme import WOLF_MARK_PATH, brand_wordmark, set_ui_role
@@ -81,6 +81,15 @@ class AboutFeatureMixin:
         version.setAlignment(Qt.AlignCenter)
         set_ui_role(version, "aboutMetadata")
         card_layout.addWidget(version)
+
+        check_updates = QPushButton("Check for Updates")
+        check_updates.setAccessibleName("Check for WolfLauncher updates")
+        check_updates.setToolTip("Check GitHub for a newer WolfLauncher release")
+        if hasattr(self, "check_for_updates"):
+            check_updates.clicked.connect(self.check_for_updates)
+        else:
+            check_updates.setEnabled(False)
+        card_layout.addWidget(check_updates, alignment=Qt.AlignCenter)
 
         copyright_notice = QLabel("© 2026 Wolf Forge")
         copyright_notice.setAlignment(Qt.AlignCenter)

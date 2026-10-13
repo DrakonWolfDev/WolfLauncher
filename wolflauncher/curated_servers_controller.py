@@ -1,3 +1,4 @@
+import logging
 from dataclasses import replace
 from datetime import datetime
 
@@ -30,7 +31,11 @@ from .config import (
 )
 from .curated_dialogs import EditCuratedServerDialog
 from .curated_server_cards import CuratedServerCard
-from .curated_server_presenter import curated_server_row
+from .curated_server_presenter import (
+    all_status_checks_unknown,
+    curated_server_row,
+    curated_status_counts,
+)
 from .curated_status_cache import (
     cached_status_for_server,
     update_status_cache,
@@ -74,8 +79,11 @@ class CuratedServersMixin:
         set_ui_role(self.curated_online_summary, "statusPositive")
         self.curated_offline_summary = QLabel("0 offline")
         set_ui_role(self.curated_offline_summary, "statusNegative")
+        self.curated_unknown_summary = QLabel("0 unknown")
+        set_ui_role(self.curated_unknown_summary, "statusWarning")
         status_summary.addWidget(self.curated_online_summary)
         status_summary.addWidget(self.curated_offline_summary)
+        status_summary.addWidget(self.curated_unknown_summary)
         layout.addLayout(status_summary)
 
         common_settings = QFormLayout()
@@ -323,6 +331,8 @@ class CuratedServersMixin:
             return
         self._set_status_refresh_enabled(False)
         self.last_refresh_label.setText(label)
+        self._status_refresh_rows = set(rows)
+        self._status_refresh_outcomes = {}
         self.worker = StatusWorker(self.servers, rows)
         self.worker.status_ready.connect(self.update_status_row)
         self.worker.finished_all.connect(self.handle_refresh_finished)
@@ -402,10 +412,10 @@ class CuratedServersMixin:
             for row in range(self.table.rowCount())
             if self.table.item(row, 8)
         ]
-        online = statuses.count("ONLINE")
-        offline = statuses.count("OFFLINE")
+        online, offline, unknown = curated_status_counts(statuses)
         self.curated_online_summary.setText(f"{online} online")
         self.curated_offline_summary.setText(f"{offline} offline")
+        self.curated_unknown_summary.setText(f"{unknown} unknown")
 
     def refresh_curated_server_cards(self):
         if not hasattr(self, "server_cards"):
@@ -740,7 +750,19 @@ class CuratedServersMixin:
     def update_status_row(self, row: int, status: ServerStatus):
         if row < 0 or row >= len(self.servers) or row >= self.table.rowCount():
             return
-        update_status_cache(self.curated_status_cache, self.servers[row], status)
+        status = update_status_cache(self.curated_status_cache, self.servers[row], status)
+        refresh_outcomes = getattr(self, "_status_refresh_outcomes", None)
+        if isinstance(refresh_outcomes, dict):
+            refresh_outcomes[row] = status.display_state
+        logging.getLogger("wolflauncher.status").info(
+            "Server status endpoint=%s:%s outcome=%s duration_ms=%s failures=%s detail=%s",
+            self.servers[row].host,
+            self.servers[row].query_port,
+            status.outcome.value,
+            status.duration_ms,
+            status.consecutive_failures,
+            status.error or "none",
+        )
         self._set_item(row, 5, status.resolved_ip)
         if status.online:
             flags_text = display_server_flags(status.password, status.modded)
@@ -756,8 +778,13 @@ class CuratedServersMixin:
             self._set_item(row, 15, status.connect)
         else:
             self._set_item(row, 3, self.servers[row].name)
-            self._set_item(row, 8, "OFFLINE", STATUS_COLOURS["negative"])
-            self._set_item(row, 9, status.error)
+            colour = (
+                STATUS_COLOURS["negative"]
+                if status.display_state == "OFFLINE"
+                else STATUS_COLOURS["warning"]
+            )
+            self._set_item(row, 8, status.display_state, colour)
+            self._set_item(row, 9, status.user_message())
             for column in range(10, 16):
                 self._set_item(row, column, "")
         self.update_curated_status_summary()
@@ -825,6 +852,19 @@ class CuratedServersMixin:
         self._set_status_refresh_enabled(True)
         self.table.resizeColumnsToContents()
         self.last_refresh_label.setText(f"Last updated: {datetime.now().strftime('%H:%M:%S')}")
+        rows = getattr(self, "_status_refresh_rows", set())
+        outcomes = getattr(self, "_status_refresh_outcomes", {})
+        widespread_failure = all_status_checks_unknown(outcomes, rows)
+        if widespread_failure and not getattr(self, "_status_failure_notice_shown", False):
+            self.statusBar().showMessage(
+                "Unable to check any favourite server. Retry Refresh status or copy Diagnostics in Settings.",
+                12000,
+            )
+            self._status_failure_notice_shown = True
+        elif not widespread_failure:
+            self._status_failure_notice_shown = False
+        self._status_refresh_rows = set()
+        self._status_refresh_outcomes = {}
         self.update_launch_button_text()
 
     def handle_refresh_seconds_changed(self):

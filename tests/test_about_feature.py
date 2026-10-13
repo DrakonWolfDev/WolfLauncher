@@ -3,7 +3,7 @@ import unittest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtWidgets import QApplication, QLabel
+from PySide6.QtWidgets import QApplication, QLabel, QPushButton
 
 from wolflauncher import __version__
 from wolflauncher.about_feature import AboutFeatureMixin
@@ -34,6 +34,12 @@ class AboutFeatureTests(unittest.TestCase):
         self.assertIn(f"Version {__version__}", labels)
         self.assertIn("© 2026 Wolf Forge", labels)
         self.assertIn("A WOLF FORGE PROJECT 🐾", labels)
+        check_updates = next(
+            button
+            for button in tab.findChildren(QPushButton)
+            if button.accessibleName() == "Check for WolfLauncher updates"
+        )
+        self.assertFalse(check_updates.isEnabled())
 
 
 if __name__ == "__main__":

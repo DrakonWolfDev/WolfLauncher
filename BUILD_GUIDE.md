@@ -36,6 +36,8 @@ The requirements files have separate purposes; install the set for your task:
 `pyproject.toml` declares installed-package metadata and runtime dependencies.
 Keep its dependency ranges aligned with `requirements.txt`. The release files
 lock a tested dependency set and include transitive packages and hashes.
+`packaging` is a direct runtime dependency because the bundled `wolf_update`
+package uses PEP 440 ordering for final and prerelease versions.
 
 The Windows build has two stages: `scripts/build-windows.ps1` creates and
 smoke-tests the portable bundle; `scripts/build-windows-installer.ps1` packages
@@ -48,6 +50,11 @@ notices so contributors can build and verify releases. Generated `build/`,
 `dist/`, virtual environments, local agent settings and `graphify-out/` are
 excluded from version control and source distributions. Publish the versioned
 artifacts produced by the build scripts, rather than a copy of a working folder.
+
+Both PyInstaller specifications explicitly collect `wolf_update`. After building
+either platform, verify the packaged application opens, remains responsive for at
+least 15 seconds, and completes **About → Check for Updates** without crashing.
+The checker is notification-only and does not require an installer asset to test.
 
 ## Linux — user-local installer
 

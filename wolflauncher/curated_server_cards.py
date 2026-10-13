@@ -72,7 +72,7 @@ class CuratedServerCard(QFrame):
         set_ui_role(self.name_label, "cardTitle")
         self.metadata_label = QLabel(self._metadata(values))
         set_ui_role(self.metadata_label, "cardMetadata")
-        if values[8] == "OFFLINE" and values[9]:
+        if values[8] in {"OFFLINE", "UNKNOWN"} and values[9]:
             self.metadata_label.setToolTip(values[9])
         text.addWidget(self.name_label)
         text.addWidget(self.metadata_label)
@@ -121,13 +121,17 @@ class CuratedServerCard(QFrame):
             return "online"
         if status == "OFFLINE":
             return "offline"
+        if status == "UNKNOWN":
+            return "unknown"
         return "pending"
 
     @staticmethod
     def _metadata(values: list[str]) -> str:
         host = values[15] or f"{values[4]}:{values[6]}"
-        if values[8] == "OFFLINE":
-            reason = values[9] or "Offline, restarting or no response"
+        if values[8] in {"OFFLINE", "UNKNOWN"}:
+            reason = values[9] or (
+                "Server offline" if values[8] == "OFFLINE" else "Unable to check server"
+            )
             return f"{reason} · {host}"
         return " · ".join(part for part in (values[9], host, values[13]) if part)
 

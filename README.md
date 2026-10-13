@@ -27,6 +27,11 @@ see the [changelog](CHANGELOG.md) for version history and unreleased changes.
   client/server mod paths and confirmed public-key synchronisation.
 - **Troubleshooting:** Settings health checks, copyable diagnostics, mod reports
   and saved launch reports.
+- **Update notifications:** quietly checks applicable GitHub releases after
+  startup, shows inert release notes, and opens the official
+  [WolfLauncher page](https://wolf-forge.co.uk/wolf-launcher.html) only when
+  **View Update** is selected. Use **About → Check for Updates** for an immediate
+  manual check. WolfLauncher never downloads or installs updates.
 
 ## Install
 
@@ -217,6 +222,9 @@ is included.
 - **DayZ fails after handoff:** try launching it directly through Steam and
   review the saved launch report. Settings also includes known external
   Steam/Proton compatibility notes.
+- **An update check fails:** normal startup and all launcher features remain
+  available. Retry from **About → Check for Updates** and confirm GitHub is
+  reachable. WolfLauncher will not redirect to GitHub or download anything.
 
 For bug reports, use the [issue tracker](https://github.com/DrakonWolfDev/WolfLauncher/issues).
 Include your OS, WolfLauncher version, installation method, steps to reproduce,
@@ -227,6 +235,7 @@ and relevant diagnostics. Review copied reports before posting them publicly.
 - [Build guide](BUILD_GUIDE.md)
 - [Linux installation guide](docs/INSTALL_LINUX.md)
 - [Source architecture](ARCHITECTURE.md)
+- [Update notifications](docs/UPDATE_NOTIFICATIONS.md)
 - [Changelog](CHANGELOG.md)
 - [Third-party notices](THIRD_PARTY_NOTICES.md)
 

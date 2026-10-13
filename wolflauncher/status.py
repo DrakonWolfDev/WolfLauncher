@@ -5,6 +5,8 @@ import socket
 import subprocess
 import time
 from dataclasses import dataclass
+from datetime import datetime, timezone
+from enum import Enum
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +21,16 @@ SOURCE_GAMEDIG_SCRIPT = (
     / "bin"
     / "gamedig.js"
 )
+
+
+class ServerStatusOutcome(str, Enum):
+    ONLINE = "online"
+    OFFLINE = "offline"
+    TIMEOUT = "timeout"
+    NETWORK_ERROR = "network_error"
+    INVALID_RESPONSE = "invalid_response"
+    CANCELLED = "cancelled"
+    CHECK_ERROR = "check_error"
 
 
 @dataclass
@@ -38,6 +50,44 @@ class ServerStatus:
     connect: str = ""
     error: str = ""
     app_id: object = None
+    outcome: ServerStatusOutcome | str | None = None
+    query_started_at: str = ""
+    duration_ms: int = 0
+    last_successful_query: str = ""
+    consecutive_failures: int = 0
+
+    def __post_init__(self) -> None:
+        if self.outcome is None:
+            self.outcome = (
+                ServerStatusOutcome.ONLINE if self.online else ServerStatusOutcome.OFFLINE
+            )
+        elif not isinstance(self.outcome, ServerStatusOutcome):
+            try:
+                self.outcome = ServerStatusOutcome(self.outcome)
+            except ValueError:
+                self.outcome = ServerStatusOutcome.CHECK_ERROR
+
+    @property
+    def display_state(self) -> str:
+        if self.outcome is ServerStatusOutcome.ONLINE:
+            return "ONLINE"
+        if self.outcome is ServerStatusOutcome.OFFLINE:
+            return "OFFLINE"
+        return "UNKNOWN"
+
+    def user_message(self) -> str:
+        messages = {
+            ServerStatusOutcome.OFFLINE: "Server offline",
+            ServerStatusOutcome.TIMEOUT: "Server isn't responding",
+            ServerStatusOutcome.NETWORK_ERROR: "Unable to check server",
+            ServerStatusOutcome.INVALID_RESPONSE: "Couldn't read server status",
+            ServerStatusOutcome.CANCELLED: "Status check cancelled",
+            ServerStatusOutcome.CHECK_ERROR: "Unable to check server",
+        }
+        message = messages.get(self.outcome, self.error)
+        if self.error and self.error.casefold() not in message.casefold():
+            return f"{message}: {self.error}"
+        return message
 
 
 def resolve_host(host: str) -> str:
@@ -83,14 +133,38 @@ def check_server(
     process_timeout: float = 5,
     cancel_event=None,
 ) -> ServerStatus:
+    started_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    started_monotonic = time.monotonic()
+
+    def finish(status: ServerStatus) -> ServerStatus:
+        status.query_started_at = started_at
+        status.duration_ms = max(0, round((time.monotonic() - started_monotonic) * 1000))
+        if status.online:
+            status.last_successful_query = started_at
+            status.consecutive_failures = 0
+        return status
+
     try:
         ip = resolve_host(server.host)
     except OSError as exc:
-        return ServerStatus(False, error=f"DNS failed: {exc}")
+        return finish(
+            ServerStatus(
+                False,
+                error=f"DNS failed: {exc}",
+                outcome=ServerStatusOutcome.NETWORK_ERROR,
+            )
+        )
 
     command = gamedig_command()
     if command is None:
-        return ServerStatus(False, resolved_ip=ip, error="gamedig not installed")
+        return finish(
+            ServerStatus(
+                False,
+                resolved_ip=ip,
+                error="gamedig not installed",
+                outcome=ServerStatusOutcome.CHECK_ERROR,
+            )
+        )
 
     arguments = [
         *command,
@@ -116,24 +190,66 @@ def check_server(
         else:
             result = _run_cancellable(arguments, process_timeout, cancel_event)
             if result is None:
-                return ServerStatus(False, resolved_ip=ip, error="status check cancelled")
+                return finish(
+                    ServerStatus(
+                        False,
+                        resolved_ip=ip,
+                        error="status check cancelled",
+                        outcome=ServerStatusOutcome.CANCELLED,
+                    )
+                )
     except subprocess.TimeoutExpired:
-        return ServerStatus(False, resolved_ip=ip, error="status check timed out")
+        return finish(
+            ServerStatus(
+                False,
+                resolved_ip=ip,
+                error="status check timed out",
+                outcome=ServerStatusOutcome.TIMEOUT,
+            )
+        )
+    except OSError as exc:
+        return finish(
+            ServerStatus(
+                False,
+                resolved_ip=ip,
+                error=f"status process failed: {exc}",
+                outcome=ServerStatusOutcome.CHECK_ERROR,
+            )
+        )
 
     if result.returncode != 0:
         details = result.stderr.strip() or "offline or no response"
-        return ServerStatus(False, resolved_ip=ip, error=details)
+        return finish(
+            ServerStatus(
+                False,
+                resolved_ip=ip,
+                error=details,
+                outcome=ServerStatusOutcome.CHECK_ERROR,
+            )
+        )
 
     try:
         data = json.loads(result.stdout)
     except json.JSONDecodeError:
-        return ServerStatus(False, resolved_ip=ip, error="invalid gamedig response")
+        return finish(
+            ServerStatus(
+                False,
+                resolved_ip=ip,
+                error="invalid gamedig response",
+                outcome=ServerStatusOutcome.INVALID_RESPONSE,
+            )
+        )
 
     # Some restart/offline states can produce a partial response. Treat those
     # as unavailable instead of showing ONLINE with Unknown / 0/? fields.
     if not isinstance(data, dict) or not data.get("name") or data.get("maxplayers") is None:
-        return ServerStatus(
-            False, resolved_ip=ip, error="offline, restarting, or incomplete query response"
+        return finish(
+            ServerStatus(
+                False,
+                resolved_ip=ip,
+                error="offline, restarting, or incomplete query response",
+                outcome=ServerStatusOutcome.INVALID_RESPONSE,
+            )
         )
 
     raw = data.get("raw", {}) if isinstance(data.get("raw"), dict) else {}
@@ -150,21 +266,24 @@ def check_server(
     connect = data.get("connect") or f"{ip}:{server.game_port}"
     modded = "mod" in tags
 
-    return ServerStatus(
-        online=True,
-        resolved_ip=ip,
-        server_name=str(data.get("name", "")),
-        map_name=str(map_name),
-        players=f"{num_players}/{max_players}",
-        time=str(server_time),
-        day_acceleration=day_acceleration,
-        night_acceleration=night_acceleration,
-        version=str(version),
-        ping=str(ping) if ping != "" else "",
-        password=bool(data.get("password", False)),
-        modded=modded,
-        connect=str(connect),
-        app_id=raw.get("appId"),
+    return finish(
+        ServerStatus(
+            online=True,
+            resolved_ip=ip,
+            server_name=str(data.get("name", "")),
+            map_name=str(map_name),
+            players=f"{num_players}/{max_players}",
+            time=str(server_time),
+            day_acceleration=day_acceleration,
+            night_acceleration=night_acceleration,
+            version=str(version),
+            ping=str(ping) if ping != "" else "",
+            password=bool(data.get("password", False)),
+            modded=modded,
+            connect=str(connect),
+            app_id=raw.get("appId"),
+            outcome=ServerStatusOutcome.ONLINE,
+        )
     )
 
 
