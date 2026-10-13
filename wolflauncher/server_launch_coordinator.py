@@ -49,8 +49,11 @@ class ServerLaunchCoordinator:
         self.mod_callbacks = {}
         self.pending_identity = None
         self.pending_mods = None
+        self.identity_status_request = ""
+        self.identity_status_message = ""
 
     def invalidate(self):
+        self._clear_identity_status(self.request_id)
         self.request_id = ""
         self.context = None
         self.pending_identity = None
@@ -90,7 +93,9 @@ class ServerLaunchCoordinator:
         request_id = self.request_id = uuid.uuid4().hex
         worker = IdentityWorker(server, request_id, mode, engine)
         self.window.identity_workers[request_id] = worker
-        self.window.statusBar().showMessage(f"Verifying the DayZ edition for {server.name}…")
+        self.identity_status_request = request_id
+        self.identity_status_message = f"Verifying the DayZ edition for {server.name}…"
+        self.window.statusBar().showMessage(self.identity_status_message)
         worker.ready.connect(
             lambda request, result, error: self._ready(
                 request, server, result, error, continuation, silent
@@ -214,7 +219,10 @@ class ServerLaunchCoordinator:
             or current is None
             or endpoint_key(current) != endpoint_key(original)
         ):
+            if request_id == self.request_id:
+                self._clear_identity_status(request_id)
             return
+        self._clear_identity_status(request_id)
         if error:
             self.context = None
             if context is not None:
@@ -228,6 +236,17 @@ class ServerLaunchCoordinator:
         self.context = context
         self._save_identity(original, context.server)
         continuation(context)
+
+    def _clear_identity_status(self, request_id):
+        if request_id != self.identity_status_request:
+            return
+        status_bar_factory = getattr(self.window, "statusBar", None)
+        if callable(status_bar_factory):
+            status_bar = status_bar_factory()
+            if status_bar.currentMessage() == self.identity_status_message:
+                status_bar.clearMessage()
+        self.identity_status_request = ""
+        self.identity_status_message = ""
 
     def _save_identity(self, original, resolved):
         window = self.window

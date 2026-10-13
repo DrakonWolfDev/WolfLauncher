@@ -133,6 +133,30 @@ class ServerLaunchContextTests(unittest.TestCase):
         coordinator._ready("request", self.server, self.resolve(), "", callback, True)
         callback.assert_not_called()
 
+    def test_successful_resolution_clears_its_verification_message(self):
+        status_bar = Mock()
+        message = f"Verifying the DayZ edition for {self.server.name}…"
+        status_bar.currentMessage.return_value = message
+        window = SimpleNamespace(
+            active_server_context=lambda: self.server,
+            _shutting_down=False,
+            statusBar=lambda: status_bar,
+            saved_server_repository=None,
+            active_discovered_server=None,
+        )
+        coordinator = ServerLaunchCoordinator(window)
+        coordinator.request_id = "request"
+        coordinator.identity_status_request = "request"
+        coordinator.identity_status_message = message
+        continuation = Mock()
+
+        coordinator._ready(
+            "request", self.server, self.resolve(), "", continuation, True
+        )
+
+        status_bar.clearMessage.assert_called_once_with()
+        continuation.assert_called_once()
+
     def test_mod_worker_failure_retains_request_and_does_not_stall(self):
         from wolflauncher.workers import ModWorker
 

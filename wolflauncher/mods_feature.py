@@ -969,6 +969,10 @@ class ModsFeatureMixin:
         )
         if reply != QMessageBox.Yes:
             return
+        ModsFeatureMixin.start_installed_mod_updates(self, mods, install)
+
+    def start_installed_mod_updates(self, mods, install):
+        """Run a Steam update request for explicit installed-library rows."""
         self.workshop_subscription_names = {
             mod.workshop_id: (mod.name or mod.workshop_id) for mod in mods
         }

@@ -48,9 +48,9 @@ MAX_ENRICHMENT_WORKERS = 8
 WOLFAPI_V1_PAGE_SIZE = 100
 
 
-def _checked_server_status(server: Server) -> ServerStatus:
+def _checked_server_status(server: Server, cancel_event=None) -> ServerStatus:
     try:
-        return check_server(server)
+        return check_server(server, cancel_event=cancel_event)
     except Exception as exc:
         return ServerStatus(
             False,
@@ -65,6 +65,7 @@ class StatusWorker(QThread):
 
     def __init__(self, servers: list[Server], rows: list[int] | None = None):
         super().__init__()
+        self._cancel_event = threading.Event()
         if rows is None:
             self.servers = list(enumerate(servers))
         else:
@@ -78,12 +79,22 @@ class StatusWorker(QThread):
         max_workers = min(MAX_STATUS_WORKERS, len(self.servers))
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {
-                executor.submit(_checked_server_status, server): index
+                executor.submit(_checked_server_status, server, self._cancel_event): index
                 for index, server in self.servers
             }
             for future in as_completed(futures):
+                if self._cancel_event.is_set():
+                    continue
                 self.status_ready.emit(futures[future], future.result())
-        self.finished_all.emit()
+        if not self._cancel_event.is_set():
+            self.finished_all.emit()
+
+    def cancel(self):
+        self._cancel_event.set()
+        super().requestInterruption()
+
+    def requestInterruption(self):
+        self.cancel()
 
 
 class ModWorker(QThread):

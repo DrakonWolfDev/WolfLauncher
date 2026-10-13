@@ -1,4 +1,5 @@
 import os
+import threading
 import unittest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -13,7 +14,7 @@ from wolf_update.qt import QtUpdateChecker
 class Service:
     called_thread = None
 
-    def check(self, *, manual=False):
+    def check(self, *, manual=False, cancelled=None):
         self.called_thread = QThread.currentThread()
         return CheckResult(CheckStatus.UP_TO_DATE, message=str(manual))
 
@@ -57,6 +58,29 @@ class QtUpdateCheckerTests(unittest.TestCase):
             self.app.processEvents()
             self.assertFalse(checker.is_running())
             checker.result_ready.disconnect(loop.quit)
+
+    def test_interruption_releases_qt_worker_and_suppresses_late_result(self):
+        release_transport = threading.Event()
+
+        class StalledService:
+            def check(self, *, manual=False, cancelled=None):
+                release_transport.wait(2)
+                if cancelled and cancelled():
+                    return CheckResult(CheckStatus.CANCELLED)
+                return CheckResult(CheckStatus.UP_TO_DATE)
+
+        checker = QtUpdateChecker(StalledService())
+        received = []
+        checker.result_ready.connect(lambda *args: received.append(args))
+        self.assertTrue(checker.check(manual=True))
+
+        checker.requestInterruption()
+
+        self.assertFalse(checker.is_running())
+        self.assertTrue(checker.wait(500))
+        release_transport.set()
+        self.app.processEvents()
+        self.assertEqual(received, [])
 
 
 if __name__ == "__main__":

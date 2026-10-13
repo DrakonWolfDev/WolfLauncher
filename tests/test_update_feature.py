@@ -64,8 +64,10 @@ class UpdateFeatureTests(unittest.TestCase):
 
     @patch("wolflauncher.update_feature.QMessageBox.information")
     def test_manual_up_to_date_check_gives_feedback(self, information):
+        self.window.statusBar().showMessage("Checking for WolfLauncher updates…")
         self.window.handle_update_result(CheckResult(CheckStatus.UP_TO_DATE), True)
         information.assert_called_once()
+        self.assertEqual(self.window.statusBar().currentMessage(), "")
 
     @patch("wolflauncher.update_feature.QMessageBox.warning")
     def test_failed_automatic_check_is_silent_but_manual_failure_is_visible(self, warning):

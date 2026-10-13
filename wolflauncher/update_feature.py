@@ -120,6 +120,8 @@ class UpdateFeatureMixin:
         return True
 
     def handle_update_result(self, result, manual: bool) -> None:
+        if manual:
+            self.statusBar().clearMessage()
         self._persist_update_state()
         if result.status is CheckStatus.AVAILABLE:
             self.show_update_banner(result.release)

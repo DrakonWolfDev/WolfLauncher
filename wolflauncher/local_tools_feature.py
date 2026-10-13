@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from PySide6.QtCore import QProcess, QPropertyAnimation, QSize, Qt, QTimer, QUrl
+from PySide6.QtCore import QProcess, QSize, Qt, QTimer, QUrl
 from PySide6.QtGui import QDesktopServices, QPixmap
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWidgets import (
@@ -11,7 +11,6 @@ from PySide6.QtWidgets import (
     QFileDialog,
     QFormLayout,
     QFrame,
-    QGraphicsOpacityEffect,
     QHBoxLayout,
     QLabel,
     QLineEdit,
@@ -671,14 +670,6 @@ class LocalToolsFeatureMixin:
             label = QLabel(entry)
             label.setWordWrap(True)
             pill_layout.addWidget(label)
-            opacity = QGraphicsOpacityEffect(pill)
-            pill.setGraphicsEffect(opacity)
-            animation = QPropertyAnimation(opacity, b"opacity", pill)
-            animation.setDuration(180)
-            animation.setStartValue(0.0)
-            animation.setEndValue(1.0)
-            animation.start()
-            pill._selection_animation = animation
             self.selected_mods_layout.addWidget(pill)
 
     def _clear_editor_dependency_worker(self, worker):

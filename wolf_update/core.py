@@ -25,6 +25,7 @@ class CheckStatus(str, Enum):
     DISMISSED = "dismissed"
     THROTTLED = "throttled"
     FAILED = "failed"
+    CANCELLED = "cancelled"
 
 
 @dataclass(frozen=True)
@@ -112,9 +113,19 @@ class UpdateService:
         self.clock = clock or (lambda: datetime.now(timezone.utc))
         self.browser_open = browser_open
 
-    def check(self, *, manual: bool = False) -> CheckResult:
+    def check(
+        self,
+        *,
+        manual: bool = False,
+        cancelled: Callable[[], bool] | None = None,
+    ) -> CheckResult:
+        is_cancelled = cancelled or (lambda: False)
+        if is_cancelled():
+            return CheckResult(CheckStatus.CANCELLED)
         now = self.clock()
         state = self.store.load()
+        if is_cancelled():
+            return CheckResult(CheckStatus.CANCELLED)
         if not manual and _is_throttled(state, now):
             return CheckResult(CheckStatus.THROTTLED)
         try:
@@ -125,6 +136,8 @@ class UpdateService:
             )
         except (ReleaseSourceError, OSError, ValueError) as exc:
             return CheckResult(CheckStatus.FAILED, message=str(exc))
+        if is_cancelled():
+            return CheckResult(CheckStatus.CANCELLED)
         state = replace(state, last_successful_check=now.astimezone(timezone.utc).isoformat())
         self.store.save(state)
         if release is None:

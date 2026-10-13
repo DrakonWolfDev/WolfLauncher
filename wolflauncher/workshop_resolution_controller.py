@@ -141,6 +141,9 @@ class WorkshopResolutionCoordinator:
 
     def force_update_mod(self, row: int):
         window = self.window
+        if window.viewing_installed_workshop_library():
+            self._force_update_library_mod()
+            return
         result = window._selected_mod_result(successful=True)
         workshop_id = window._mods_cell(row, 2)
         mod = (
@@ -177,6 +180,39 @@ class WorkshopResolutionCoordinator:
         )
         if reply == QMessageBox.Yes:
             self.start_resolution([mod], result, install, force_update=True)
+
+    def _force_update_library_mod(self):
+        window = self.window
+        mod = window.selected_required_mod()
+        if mod is None:
+            QMessageBox.warning(
+                window, "No mod selected", "Select an installed mod to force its Steam update."
+            )
+            return
+        if window.workshop_subscription_worker and window.workshop_subscription_worker.isRunning():
+            QMessageBox.information(
+                window,
+                "Steam Workshop in progress",
+                "Wait for the current Steam Workshop operation to finish.",
+            )
+            return
+        install = self._install()
+        if not install or not install.workshop_dir or not install.running:
+            QMessageBox.warning(
+                window, "Steam unavailable", "Start the selected Steam client and try again."
+            )
+            return
+        reply = QMessageBox.question(
+            window,
+            "Force Steam update?",
+            f"Ask Steam to prioritise a fresh download check for {mod.name or mod.workshop_id}?\n\n"
+            "This keeps the subscription. Steam controls whether content needs downloading; "
+            "WolfLauncher will refresh the installed Workshop library when the request finishes.",
+            QMessageBox.Yes | QMessageBox.No,
+            QMessageBox.No,
+        )
+        if reply == QMessageBox.Yes:
+            window.start_installed_mod_updates([mod], install)
 
     def start_resolution(self, mods, result, install, *, force_update: bool = False):
         window = self.window

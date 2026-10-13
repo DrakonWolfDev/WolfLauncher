@@ -1,3 +1,4 @@
+import threading
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -65,6 +66,41 @@ class WorkerTests(unittest.TestCase):
         self.assertFalse(status.online)
         self.assertIs(status.outcome, ServerStatusOutcome.CHECK_ERROR)
         self.assertEqual(status.error, "status check failed: broken query")
+
+    @patch("wolflauncher.workers.check_server", return_value=ServerStatus(False))
+    def test_status_check_receives_worker_cancellation_event(self, check_server):
+        worker = StatusWorker([sample_server()])
+
+        worker.run()
+
+        check_server.assert_called_once_with(
+            sample_server(), cancel_event=worker._cancel_event
+        )
+
+    def test_status_worker_interruption_sets_query_cancellation(self):
+        worker = StatusWorker([sample_server()])
+
+        worker.requestInterruption()
+
+        self.assertTrue(worker._cancel_event.is_set())
+
+    @patch("wolflauncher.workers.check_server")
+    def test_status_worker_stops_promptly_when_query_is_cancelled(self, check_server):
+        started = threading.Event()
+
+        def stalled_query(_server, *, cancel_event):
+            started.set()
+            cancel_event.wait(2)
+            return ServerStatus(False, outcome=ServerStatusOutcome.CANCELLED)
+
+        check_server.side_effect = stalled_query
+        worker = StatusWorker([sample_server()])
+        worker.start()
+        self.assertTrue(started.wait(1))
+
+        worker.requestInterruption()
+
+        self.assertTrue(worker.wait(500))
 
     @patch("wolflauncher.workers.discover_dayz_servers", side_effect=OSError("network down"))
     def test_steam_discovery_worker_emits_recoverable_error(self, _discover):

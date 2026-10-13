@@ -6,7 +6,7 @@ from unittest.mock import patch
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QLineEdit, QListWidget
+from PySide6.QtWidgets import QApplication, QLabel, QLineEdit, QListWidget, QVBoxLayout, QWidget
 
 from wolflauncher.local_tools import (
     DAYZ_EDITOR_MODS,
@@ -36,6 +36,15 @@ class EditorModPickerHarness(LocalToolsFeatureMixin):
 
     def _update_mod_selection_summary(self):
         pass
+
+
+class SelectedModPillsHarness(LocalToolsFeatureMixin):
+    def __init__(self):
+        self.mod_selection_target = "editor"
+        self.selected_mods_title = QLabel()
+        self.selected_mods_hint = QLabel()
+        self.selected_mods_widget = QWidget()
+        self.selected_mods_layout = QVBoxLayout(self.selected_mods_widget)
 
 
 class LocalToolsTests(unittest.TestCase):
@@ -148,6 +157,20 @@ class LocalToolsTests(unittest.TestCase):
             },
             original_checks,
         )
+
+    def test_long_selected_mod_summary_uses_static_effect_free_pills(self):
+        picker = SelectedModPillsHarness()
+        entries = [f"Workshop Mod {index:02d} ({1000 + index})" for index in range(46)]
+
+        picker._update_selected_mod_pills(entries, [])
+        self.app.processEvents()
+
+        self.assertEqual(picker.selected_mods_layout.count(), 46)
+        for index in range(picker.selected_mods_layout.count()):
+            pill = picker.selected_mods_layout.itemAt(index).widget()
+            self.assertIsNotNone(pill)
+            self.assertIsNone(pill.graphicsEffect())
+            self.assertFalse(hasattr(pill, "_selection_animation"))
 
 
 if __name__ == "__main__":

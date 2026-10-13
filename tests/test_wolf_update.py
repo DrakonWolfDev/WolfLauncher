@@ -141,6 +141,21 @@ class WolfUpdateTests(unittest.TestCase):
         self.assertIs(service.check().status, CheckStatus.FAILED)
         self.assertEqual(source.calls, 2)
 
+    def test_cancelled_check_does_not_persist_a_success(self):
+        source = Source()
+        store = MemoryStateStore()
+        checks = 0
+
+        def cancelled():
+            nonlocal checks
+            checks += 1
+            return checks >= 3
+
+        result = UpdateService(app(), store, source=source).check(cancelled=cancelled)
+
+        self.assertIs(result.status, CheckStatus.CANCELLED)
+        self.assertIsNone(store.load().last_successful_check)
+
     def test_dismissal_hides_automatic_notice_but_manual_check_shows_it(self):
         source = Source([release("v0.9.0b3")])
         store = MemoryStateStore(UpdateState(dismissed_version="0.9.0b3"))

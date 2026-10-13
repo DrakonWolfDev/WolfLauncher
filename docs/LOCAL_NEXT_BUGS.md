@@ -12,6 +12,11 @@ Wolf Forge principle: **Calm on the surface. Detailed underneath.**
 
 ## Priority 1 — Editor mod rows disappear while scrolling
 
+Status: implemented locally on 13 October 2026. The picker remains effect-free and
+the separate selected-mod summary now creates static pills without per-row graphics
+effects or animations. Regression coverage exercises 60 picker rows and 46 summary
+pills, including scroll, filter, refresh, selection state, and effect ownership.
+
 ### Report
 
 Darren found that, with a large installed-mod collection, entries in the Editor page's
@@ -31,9 +36,8 @@ pill in `_update_selected_mod_pills()`, so that path must be isolated and covere
 - `_filter_editor_mod_picker()` hides individual items based on the current text.
 - The picker uses uniform item sizes. Its widget-level opacity effect was removed after
   it was identified as unsafe for a long virtualized item view.
-- `_update_selected_mod_pills()` still gives every selected-pill frame its own opacity
-  effect and short animation. The later screenshot indicates that these effects can
-  also leave apparently missing rows in the scroll area's child widget.
+- `_update_selected_mod_pills()` previously gave every selected-pill frame its own
+  opacity effect and short animation. Those per-pill effects have now been removed.
 
 ### Investigation
 
@@ -195,6 +199,14 @@ bounded, manual refresh works, and a successful later query clears the error sta
 
 ## Priority 4 — Update check delays application shutdown
 
+Status: implemented locally on 13 October 2026 and corrected after manual retesting.
+Update checks now have a cooperative cancellation signal. Shutdown releases the Qt
+worker promptly, suppresses late results, and prevents a cancelled transport from
+recording a successful check. Manual retesting also exposed two confounding issues:
+the update-check status message was not cleared after completion, and concurrent server
+status workers ignored shutdown interruption. The message now clears and GameDig probes
+receive a cancellation event so they terminate promptly during application shutdown.
+
 ### Report
 
 Closing WolfLauncher while the status bar said `Checking for WolfLauncher updates…`
@@ -210,12 +222,12 @@ was not merely a brief orderly handoff.
 - `wolf_update.qt.QtUpdateChecker` runs `UpdateService.check()` in a `QThreadPool` and
   is included in the runtime worker list as `update_thread`.
 - `GitHubReleaseSource` passes a nominal 10-second timeout to `urllib.request.urlopen()`.
-- Shutdown calls `requestInterruption()` on active workers, but the update checker's
-  implementation is currently a no-op and the blocking urllib operation has no
-  cancellation signal.
-- Once the 15-second shutdown deadline expires, the coordinator can kill the separate
-  WolfAPI `QProcess`; it cannot terminate the update thread and continues polling until
-  the network call returns.
+- Shutdown calls `requestInterruption()` on active workers. The update checker now
+  signals cancellation and promptly releases its Qt runnable while the bounded urllib
+  operation winds down independently.
+- The coordinator can kill the separate WolfAPI `QProcess` after its shutdown deadline.
+  Update cancellation does not forcibly terminate Python threads; it releases the Qt
+  worker while the bounded daemon transport winds down independently.
 
 ### Required behaviour
 
@@ -248,6 +260,49 @@ thread.
 - No update result UI or settings write occurs after shutdown begins.
 - Normal automatic and manual update checks continue to work on Windows and Linux.
 
+## Priority 5 — Edition verification message never clears
+
+Status: implemented locally on 13 October 2026. Successful edition resolution now
+clears the exact status-bar message owned by that request. Invalidated, replaced, and
+stale requests also clear only their own message, avoiding both an indefinitely stale
+“Verifying…” state and accidental removal of a newer status message.
+
+### Report
+
+After selecting New Dawn Pripyat, the status bar remained on
+`Verifying the DayZ edition for New Dawn Pripyat…` for an apparently indefinite time.
+The resolution worker was not necessarily still active: the coordinator displayed the
+message when work started but never cleared it on the successful continuation path.
+
+### Acceptance criteria
+
+- Successful resolution clears the verification message before continuing.
+- Failure still replaces it with the actionable error for a bounded time.
+- Selection changes, cancellation, and replacement requests cannot leave stale text.
+- A late callback cannot clear the message belonging to a newer request.
+
+## Priority 6 — Force update rejects installed-library selections
+
+Status: implemented locally on 13 October 2026. “Force Steam update selected mod” now
+uses the selected installed-Workshop row when the all-mods library view is active. It
+starts a one-item library update session and refreshes that library on completion,
+without requiring an unrelated selected-server mod check. Server-specific rows retain
+their existing request-context validation.
+
+### Report
+
+Using Force Steam update in the Installed DayZ Workshop library incorrectly displayed
+`Mod check unavailable` and asked for the selected server to be rechecked. The shared
+button handler only searched the last server-specific `ModCheckResult`, even though the
+button had been enabled from an installed-library selection.
+
+### Acceptance criteria
+
+- A selected installed-library mod can be submitted for a forced Steam update check.
+- The operation does not require or reuse a server-specific mod result.
+- Existing Steam-running, installation, confirmation, and single-operation guards apply.
+- Server-specific force updates continue to require a matching successful server check.
+
 ## Suggested delivery order
 
 1. Reproduce and fix the Editor list rendering issue because its scope is isolated.
@@ -257,5 +312,9 @@ thread.
    recovery coverage as a focused reliability change.
 4. Make update checks cooperatively cancellable and bound close latency with a focused
    lifecycle regression test.
+5. Clear edition-verification status ownership on success, failure, cancellation, and
+   request replacement.
+6. Route installed-library force updates through the library update workflow rather
+   than selected-server validation.
 
 Keep each issue as a separate reviewable change with its own regression tests.
