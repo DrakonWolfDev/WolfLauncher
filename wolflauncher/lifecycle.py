@@ -8,6 +8,7 @@ WORKER_ATTRIBUTES = (
     "worker",
     "mod_worker",
     "workshop_subscription_worker",
+    "workshop_unsubscribe_worker",
     "workshop_state_worker",
     "preflight_mod_worker",
     "preflight_workshop_worker",

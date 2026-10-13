@@ -75,6 +75,7 @@ from .workers import (
     ModWorker,
     WorkshopLibraryWorker,
     WorkshopSubscriptionWorker,
+    WorkshopUnsubscribeWorker,
 )
 from .workshop_subscription import (
     ITEM_STATE_DOWNLOADING,
@@ -253,8 +254,13 @@ class ModsFeatureMixin:
         self.mod_detail_open_button = QPushButton("Open Workshop page")
         self.mod_detail_open_button.setEnabled(False)
         self.mod_detail_open_button.clicked.connect(self.open_selected_workshop_page)
+        self.mod_detail_uninstall_button = QPushButton("Uninstall mod")
+        self.mod_detail_uninstall_button.setEnabled(False)
+        self.mod_detail_uninstall_button.setVisible(False)
+        self.mod_detail_uninstall_button.clicked.connect(self.uninstall_selected_workshop_mod)
         open_row = QHBoxLayout()
         open_row.addStretch(1)
+        open_row.addWidget(self.mod_detail_uninstall_button)
         open_row.addWidget(self.mod_detail_open_button)
         detail_layout.addLayout(open_row)
 
@@ -288,6 +294,7 @@ class ModsFeatureMixin:
         QWidget.setTabOrder(self.mods_back_to_browser_button, self.mods_launch_button)
         self.update_launch_button_text()
         self.installed_workshop_mods = []
+        self.workshop_unsubscribe_worker = None
         return widget
 
     def recheck_current_mod_view(self):
@@ -300,18 +307,22 @@ class ModsFeatureMixin:
         return self.mod_view.currentIndex() == 1
 
     def change_mod_view(self, _index: int):
-        if self.viewing_installed_workshop_library():
+        viewing_library = self.viewing_installed_workshop_library()
+        if viewing_library:
             self.show_installed_workshop_library()
         elif self.last_mod_result:
             self.display_mods_result(self.last_mod_result)
-        self.update_installed_mods_button.setVisible(self.viewing_installed_workshop_library())
+        self.update_installed_mods_button.setVisible(viewing_library)
+        self.mod_detail_uninstall_button.setVisible(
+            viewing_library and not ModsFeatureMixin.experimental_product_active(self)
+        )
         self.recheck_mods_button.setText(
             (
                 "Recheck available local mods"
                 if ModsFeatureMixin.experimental_product_active(self)
                 else "Recheck installed Workshop mods"
             )
-            if self.viewing_installed_workshop_library()
+            if viewing_library
             else "Recheck selected server mods"
         )
 
@@ -632,6 +643,16 @@ class ModsFeatureMixin:
         mod = self.selected_required_mod()
         if hasattr(self, "force_update_button"):
             self.force_update_button.setEnabled(mod is not None)
+        if hasattr(self, "mod_detail_uninstall_button"):
+            self.mod_detail_uninstall_button.setEnabled(
+                mod is not None
+                and self.viewing_installed_workshop_library()
+                and not ModsFeatureMixin.experimental_product_active(self)
+                and not (
+                    self.workshop_unsubscribe_worker
+                    and self.workshop_unsubscribe_worker.isRunning()
+                )
+            )
         if mod is None:
             self._set_mod_detail_status("warning")
             self.mod_detail_title.setText("Select a mod to see its Workshop details")
@@ -890,6 +911,71 @@ class ModsFeatureMixin:
             QMessageBox.warning(self, "No mod selected", "Select a mod first.")
             return
         self.open_workshop_page_for_mod_row(row)
+
+    def uninstall_selected_workshop_mod(self):
+        if not self.viewing_installed_workshop_library():
+            return
+        mod = self.selected_required_mod()
+        if mod is None:
+            QMessageBox.warning(self, "No mod selected", "Select an installed mod first.")
+            return
+        if ModsFeatureMixin.experimental_product_active(self):
+            QMessageBox.warning(
+                self,
+                "Uninstall unavailable",
+                "Experimental uses Stable DayZ Workshop content. Manage these subscriptions "
+                "from the Stable installation to avoid removing shared mods unexpectedly.",
+            )
+            return
+        install = self.selected_steam_install()
+        if not install or not install.workshop_dir or not install.running:
+            QMessageBox.warning(
+                self,
+                "Steam required",
+                "Start the selected Steam client, then try uninstalling this mod again.",
+            )
+            return
+        if self.workshop_unsubscribe_worker and self.workshop_unsubscribe_worker.isRunning():
+            return
+        name = mod.name or mod.installed_name or mod.workshop_id
+        reply = QMessageBox.warning(
+            self,
+            "Uninstall Workshop mod?",
+            f"Uninstall {name} (Workshop {mod.workshop_id})?\n\n"
+            "This unsubscribes the signed-in Steam account from the mod. Steam will remove "
+            "its managed local files, and servers that require it will need it downloaded again.\n\n"
+            "WolfLauncher will not delete folders directly.",
+            QMessageBox.Yes | QMessageBox.Cancel,
+            QMessageBox.Cancel,
+        )
+        if reply != QMessageBox.Yes:
+            return
+        worker = WorkshopUnsubscribeWorker(mod.workshop_id, install)
+        self.workshop_unsubscribe_worker = worker
+        self.mod_detail_uninstall_button.setEnabled(False)
+        worker.unsubscribe_ready.connect(self.finish_workshop_uninstall)
+        worker.finished.connect(self.clear_workshop_unsubscribe_worker)
+        worker.start()
+
+    def finish_workshop_uninstall(self, result):
+        if result.unsubscribed:
+            QMessageBox.information(
+                self,
+                "Mod uninstall requested",
+                "Steam confirmed the unsubscribe request. It may take a moment to remove the "
+                "local Workshop files; recheck the library after Steam finishes.",
+            )
+        else:
+            QMessageBox.warning(
+                self,
+                "Could not uninstall mod",
+                result.error or "Steam did not confirm the unsubscribe request.",
+            )
+
+    def clear_workshop_unsubscribe_worker(self):
+        self.workshop_unsubscribe_worker = None
+        if self.viewing_installed_workshop_library():
+            self.show_installed_workshop_library()
 
     def open_missing_workshop_pages(self):
         result = self._selected_mod_result(successful=True)

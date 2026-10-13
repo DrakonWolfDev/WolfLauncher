@@ -24,6 +24,7 @@ def owner_with(**overrides):
         "worker": None,
         "mod_worker": None,
         "workshop_subscription_worker": None,
+        "workshop_unsubscribe_worker": None,
         "workshop_state_worker": None,
         "preflight_mod_worker": None,
         "preflight_workshop_worker": None,

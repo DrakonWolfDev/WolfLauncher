@@ -128,6 +128,7 @@ class MainWindow(
         self.worker = None
         self.mod_worker = None
         self.workshop_subscription_worker = None
+        self.workshop_unsubscribe_worker = None
         self.workshop_state_worker = None
         self.preflight_dialog = None
         self.preflight_mod_worker = None

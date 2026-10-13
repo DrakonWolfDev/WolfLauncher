@@ -41,6 +41,7 @@ from .workshop_subscription import (
     WorkshopSubscriptionResult,
     query_workshop_item_states_isolated,
     subscribe_workshop_items_isolated,
+    unsubscribe_workshop_item_isolated,
 )
 
 MAX_STATUS_WORKERS = 8
@@ -293,6 +294,20 @@ class WorkshopSubscriptionWorker(QThread):
         except Exception as exc:
             result = WorkshopSubscriptionResult((), tuple(self.workshop_ids), error=str(exc))
         self.subscription_ready.emit(result)
+
+
+class WorkshopUnsubscribeWorker(QThread):
+    unsubscribe_ready = Signal(object)
+
+    def __init__(self, workshop_id: str, install):
+        super().__init__()
+        self.workshop_id = workshop_id
+        self.install = install
+
+    def run(self):
+        self.unsubscribe_ready.emit(
+            unsubscribe_workshop_item_isolated(self.workshop_id, self.install)
+        )
 
 
 class WorkshopStateWorker(QThread):

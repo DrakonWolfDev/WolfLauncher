@@ -133,6 +133,13 @@ class WorkshopStateResult:
 
 
 @dataclass(frozen=True)
+class WorkshopUnsubscribeResult:
+    workshop_id: str
+    unsubscribed: bool = False
+    error: str = ""
+
+
+@dataclass(frozen=True)
 class WorkshopRecoveryState:
     """Filesystem evidence of DayZ Workshop items left in Steam's staging area."""
 
@@ -263,6 +270,8 @@ class SteamWorkshopClient:
 
         library.SteamAPI_ISteamUGC_SubscribeItem.argtypes = [ctypes.c_void_p, ctypes.c_uint64]
         library.SteamAPI_ISteamUGC_SubscribeItem.restype = ctypes.c_uint64
+        library.SteamAPI_ISteamUGC_UnsubscribeItem.argtypes = [ctypes.c_void_p, ctypes.c_uint64]
+        library.SteamAPI_ISteamUGC_UnsubscribeItem.restype = ctypes.c_uint64
         library.SteamAPI_ISteamUGC_GetItemState.argtypes = [ctypes.c_void_p, ctypes.c_uint64]
         library.SteamAPI_ISteamUGC_GetItemState.restype = ctypes.c_uint32
         library.SteamAPI_ISteamUGC_GetItemDownloadInfo.argtypes = [
@@ -306,6 +315,16 @@ class SteamWorkshopClient:
         if not call:
             raise WorkshopSubscriptionError(
                 f"Steam rejected the subscription request for Workshop item {workshop_id}."
+            )
+
+    def unsubscribe(self, workshop_id: str) -> None:
+        assert self._library is not None and self._ugc
+        call = self._library.SteamAPI_ISteamUGC_UnsubscribeItem(
+            self._ugc, ctypes.c_uint64(int(workshop_id))
+        )
+        if not call:
+            raise WorkshopSubscriptionError(
+                f"Steam rejected the unsubscribe request for Workshop item {workshop_id}."
             )
 
     def request_download(self, workshop_id: str, *, high_priority: bool = False) -> bool:
@@ -496,6 +515,89 @@ def query_workshop_item_states_isolated(
             result = messages.get(timeout=timeout_seconds)
         except queue.Empty:
             result = WorkshopStateResult(error="Steam Workshop state check timed out.")
+    finally:
+        process.join(timeout=5)
+        if process.is_alive():
+            process.terminate()
+            process.join(timeout=5)
+        messages.close()
+        messages.join_thread()
+    return result
+
+
+def unsubscribe_workshop_item(
+    workshop_id: str,
+    install: SteamInstall,
+    *,
+    timeout_seconds: float = 15,
+    poll_seconds: float = 0.1,
+) -> WorkshopUnsubscribeResult:
+    """Ask Steam to unsubscribe one item and wait for its subscription state to clear."""
+    item_id = str(workshop_id).strip()
+    if not item_id.isdigit() or int(item_id) <= 0:
+        return WorkshopUnsubscribeResult(item_id, error="The selected mod has an invalid Workshop ID.")
+    library_path = find_steam_api_library(install)
+    if not library_path:
+        return WorkshopUnsubscribeResult(
+            item_id,
+            error="The selected Steam installation has no 64-bit Steam API redistributable.",
+        )
+    try:
+        with SteamWorkshopClient(library_path) as client:
+            client.run_callbacks()
+            if not client.item_progress(item_id).state & ITEM_STATE_SUBSCRIBED:
+                return WorkshopUnsubscribeResult(
+                    item_id,
+                    error=(
+                        "Steam does not report this local item as subscribed, so WolfLauncher "
+                        "left its files untouched."
+                    ),
+                )
+            client.unsubscribe(item_id)
+            deadline = time.monotonic() + timeout_seconds
+            while time.monotonic() < deadline:
+                client.run_callbacks()
+                if not client.item_progress(item_id).state & ITEM_STATE_SUBSCRIBED:
+                    return WorkshopUnsubscribeResult(item_id, unsubscribed=True)
+                time.sleep(poll_seconds)
+    except Exception as exc:
+        return WorkshopUnsubscribeResult(item_id, error=str(exc))
+    return WorkshopUnsubscribeResult(
+        item_id,
+        error="Steam did not confirm the unsubscribe request before the timeout.",
+    )
+
+
+def _unsubscribe_process_main(workshop_id: str, install: SteamInstall, messages) -> None:
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    silence_helper_output()
+    messages.put(unsubscribe_workshop_item(workshop_id, install))
+
+
+def unsubscribe_workshop_item_isolated(
+    workshop_id: str,
+    install: SteamInstall,
+    *,
+    timeout_seconds: float = 30,
+) -> WorkshopUnsubscribeResult:
+    """Unsubscribe in a disposable Steamworks process without deleting files directly."""
+    item_id = str(workshop_id).strip()
+    unavailable = workshop_automation_unavailable_reason(install)
+    if unavailable:
+        return WorkshopUnsubscribeResult(item_id, error=unavailable)
+    context = multiprocessing.get_context("spawn")
+    messages = context.Queue()
+    process = context.Process(
+        target=_unsubscribe_process_main,
+        args=(item_id, install, messages),
+        name="wolflauncher-steam-workshop-unsubscribe",
+    )
+    process.start()
+    try:
+        try:
+            result = messages.get(timeout=timeout_seconds)
+        except queue.Empty:
+            result = WorkshopUnsubscribeResult(item_id, error="Steam Workshop uninstall timed out.")
     finally:
         process.join(timeout=5)
         if process.is_alive():
