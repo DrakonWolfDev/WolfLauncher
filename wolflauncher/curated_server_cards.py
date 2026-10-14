@@ -133,7 +133,12 @@ class CuratedServerCard(QFrame):
                 "Server offline" if values[8] == "OFFLINE" else "Unable to check server"
             )
             return f"{reason} · {host}"
-        return " · ".join(part for part in (values[9], host, values[13]) if part)
+        details = " · ".join(part for part in (values[9], host, values[13]) if part)
+        if values[8] == "Rechecking…":
+            return f"Rechecking… · Last known details · {details}"
+        if values[8] == "Checking…":
+            return f"Checking… · {details}"
+        return details
 
     @staticmethod
     def _stats(values: list[str]) -> str:

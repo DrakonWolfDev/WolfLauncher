@@ -294,7 +294,7 @@ class MainWindow(
         self.setup_update_feature()
 
         self.apply_refresh_timer()
-        self.refresh_statuses()
+        self.refresh_statuses(startup=True)
         self.refresh_server_browser()
         self.update_settings_health()
         QTimer.singleShot(0, self.show_server_cache_recovery_notice)

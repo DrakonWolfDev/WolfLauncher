@@ -65,9 +65,12 @@ class StatusWorker(QThread):
     status_ready = Signal(int, object)
     finished_all = Signal()
 
-    def __init__(self, servers: list[Server], rows: list[int] | None = None):
+    def __init__(
+        self, servers: list[Server], rows: list[int] | None = None, *, retry_failed: bool = False
+    ):
         super().__init__()
         self._cancel_event = threading.Event()
+        self.retry_failed = retry_failed
         if rows is None:
             self.servers = list(enumerate(servers))
         else:
@@ -81,7 +84,7 @@ class StatusWorker(QThread):
         max_workers = min(MAX_STATUS_WORKERS, len(self.servers))
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = {
-                executor.submit(_checked_server_status, server, self._cancel_event): index
+                executor.submit(self._check_with_retry, server): index
                 for index, server in self.servers
             }
             for future in as_completed(futures):
@@ -90,6 +93,17 @@ class StatusWorker(QThread):
                 self.status_ready.emit(futures[future], future.result())
         if not self._cancel_event.is_set():
             self.finished_all.emit()
+
+    def _check_with_retry(self, server):
+        status = _checked_server_status(server, self._cancel_event)
+        if (
+            self.retry_failed
+            and not status.online
+            and status.outcome is not ServerStatusOutcome.CANCELLED
+            and not self._cancel_event.is_set()
+        ):
+            return _checked_server_status(server, self._cancel_event)
+        return status
 
     def cancel(self):
         self._cancel_event.set()

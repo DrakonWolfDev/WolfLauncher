@@ -105,6 +105,12 @@ A successful handoff means Steam received the launch request. It does not prove
 that DayZ finished starting or joined the server. If connecting fails, check
 **Mods**, **Settings → Check health**, and the saved launch report.
 
+At startup, favourites keep their last known details visible while checking the
+servers in parallel. These details are marked as rechecking rather than live.
+Failed startup queries receive one immediate retry before showing a failure;
+they do not have to wait for the normal refresh interval. This works on both
+Windows and Linux.
+
 The server browser starts on **Stable**. Use its visible **Stable / Experimental**
 selector to browse either edition. Favourites remain together with edition tags.
 Before joining, WolfLauncher verifies the server's live game ID

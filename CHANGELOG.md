@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Favourite-server startup checks now retry failed queries once immediately
+  instead of waiting for the next refresh interval. Last known server details
+  remain visible with a rechecking indicator until the startup check finishes;
+  failed retries still show the actual failure. Regular refresh behavior is unchanged.
 - Installed Workshop libraries now show local mods before network checks finish
   and show cached results immediately on repeat visits. Background refreshes
   preserve selection, sorting and scroll position, with caches kept separate

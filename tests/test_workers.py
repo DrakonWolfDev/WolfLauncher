@@ -83,6 +83,45 @@ class WorkerTests(unittest.TestCase):
         self.assertTrue(worker._cancel_event.is_set())
 
     @patch("wolflauncher.workers.check_server")
+    def test_startup_retry_recovers_without_waiting_for_refresh_timer(self, check_server):
+        recovered = ServerStatus(True)
+        check_server.side_effect = [
+            ServerStatus(False, outcome=ServerStatusOutcome.TIMEOUT),
+            recovered,
+        ]
+        worker = StatusWorker([sample_server()], retry_failed=True)
+        self.assertIs(worker._check_with_retry(sample_server()), recovered)
+        self.assertEqual(check_server.call_count, 2)
+
+    @patch("wolflauncher.workers.check_server")
+    def test_startup_retry_is_bounded_and_skips_success_or_cancellation(self, check_server):
+        for outcome, attempts in (
+            (ServerStatusOutcome.ONLINE, 1),
+            (ServerStatusOutcome.TIMEOUT, 2),
+            (ServerStatusOutcome.CANCELLED, 1),
+        ):
+            with self.subTest(outcome=outcome):
+                check_server.reset_mock()
+                status = ServerStatus(outcome is ServerStatusOutcome.ONLINE, outcome=outcome)
+                check_server.return_value = status
+                worker = StatusWorker([sample_server()], retry_failed=True)
+                self.assertIs(worker._check_with_retry(sample_server()), status)
+                self.assertEqual(check_server.call_count, attempts)
+
+    @patch("wolflauncher.workers.check_server")
+    def test_normal_refresh_and_shutdown_do_not_retry(self, check_server):
+        status = ServerStatus(False, outcome=ServerStatusOutcome.TIMEOUT)
+        check_server.return_value = status
+        worker = StatusWorker([sample_server()])
+        worker._check_with_retry(sample_server())
+        check_server.assert_called_once()
+        check_server.reset_mock()
+        worker = StatusWorker([sample_server()], retry_failed=True)
+        check_server.side_effect = lambda *args, **kwargs: (worker.cancel(), status)[1]
+        worker._check_with_retry(sample_server())
+        check_server.assert_called_once()
+
+    @patch("wolflauncher.workers.check_server")
     def test_status_worker_stops_promptly_when_query_is_cancelled(self, check_server):
         started = threading.Event()
 

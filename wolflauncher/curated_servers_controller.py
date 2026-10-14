@@ -254,8 +254,10 @@ class CuratedServersMixin:
         self.refresh_curated_server_cards()
         self.update_launch_button_text()
 
-    def refresh_statuses(self):
-        self.refresh_status_rows(list(range(len(self.servers))), "Last updated: refreshing...")
+    def refresh_statuses(self, *, startup=False):
+        self.refresh_status_rows(
+            list(range(len(self.servers))), "Last updated: refreshing...", startup=startup
+        )
 
     def refresh_selected_status(self):
         row = self.table.currentRow()
@@ -264,7 +266,7 @@ class CuratedServersMixin:
             return
         self.refresh_status_rows([row], f"Last updated: refreshing {self.servers[row].name}...")
 
-    def refresh_status_rows(self, rows: list[int], label: str):
+    def refresh_status_rows(self, rows: list[int], label: str, *, startup=False):
         if self.worker and self._status_worker_running():
             return
         if not rows:
@@ -273,10 +275,27 @@ class CuratedServersMixin:
         self.last_refresh_label.setText(label)
         self._status_refresh_rows = set(rows)
         self._status_refresh_outcomes = {}
-        self.worker = StatusWorker(self.servers, rows)
+        if startup:
+            self._mark_startup_status_rows_checking(rows)
+            self.worker = StatusWorker(self.servers, rows, retry_failed=True)
+        else:
+            self.worker = StatusWorker(self.servers, rows)
         self.worker.status_ready.connect(self.update_status_row)
         self.worker.finished_all.connect(self.handle_refresh_finished)
         self.worker.start()
+
+    def _mark_startup_status_rows_checking(self, rows):
+        for row in rows:
+            if not 0 <= row < min(len(self.servers), self.table.rowCount()):
+                continue
+            cached = cached_status_for_server(self.curated_status_cache, self.servers[row])
+            last_known = cached is not None and cached.online
+            values = curated_server_row(self.servers[row], cached if last_known else None)
+            values[8] = "Rechecking…" if last_known else "Checking…"
+            for column, value in enumerate(values):
+                self._set_curated_server_table_item(row, column, value, cached=last_known)
+        self.update_curated_status_summary()
+        self.refresh_curated_server_cards()
 
     def _status_worker_running(self) -> bool:
         try:
