@@ -74,11 +74,20 @@ class LinuxPlatformBackend:
         ]
 
     def steam_api_library_candidates(
-        self, steam_root: Path | None, _dayz_dir: Path | None
+        self, steam_root: Path | None, dayz_dir: Path | None
     ) -> tuple[Path, ...]:
         candidates: list[Path] = []
         if steam_root:
             candidates.append(steam_root / "steamrt64" / "libsteam_api.so")
+        if dayz_dir:
+            common_dir = dayz_dir.parent
+            candidates.extend(
+                [
+                    common_dir / "DayZServer" / "libsteam_api.so",
+                    common_dir / "DayZ Server" / "libsteam_api.so",
+                    common_dir / "DayZ Server Exp" / "libsteam_api.so",
+                ]
+            )
         candidates.extend(
             [
                 Path.home() / ".local/share/Steam/steamrt64/libsteam_api.so",

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Linux Steam Workshop automation now also finds `libsteam_api.so` in sibling
+  DayZ Server installations when the Steam runtime does not provide it.
 - Fixed Workshop mod uninstall refreshing the entire list, jumping to the top
   and showing the removed item again before Steam finished deleting its files.
   Confirmed uninstalls now remove the row while preserving the scroll position.

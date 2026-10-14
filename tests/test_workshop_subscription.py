@@ -103,6 +103,22 @@ class SteamApiLibraryTests(unittest.TestCase):
             ):
                 self.assertEqual(find_steam_api_library(install), library)
 
+    def test_finds_library_in_dayz_server_sibling_when_steam_runtime_has_none(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            library = root / "DayZServer/libsteam_api.so"
+            library.parent.mkdir()
+            library.touch()
+            install = install_for(root, root / "workshop")
+
+            from wolflauncher.platforms.linux import LinuxPlatformBackend
+
+            with patch(
+                "wolflauncher.workshop_subscription.current_platform",
+                return_value=LinuxPlatformBackend(),
+            ):
+                self.assertEqual(find_steam_api_library(install), library)
+
 
 class WorkshopRecoveryStateTests(unittest.TestCase):
     def test_reports_only_relevant_numeric_staged_items(self):
