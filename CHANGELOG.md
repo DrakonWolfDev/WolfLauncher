@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fixed repeated Qt "device not open" warnings from canceled or failed Workshop
+  preview and Editor image downloads by checking replies before reading them.
 - Linux Steam Workshop automation now also finds `libsteam_api.so` in sibling
   DayZ Server installations when the Steam runtime does not provide it.
 - Fixed Workshop mod uninstall refreshing the entire list, jumping to the top

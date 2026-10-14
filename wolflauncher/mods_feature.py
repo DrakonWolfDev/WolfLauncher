@@ -686,8 +686,9 @@ class ModsFeatureMixin:
         normalized_url = normalize_thumbnail_url(url)
         self.mod_thumbnail_url = normalized_url if is_safe_thumbnail_url(normalized_url) else ""
         if self.mod_thumbnail_reply is not None:
-            self.mod_thumbnail_reply.abort()
+            previous_reply = self.mod_thumbnail_reply
             self.mod_thumbnail_reply = None
+            previous_reply.abort()
         self.mod_detail_thumbnail.setPixmap(QPixmap())
         if not self.mod_thumbnail_url:
             self._show_mod_thumbnail_placeholder()
@@ -757,15 +758,16 @@ class ModsFeatureMixin:
             if reply is not self.mod_thumbnail_reply:
                 return
             self.mod_thumbnail_reply = None
+            if reply.error() != QNetworkReply.NoError or not reply.isReadable():
+                self._show_mod_thumbnail_placeholder()
+                return
             if not is_safe_thumbnail_url(reply.url().toString()):
                 return
             pixmap = QPixmap()
             content_type = reply.header(QNetworkRequest.ContentTypeHeader) or ""
             payload = bytes(reply.readAll())
-            if (
-                reply.error() == QNetworkReply.NoError
-                and len(payload) <= MAX_THUMBNAIL_BYTES
-                and is_safe_thumbnail_content_type(str(content_type))
+            if len(payload) <= MAX_THUMBNAIL_BYTES and is_safe_thumbnail_content_type(
+                str(content_type)
             ):
                 pixmap.loadFromData(payload)
                 if not is_safe_thumbnail_dimensions(pixmap.width(), pixmap.height()):

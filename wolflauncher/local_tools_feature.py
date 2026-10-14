@@ -889,12 +889,13 @@ class LocalToolsFeatureMixin:
             if reply is not self.editor_image_reply:
                 return
             self.editor_image_reply = None
+            if reply.error() != QNetworkReply.NoError or not reply.isReadable():
+                return
             content_type = reply.header(QNetworkRequest.ContentTypeHeader) or ""
             payload = bytes(reply.readAll())
             image = QPixmap()
             if (
-                reply.error() == QNetworkReply.NoError
-                and is_safe_thumbnail_url(reply.url().toString())
+                is_safe_thumbnail_url(reply.url().toString())
                 and len(payload) <= MAX_THUMBNAIL_BYTES
                 and is_safe_thumbnail_content_type(str(content_type))
                 and image.loadFromData(payload)
