@@ -66,23 +66,75 @@ pill in `_update_selected_mod_pills()`, so that path must be isolated and covere
 
 ## Priority 2 — Windows Connect opens/selects DayZ Tools instead of DayZ
 
+Status: reproduced three times by Andi on 14 October 2026 with DayZ Tools and
+DayZ Publisher open. Direct BattlEye handoff implemented and manually verified by
+Andi on Windows from the repository: DayZ loaded successfully with Publisher open.
+Native Linux regression verification remains outstanding.
+
 ### Report
 
 On Windows, if DayZ Tools is already open and the user clicks Connect, Steam selects or
 starts DayZ Tools rather than the DayZ game executable. DZSA Launcher reportedly has a
 similar problem.
 
+The repeated 14 October report narrows the affected tool to Publisher: Connect
+hands off to Publisher, Steam reports DayZ as running, and Steam's force-close/Stop
+action closes Publisher instead of the game. This is more than an observed focus
+change.
+
 ### Current evidence
 
-- Native launch construction explicitly uses `steam.exe -applaunch 221100` for Stable
+- Read-only inspection on 14 October found `DayZToolsLauncher.exe` and
+  `Publisher.exe` running from the installed DayZ Tools directory, with no
+  `DayZ_x64.exe` or `DayZ_BE.exe` in that process snapshot.
+- Steam's `logs/gameprocess_log.txt` explicitly records Publisher as a tracked
+  process for **AppID 221100**, rather than merely bringing a Tools window forward.
+  On 14 October, the log timestamps show Publisher PID 23168 added at 16:13:32,
+  PID 5660 added at 16:15:24, and the current PID 12652 added at 17:22:59.
+  These are Steam log timestamps; their timezone has not been established.
+- The same log associates WolfLauncher `--multiprocessing-fork` worker processes
+  with AppID 221100. This warrants checking Steam API initialization and inherited
+  app identity in addition to the Connect command. It does not prove that
+  WolfLauncher caused Publisher's association.
+- The Windows backend matches executable names exactly and case-insensitively.
+  The captured `DayZToolsLauncher.exe` and `Publisher.exe` names cannot match the
+  configured `DayZ_x64.exe` / `DayZ_BE.exe` game/bootstrap names.
+
+- Before this patch, native launch construction explicitly used `steam.exe -applaunch 221100` for Stable
   DayZ; it does not intentionally select the DayZ Tools app.
 - Windows running-process matching compares exact executable names for `DayZ_x64.exe`
   and `DayZ_BE.exe`; `DayZDiag_x64.exe` is already excluded by tests.
-- Therefore, do not assume this is caused by loose process-name matching. It may be a
-  Steam handoff/foreground-app interaction, a different DayZ Tools process name, or a
-  later command-execution issue. Capture evidence before changing detection.
+- Andi's control test confirms Publisher is registered as DayZ even with WolfLauncher
+  closed. Its misleading Steam running status is an external quirk and no longer
+  blocks the verified WolfLauncher handoff; correcting that status is outside this fix.
 
 ### Investigation
+
+Andi confirmed that Steam reports DayZ running with Publisher open even when
+WolfLauncher is closed. The official DayZ launcher waited at “Launching BattlEye”
+but eventually started the game and allowed a server join. A captured process command
+from that successful Stable launch was:
+
+```text
+"<DayZ install>\DayZ_BE.exe" 0 1 1 -exe DayZ_x64.exe -name=Andi
+"-mod=<absolute !Workshop mod paths separated by semicolons>"
+-connect=198.244.177.109:2702:2703
+```
+
+The patch uses this bootstrap sequence for Windows Stable Connect and preview,
+retaining WolfLauncher's prepared absolute mod paths and using game and query ports.
+It starts in the selected DayZ directory and retains the existing BattlEye monitoring
+and retry handling. A missing bootstrap fails with setup guidance rather than falling
+back to the affected Steam handoff. Linux Stable/Experimental keep their Steam app-ID
+handoff; Windows Experimental and offline/local-session command construction are
+unchanged. Publisher's Steam registration itself is not changed.
+
+Validation: focused unittest run passed on Windows (18 executed, 48 Linux-only tests
+skipped), including simulated Linux Stable/Experimental command contracts. Native
+Linux tests remain required. Andi subsequently ran the patched repository launcher
+on Windows and confirmed the game loaded with Publisher open. The source checkout
+required Node on PATH and `npm.cmd ci --prefix .\packaging\npm --ignore-scripts`
+for its local GameDig dependency before testing.
 
 1. Reproduce on Windows with Steam running, DayZ Tools open, and DayZ fully closed.
 2. Record the exact process names/paths before and after Connect and the copyable launch
@@ -95,6 +147,11 @@ similar problem.
 6. If Steam misroutes a correct `-applaunch 221100` request while Tools is open, test a
    narrowly scoped handoff alternative. Do not kill DayZ Tools or unrelated processes
    without explicit user consent.
+7. Capture Steam's process-tracking log before Connect as well as after it: Publisher
+   may already be registered under DayZ's app ID before the launch request. Compare
+   Publisher alone, Tools alone, and both open, then correlate the copyable WolfLauncher
+   command with Steam's launch records. Check scoped Steam app identity handling in
+   Workshop workers without changing the parent process environment speculatively.
 
 ### Acceptance criteria
 

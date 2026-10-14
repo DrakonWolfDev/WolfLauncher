@@ -154,6 +154,25 @@ def build_steam_launch_command(
     extra_params: list[str] | None = None,
 ) -> list[str]:
     safe_name = player_name.strip() or DEFAULT_PLAYER_NAME
+    if current_platform().capabilities.platform_id == "windows":
+        dayz_dir = _require_dir(install.dayz_dir, "DayZ install")
+        executable = dayz_dir / "DayZ_BE.exe"
+        if not executable.is_file():
+            raise NativeLaunchError(
+                "DayZ BattlEye launcher was not detected",
+                stage="BattlEye launch",
+                guidance="Verify the selected DayZ installation in Steam and complete BattlEye setup.",
+            )
+        # Captured from the official Stable launcher with Publisher open.
+        # Steam -applaunch can refuse to start DayZ because Publisher is already
+        # tracked as app 221100. Target this installation's bootstrap explicitly.
+        command = [str(executable), "0", "1", "1", "-exe", "DayZ_x64.exe", f"-name={safe_name}"]
+        if mod_links:
+            command.append(f"-mod={';'.join(mod_links)}")
+        command.append(f"-connect={server.host}:{server.game_port}:{server.query_port}")
+        if extra_params:
+            command.extend(extra_params)
+        return command
     command = _steam_command_prefix(install)
     command.extend(["-applaunch", str(install.product.client_app_id)])
 

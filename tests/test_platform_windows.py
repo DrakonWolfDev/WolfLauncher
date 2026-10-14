@@ -53,6 +53,7 @@ class WindowsPlatformTests(unittest.TestCase):
             workshop_dir = root / "steamapps" / "workshop" / "content" / "221100"
             mod_dir = workshop_dir / "256"
             dayz_dir.mkdir(parents=True)
+            (dayz_dir / "DayZ_BE.exe").touch()
             mod_dir.mkdir(parents=True)
             (mod_dir / "meta.cpp").write_text('name = "Example Mod";', encoding="utf-8")
             install = SteamInstall(
@@ -73,6 +74,13 @@ class WindowsPlatformTests(unittest.TestCase):
             self.assertEqual(preview.mod_setup.mod_links, [str(mod_dir)])
             self.assertIn(f"-mod={mod_dir}", preview.command)
             self.assertFalse((dayz_dir / "@AAE").exists())
+
+    def test_captured_tools_processes_are_not_dayz_game_or_bootstrap(self):
+        backend = WindowsPlatformBackend()
+        with patch.object(backend, "_task_names", return_value=[
+            "DayZToolsLauncher.exe", "Publisher.exe", "DayZDiag_x64.exe",
+        ]):
+            self.assertEqual(backend.matching_process_lines(("DayZ_x64.exe", "DayZ_BE.exe")), [])
 
     def test_selected_dayz_dll_is_used_for_workshop_api(self):
         with tempfile.TemporaryDirectory() as temp_dir:

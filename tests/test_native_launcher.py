@@ -6,7 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from wolflauncher.dayz_product import EXPERIMENTAL
+from wolflauncher.dayz_product import EXPERIMENTAL, STABLE
 from wolflauncher.models import Server
 from wolflauncher.mods import RequiredMod
 from wolflauncher.native_launcher import (
@@ -52,6 +52,49 @@ def make_install(root: Path, mode: str = "native") -> SteamInstall:
         workshop_dir=workshop_dir,
         compatdata_dir=compatdata_dir,
     )
+
+
+class StableHandoffTests(unittest.TestCase):
+    def test_windows_matches_captured_official_bootstrap(self):
+        with tempfile.TemporaryDirectory() as temp:
+            install = make_install(Path(temp))
+            executable = install.dayz_dir / "DayZ_BE.exe"
+            executable.touch()
+            mod = str(install.workshop_dir / "123")
+            platform = SimpleNamespace(capabilities=SimpleNamespace(platform_id="windows"))
+            with patch("wolflauncher.native_launcher.current_platform", return_value=platform):
+                command = build_steam_launch_command(
+                    install, make_server("203.0.113.10"), " Wolf Player ", [mod], ["-nosplash"]
+                )
+            self.assertEqual(command, [
+                str(executable), "0", "1", "1", "-exe", "DayZ_x64.exe",
+                "-name=Wolf Player", f"-mod={mod}",
+                "-connect=203.0.113.10:2302:27016", "-nosplash",
+            ])
+
+    def test_windows_missing_bootstrap_fails_without_steam_fallback(self):
+        with tempfile.TemporaryDirectory() as temp:
+            install = make_install(Path(temp))
+            platform = SimpleNamespace(capabilities=SimpleNamespace(platform_id="windows"))
+            with patch("wolflauncher.native_launcher.current_platform", return_value=platform):
+                with self.assertRaisesRegex(NativeLaunchError, "BattlEye launcher"):
+                    build_steam_launch_command(install, make_server(), "", [])
+
+    def test_linux_stable_and_experimental_keep_steam_handoff(self):
+        platform = SimpleNamespace(capabilities=SimpleNamespace(platform_id="linux"))
+        with tempfile.TemporaryDirectory() as temp:
+            install = make_install(Path(temp))
+            with patch("wolflauncher.native_launcher.current_platform", return_value=platform):
+                for product in (STABLE, EXPERIMENTAL):
+                    install.product = product
+                    command = build_steam_launch_command(
+                        install, make_server("203.0.113.10"), "", ["@AQ"], ["-nosplash"]
+                    )
+                    self.assertEqual(command, [
+                        "steam", "-applaunch", str(product.client_app_id), "-mod=@AQ",
+                        "-connect=203.0.113.10:2302", "-nolauncher", "-world=empty",
+                        "-name=Survivor", "-nosplash",
+                    ])
 
 
 @unittest.skipIf(os.name == "nt", "Linux symlink contract is validated on Linux")
@@ -205,7 +248,7 @@ class NativeLauncherTests(unittest.TestCase):
 
         self.assertIn("-name=Survivor", command)
 
-    def test_windows_direct_handoff_explicitly_requests_battleye(self):
+    def test_linux_steam_executable_suffix_retains_battleye_option(self):
         install = SteamInstall(
             mode="native",
             executable=r"C:\\Program Files (x86)\\Steam\\steam.exe",

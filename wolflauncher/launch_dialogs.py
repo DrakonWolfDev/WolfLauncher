@@ -1,4 +1,5 @@
 import shlex
+from pathlib import Path
 
 from PySide6.QtCore import QProcess, QTimer, Signal
 from PySide6.QtGui import QTextCursor
@@ -113,6 +114,8 @@ class LaunchDialog(PostHandoffProcessCheckMixin, QDialog):
         self.process.finished.connect(self.handle_finished)
         self.process.errorOccurred.connect(self.handle_process_error)
         self.output.append("Starting launcher...\n")
+        if command[0].lower().endswith("dayz_be.exe"):
+            self.process.setWorkingDirectory(str(Path(command[0]).parent))
         self.process.start(command[0], command[1:])
 
     def copy_output(self):
@@ -243,8 +246,13 @@ class PreflightLaunchDialog(QDialog):
     def start_launch(self, command: list[str]):
         self.command = list(command)
         self.command_text = format_launch_command(command)
-        self.output.append("Starting Steam launch handoff…")
-        self.set_complete("launcher", "Sending the launch instructions to Steam…")
+        if self._is_direct_battleye_launch():
+            self.process.setWorkingDirectory(str(Path(command[0]).parent))
+            self.output.append("Starting DayZ BattlEye handoff…")
+            self.set_complete("launcher", "Starting the selected DayZ BattlEye launcher…")
+        else:
+            self.output.append("Starting Steam launch handoff…")
+            self.set_complete("launcher", "Sending the launch instructions to Steam…")
         self.process.start(command[0], command[1:])
         if self._is_direct_battleye_launch():
             self.process_check_attempt = 0
