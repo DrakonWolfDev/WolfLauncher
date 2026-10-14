@@ -408,6 +408,25 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertTrue(window.pending_results_freshness)
         running.cancel.assert_not_called()
 
+    def test_results_freshness_waits_for_queued_completion_before_replacing_worker(self):
+        completed = Mock()
+        completed.isRunning.return_value = False
+        window = SimpleNamespace(
+            browser_servers=[],
+            results_freshness_worker=completed,
+            pending_results_freshness=False,
+            initial_results_freshness_batches_remaining=0,
+            results_freshness_context="",
+            results_freshness_attempted_keys=set(),
+        )
+
+        with patch("wolflauncher.server_browser_feature.ServerEnrichmentWorker") as create_worker:
+            MainWindow.start_browser_scroll_freshness_check(window)
+
+        create_worker.assert_not_called()
+        self.assertIs(window.results_freshness_worker, completed)
+        self.assertTrue(window.pending_results_freshness)
+
     def test_results_freshness_cancels_running_batch_when_search_changes(self):
         running = Mock()
         running.isRunning.return_value = True

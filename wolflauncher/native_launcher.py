@@ -277,7 +277,9 @@ def prepare_native_launch(
         mods = required_mods
 
     if install.product.experimental and current_platform().capabilities.platform_id != "linux":
-        return _prepare_experimental_native_launch(install, launch_server, mods, extra_params)
+        return _prepare_experimental_native_launch(
+            install, launch_server, player_name, mods, extra_params
+        )
 
     mod_setup = prepare_mod_links(dayz_dir, workshop_dir, mods)
 
@@ -305,6 +307,7 @@ def prepare_native_launch(
 def _prepare_experimental_native_launch(
     install: SteamInstall,
     server: Server,
+    player_name: str,
     mods: list[RequiredMod],
     extra_params: list[str] | None,
 ) -> PreparedNativeLaunch:
@@ -340,6 +343,7 @@ def _prepare_experimental_native_launch(
         )
     links = [str(path) for path in local_paths]
     command = [str(executable), "0", "1", "1", "-exe", "DayZ_x64.exe"]
+    command.append(f"-name={player_name.strip() or DEFAULT_PLAYER_NAME}")
     if links:
         command.append(f"-mod={';'.join(links)}")
     command.append(f"-connect={server.host}:{server.game_port}:{server.query_port}")
@@ -376,7 +380,7 @@ def prepare_native_launch_preview(
     launch_server = _resolved_server(server)
     if install.product.experimental and current_platform().capabilities.platform_id != "linux":
         prepared = _prepare_experimental_native_launch(
-            install, launch_server, required_mods, extra_params
+            install, launch_server, player_name, required_mods, extra_params
         )
         return NativeLaunchPreview(
             server=launch_server,

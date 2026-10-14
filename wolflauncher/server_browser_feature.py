@@ -1182,7 +1182,10 @@ class ServerBrowserMixin:
         if context_changed:
             self.results_freshness_context = context
             self.results_freshness_attempted_keys.clear()
-        if self.results_freshness_worker and self.results_freshness_worker.isRunning():
+        # A stopped thread can still have its finished signal queued. Keep its
+        # slot reserved until that callback runs, otherwise it can clear the
+        # replacement worker's last reference while the replacement is running.
+        if self.results_freshness_worker is not None:
             self.pending_results_freshness = True
             if context_changed:
                 self.results_freshness_worker.cancel()

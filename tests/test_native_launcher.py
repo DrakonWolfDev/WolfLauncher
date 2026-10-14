@@ -1184,6 +1184,16 @@ class ExperimentalNativeLauncherTests(unittest.TestCase):
                 preview = prepare_native_launch_preview(
                     install, make_server("203.0.113.10"), "PlayerOne", [RequiredMod("123")]
                 )
+                for name, expected in (("  Wolf Player  ", "Wolf Player"), ("  ", "Survivor")):
+                    with self.subTest(player_name=name):
+                        named_launch = prepare_native_launch(
+                            install, make_server("203.0.113.10"), name, []
+                        )
+                        named_preview = prepare_native_launch_preview(
+                            install, make_server("203.0.113.10"), name, []
+                        )
+                        self.assertIn(f"-name={expected}", named_launch.command)
+                        self.assertEqual(named_preview.command, named_launch.command)
 
         self.assertEqual(
             prepared.command[:6],
@@ -1197,6 +1207,7 @@ class ExperimentalNativeLauncherTests(unittest.TestCase):
             ],
         )
         self.assertIn(f"-mod={workshop_mod}", prepared.command)
+        self.assertIn("-name=PlayerOne", prepared.command)
         self.assertIn("-connect=203.0.113.10:2302:27016", prepared.command)
         self.assertEqual(preview.command, prepared.command)
 

@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Fixed Windows DayZ Experimental launches and previews dropping the configured
+  player name, including names containing spaces and the blank-name fallback.
+- Fixed a server-browser worker lifetime race when searching or scrolling around
+  completion of a live freshness check. A replacement now waits for the previous
+  worker's completion callback.
 - Recorded code signing as post-1.0 distribution work. Unsigned packages published
   through GitHub and the official WolfLauncher website do not block the 1.0 release.
 - Added notification-only WolfLauncher update checks. GitHub Releases supplies
