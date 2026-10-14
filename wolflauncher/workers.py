@@ -191,6 +191,8 @@ def load_installed_workshop_library(install) -> tuple[list[RequiredMod], str]:
     timestamps = workshop_install_timestamps(install)
     for mod in mods:
         detail = metadata.get(mod.workshop_id, {})
+        if not mod.name or mod.name == mod.workshop_id:
+            mod.name = str(detail.get("title") or "").strip() or mod.name
         mod.workshop_file_size = max(0, int(detail.get("file_size") or 0))
         mod.workshop_description = str(detail.get("description") or "").strip()
         mod.workshop_preview_url = str(detail.get("preview_url") or "").strip()

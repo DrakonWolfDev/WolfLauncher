@@ -137,6 +137,7 @@ class WorkshopUnsubscribeResult:
     workshop_id: str
     unsubscribed: bool = False
     error: str = ""
+    not_subscribed: bool = False
 
 
 @dataclass(frozen=True)
@@ -550,6 +551,7 @@ def unsubscribe_workshop_item(
             if not client.item_progress(item_id).state & ITEM_STATE_SUBSCRIBED:
                 return WorkshopUnsubscribeResult(
                     item_id,
+                    not_subscribed=True,
                     error=(
                         "Steam does not report this local item as subscribed, so WolfLauncher "
                         "left its files untouched."

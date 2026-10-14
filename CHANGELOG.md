@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Fixed Workshop mod uninstall refreshing the entire list, jumping to the top
+  and showing the removed item again before Steam finished deleting its files.
+  Confirmed uninstalls now remove the row while preserving the scroll position.
+- Installed mods with no readable local name now use their Steam Workshop title
+  when available instead of displaying only the numeric Workshop ID.
+- Added confirmed local cleanup for leftover mods Steam reports as unsubscribed,
+  including mods removed from the Workshop. Cleanup deletes only the selected
+  numeric mod folder, rejects linked folders and keeps the entry if deletion fails.
+  The confirmation warns that unavailable mods may not be downloadable again.
 - Fixed Windows DayZ Experimental launches and previews dropping the configured
   player name, including names containing spaces and the blank-name fallback.
 - Fixed a server-browser worker lifetime race when searching or scrolling around

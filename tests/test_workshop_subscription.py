@@ -296,6 +296,23 @@ class SubscribeWorkshopItemsTests(unittest.TestCase):
         self.assertFalse(result.unsubscribed)
         self.assertIn("invalid Workshop ID", result.error)
 
+    def test_unsubscribe_identifies_local_item_without_subscription(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            install = install_for(root, root / "workshop")
+            FakeWorkshopClient.snapshots = [{"111": WorkshopItemProgress("111", 0)}]
+            with (
+                patch(
+                    "wolflauncher.workshop_subscription.find_steam_api_library",
+                    return_value=root / "libsteam_api.so",
+                ),
+                patch("wolflauncher.workshop_subscription.SteamWorkshopClient", FakeWorkshopClient),
+            ):
+                result = unsubscribe_workshop_item("111", install, poll_seconds=0)
+        self.assertTrue(result.not_subscribed)
+        self.assertFalse(result.unsubscribed)
+        self.assertEqual(FakeWorkshopClient.unsubscribed, [])
+
     def test_cancel_does_not_unsubscribe(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             root = Path(temp_dir)

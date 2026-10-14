@@ -124,6 +124,24 @@ with installation guidance. Detection alone does not verify first-run setup.
 - **Windows:** Experimental launches through `DayZ_BE.exe` using existing local
   mods, including Stable's `DayZ/!Workshop` folders.
 
+## Manage installed mods
+
+Open **Mods** and select the installed Workshop library to review local mods.
+Names come from local mod metadata, with Steam Workshop titles used when the
+local name is missing. If neither source supplies a name, the Workshop ID remains
+visible.
+
+For Stable, select a mod and use **Uninstall mod** with Steam running. After
+Steam confirms the unsubscribe, its row disappears without resetting the list's
+scroll position. Steam may take a moment to remove the local files.
+
+If Steam reports the mod is already unsubscribed, WolfLauncher offers a separate
+confirmation to permanently delete its leftover local folder. This also handles
+mods whose Workshop pages have been removed. Deletion cannot be undone, and a
+removed Workshop mod may not be downloadable again. Canceling or a deletion
+failure keeps the entry. Experimental shares Stable Workshop content; manage
+uninstalls from Stable.
+
 ## Editor and local servers
 
 The **Editor / Local Tools** tab provides DayZ Editor sessions and saved local

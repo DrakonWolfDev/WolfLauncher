@@ -77,6 +77,7 @@ from .workers import (
     WorkshopSubscriptionWorker,
     WorkshopUnsubscribeWorker,
 )
+from .workshop_cleanup import remove_local_workshop_mod
 from .workshop_subscription import (
     ITEM_STATE_DOWNLOADING,
     current_workshop_item,
@@ -958,11 +959,59 @@ class ModsFeatureMixin:
         worker.start()
 
     def finish_workshop_uninstall(self, result):
+        local_removed = False
+        if result.not_subscribed:
+            # Use the installation captured by the worker, even if the user
+            # changed the selected Steam installation while it was running.
+            install = self.workshop_unsubscribe_worker.install
+            folder = install.workshop_dir / result.workshop_id
+            reply = QMessageBox.warning(
+                self,
+                "Remove leftover local mod?",
+                "Steam reports this mod is no longer subscribed. Its Workshop page may "
+                "have been removed.\n\n"
+                f"Permanently delete its local files?\n{folder}\n\n"
+                "This cannot be undone. If the mod is no longer on Steam, you may not "
+                "be able to download it again.",
+                QMessageBox.Yes | QMessageBox.Cancel,
+                QMessageBox.Cancel,
+            )
+            if reply != QMessageBox.Yes:
+                return
+            try:
+                remove_local_workshop_mod(install.workshop_dir, result.workshop_id)
+            except (OSError, ValueError) as exc:
+                QMessageBox.warning(self, "Could not remove local mod", str(exc))
+                return
+            local_removed = True
+            result = replace(result, unsubscribed=True)
         if result.unsubscribed:
+            self.installed_workshop_mods = [
+                mod for mod in self.installed_workshop_mods if mod.workshop_id != result.workshop_id
+            ]
+            if self.viewing_installed_workshop_library():
+                # Steam removes the files asynchronously. Rescanning here can
+                # bring the item straight back and rebuilding selects row zero.
+                scroll = self.mods_table.verticalScrollBar().value()
+                for row in range(self.mods_table.rowCount() - 1, -1, -1):
+                    if self._mods_cell(row, 2) == result.workshop_id:
+                        self.mods_table.removeRow(row)
+                self.mods_table.verticalScrollBar().setValue(scroll)
+                self.mod_summary.setText(
+                    f"Installed {len(self.installed_workshop_mods)} mod(s). "
+                    + (
+                        "Leftover local mod removed."
+                        if local_removed
+                        else "Steam is removing the unsubscribed mod's local files."
+                    )
+                )
+                self.update_mod_detail_card()
             QMessageBox.information(
                 self,
-                "Mod uninstall requested",
-                "Steam confirmed the unsubscribe request. It may take a moment to remove the "
+                "Local mod removed" if local_removed else "Mod uninstall requested",
+                "The leftover mod's local files have been removed."
+                if local_removed
+                else "Steam confirmed the unsubscribe request. It may take a moment to remove the "
                 "local Workshop files; recheck the library after Steam finishes.",
             )
         else:
@@ -974,8 +1023,7 @@ class ModsFeatureMixin:
 
     def clear_workshop_unsubscribe_worker(self):
         self.workshop_unsubscribe_worker = None
-        if self.viewing_installed_workshop_library():
-            self.show_installed_workshop_library()
+        self.update_mod_detail_card()
 
     def open_missing_workshop_pages(self):
         result = self._selected_mod_result(successful=True)
