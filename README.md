@@ -106,8 +106,8 @@ that DayZ finished starting or joined the server. If connecting fails, check
 **Mods**, **Settings → Check health**, and the saved launch report.
 
 The server browser starts on **Stable**. Use its visible **Stable / Experimental**
-selector to browse either edition. Favourites and recent servers remain together,
-with edition tags. Before joining, WolfLauncher verifies the server's live game ID
+selector to browse either edition. Favourites remain together with edition tags.
+Before joining, WolfLauncher verifies the server's live game ID
 and selects that installation automatically; unresolved identity blocks the launch.
 Your Stable external-launcher preference is retained; Experimental uses native launching.
 

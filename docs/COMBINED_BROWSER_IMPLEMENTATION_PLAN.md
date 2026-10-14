@@ -15,7 +15,7 @@ successful GameDig checks, final freshness/retry contract, and test results.
 
 The browser starts on Stable and has a visible Stable / Experimental selector. It
 shows only the selected edition, so browser rows do not need EXP tags. Favourites
-and recent servers stay mixed and retain edition/readiness tags. The browser choice
+retain edition/readiness tags. The browser choice
 does not choose the launch product or the editor product. Experimental remains
 selectable when not installed, with setup guidance and joining disabled.
 
@@ -26,14 +26,14 @@ Experimental support for this section is out of scope for the current work.
 
 WolfLauncher identifies each server's DayZ edition, checks mods against the correct
 installation, and launches that edition automatically. Users browse one directory
-and keep one visible collection of favourites and recent servers.
+and keep one visible collection of favourites.
 
 - The server browser starts on **Stable** on each startup. A visible
   **Stable / Experimental** selector shows only the chosen edition. Browser rows
   need no edition badge. This selector never controls launch routing.
 - Experimental remains browsable when it is not installed. Setup guidance explains
   installation and browser Join is disabled until detection succeeds.
-- Existing Experimental favourites and recent entries remain visible, labelled
+- Existing Experimental favourites remain visible, labelled
   **EXP · Installation required**. Joining explains setup instead of launching Stable.
 - Setup instructions: install **DayZ Experimental** from the Steam Library, launch
   it through Steam once to complete initial/BattlEye setup, close it, then rescan.
@@ -234,7 +234,7 @@ Work:
 
 1. Introduce the resolver/context boundary in `launch_feature.py`,
    `connect_preflight.py`, `launch_preflight.py`, and `launch_execution.py`.
-2. Apply it to browser Join, favourites, recent servers, manual additions, mod checks,
+2. Apply it to browser Join, favourites, manual additions, mod checks,
    and native previews. Audit every command-building entry point.
 3. Update mod workers, reuse checks, and Workshop completion callbacks to carry the
    same context. Cancel/invalidate old requests on selection/context changes.
@@ -283,7 +283,7 @@ Implemented behaviour:
 3. Use the same product/filter predicates for rows and matching counts before the
    display limit. Scope map/source/version options and cache summaries by product.
 4. Default to Stable and keep the two-edition selector visible without row badges.
-   Mixed favourites/recent servers retain edition and installation-readiness tags.
+   Mixed favourites retain edition and installation-readiness tags.
 5. Preserve cached rows on provider errors. Refresh each edition independently.
    A delayed old-edition worker cannot replace the current view.
 6. Preserve selection by identity; clearing/filtering the selection invalidates

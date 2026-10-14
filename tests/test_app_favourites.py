@@ -182,7 +182,6 @@ class FavouriteProfileReloadTests(unittest.TestCase):
             saved_selected_row=Mock(return_value=-1),
             update_curated_status_summary=Mock(),
             refresh_curated_server_cards=Mock(),
-            refresh_recent_servers=Mock(),
             update_launch_button_text=Mock(),
         )
 
@@ -191,7 +190,6 @@ class FavouriteProfileReloadTests(unittest.TestCase):
         window.table.clearContents.assert_called_once()
         window.table.setRowCount.assert_called_once_with(1)
         window.refresh_curated_server_cards.assert_called_once()
-        window.refresh_recent_servers.assert_called_once()
 
 
 class StatusRefreshNoticeTests(unittest.TestCase):

@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 import yaml
 
-from wolflauncher import launch_history, server_cache
+from wolflauncher import server_cache
 from wolflauncher.models import DiscoveredServer, Server
 from wolflauncher.persistence import atomic_write_text
 from wolflauncher.saved_servers import SavedServerRepository
@@ -277,35 +277,6 @@ class CombinedPersistenceTests(unittest.TestCase):
             identity_fields(DiscoveredServer(**json.loads(json.dumps(asdict(cached))))),
             identity_fields(cached),
         )
-
-    def test_history_legacy_unknown_new_product_and_unknown_fields_survive(self):
-        path = self.root / "recent.json"
-        legacy = {
-            "name": "Legacy",
-            "host": "dayz.test",
-            "game_port": 2302,
-            "query_port": 27016,
-            "future": 42,
-        }
-        path.write_text(json.dumps([legacy]))
-        self.assertEqual(launch_history.load_recent_launches(path)[0]["product"], "unknown")
-        launch_history.record_launch(self.server(), path)
-        self.assertEqual(launch_history.load_recent_launches(path)[0]["future"], 42)
-        launch_history.record_launch(self.server("experimental"), path)
-        launch_history.record_launch(replace(self.server("experimental"), name="Renamed"), path)
-        rows = launch_history.load_recent_launches(path)
-        self.assertEqual(len(rows), 2)
-        self.assertEqual(rows[0]["product"], "experimental")
-        self.assertTrue(path.with_suffix(".json.bak").exists())
-
-    def test_invalid_history_is_reported_and_not_overwritten(self):
-        path = self.root / "recent.json"
-        path.write_text("{broken")
-        with self.assertLogs("wolflauncher.launch_history", level="WARNING"):
-            self.assertEqual(launch_history.load_recent_launches(path), [])
-        with self.assertRaises(ValueError):
-            launch_history.record_launch(self.server(), path)
-        self.assertEqual(path.read_text(), "{broken")
 
     def test_settings_migration_retains_engine_preferences_and_unknown_keys(self):
         original = {

@@ -110,10 +110,8 @@ its SQLite sidecars aside to rebuild with the older binary; restore the matching
 pre-upgrade configuration snapshot as well, since older binaries do not understand
 all product-scoped favourite keys. Never delete saved profiles to repair a cache.
 
-Recent servers record **launch attempts at command handoff**, not confirmed joins.
-Cancelled or failed preparation creates no recent entry. Legacy unknown and newly
-identified history entries can remain distinct; history does not invent a product
-for an old record.
+The former Recent servers launch-attempt history was removed after this validation
+work. Saved favourites remain the only server collection on the Servers page.
 
 ## Editor compatibility
 

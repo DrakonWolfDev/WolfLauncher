@@ -349,11 +349,3 @@ class ConnectPreflightCoordinator:
             )
         self.handoff_at = time.monotonic()
         dialog.start_launch(command)
-        # History records a launch attempt once command handoff starts.
-        from .launch_history import record_launch
-
-        try:
-            record_launch(context.server if context is not None else server)
-            window.refresh_recent_servers()
-        except (OSError, ValueError) as exc:
-            window.statusBar().showMessage(f"Could not save recent server: {exc}", 10000)

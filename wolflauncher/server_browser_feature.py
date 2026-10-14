@@ -106,6 +106,18 @@ def persist_enriched_server(connection, old_cache_key: str, server: DiscoveredSe
     except ValueError:
         connection.rollback()
         return False
+    except sqlite3.OperationalError as exc:
+        # Provider cache merges use a separate SQLite connection and can briefly
+        # own the single writer slot.  A live enrichment result is disposable;
+        # do not turn expected write contention into a modal application error,
+        # and leave this connection ready for the next result.
+        if getattr(exc, "sqlite_errorcode", None) not in {
+            sqlite3.SQLITE_BUSY,
+            sqlite3.SQLITE_LOCKED,
+        } and "database is locked" not in str(exc).lower():
+            raise
+        connection.rollback()
+        return False
     except sqlite3.ProgrammingError:
         return False
     return True

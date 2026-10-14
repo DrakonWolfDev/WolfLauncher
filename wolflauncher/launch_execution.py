@@ -5,7 +5,6 @@ from dataclasses import replace
 from PySide6.QtWidgets import QMessageBox
 
 from .launch_dialogs import LaunchDialog, NativeLaunchPreviewDialog
-from .launch_history import record_launch
 from .launch_preflight import usable_mod_result
 from .launch_selection import server_with_resolved_ipv4
 from .launcher import DEFAULT_PLAYER_NAME, LaunchError, build_launch_command
@@ -138,12 +137,6 @@ class LaunchExecutionCoordinator:
         )
         dialog = LaunchDialog(window, command, f"Launching {server.name}", handoff_label)
         dialog.exec()
-        try:
-            record_launch(server)
-            if hasattr(window, "refresh_recent_servers"):
-                window.refresh_recent_servers()
-        except (OSError, ValueError) as exc:
-            QMessageBox.warning(window, "Could not save recent server", str(exc))
         try:
             window.save_last_launch_report(dialog.copyable_output_text())
         except OSError as exc:

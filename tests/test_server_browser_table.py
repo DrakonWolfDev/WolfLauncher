@@ -578,6 +578,32 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertFalse(persisted)
         connection.rollback.assert_called_once_with()
 
+    def test_enrichment_database_lock_is_rolled_back_and_skipped(self):
+        connection = Mock()
+        server = DiscoveredServer("Updated", "203.0.113.10", 2302, 27016)
+
+        with patch(
+            "wolflauncher.app.server_cache.replace_server_key",
+            side_effect=sqlite3.OperationalError("database is locked"),
+        ):
+            persisted = persist_enriched_server(connection, "old-key", server)
+
+        self.assertFalse(persisted)
+        connection.rollback.assert_called_once_with()
+
+    def test_enrichment_does_not_hide_unrelated_database_errors(self):
+        connection = Mock()
+        server = DiscoveredServer("Updated", "203.0.113.10", 2302, 27016)
+
+        with patch(
+            "wolflauncher.app.server_cache.replace_server_key",
+            side_effect=sqlite3.OperationalError("no such table: discovered_servers"),
+        ):
+            with self.assertRaisesRegex(sqlite3.OperationalError, "no such table"):
+                persist_enriched_server(connection, "old-key", server)
+
+        connection.rollback.assert_not_called()
+
     def test_enrichment_ignores_closed_cache_during_shutdown(self):
         connection = Mock()
         server = DiscoveredServer("Updated", "203.0.113.10", 2302, 27016)

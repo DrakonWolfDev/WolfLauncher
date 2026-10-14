@@ -41,8 +41,10 @@
   of treating the `DayZ_BE.exe` bootstrapper as a completed start. If that
   bootstrapper remains stalled for 30 seconds, the Connect dialog offers to stop
   only WolfLauncher's launch attempt and retry it.
+- Removed the hidden Recent servers shortcuts and their launch-attempt history;
+  the saved-server page now contains favourites only.
 - The server browser now starts on Stable with a visible Stable / Experimental
-  selector. Favourites and recent servers stay mixed with edition/readiness tags.
+  selector. Favourites stay mixed with edition/readiness tags.
 - Server joins verify the live game ID and carry the selected installation through
   mod checks, preview and launch. Experimental uses native launching while the
   Stable engine preference is retained. Stale checks cannot launch another target.
