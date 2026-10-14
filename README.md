@@ -131,6 +131,11 @@ Names come from local mod metadata, with Steam Workshop titles used when the
 local name is missing. If neither source supplies a name, the Workshop ID remains
 visible.
 
+The local list appears before Steam's network checks finish. Repeat visits show
+cached results immediately while refreshing names and update state in the
+background. Refreshes preserve the current selection, sort and scroll position.
+This behavior is shared by Windows and Linux.
+
 For Stable, select a mod and use **Uninstall mod** with Steam running. After
 Steam confirms the unsubscribe, its row disappears without resetting the list's
 scroll position. Steam may take a moment to remove the local files.

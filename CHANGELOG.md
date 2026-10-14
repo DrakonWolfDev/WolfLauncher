@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Installed Workshop libraries now show local mods before network checks finish
+  and show cached results immediately on repeat visits. Background refreshes
+  preserve selection, sorting and scroll position, with caches kept separate
+  for each installation and edition on Windows and Linux.
 - Fixed repeated Qt "device not open" warnings from canceled or failed Workshop
   preview and Editor image downloads by checking replies before reading them.
 - Linux Steam Workshop automation now also finds `libsteam_api.so` in sibling

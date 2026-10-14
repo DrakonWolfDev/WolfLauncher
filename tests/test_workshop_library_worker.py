@@ -8,6 +8,29 @@ from wolflauncher.workers import load_installed_workshop_library
 
 
 class WorkshopLibraryWorkerTests(unittest.TestCase):
+    def test_local_snapshot_arrives_before_network_and_is_not_mutated(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workshop = Path(temp_dir)
+            (workshop / "111").mkdir()
+            snapshots = []
+
+            def metadata(_ids):
+                self.assertEqual(len(snapshots), 1)
+                self.assertEqual(snapshots[0][0].name, "111")
+                return {"111": {"title": "Steam title"}}
+
+            with (
+                patch("wolflauncher.workers.fetch_workshop_metadata", side_effect=metadata),
+                patch("wolflauncher.workers.workshop_install_timestamps", return_value={}),
+            ):
+                mods, _ = load_installed_workshop_library(
+                    SimpleNamespace(workshop_dir=workshop, running=False),
+                    local_ready=snapshots.append,
+                )
+            self.assertEqual(mods[0].name, "Steam title")
+            self.assertEqual(snapshots[0][0].name, "111")
+            self.assertIsNot(mods[0], snapshots[0][0])
+
     def test_library_uses_workshop_title_only_when_local_name_is_missing(self):
         with tempfile.TemporaryDirectory() as temp_dir:
             workshop = Path(temp_dir)

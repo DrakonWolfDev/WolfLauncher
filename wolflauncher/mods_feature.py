@@ -295,6 +295,9 @@ class ModsFeatureMixin:
         QWidget.setTabOrder(self.mods_back_to_browser_button, self.mods_launch_button)
         self.update_launch_button_text()
         self.installed_workshop_mods = []
+        self.workshop_library_cache = {}
+        self.workshop_library_key = None
+        self.workshop_library_showing = False
         self.workshop_unsubscribe_worker = None
         return widget
 
@@ -309,6 +312,7 @@ class ModsFeatureMixin:
 
     def change_mod_view(self, _index: int):
         viewing_library = self.viewing_installed_workshop_library()
+        self.workshop_library_showing = False
         if viewing_library:
             self.show_installed_workshop_library()
         elif self.last_mod_result:
@@ -327,7 +331,17 @@ class ModsFeatureMixin:
             else "Recheck selected server mods"
         )
 
+    @staticmethod
+    def _workshop_library_install_key(install):
+        return (
+            str(install.workshop_dir),
+            str(getattr(install, "dayz_dir", "")),
+            getattr(getattr(install, "product", None), "key", "stable"),
+        )
+
     def show_installed_workshop_library(self):
+        if getattr(self, "_shutting_down", False):
+            return
         install = (
             self.selected_steam_install()
             if hasattr(self, "server_launch") or self.launch_engine_key() == "native"
@@ -341,22 +355,55 @@ class ModsFeatureMixin:
         self.subscribe_missing_button.setEnabled(False)
         self.force_update_button.setEnabled(False)
         if not install or not install.workshop_dir:
+            self.workshop_library_key = None
+            self.workshop_library_showing = False
             self.installed_workshop_mods = []
             self.mod_readiness.setText(
                 "DayZ Workshop folder not detected for the selected Steam installation."
             )
             self._display_mod_rows([])
             return
-        if (
-            getattr(self, "workshop_library_worker", None)
-            and self.workshop_library_worker.isRunning()
-        ):
+        key = self._workshop_library_install_key(install)
+        preserve = self.workshop_library_showing and self.workshop_library_key == key
+        self.workshop_library_key = key
+        cached = self.workshop_library_cache.get(key)
+        self.installed_workshop_mods = list(cached) if cached is not None else []
+        self._display_mod_rows(self.installed_workshop_mods, preserve_position=preserve)
+        self.workshop_library_showing = True
+        if cached is not None:
+            self.mod_summary.setText(f"Installed {len(cached)} mod(s). Refreshing…")
+        # Retain even a just-finished QThread until its finished callback runs.
+        if getattr(self, "workshop_library_worker", None) is not None:
             return
         worker = WorkshopLibraryWorker(install)
+        worker.library_key = key
+        worker.removed_ids = set()
         self.workshop_library_worker = worker
-        worker.library_ready.connect(self.finish_installed_workshop_library_load)
+        worker.local_ready.connect(
+            lambda mods: self.receive_workshop_library_snapshot(worker, mods, local=True)
+        )
+        worker.library_ready.connect(
+            lambda mods, error: self.receive_workshop_library_snapshot(worker, mods, error)
+        )
         worker.finished.connect(self.clear_installed_workshop_library_worker)
         worker.start()
+
+    def receive_workshop_library_snapshot(self, worker, mods, state_error="", *, local=False):
+        if getattr(self, "_shutting_down", False):
+            return
+        key = worker.library_key
+        mods = [mod for mod in mods if mod.workshop_id not in worker.removed_ids]
+        if local and key in self.workshop_library_cache:
+            return
+        self.workshop_library_cache[key] = list(mods)
+        if key != self.workshop_library_key or not self.viewing_installed_workshop_library():
+            return
+        self.finish_installed_workshop_library_load(mods, state_error)
+        if local:
+            self.mod_readiness.setText(
+                "Local mods loaded. Checking Steam details and update state…"
+            )
+            self.mod_summary.setText(f"Installed {len(mods)} mod(s). Checking Steam…")
 
     def finish_installed_workshop_library_load(self, mods, state_error: str):
         if not self.viewing_installed_workshop_library():
@@ -372,12 +419,29 @@ class ModsFeatureMixin:
             updates = sum(1 for mod in mods if not mod.ready)
             summary += f" Update/pending {updates}."
         self.mod_summary.setText(summary)
-        self._display_mod_rows(self.installed_workshop_mods)
+        self._display_mod_rows(self.installed_workshop_mods, preserve_position=True)
 
     def clear_installed_workshop_library_worker(self):
+        worker = self.workshop_library_worker
         self.workshop_library_worker = None
+        if worker:
+            worker.deleteLater()
+            if (
+                not getattr(self, "_shutting_down", False)
+                and self.viewing_installed_workshop_library()
+                and worker.library_key != self.workshop_library_key
+            ):
+                self.show_installed_workshop_library()
 
-    def _display_mod_rows(self, mods):
+    def _display_mod_rows(self, mods, *, preserve_position=False):
+        selected_id = ""
+        scroll = self.mods_table.verticalScrollBar().value()
+        sorting = self.mods_table.isSortingEnabled()
+        header = self.mods_table.horizontalHeader()
+        sort_column, sort_order = header.sortIndicatorSection(), header.sortIndicatorOrder()
+        if preserve_position and self.mods_table.currentRow() >= 0:
+            selected_id = self._mods_cell(self.mods_table.currentRow(), 2)
+        self.mods_table.blockSignals(True)
         self.mods_table.setSortingEnabled(False)
         self.mods_table.setRowCount(len(mods))
         for row, mod in enumerate(mods):
@@ -396,8 +460,23 @@ class ModsFeatureMixin:
         self.mods_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         self.mods_table.setSortingEnabled(False)
         self.apply_mod_filter()
+        if preserve_position and sorting:
+            self.mods_table.setSortingEnabled(True)
+            self.mods_table.sortItems(sort_column, sort_order)
         if self.mods_table.rowCount() > 0:
-            self.mods_table.selectRow(0)
+            row = next(
+                (
+                    row
+                    for row in range(self.mods_table.rowCount())
+                    if self._mods_cell(row, 2) == selected_id
+                ),
+                0,
+            )
+            self.mods_table.selectRow(row)
+        if preserve_position:
+            self.mods_table.verticalScrollBar().setValue(scroll)
+        self.mods_table.blockSignals(False)
+        self.update_mod_detail_card()
 
     def check_initial_server_mods(self):
         if self.servers and self.table.currentRow() < 0:
@@ -988,6 +1067,18 @@ class ModsFeatureMixin:
             local_removed = True
             result = replace(result, unsubscribed=True)
         if result.unsubscribed:
+            unsubscribe_worker = self.workshop_unsubscribe_worker
+            if unsubscribe_worker and hasattr(self, "workshop_library_cache"):
+                key = self._workshop_library_install_key(unsubscribe_worker.install)
+                if key in self.workshop_library_cache:
+                    self.workshop_library_cache[key] = [
+                        mod
+                        for mod in self.workshop_library_cache[key]
+                        if mod.workshop_id != result.workshop_id
+                    ]
+                library_worker = getattr(self, "workshop_library_worker", None)
+                if library_worker and library_worker.library_key == key:
+                    library_worker.removed_ids.add(result.workshop_id)
             self.installed_workshop_mods = [
                 mod for mod in self.installed_workshop_mods if mod.workshop_id != result.workshop_id
             ]

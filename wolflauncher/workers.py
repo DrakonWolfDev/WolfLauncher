@@ -1,5 +1,6 @@
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -167,7 +168,7 @@ class ModWorker(QThread):
         return result
 
 
-def load_installed_workshop_library(install) -> tuple[list[RequiredMod], str]:
+def load_installed_workshop_library(install, *, local_ready=None) -> tuple[list[RequiredMod], str]:
     """Read local DayZ Workshop items and compare them with Steam's current state."""
     workshop_dir = getattr(install, "workshop_dir", None)
     installed = (
@@ -185,6 +186,10 @@ def load_installed_workshop_library(install) -> tuple[list[RequiredMod], str]:
         )
         for workshop_id, name in installed.items()
     ]
+    if local_ready is not None:
+        # Qt object signals retain references. Send a snapshot before enriching
+        # the worker's objects so the UI never sees concurrent mutations.
+        local_ready([replace(mod) for mod in mods])
     if not mods:
         return [], ""
     metadata = fetch_workshop_metadata(mod.workshop_id for mod in mods)
@@ -214,6 +219,7 @@ def load_installed_workshop_library(install) -> tuple[list[RequiredMod], str]:
 
 
 class WorkshopLibraryWorker(QThread):
+    local_ready = Signal(object)
     library_ready = Signal(object, str)
 
     def __init__(self, install):
@@ -222,7 +228,9 @@ class WorkshopLibraryWorker(QThread):
 
     def run(self):
         try:
-            mods, error = load_installed_workshop_library(self.install)
+            mods, error = load_installed_workshop_library(
+                self.install, local_ready=self.local_ready.emit
+            )
         except Exception as exc:
             mods, error = [], str(exc)
         self.library_ready.emit(mods, error)
