@@ -452,9 +452,12 @@ def subscribe_workshop_items(
                 if snapshot.installed:
                     continue
                 if snapshot.state & ITEM_STATE_SUBSCRIBED:
-                    last_request = download_requested_at.get(snapshot.workshop_id, 0.0)
+                    last_request = download_requested_at.get(snapshot.workshop_id)
                     now = time.monotonic()
-                    if now - last_request < DOWNLOAD_REQUEST_RETRY_SECONDS:
+                    if (
+                        last_request is not None
+                        and now - last_request < DOWNLOAD_REQUEST_RETRY_SECONDS
+                    ):
                         continue
                     if client.request_download(snapshot.workshop_id):
                         download_requested_at[snapshot.workshop_id] = now

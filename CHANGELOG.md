@@ -2,6 +2,23 @@
 
 ## Unreleased
 
+- Fixed the first Workshop download request being delayed by retry throttling
+  when the system monotonic clock is below the retry interval.
+
+- Updated the locked cryptography runtime to 50.0.2 to clear the release
+  dependency audit advisory affecting 49.0.0.
+
+- Fixed a Linux crash during repeated update checks by delivering results to a
+  queued GUI-thread slot without capturing auto-deleted Qt runnable objects.
+  Cancelled checks and deleted receivers discard pending results safely.
+
+- Fixed saved-profile transaction recovery changing CRLF line endings during
+  rollback. Recovery now restores original UTF-8 bytes exactly.
+- Fixed SQLite write-contention handling on Python 3.10 and for extended lock
+  codes. Unrelated database errors still surface.
+- Corrected Windows test fixture encoding and SQLite cleanup, restricted Linux
+  installer tests to POSIX hosts, and restored the required code formatting.
+
 - Fixed WolfAPI HTTPS failures on Windows systems containing an expired cached
   cross-signed CA certificate. Provider requests now use Windows native chain
   validation through truststore, retaining certificate expiry, trust and hostname

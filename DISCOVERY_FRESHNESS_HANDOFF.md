@@ -20,7 +20,8 @@ change is required. This source fix needs a new published Launcher build before
 downloaders receive it; GitHub's existing 0.9.0b2 installer is unchanged.
 API-side record: `../WolfAPI/DISCOVERY_FRESHNESS_CONTRACT.md`.
 
-Validation on the Windows development machine:
+Initial TLS validation on the Windows development machine (the later
+[CI repair record](docs/CI_VALIDATION.md) supersedes the test/format limitations):
 
 - All 23 focused TLS, HTTP, diagnostics and startup tests passed. Offline TLS
   tests prove that adding an expired intermediate changes legacy validation

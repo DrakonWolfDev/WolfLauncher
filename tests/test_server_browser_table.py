@@ -591,6 +591,14 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertFalse(persisted)
         connection.rollback.assert_called_once_with()
 
+    def test_enrichment_handles_extended_sqlite_lock_codes(self):
+        connection = Mock()
+        error = sqlite3.OperationalError("extended lock")
+        error.sqlite_errorcode = 262  # SQLITE_LOCKED_SHAREDCACHE, primary LOCKED=6.
+        with patch("wolflauncher.app.server_cache.replace_server_key", side_effect=error):
+            self.assertFalse(persist_enriched_server(connection, "old-key", Mock()))
+        connection.rollback.assert_called_once_with()
+
     def test_enrichment_does_not_hide_unrelated_database_errors(self):
         connection = Mock()
         server = DiscoveredServer("Updated", "203.0.113.10", 2302, 27016)

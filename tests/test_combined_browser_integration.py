@@ -1,6 +1,7 @@
 import os
 import tempfile
 import unittest
+from contextlib import closing
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
@@ -24,9 +25,11 @@ class CombinedBrowserIntegrationTests(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def test_edition_queries_count_before_limit_and_rows_have_no_edition_badge(self):
-        with tempfile.TemporaryDirectory() as directory:
-            connection = server_cache.connect(Path(directory) / "cache.db")
-            self.addCleanup(connection.close)
+        # Close SQLite before deleting the directory (required on Windows).
+        with (
+            tempfile.TemporaryDirectory() as directory,
+            closing(server_cache.connect(Path(directory) / "cache.db")) as connection,
+        ):
             rows = [
                 DiscoveredServer(
                     f"Community {index}",

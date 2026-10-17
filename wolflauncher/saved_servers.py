@@ -156,7 +156,9 @@ class SavedServerRepository:
                 + "; ".join(self.errors)
             )
         originals = {
-            path.name: path.read_text(encoding="utf-8") if path.exists() else None
+            # read_text performs universal-newline translation. The journal must
+            # preserve the original bytes, including CRLF, for exact rollback.
+            path.name: path.read_bytes().decode("utf-8") if path.exists() else None
             for path in changes
         }
         atomic_write_text(self.journal, json.dumps(originals))

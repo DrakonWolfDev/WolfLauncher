@@ -77,9 +77,15 @@ class WindowsPlatformTests(unittest.TestCase):
 
     def test_captured_tools_processes_are_not_dayz_game_or_bootstrap(self):
         backend = WindowsPlatformBackend()
-        with patch.object(backend, "_task_names", return_value=[
-            "DayZToolsLauncher.exe", "Publisher.exe", "DayZDiag_x64.exe",
-        ]):
+        with patch.object(
+            backend,
+            "_task_names",
+            return_value=[
+                "DayZToolsLauncher.exe",
+                "Publisher.exe",
+                "DayZDiag_x64.exe",
+            ],
+        ):
             self.assertEqual(backend.matching_process_lines(("DayZ_x64.exe", "DayZ_BE.exe")), [])
 
     def test_selected_dayz_dll_is_used_for_workshop_api(self):

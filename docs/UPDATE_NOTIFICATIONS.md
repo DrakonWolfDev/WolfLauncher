@@ -49,7 +49,11 @@ no dependency on WolfLauncher or Qt.
 
 The optional PySide6 adapter performs checks through a single-task `QThreadPool`.
 This keeps network timeouts off the GUI thread and participates in WolfLauncher's
-normal shutdown lifecycle. Release notes are placed into a plain-text, read-only
+normal shutdown lifecycle. A checker-owned signal source delivers results to an
+explicitly queued QObject slot on the GUI thread. Delivery carries a generation
+number rather than retaining a QRunnable after QThreadPool has deleted it;
+cancellation invalidates queued results, and deleting the checker disconnects
+pending delivery. Release notes are placed into a plain-text, read-only
 widget, so their links and markup are not interactive.
 
 The package exposes no download or installer API. Both Linux and Windows

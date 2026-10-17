@@ -4,7 +4,7 @@ import unittest
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PySide6.QtCore import QEventLoop, QThread, QTimer
+from PySide6.QtCore import QCoreApplication, QEvent, QEventLoop, QThread, QTimer
 from PySide6.QtWidgets import QApplication
 
 from wolf_update import CheckResult, CheckStatus
@@ -32,6 +32,7 @@ class QtUpdateCheckerTests(unittest.TestCase):
         received = []
 
         def ready(result, manual):
+            self.assertIs(QThread.currentThread(), caller_thread)
             received.append((result, manual))
 
         checker.result_ready.connect(ready)
@@ -58,6 +59,32 @@ class QtUpdateCheckerTests(unittest.TestCase):
             self.app.processEvents()
             self.assertFalse(checker.is_running())
             checker.result_ready.disconnect(loop.quit)
+
+    def test_cancelled_queued_result_cannot_finish_a_new_check(self):
+        checker = QtUpdateChecker(Service())
+        received = []
+        checker.result_ready.connect(lambda *args: received.append(args))
+        self.assertTrue(checker.check(manual=False))
+        self.assertTrue(checker.wait(1000))
+        # The first result is queued but has not reached the GUI event loop.
+        checker.requestInterruption()
+        self.assertTrue(checker.check(manual=True))
+        self.assertTrue(checker.wait(1000))
+        self.app.processEvents()
+        self.assertEqual(len(received), 1)
+        self.assertTrue(received[0][1])
+        self.assertFalse(checker.is_running())
+
+    def test_deleting_checker_discards_pending_delivery(self):
+        checker = QtUpdateChecker(Service())
+        received = []
+        checker.result_ready.connect(lambda *args: received.append(args))
+        self.assertTrue(checker.check())
+        self.assertTrue(checker.wait(1000))
+        checker.deleteLater()
+        QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        self.app.processEvents()
+        self.assertEqual(received, [])
 
     def test_interruption_releases_qt_worker_and_suppresses_late_result(self):
         release_transport = threading.Event()

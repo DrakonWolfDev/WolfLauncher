@@ -111,10 +111,16 @@ def persist_enriched_server(connection, old_cache_key: str, server: DiscoveredSe
         # own the single writer slot.  A live enrichment result is disposable;
         # do not turn expected write contention into a modal application error,
         # and leave this connection ready for the next result.
-        if getattr(exc, "sqlite_errorcode", None) not in {
-            sqlite3.SQLITE_BUSY,
-            sqlite3.SQLITE_LOCKED,
-        } and "database is locked" not in str(exc).lower():
+        # Error-code attributes/constants were added in Python 3.11. SQLite's
+        # stable primary codes are BUSY=5 and LOCKED=6; extended codes retain
+        # their primary code in the low byte. Python 3.10 needs the text fallback.
+        code = getattr(exc, "sqlite_errorcode", None)
+        locked = code is not None and (code & 0xFF) in {5, 6}
+        if not locked and str(exc).lower() not in {
+            "database is locked",
+            "database table is locked",
+            "database schema is locked",
+        }:
             raise
         connection.rollback()
         return False

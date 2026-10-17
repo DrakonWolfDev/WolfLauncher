@@ -4,22 +4,30 @@ from __future__ import annotations
 
 from threading import Event, Thread
 
-from PySide6.QtCore import QObject, QRunnable, QThreadPool, Signal
+from PySide6.QtCore import QObject, QRunnable, Qt, QThreadPool, Signal, Slot
 
 from .core import UpdateService
 
 
 class _CheckSignals(QObject):
-    finished = Signal(object)
+    finished = Signal(int, object, bool)
 
 
 class _CheckRunnable(QRunnable):
-    def __init__(self, service: UpdateService, manual: bool) -> None:
+    def __init__(
+        self,
+        service: UpdateService,
+        manual: bool,
+        signals: _CheckSignals,
+        generation: int,
+        cancelled: Event,
+    ) -> None:
         super().__init__()
         self.service = service
         self.manual = manual
-        self.signals = _CheckSignals()
-        self._cancelled = Event()
+        self.signals = signals
+        self.generation = generation
+        self._cancelled = cancelled
 
     def run(self) -> None:
         completed = Event()
@@ -44,10 +52,7 @@ class _CheckRunnable(QRunnable):
             if self._cancelled.is_set():
                 return
         if not self._cancelled.is_set() and result:
-            self.signals.finished.emit(result[0])
-
-    def cancel(self) -> None:
-        self._cancelled.set()
+            self.signals.finished.emit(self.generation, result[0], self.manual)
 
 
 class QtUpdateChecker(QObject):
@@ -60,8 +65,13 @@ class QtUpdateChecker(QObject):
         self.service = service
         self._pool = QThreadPool(self)
         self._pool.setMaxThreadCount(1)
+        # The checker owns the signal source. No callback captures a QRunnable
+        # that QThreadPool may already have auto-deleted when delivery occurs.
+        self._signals = _CheckSignals(self)
+        self._signals.finished.connect(self._finish, Qt.ConnectionType.QueuedConnection)
         self._running = False
-        self._runnable: _CheckRunnable | None = None
+        self._generation = 0
+        self._cancelled: Event | None = None
 
     def is_running(self) -> bool:
         return self._running
@@ -73,18 +83,21 @@ class QtUpdateChecker(QObject):
     def check(self, *, manual: bool = False) -> bool:
         if self.is_running():
             return False
-        runnable = _CheckRunnable(self.service, manual)
-        runnable.signals.finished.connect(lambda result: self._finish(runnable, result, manual))
+        self._generation += 1
+        self._cancelled = Event()
+        runnable = _CheckRunnable(
+            self.service, manual, self._signals, self._generation, self._cancelled
+        )
         self._running = True
-        self._runnable = runnable
         self._pool.start(runnable)
         return True
 
-    def _finish(self, runnable: _CheckRunnable, result: object, manual: bool) -> None:
-        if self._runnable is not runnable:
+    @Slot(int, object, bool)
+    def _finish(self, generation: int, result: object, manual: bool) -> None:
+        if generation != self._generation or not self._running:
             return
         self._running = False
-        self._runnable = None
+        self._cancelled = None
         self.result_ready.emit(result, manual)
 
     def wait(self, timeout_ms: int) -> bool:
@@ -92,9 +105,8 @@ class QtUpdateChecker(QObject):
 
     def requestInterruption(self) -> None:
         """Cancel result delivery and release the Qt worker promptly."""
-        runnable = self._runnable
-        if runnable is None:
-            return
-        runnable.cancel()
-        self._runnable = None
+        if self._cancelled is not None:
+            self._cancelled.set()
+        self._cancelled = None
+        self._generation += 1
         self._running = False

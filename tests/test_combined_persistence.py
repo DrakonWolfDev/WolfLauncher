@@ -183,6 +183,9 @@ class CombinedPersistenceTests(unittest.TestCase):
         self.write_profile([self.server()])
         self.write_profile([self.server()], True)
         repo, rows = self.repository()
+        for path in self.root.glob("*.yaml"):
+            original = path.read_text(encoding="utf-8")
+            path.write_bytes(original.replace("\n", "\r\n").encode("utf-8"))
         before = {p.name: p.read_bytes() for p in self.root.iterdir()}
         writes = 0
 
@@ -325,7 +328,8 @@ class CombinedPersistenceTests(unittest.TestCase):
         )
         with self.assertRaises(sqlite3.DatabaseError):
             server_cache.initialize(connection)
-        connection.set_authorizer(None)
+        # Python 3.10 cannot clear the authorizer with None (added in 3.11).
+        connection.set_authorizer(lambda *_: sqlite3.SQLITE_OK)
         self.assertEqual(connection.execute("PRAGMA user_version").fetchone()[0], 7)
         self.assertNotIn(
             "product", {r[1] for r in connection.execute("PRAGMA table_info(discovered_servers)")}

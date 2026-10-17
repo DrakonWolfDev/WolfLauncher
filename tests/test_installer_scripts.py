@@ -133,6 +133,7 @@ def _stub_bin_dir() -> tuple[Path, list[str]]:
     ]
 
 
+@unittest.skipUnless(os.name == "posix", "Linux shell installers require a POSIX host")
 class InstallerScriptsTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self._stub_dir, self._path = _stub_bin_dir()

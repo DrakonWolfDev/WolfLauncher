@@ -66,11 +66,21 @@ class StableHandoffTests(unittest.TestCase):
                 command = build_steam_launch_command(
                     install, make_server("203.0.113.10"), " Wolf Player ", [mod], ["-nosplash"]
                 )
-            self.assertEqual(command, [
-                str(executable), "0", "1", "1", "-exe", "DayZ_x64.exe",
-                "-name=Wolf Player", f"-mod={mod}",
-                "-connect=203.0.113.10:2302:27016", "-nosplash",
-            ])
+            self.assertEqual(
+                command,
+                [
+                    str(executable),
+                    "0",
+                    "1",
+                    "1",
+                    "-exe",
+                    "DayZ_x64.exe",
+                    "-name=Wolf Player",
+                    f"-mod={mod}",
+                    "-connect=203.0.113.10:2302:27016",
+                    "-nosplash",
+                ],
+            )
 
     def test_windows_missing_bootstrap_fails_without_steam_fallback(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -90,11 +100,20 @@ class StableHandoffTests(unittest.TestCase):
                     command = build_steam_launch_command(
                         install, make_server("203.0.113.10"), "", ["@AQ"], ["-nosplash"]
                     )
-                    self.assertEqual(command, [
-                        "steam", "-applaunch", str(product.client_app_id), "-mod=@AQ",
-                        "-connect=203.0.113.10:2302", "-nolauncher", "-world=empty",
-                        "-name=Survivor", "-nosplash",
-                    ])
+                    self.assertEqual(
+                        command,
+                        [
+                            "steam",
+                            "-applaunch",
+                            str(product.client_app_id),
+                            "-mod=@AQ",
+                            "-connect=203.0.113.10:2302",
+                            "-nolauncher",
+                            "-world=empty",
+                            "-name=Survivor",
+                            "-nosplash",
+                        ],
+                    )
 
 
 @unittest.skipIf(os.name == "nt", "Linux symlink contract is validated on Linux")

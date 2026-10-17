@@ -227,7 +227,11 @@ class SubscribeWorkshopItemsTests(unittest.TestCase):
                     FakeWorkshopClient,
                 ),
             ):
-                result = subscribe_workshop_items(["111", "222", "111"], install, poll_seconds=0)
+                # A first download must not be throttled even at system uptime 0.
+                with patch("wolflauncher.workshop_subscription.time.monotonic", return_value=0.0):
+                    result = subscribe_workshop_items(
+                        ["111", "222", "111"], install, poll_seconds=0
+                    )
 
         self.assertTrue(result.ok)
         self.assertEqual(FakeWorkshopClient.subscribed, ["111", "222"])

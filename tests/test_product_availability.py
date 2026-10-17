@@ -18,7 +18,7 @@ def make_install(root, product=STABLE):
     (folder / "DayZ_x64.exe").touch()
     (folder / "DayZ_BE.exe").touch()
     (steamapps / f"appmanifest_{product.client_app_id}.acf").write_text(
-        '"AppState" { "installdir" "Custom DayZ Ω" }'
+        '"AppState" { "installdir" "Custom DayZ Ω" }', encoding="utf-8"
     )
     workshop = root / "shared Workshop" / "221100"
     workshop.mkdir(parents=True, exist_ok=True)
