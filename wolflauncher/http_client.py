@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from . import __version__
+from .tls import https_context
 
 DEFAULT_MAX_RESPONSE_BYTES = 2 * 1024 * 1024
 JSON_CONTENT_TYPES = ("application/json", "application/problem+json")
@@ -52,7 +53,7 @@ def fetch_html(
         url, headers={"User-Agent": user_agent(), "Accept": "text/html"}
     )
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with urllib.request.urlopen(request, timeout=timeout, context=https_context()) as response:
             content_type = response.headers.get_content_type() if response.headers else ""
             if content_type and content_type not in {"text/html", "application/xhtml+xml"}:
                 raise HttpClientError("content_type", "Provider returned non-HTML content")
@@ -112,7 +113,7 @@ def post_json(
         method="POST",
     )
     try:
-        with urllib.request.urlopen(request, timeout=timeout) as response:
+        with urllib.request.urlopen(request, timeout=timeout, context=https_context()) as response:
             _validate_content_type(response)
             body = _read_bounded(response, max_bytes, None)
     except urllib.error.HTTPError as exc:
@@ -150,7 +151,9 @@ def request_json(
         if cancel and cancel():
             raise HttpClientError("cancelled", "Request cancelled")
         try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
+            with urllib.request.urlopen(
+                request, timeout=timeout, context=https_context()
+            ) as response:
                 _validate_content_type(response)
                 payload = _read_bounded(response, max_bytes, cancel)
             try:

@@ -2,7 +2,7 @@ import os
 import re
 from pathlib import Path
 
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules, copy_metadata
 from PyInstaller.utils.win32.versioninfo import (
     FixedFileInfo,
     StringFileInfo,
@@ -65,6 +65,7 @@ version_info = VSVersionInfo(
 )
 
 datas = collect_data_files("wolflauncher")
+datas.extend(copy_metadata("truststore"))
 datas.extend(
     [
         (str(project_root / "example.servers.yaml"), "share/wolflauncher"),
@@ -74,6 +75,7 @@ datas.extend(
 )
 
 hiddenimports = collect_submodules("keyring.backends")
+hiddenimports.extend(["truststore", "truststore._windows"])
 hiddenimports.extend(collect_submodules("wolf_update"))
 hiddenimports.extend(
     collect_submodules(

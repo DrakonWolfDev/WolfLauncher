@@ -35,3 +35,14 @@ The compiler installer is fetched only during the Windows build and is verified
 against its official release SHA-256 before execution. The pinned compiler is
 used under its non-commercial license; commercial builds require an appropriate
 Inno Setup license.
+
+## truststore
+
+- Use: Native Windows certificate-chain validation for provider HTTPS requests.
+- Version: 0.10.4
+- License: MIT
+- Copyright: Copyright (c) 2022 Seth Michael Larson
+- Source: https://github.com/sethmlarson/truststore
+
+The Windows bundle preserves the package's MIT license under
+`truststore-0.10.4.dist-info/licenses/LICENSE`.

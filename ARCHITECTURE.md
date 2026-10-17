@@ -78,3 +78,18 @@ environment. The repository includes unit tests and GitHub Actions workflows;
 package builds and installer instructions live in the linked public guides.
 User settings, caches, virtual environments and generated build outputs are
 not part of source distributions.
+
+## HTTPS certificate validation
+
+Provider JSON, form and HTML requests share a verified HTTPS context. Windows
+uses truststore's CryptoAPI chain builder, avoiding OpenSSL selecting an expired
+cached intermediate or cross-sign instead of a valid server-supplied chain.
+Linux retains OpenSSL system trust. Certificate trust, expiry and hostname
+verification remain required, with TLS 1.2 as the minimum; no unverified retry,
+certificate-store edits or global SSL injection are used. Windows distributions
+include truststore and its native backend. Diagnostics report the runtime and
+verification backend without contacting external services.
+
+This changes HTTP transport only: WolfAPI endpoints, row identity, freshness,
+cache retention and selected-server checks are unchanged. See
+`DISCOVERY_FRESHNESS_HANDOFF.md` for the coordinated API handoff.

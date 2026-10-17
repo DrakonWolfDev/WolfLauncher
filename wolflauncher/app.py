@@ -407,6 +407,10 @@ def configure_packaged_smoke_test(app, window, environ=None) -> bool:
     ):
         QTimer.singleShot(0, lambda: app.exit(125))
         return True
+    # Exercise the bundled native TLS backend without requiring network access.
+    from .tls import https_context
+
+    https_context()
     for delay in (1000, 5000, 10000):
         QTimer.singleShot(delay, window.close)
     QTimer.singleShot(30000, lambda: app.exit(124))

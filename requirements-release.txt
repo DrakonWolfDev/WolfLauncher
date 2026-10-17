@@ -274,3 +274,8 @@ pycparser==3.0 \
 python-a2s==1.4.2 \
     --hash=sha256:aacd7fb2d33b330eb6f84e2c99794e0a7c4bdd0c92c1b4507b0373a6f92c162b \
     --hash=sha256:c0ff89b978147db62ed102789bf6cf4693c18b328e96edc6575e6b17edf826be
+
+# Native Windows chain building avoids expired cached cross-signs.
+truststore==0.10.4; sys_platform == "win32" \
+    --hash=sha256:adaeaecf1cbb5f4de3b1959b42d41f6fab57b2b1666adb59e89cb0b53361d981 \
+    --hash=sha256:9d91bd436463ad5e4ee4aba766628dd6cd7010cf3e2461756b3303710eebc301

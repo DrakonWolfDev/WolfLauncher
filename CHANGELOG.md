@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Fixed WolfAPI HTTPS failures on Windows systems containing an expired cached
+  cross-signed CA certificate. Provider requests now use Windows native chain
+  validation through truststore, retaining certificate expiry, trust and hostname
+  checks without changing system certificates. Support diagnostics identify the
+  Python/TLS runtime and verification backend.
+
 - Favourite-server startup checks now retry failed queries once immediately
   instead of waiting for the next refresh interval. Last known server details
   remain visible with a rechecking indicator until the startup check finishes;

@@ -25,6 +25,7 @@ dependencies = [
   "keyring>=25.0",
   "packaging>=24",
   "python-a2s>=1.4.2,<2",
+  "truststore>=0.10.4,<0.11; sys_platform == 'win32'",
 ]
 
 [project.scripts]

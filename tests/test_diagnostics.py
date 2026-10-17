@@ -43,6 +43,8 @@ class DiagnosticsTests(unittest.TestCase):
                         generated_at=datetime(2026, 6, 21, 15, 16, 59, tzinfo=timezone.utc),
                     )
         self.assertIn("Launch troubleshooting:", report)
+        self.assertIn("HTTPS verification:", report)
+        self.assertIn("Certificate and hostname verification: required", report)
         self.assertNotIn("PRIME status:", report)
         self.assertNotIn("Launch option environment:", report)
 

@@ -1,11 +1,20 @@
 from __future__ import annotations
 
 import io
+import ssl
 import unittest
 import urllib.error
 from unittest.mock import patch
 
-from wolflauncher.http_client import HttpClientError, fetch_json, post_form_json, user_agent
+from wolflauncher.http_client import (
+    HttpClientError,
+    fetch_html,
+    fetch_json,
+    post_form_json,
+    post_json,
+    user_agent,
+)
+from wolflauncher.tls import https_context
 
 
 class _Response:
@@ -59,3 +68,29 @@ class HttpClientTests(unittest.TestCase):
         with self.assertRaises(HttpClientError):
             post_form_json("https://example.test/form", [("key", "value")])
         self.assertEqual(urlopen.call_count, 1)
+
+    @patch("wolflauncher.http_client.urllib.request.urlopen")
+    def test_all_provider_request_types_use_verified_context(self, urlopen):
+        for call in (
+            lambda: fetch_json("https://example.test/status"),
+            lambda: fetch_html("https://example.test/page"),
+            lambda: post_json("https://example.test/json", {}),
+            lambda: post_form_json("https://example.test/form", [("key", "value")]),
+        ):
+            with self.subTest(call=call):
+                urlopen.return_value = _Response(b"{}")
+                call()
+                self.assertIs(urlopen.call_args.kwargs["context"], https_context())
+
+    @patch("wolflauncher.http_client.urllib.request.urlopen")
+    def test_certificate_failure_never_retries_without_verification(self, urlopen):
+        urlopen.side_effect = urllib.error.URLError(
+            ssl.SSLCertVerificationError("certificate has expired")
+        )
+        with patch("wolflauncher.http_client.time.sleep"):
+            with self.assertRaisesRegex(HttpClientError, "certificate has expired"):
+                fetch_json("https://example.test/status")
+        for call in urlopen.call_args_list:
+            context = call.kwargs["context"]
+            self.assertEqual(context.verify_mode, ssl.CERT_REQUIRED)
+            self.assertTrue(context.check_hostname)

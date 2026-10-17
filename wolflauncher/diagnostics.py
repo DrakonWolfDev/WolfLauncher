@@ -1,4 +1,6 @@
+import platform
 import shutil
+import ssl
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -24,6 +26,7 @@ from .platforms import current_platform
 from .redaction import redact_support_text
 from .settings import server_key
 from .status import ServerStatus, resolve_host
+from .tls import verification_backend
 
 
 @dataclass(frozen=True)
@@ -180,6 +183,13 @@ def run_diagnostics(
         lines.append(f"  Exists: {ok_missing(path.exists())}")
         lines.append(f"  File: {ok_missing(path.exists() and path.is_file())}")
         lines.append("")
+
+    lines.append("HTTPS verification:")
+    lines.append(f"  Python: {platform.python_version()}")
+    lines.append(f"  TLS runtime: {ssl.OPENSSL_VERSION}")
+    lines.append(f"  Certificate validation: {verification_backend()}")
+    lines.append("  Certificate and hostname verification: required")
+    lines.append("")
 
     lines.append("Required tools:")
     for command in capabilities.diagnostic_tools:
