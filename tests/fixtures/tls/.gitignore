@@ -1,0 +1,6 @@
+# Public test-only certificates and key; never use outside local TLS tests.
+!root.pem
+!expired-intermediate.pem
+!server.pem
+!expired-server.pem
+!server-key.pem
