@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Aligned source/test PySide6 with the release-pinned 6.11.1 runtime. PySide6
+  6.12.0 loses boolean references on Python 3.10/3.11 and aborts at shutdown,
+  even when every test assertion passes.
+
 - Fixed the first Workshop download request being delayed by retry throttling
   when the system monotonic clock is below the retry interval.
 

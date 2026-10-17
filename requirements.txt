@@ -1,4 +1,5 @@
-PySide6>=6.6
+# Match the release lock: PySide6 6.12.0 corrupts bool references on Python 3.10/3.11.
+PySide6==6.11.1
 PyYAML>=6.0
 keyring>=25.0
 packaging>=24

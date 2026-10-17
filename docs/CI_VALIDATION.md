@@ -29,10 +29,21 @@ establish that the separate test and quality gates passed.
 - Updated hash-pinned cryptography from 49.0.0 to 50.0.2 after the dependency
   audit identified PYSEC-2026-3552. The artifact hashes come from PyPI metadata.
 
+The first repaired CI run (`f6599f3`) passed quality and Python 3.12, but
+Python 3.10/3.11 passed every assertion and then aborted at interpreter shutdown.
+A five-emission Qt-only reproduction on Python 3.11 showed PySide6 6.12.0
+decrementing the reference count of `True` once per emission, including with
+plain Python-object signals. The identical program with PySide6 6.11.1 kept
+the count unchanged. CPython 3.12's immortal booleans mask this corruption.
+Source and test requirements now use the same exact 6.11.1 Qt runtime already
+hash-pinned in the release lock. This complements the queued-worker lifecycle
+repair; it does not bypass teardown, force a successful exit or skip a Python job.
+
 ## Local validation
 
 - Windows / Python 3.12: 771 tests, passing with 66 platform-specific skips.
-- WSL Ubuntu 24.04 / Python 3.12: 771 tests, passing with 7 platform-specific skips;
+- WSL Ubuntu 24.04 / Python 3.10, 3.11 and 3.12: each ran 771 tests,
+  passing with 7 platform-specific skips;
   full discovery exits normally after the previously crashing update-check test.
 - Ruff formatting and lint pass, including `wolf_update`.
 - The four configured hardened-core mypy targets pass.
