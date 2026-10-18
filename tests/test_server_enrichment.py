@@ -10,7 +10,7 @@ from wolflauncher.server_enrichment import (
     parse_connect_port,
     parse_players,
 )
-from wolflauncher.status import ServerStatus
+from wolflauncher.status import ServerStatus, ServerStatusOutcome
 
 
 class ServerEnrichmentTests(unittest.TestCase):
@@ -130,6 +130,34 @@ class ServerEnrichmentTests(unittest.TestCase):
         self.assertEqual(enriched.last_checked, "2026-06-20T14:00:00+00:00")
         self.assertEqual(enriched.last_seen, "2026-06-20T12:00:00Z")
         self.assertEqual(enriched.status_source, "local")
+
+    def test_unsuccessful_checks_are_unknown_and_retain_retry_cooldown(self):
+        from wolflauncher.server_browser_presenter import browser_inspector, browser_status
+
+        for outcome in (
+            ServerStatusOutcome.TIMEOUT,
+            ServerStatusOutcome.NETWORK_ERROR,
+            ServerStatusOutcome.CHECK_ERROR,
+            ServerStatusOutcome.INVALID_RESPONSE,
+            ServerStatusOutcome.CANCELLED,
+        ):
+            with self.subTest(outcome=outcome):
+                candidate = self.make_candidate()
+                candidate.ping_ms = 42
+                enriched = enrich_discovered_server(
+                    candidate,
+                    ServerStatus(False, outcome=outcome),
+                    "2026-06-20T14:00:00+00:00",
+                )
+                self.assertEqual(browser_status(enriched)[0], "UNKNOWN")
+                self.assertIn("Local check unsuccessful", browser_inspector(enriched).truth)
+                self.assertIsNone(enriched.ping_ms)
+                self.assertFalse(local_enrichment_due(
+                    enriched, now=datetime(2026, 6, 20, 14, 4, tzinfo=timezone.utc)
+                ))
+                self.assertTrue(local_enrichment_due(
+                    enriched, now=datetime(2026, 6, 20, 14, 5, tzinfo=timezone.utc)
+                ))
 
     def test_parse_connect_port_reads_port_from_gamedig_connect_address(self):
         self.assertEqual(parse_connect_port("203.0.113.10:2302"), 2302)

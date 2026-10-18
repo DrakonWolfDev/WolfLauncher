@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 
 from .models import DiscoveredServer, Server
 from .server_identity import saved_server_fields
-from .status import ServerStatus
+from .status import ServerStatus, ServerStatusOutcome
 
 COMMON_DAYZ_QUERY_PORT = 27016
 COMMON_GAME_TO_QUERY_OFFSET = COMMON_DAYZ_QUERY_PORT - 2302
@@ -23,7 +23,12 @@ def enrich_discovered_server(
             server,
             online=False,
             last_checked=checked_at,
-            status_source="local",
+            status_source=(
+                "local"
+                if status.outcome is ServerStatusOutcome.OFFLINE
+                else f"local_{status.outcome.value}"
+            ),
+            ping_ms=None,
         )
 
     players_current, players_max = parse_players(status.players)
@@ -57,7 +62,7 @@ def local_enrichment_due(
     failure_retry_seconds: int = LOCAL_FAILURE_RETRY_SECONDS,
 ) -> bool:
     """Bound repeated local probes while keeping selected-row data responsive."""
-    if server.status_source != "local" or not server.last_checked:
+    if not server.status_source.startswith("local") or not server.last_checked:
         return True
     try:
         checked = datetime.fromisoformat(server.last_checked.replace("Z", "+00:00"))

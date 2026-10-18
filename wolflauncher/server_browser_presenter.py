@@ -184,6 +184,8 @@ def api_status_tooltip(server: DiscoveredServer) -> str:
 
 def browser_status(server: DiscoveredServer) -> tuple[str, str]:
     """Return a human-facing status and colour without exposing provider jargon."""
+    if server.status_source.startswith("local_"):
+        return "UNKNOWN", STATUS_COLOURS["warning"]
     if server.status_source == "local":
         return (
             ("ONLINE", STATUS_COLOURS["positive"])
@@ -226,6 +228,12 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
     status_text, status_colour = browser_status(server)
     if not server.last_checked:
         tooltips[12] = "This row has not been checked yet."
+    elif server.status_source.startswith("local_"):
+        tooltips[5] = (
+            f"Local check unsuccessful at {server.last_checked}: "
+            f"{server.status_source.removeprefix('local_').replace('_', ' ')}. "
+            "The server may still be online. Check launcher diagnostics and network access."
+        )
     elif locally_checked:
         tooltips[5] = f"Locally validated at {server.last_checked}."
     else:
@@ -339,6 +347,9 @@ def browser_inspector(
         if server.status_source == "local"
         else f"Provider reported · {freshness}"
     )
+    if server.status_source.startswith("local_"):
+        reason = server.status_source.removeprefix("local_").replace("_", " ")
+        truth = f"Local check unsuccessful ({reason}) · {server.last_checked}"
     mods = mod_preview or display_required_mod_count(server.required_mod_count)
     if mods == "–":
         mods = "Unknown until checked"

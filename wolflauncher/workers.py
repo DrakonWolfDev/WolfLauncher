@@ -631,7 +631,10 @@ class ServerEnrichmentWorker(QThread):
             if self._cancel_event.is_set():
                 return None
             try:
-                status = ServerStatus(False, error="No valid query ports to probe.")
+                status = ServerStatus(
+                    False, error="No valid query ports to probe.",
+                    outcome=ServerStatusOutcome.CHECK_ERROR,
+                )
                 probes = enrichment_probe_servers(server)
                 if not self.probe_fallbacks:
                     probes = probes[:1]
@@ -647,7 +650,10 @@ class ServerEnrichmentWorker(QThread):
                     if status.online:
                         break
             except Exception as exc:
-                status = ServerStatus(False, error=f"live check failed: {exc}")
+                status = ServerStatus(
+                    False, error=f"live check failed: {exc}",
+                    outcome=ServerStatusOutcome.CHECK_ERROR,
+                )
             return enrich_discovered_server(server, status, checked_at)
 
         max_workers = min(MAX_ENRICHMENT_WORKERS, total) if total else 1

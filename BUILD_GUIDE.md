@@ -287,6 +287,7 @@ This checks isolated install, packaged startup, in-place reinstall, and uninstal
 | Linux build rejects the architecture | The `.deb` script currently supports only `amd64` and `arm64`. |
 | `dpkg-deb` not found | Install `dpkg-dev`. |
 | Windows build fails before PyInstaller | Confirm Python 3.12 and the `requirements-windows-release.txt` install completed in the virtual environment. |
+| Packaged app reports a Qt DLL load failure while source startup works | Build from a clean PowerShell environment with unrelated native-tool directories removed from `PATH`. PyInstaller can otherwise bundle incompatible runtime DLLs from those directories. Check `build/windows/WolfLauncher/Analysis-00.toc` for their source paths, rebuild, and repeat the packaged startup smoke test. |
 | Artifact has no SHA-256 file | Treat the build as incomplete; the relevant build script should always write a sidecar hash. |
 
 ## Useful non-release commands
