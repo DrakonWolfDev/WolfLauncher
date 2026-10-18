@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 )
 
 from .diagnostics import format_launch_output_report
+from .game_session import minimize_for_game
 from .platform_detection import (
     dayz_battleye_process_check,
     dayz_game_process_check,
@@ -160,7 +161,7 @@ class LaunchDialog(PostHandoffProcessCheckMixin, QDialog):
         parent = self.parentWidget()
         self.close()
         if parent:
-            parent.showMinimized()
+            minimize_for_game(parent)
 
 
 class PreflightLaunchDialog(QDialog):

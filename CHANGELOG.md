@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Restore and focus WolfLauncher automatically when DayZ exits after a launch
+  that minimized the launcher, including DayZ Editor launches.
+
 - Aligned source/test PySide6 with the release-pinned 6.11.1 runtime. PySide6
   6.12.0 loses boolean references on Python 3.10/3.11 and aborts at shutdown,
   even when every test assertion passes.

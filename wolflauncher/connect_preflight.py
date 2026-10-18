@@ -5,6 +5,7 @@ import time
 from PySide6.QtCore import QProcess, QTimer
 from PySide6.QtWidgets import QMessageBox
 
+from .game_session import minimize_for_game
 from .launch_dialogs import PreflightLaunchDialog
 from .launcher import LaunchError
 from .models import Server
@@ -87,7 +88,9 @@ class ConnectPreflightCoordinator:
         window.preflight_dialog = PreflightLaunchDialog(window, server.name)
         window.preflight_dialog.finished.connect(self.cancel)
         window.preflight_dialog.launch_report_ready.connect(window.persist_launch_report)
-        window.preflight_dialog.launcher_minimize_requested.connect(window.showMinimized)
+        window.preflight_dialog.launcher_minimize_requested.connect(
+            lambda: minimize_for_game(window)
+        )
         window.preflight_dialog.show()
         window.launch_button.setEnabled(False)
         self.ensure_steam()
