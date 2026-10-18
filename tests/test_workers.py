@@ -90,8 +90,19 @@ class WorkerTests(unittest.TestCase):
             recovered,
         ]
         worker = StatusWorker([sample_server()], retry_failed=True)
-        self.assertIs(worker._check_with_retry(sample_server()), recovered)
+        with patch.object(worker._cancel_event, "wait", return_value=False) as wait:
+            self.assertIs(worker._check_with_retry(sample_server()), recovered)
+        wait.assert_called_once_with(3)
         self.assertEqual(check_server.call_count, 2)
+
+    @patch("wolflauncher.workers.check_server")
+    def test_shutdown_during_startup_retry_delay_skips_recheck(self, check_server):
+        status = ServerStatus(False, outcome=ServerStatusOutcome.TIMEOUT)
+        check_server.return_value = status
+        worker = StatusWorker([sample_server()], retry_failed=True)
+        with patch.object(worker._cancel_event, "wait", return_value=True):
+            self.assertIs(worker._check_with_retry(sample_server()), status)
+        check_server.assert_called_once()
 
     @patch("wolflauncher.workers.check_server")
     def test_startup_retry_is_bounded_and_skips_success_or_cancellation(self, check_server):
@@ -105,7 +116,8 @@ class WorkerTests(unittest.TestCase):
                 status = ServerStatus(outcome is ServerStatusOutcome.ONLINE, outcome=outcome)
                 check_server.return_value = status
                 worker = StatusWorker([sample_server()], retry_failed=True)
-                self.assertIs(worker._check_with_retry(sample_server()), status)
+                with patch.object(worker._cancel_event, "wait", return_value=False):
+                    self.assertIs(worker._check_with_retry(sample_server()), status)
                 self.assertEqual(check_server.call_count, attempts)
 
     @patch("wolflauncher.workers.check_server")

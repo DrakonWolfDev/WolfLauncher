@@ -46,6 +46,7 @@ from .workshop_subscription import (
 )
 
 MAX_STATUS_WORKERS = 8
+STARTUP_STATUS_RETRY_DELAY_SECONDS = 3
 MAX_ENRICHMENT_WORKERS = 8
 WOLFAPI_V1_PAGE_SIZE = 100
 
@@ -102,6 +103,10 @@ class StatusWorker(QThread):
             and status.outcome is not ServerStatusOutcome.CANCELLED
             and not self._cancel_event.is_set()
         ):
+            # Packaged helpers and the network can still be warming up on first
+            # launch. Give them time to recover, without delaying shutdown.
+            if self._cancel_event.wait(STARTUP_STATUS_RETRY_DELAY_SECONDS):
+                return status
             return _checked_server_status(server, self._cancel_event)
         return status
 
