@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from .models import Server
+from .server_perspective import perspective_from_keywords
 
 SOURCE_GAMEDIG_SCRIPT = (
     Path(__file__).resolve().parents[1]
@@ -47,6 +48,7 @@ class ServerStatus:
     ping: str = ""
     password: bool = False
     modded: bool = False
+    perspective: str = "unknown"
     connect: str = ""
     error: str = ""
     app_id: object = None
@@ -280,6 +282,7 @@ def check_server(
             ping=str(ping) if ping != "" else "",
             password=bool(data.get("password", False)),
             modded=modded,
+            perspective=perspective_from_keywords(raw.get("tags")),
             connect=str(connect),
             app_id=raw.get("appId"),
             outcome=ServerStatusOutcome.ONLINE,

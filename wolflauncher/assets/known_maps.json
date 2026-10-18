@@ -8,6 +8,7 @@
     {"key": "chernarusa2", "name": "Chernarus A2"},
     {"key": "enoch", "name": "Livonia"},
     {"key": "sakhal", "name": "Sakhal"},
+    {"key": "nasdara", "name": "Nasdara"},
     {"key": "namalsk", "name": "Namalsk"},
     {"key": "deerisle", "name": "Deer Isle", "aliases": ["deerilse"]},
     {"key": "stuartisland", "name": "Stuart Island"},

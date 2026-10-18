@@ -10,6 +10,7 @@ from .server_display import (
     display_server_flags,
     is_displayable_server_name,
 )
+from .server_perspective import perspective_label
 from .theme import STATUS_COLOURS
 
 
@@ -373,6 +374,7 @@ def browser_inspector(
             f"Host  {server.host}\n"
             f"Game port  {server.game_port}    Query port  {server.query_port}\n"
             f"Source  {server.source or 'Unknown'}    Version  {server.version or 'Unknown'}\n"
+            f"Perspective  {perspective_label(server.perspective)}\n"
             f"Last seen  {server.last_seen or 'Never'}"
         ),
     )
@@ -396,6 +398,7 @@ def discovered_server_details(server: DiscoveredServer) -> str:
             f"Players: {players_text(server.players_current, server.players_max)}",
             f"Version: {server.version}",
             f"Features: {flags_text}",
+            f"Perspective: {perspective_label(server.perspective)}",
             f"Mods: {display_required_mod_count(server.required_mod_count)}",
             f"Status basis: {'Locally validated' if server.status_source == 'local' else 'Provider reported'}",
             f"Last checked: {server.last_checked or 'Never'}",

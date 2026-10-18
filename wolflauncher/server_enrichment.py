@@ -48,6 +48,7 @@ def enrich_discovered_server(
         version=status.version,
         password=status.password,
         modded=status.modded,
+        perspective=status.perspective,
         online=True,
         last_checked=checked_at,
         last_seen=checked_at,

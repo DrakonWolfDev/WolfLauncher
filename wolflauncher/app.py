@@ -256,7 +256,7 @@ class MainWindow(
             self._scrollable_workspace(self._build_servers_tab()), theme_icon("servers"), "Servers"
         )
         self.server_browser_tab_index = self.tabs.addTab(
-            self._scrollable_workspace(self._build_server_browser_tab()),
+            self._build_server_browser_tab(),
             theme_icon("browser"),
             "Server Browser",
         )

@@ -1,8 +1,9 @@
 import sqlite3
 import time
+from html import escape
 from pathlib import Path
 
-from PySide6.QtCore import QPoint, Qt, QTimer
+from PySide6.QtCore import QPoint, QSignalBlocker, Qt, QTimer
 from PySide6.QtGui import QAction, QColor
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -18,9 +19,11 @@ from PySide6.QtWidgets import (
     QMenu,
     QMessageBox,
     QPushButton,
+    QScrollArea,
     QSizePolicy,
     QSplitter,
     QTableWidget,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -235,8 +238,6 @@ class ServerBrowserMixin:
 
         self.browser_generation = 0
         self.browser_edition = QComboBox()
-        self.browser_edition.setFixedWidth(150)
-        self.browser_edition.addItem("Version", "stable")
         self.browser_edition.addItem("Stable", "stable")
         self.browser_edition.addItem("Experimental", "experimental")
         self.browser_edition.setAccessibleName("Server browser version")
@@ -260,33 +261,24 @@ class ServerBrowserMixin:
         filters.addWidget(self.browser_search, 1)
 
         self.browser_modded = QComboBox()
-        self.browser_modded.setFixedWidth(150)
         self.browser_modded.addItems(["Any mods", "Modded", "Vanilla"])
         self.browser_modded.currentTextChanged.connect(self.refresh_server_browser)
-        filters.addWidget(self.browser_modded)
 
         self.browser_map = QComboBox()
-        self.browser_map.setFixedWidth(180)
         self.browser_map.addItem("Any map")
         self.browser_map.currentTextChanged.connect(self.refresh_server_browser)
         self.browser_map.currentTextChanged.connect(self.schedule_remote_wolfapi_map)
-        filters.addWidget(self.browser_map)
         QTimer.singleShot(0, self.refresh_wolfapi_map_catalog)
 
         self.browser_online_only = QCheckBox("Online only")
-        self.browser_online_only.setFixedWidth(120)
         self.browser_online_only.stateChanged.connect(self.refresh_server_browser)
-        filters.addWidget(self.browser_online_only)
 
         self.browser_summary = QLabel("Loading discovered servers…")
         set_ui_role(self.browser_summary, "metadata")
 
         self.browser_style = QComboBox()
-        self.browser_style.setFixedWidth(150)
         self.browser_style.addItems(["Any game style", "PvE", "PvP"])
         self.browser_style.currentTextChanged.connect(self.refresh_server_browser)
-        filters.insertWidget(2, self.browser_style)
-        filters.insertWidget(1, self.browser_edition)
 
         self.browser_version = QComboBox()
         self.browser_version.addItem("Any version")
@@ -311,7 +303,14 @@ class ServerBrowserMixin:
         self.browser_limit = QComboBox()
         self.browser_limit.addItems(["200", "500", "1000"])
         self.browser_limit.currentTextChanged.connect(self.refresh_server_browser)
+        filters.addWidget(QLabel("Sort"))
+        filters.addWidget(self.browser_sort)
+        filters.addWidget(self.browser_descending)
         layout.addLayout(filters)
+        self.browser_active_filters = QWidget()
+        self.browser_active_filters_layout = QHBoxLayout(self.browser_active_filters)
+        self.browser_active_filters_layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.browser_active_filters)
         layout.addWidget(self.browser_edition_notice)
         layout.addWidget(self.browser_summary)
 
@@ -322,13 +321,19 @@ class ServerBrowserMixin:
         advanced_layout = QVBoxLayout(self.browser_advanced_panel)
         advanced_layout.setContentsMargins(0, 0, 0, 0)
         advanced_filters = QHBoxLayout()
-        advanced_filters.addWidget(QLabel("Version"))
-        advanced_filters.addWidget(self.browser_version)
-        advanced_filters.addWidget(QLabel("Source"))
-        advanced_filters.addWidget(self.browser_source)
-        advanced_filters.addWidget(QLabel("Sort"))
-        advanced_filters.addWidget(self.browser_sort)
-        advanced_filters.addWidget(self.browser_descending)
+        self.browser_perspective = QComboBox()
+        for label, value in (
+            ("Any perspective", ""),
+            ("First-person only", "first_person"),
+            ("Third-person enabled", "third_person"),
+            ("Unknown perspective", "unknown"),
+        ):
+            self.browser_perspective.addItem(label, value)
+        self.browser_perspective.setToolTip(
+            "Filter advertised camera mode. Third-person enabled allows both views. "
+            "Missing perspective data is shown as unknown."
+        )
+        self.browser_perspective.currentIndexChanged.connect(self.refresh_server_browser)
         self.browser_hide_quality_flagged = QCheckBox("Hide listing data warnings")
         self.browser_hide_quality_flagged.setToolTip(
             "Hide rows WolfAPI flags for suspicious provider telemetry or dense "
@@ -341,6 +346,14 @@ class ServerBrowserMixin:
         self.browser_hide_quality_flagged.stateChanged.connect(
             lambda _state: self.schedule_remote_wolfapi_search(self.browser_search.text())
         )
+        for label, control in (
+            ("Game version", self.browser_version),
+            ("Source", self.browser_source),
+        ):
+            caption = QLabel(label)
+            caption.setBuddy(control)
+            advanced_filters.addWidget(caption)
+            advanced_filters.addWidget(control)
         advanced_filters.addWidget(self.browser_hide_quality_flagged)
         advanced_filters.addWidget(QLabel("Limit"))
         advanced_filters.addWidget(self.browser_limit)
@@ -484,12 +497,21 @@ class ServerBrowserMixin:
         set_ui_role(self.browser_detail_diagnostics, "metadata")
         for child in (
             self.browser_detail_context,
-            self.browser_detail_truth,
             self.browser_detail_features,
             self.browser_detail_mods,
-            self.browser_detail_diagnostics,
         ):
             body_layout.addWidget(child)
+        self.browser_details_toggle = QPushButton("Details")
+        self.browser_details_toggle.setCheckable(True)
+        self.browser_details_panel = QWidget()
+        diagnostics_layout = QVBoxLayout(self.browser_details_panel)
+        diagnostics_layout.setContentsMargins(0, 0, 0, 0)
+        diagnostics_layout.addWidget(self.browser_detail_truth)
+        diagnostics_layout.addWidget(self.browser_detail_diagnostics)
+        self.browser_details_panel.hide()
+        self.browser_details_toggle.toggled.connect(self.browser_details_panel.setVisible)
+        body_layout.addWidget(self.browser_details_toggle)
+        body_layout.addWidget(self.browser_details_panel)
         detail_layout.addWidget(detail_body)
         self.browser_detail_atmosphere = ServerMapAtmosphereFrame()
         set_ui_role(self.browser_detail_atmosphere, "browserAtmosphere")
@@ -501,7 +523,48 @@ class ServerBrowserMixin:
         self.browser_splitter.setHandleWidth(10)
         self.browser_splitter.setChildrenCollapsible(False)
         self.browser_splitter.addWidget(self.browser_table)
-        self.browser_splitter.addWidget(self.browser_detail_card)
+        self.browser_side_tabs = QTabWidget()
+        self.browser_side_tabs.setMinimumWidth(290)
+        self.browser_side_tabs.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Ignored)
+        filter_content = QWidget()
+        filter_layout = QVBoxLayout(filter_content)
+        filter_layout.setContentsMargins(16, 14, 16, 14)
+        filter_layout.setSpacing(10)
+        heading = QLabel("Find your server")
+        set_ui_role(heading, "inspectorTitle")
+        filter_layout.addWidget(heading)
+        for label, control in (
+            ("Edition", self.browser_edition),
+            ("Map", self.browser_map),
+            ("Perspective", self.browser_perspective),
+            ("Mods", self.browser_modded),
+            ("Game style", self.browser_style),
+        ):
+            caption = QLabel(label)
+            caption.setBuddy(control)
+            set_ui_role(caption, "inspectorLabel")
+            filter_layout.addWidget(caption)
+            control.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            filter_layout.addWidget(control)
+        filter_layout.addWidget(self.browser_online_only)
+        reset = QPushButton("Clear filters")
+        reset.clicked.connect(self.reset_browser_filters)
+        filter_layout.addWidget(reset)
+        filter_layout.addStretch(1)
+        filter_scroll = QScrollArea()
+        filter_scroll.setWidgetResizable(True)
+        filter_scroll.setFrameShape(QFrame.NoFrame)
+        filter_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        filter_scroll.setWidget(filter_content)
+        self.browser_side_tabs.addTab(filter_scroll, "Filters")
+        server_scroll = QScrollArea()
+        server_scroll.setWidgetResizable(True)
+        server_scroll.setFrameShape(QFrame.NoFrame)
+        server_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        server_scroll.setWidget(self.browser_detail_card)
+        self.browser_side_tabs.addTab(server_scroll, "Server")
+        self._browser_side_selection = ""
+        self.browser_splitter.addWidget(self.browser_side_tabs)
         self.browser_splitter.setStretchFactor(0, 3)
         self.browser_splitter.setStretchFactor(1, 1)
         self.browser_splitter.setSizes([990, 330])
@@ -537,10 +600,14 @@ class ServerBrowserMixin:
         layout.addLayout(buttons)
         layout.addWidget(self.browser_advanced_panel)
 
-        QWidget.setTabOrder(self.browser_search, self.browser_modded)
+        QWidget.setTabOrder(self.browser_search, self.browser_sort)
+        QWidget.setTabOrder(self.browser_sort, self.browser_descending)
+        QWidget.setTabOrder(self.browser_descending, self.browser_edition)
+        QWidget.setTabOrder(self.browser_edition, self.browser_map)
+        QWidget.setTabOrder(self.browser_map, self.browser_perspective)
+        QWidget.setTabOrder(self.browser_perspective, self.browser_modded)
         QWidget.setTabOrder(self.browser_modded, self.browser_style)
-        QWidget.setTabOrder(self.browser_style, self.browser_map)
-        QWidget.setTabOrder(self.browser_map, self.browser_online_only)
+        QWidget.setTabOrder(self.browser_style, self.browser_online_only)
         QWidget.setTabOrder(self.browser_online_only, self.browser_table)
         QWidget.setTabOrder(self.browser_table, self.browser_advanced_toggle)
         QWidget.setTabOrder(self.browser_advanced_toggle, self.browser_promote_button)
@@ -551,16 +618,17 @@ class ServerBrowserMixin:
             lambda expanded: set_disclosure_state(
                 self.browser_advanced_toggle,
                 self.browser_advanced_panel,
-                "advanced filters and tools",
+                "advanced tools",
                 expanded,
             )
         )
         set_disclosure_state(
             self.browser_advanced_toggle,
             self.browser_advanced_panel,
-            "advanced filters and tools",
+            "advanced tools",
             False,
         )
+        self.update_browser_active_filters()
         self.update_browser_selection_context()
         return widget
 
@@ -1612,6 +1680,7 @@ class ServerBrowserMixin:
                 products=(ServerBrowserMixin.browser_product_key(self),),
                 style_terms=tuple(style_terms),
                 modded=modded,
+                perspective=self.browser_perspective.currentData(),
                 hide_quality_flagged=self.browser_hide_quality_flagged.isChecked(),
                 sort_by=sort_key,
                 descending=self.browser_descending.isChecked(),
@@ -1626,21 +1695,23 @@ class ServerBrowserMixin:
             self.active_discovered_cache_key = ""
         self.browser_servers = servers
 
-        populate_browser_table(
-            self.browser_table,
-            servers,
-            {
-                (server.host, server.game_port, server.query_port)
-                for server in self.servers
-                if server.favourite
-            },
-        )
-        if selected_key:
-            for row in range(self.browser_table.rowCount()):
-                item = self.browser_table.item(row, BROWSER_NAME_COLUMN)
-                if item and item.data(Qt.UserRole) == selected_key:
-                    self.browser_table.selectRow(row)
-                    break
+        # Restoring rows is not a user request to open the inspector.
+        with QSignalBlocker(self.browser_table):
+            populate_browser_table(
+                self.browser_table,
+                servers,
+                {
+                    (server.host, server.game_port, server.query_port)
+                    for server in self.servers
+                    if server.favourite
+                },
+            )
+            if selected_key:
+                for row in range(self.browser_table.rowCount()):
+                    item = self.browser_table.item(row, BROWSER_NAME_COLUMN)
+                    if item and item.data(Qt.UserRole) == selected_key:
+                        self.browser_table.selectRow(row)
+                        break
         self.browser_table.verticalScrollBar().setValue(scroll_value)
         for server in servers:
             cached = self.browser_mod_results.get(server.cache_key)
@@ -1664,9 +1735,10 @@ class ServerBrowserMixin:
                 + f" · {self.wolfapi_filtered_total:,} in selected edition directory"
             )
         self.browser_summary.setToolTip(browser_summary_tooltip(snapshot.cache_summary))
-        self.update_browser_selection_context()
+        self.update_browser_active_filters()
+        self.update_browser_selection_context(follow_selection=False)
 
-    def update_browser_selection_context(self):
+    def update_browser_selection_context(self, *, follow_selection: bool = True):
         if not hasattr(self, "browser_promote_button"):
             return
         selected = self.selected_discovered_server()
@@ -1677,6 +1749,11 @@ class ServerBrowserMixin:
                 self.server_launch.invalidate()
             self.active_discovered_server = None
             self.active_discovered_cache_key = ""
+        if hasattr(self, "browser_side_tabs"):
+            selection_key = selected.cache_key if selected else ""
+            if follow_selection and selection_key != self._browser_side_selection:
+                self.browser_side_tabs.setCurrentIndex(1 if selected else 0)
+            self._browser_side_selection = selection_key
         enabled = selected is not None
         for button_name in (
             "browser_promote_button",
@@ -1852,10 +1929,64 @@ class ServerBrowserMixin:
     def _combo_filter_value(self, combo: QComboBox, any_label: str) -> str:
         return combo_filter_value(combo, any_label)
 
+    def update_browser_active_filters(self):
+        if not hasattr(self, "browser_active_filters_layout"):
+            return
+        row = self.browser_active_filters_layout
+        while row.count():
+            item = row.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        active = []
+        for control, default in (
+            (self.browser_map, "Any map"),
+            (self.browser_perspective, "Any perspective"),
+            (self.browser_modded, "Any mods"),
+            (self.browser_style, "Any game style"),
+            (self.browser_version, "Any version"),
+            (self.browser_source, "Any source"),
+        ):
+            if control.currentText() != default:
+                active.append(
+                    (control.currentText(), lambda c=control, d=default: c.setCurrentText(d))
+                )
+        if self.browser_online_only.isChecked():
+            active.append(("Online only", lambda: self.browser_online_only.setChecked(False)))
+        if not self.browser_hide_quality_flagged.isChecked():
+            active.append(
+                (
+                    "Including data warnings",
+                    lambda: self.browser_hide_quality_flagged.setChecked(True),
+                )
+            )
+        # Links wrap naturally without forcing the results pane wider.
+        summary = QLabel(
+            " &nbsp; &middot; &nbsp; ".join(
+                f'<a href="{index}" style="color: #d9b565; text-decoration: none;">'
+                f"{escape(label)} &times;</a>"
+                for index, (label, _) in enumerate(active)
+            )
+            or "All servers in this edition"
+        )
+        summary.setTextFormat(Qt.RichText)
+        summary.setToolTip("Click an active filter to remove it")
+        summary.linkActivated.connect(lambda index: active[int(index)][1]())
+        summary.setWordWrap(True)
+        set_ui_role(summary, "metadata")
+        row.addWidget(summary, 1)
+        if active:
+            edit = QPushButton("Edit filters")
+            edit.clicked.connect(lambda: self.browser_side_tabs.setCurrentIndex(0))
+            row.addWidget(edit)
+            clear = QPushButton("Clear")
+            clear.clicked.connect(self.reset_browser_filters)
+            row.addWidget(clear)
+
     def reset_browser_filters(self):
         self.browser_search.clear()
         self.browser_online_only.setChecked(False)
         self.browser_modded.setCurrentText("Any mods")
+        self.browser_perspective.setCurrentIndex(0)
         self.browser_style.setCurrentText("Any game style")
         self.browser_map.setCurrentText("Any map")
         self.browser_version.setCurrentText("Any version")
@@ -1874,6 +2005,8 @@ class ServerBrowserMixin:
 
     def handle_browser_cell_clicked(self, row: int, column: int):
         if column != BROWSER_FAVOURITE_COLUMN:
+            if hasattr(self, "browser_side_tabs"):
+                self.browser_side_tabs.setCurrentIndex(1)
             return
         item = self.browser_table.item(row, BROWSER_NAME_COLUMN)
         cache_key = item.data(Qt.UserRole) if item else ""

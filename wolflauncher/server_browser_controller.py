@@ -17,6 +17,7 @@ class BrowserQuery:
     products: tuple[str, ...] | None = None
     style_terms: tuple[str, ...] = ()
     modded: bool | None = None
+    perspective: str = ""
     hide_quality_flagged: bool = False
     hide_malformed_names: bool = True
     sort_by: str = "name"
@@ -42,6 +43,7 @@ def load_browser_snapshot(connection: Any, query: BrowserQuery) -> BrowserSnapsh
         "products": query.products,
         "style_terms": list(query.style_terms),
         "modded": query.modded,
+        "perspective": query.perspective,
         "hide_quality_flagged": query.hide_quality_flagged,
         "hide_malformed_names": query.hide_malformed_names,
     }

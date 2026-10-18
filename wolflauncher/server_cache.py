@@ -15,7 +15,7 @@ from .paths import user_data_dir
 from .persistence import ensure_private_directory
 from .server_identity import identity_fields, merge_identity, normalize_product
 
-SCHEMA_VERSION = 8
+SCHEMA_VERSION = 9
 SQLITE_BUSY_TIMEOUT_MS = 5000
 DATA_DIR = user_data_dir()
 SERVER_CACHE_PATH = DATA_DIR / "server_cache.sqlite3"
@@ -130,6 +130,7 @@ def _initialize_schema_v1(connection: sqlite3.Connection) -> None:
             version TEXT NOT NULL DEFAULT '',
             password INTEGER NOT NULL DEFAULT 0,
             modded INTEGER NOT NULL DEFAULT 0,
+            perspective TEXT NOT NULL DEFAULT 'unknown',
             online INTEGER NOT NULL DEFAULT 0,
             last_checked TEXT NOT NULL DEFAULT '',
             last_seen TEXT NOT NULL DEFAULT '',
@@ -300,6 +301,12 @@ def _migrate(connection: sqlite3.Connection, current_version: int, target_versio
         _initialize_identity_indexes(connection)
         connection.execute("PRAGMA user_version = 8")
         current_version = 8
+    if current_version == 8 and target_version >= 9:
+        connection.execute(
+            "ALTER TABLE discovered_servers ADD COLUMN perspective TEXT NOT NULL DEFAULT 'unknown'"
+        )
+        connection.execute("PRAGMA user_version = 9")
+        current_version = 9
     if current_version != target_version:
         raise RuntimeError(
             f"Unsupported server cache migration from version {current_version} to {target_version}."
@@ -399,7 +406,7 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             product, identity_state, identity_evidence,
             cache_key, source, display_name, server_name, host, game_port, query_port,
             map_name, players_current, players_max, ping_ms, version, password,
-            modded, online, last_checked, last_seen, required_mod_count,
+            modded, perspective, online, last_checked, last_seen, required_mod_count,
             mod_metadata_status, mod_metadata_checked_at,
             mod_metadata_expires_at, mod_metadata_error_code, mod_manifest_hash,
             status_source, stable_server_id,
@@ -413,7 +420,7 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             :product, :identity_state, :identity_evidence,
             :cache_key, :source, :display_name, :server_name, :host, :game_port, :query_port,
             :map_name, :players_current, :players_max, :ping_ms, :version, :password,
-            :modded, :online, :last_checked, :last_seen, :required_mod_count,
+            :modded, :perspective, :online, :last_checked, :last_seen, :required_mod_count,
             :mod_metadata_status, :mod_metadata_checked_at,
             :mod_metadata_expires_at, :mod_metadata_error_code, :mod_manifest_hash,
             :status_source, :stable_server_id,
@@ -439,6 +446,7 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             version = excluded.version,
             password = excluded.password,
             modded = excluded.modded,
+            perspective = excluded.perspective,
             online = excluded.online,
             last_checked = excluded.last_checked,
             last_seen = excluded.last_seen,
@@ -673,6 +681,7 @@ def search_servers(
     products: tuple[str, ...] | None = None,
     style_terms: list[str] | None = None,
     modded: bool | None = None,
+    perspective: str = "",
     hide_quality_flagged: bool = False,
     hide_malformed_names: bool = False,
     sort_by: str = "name",
@@ -689,6 +698,7 @@ def search_servers(
         products=products,
         style_terms=style_terms,
         modded=modded,
+        perspective=perspective,
         hide_quality_flagged=hide_quality_flagged,
         hide_malformed_names=hide_malformed_names,
     )
@@ -719,6 +729,7 @@ def count_search_servers(
     products: tuple[str, ...] | None = None,
     style_terms: list[str] | None = None,
     modded: bool | None = None,
+    perspective: str = "",
     hide_quality_flagged: bool = False,
     hide_malformed_names: bool = False,
 ) -> int:
@@ -732,6 +743,7 @@ def count_search_servers(
         products=products,
         style_terms=style_terms,
         modded=modded,
+        perspective=perspective,
         hide_quality_flagged=hide_quality_flagged,
         hide_malformed_names=hide_malformed_names,
     )
@@ -810,6 +822,7 @@ def _search_where(
     products: tuple[str, ...] | None = None,
     style_terms: list[str] | None = None,
     modded: bool | None = None,
+    perspective: str = "",
     hide_quality_flagged: bool = False,
     hide_malformed_names: bool = False,
 ) -> tuple[str, list[Any]]:
@@ -863,6 +876,9 @@ def _search_where(
     if source_namespace:
         clauses.append("source COLLATE NOCASE LIKE ? ESCAPE '\\'")
         params.append(f"%{_escape_like(source_namespace)}")
+    if perspective:
+        clauses.append("perspective = ?")
+        params.append(perspective)
     if modded is not None:
         clauses.append("modded = ?")
         params.append(1 if modded else 0)
@@ -896,6 +912,7 @@ def _server_params(server: DiscoveredServer) -> dict[str, Any]:
         "version": server.version,
         "password": 1 if server.password else 0,
         "modded": 1 if server.modded else 0,
+        "perspective": server.perspective,
         "online": 1 if server.online else 0,
         "last_checked": server.last_checked,
         "last_seen": server.last_seen,
@@ -964,6 +981,7 @@ def _server_from_import_item(item: Any, index: int) -> DiscoveredServer:
         version=str(item.get("version") or ""),
         password=_optional_bool(item.get("password", False)),
         modded=_optional_bool(item.get("modded", False)),
+        perspective=item.get("perspective", "unknown"),
         online=_optional_bool(item.get("online", False)),
         last_checked=str(item.get("last_checked") or ""),
         last_seen=str(item.get("last_seen") or ""),
@@ -1067,6 +1085,7 @@ def _row_to_server(row: sqlite3.Row) -> DiscoveredServer:
         version=str(row["version"]),
         password=bool(row["password"]),
         modded=bool(row["modded"]),
+        perspective=row["perspective"],
         online=bool(row["online"]),
         last_checked=str(row["last_checked"]),
         last_seen=str(row["last_seen"]),

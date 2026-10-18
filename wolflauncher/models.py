@@ -41,6 +41,7 @@ class DiscoveredServer:
     version: str = ""
     password: bool = False
     modded: bool = False
+    perspective: str = "unknown"
     online: bool = False
     last_checked: str = ""
     last_seen: str = ""
@@ -72,6 +73,8 @@ class DiscoveredServer:
     identity_evidence: tuple[dict, ...] = ()
 
     def __post_init__(self):
+        if self.perspective not in ("first_person", "third_person", "unknown"):
+            self.perspective = "unknown"
         for key, value in identity_fields(self).items():
             setattr(self, key, value)
 

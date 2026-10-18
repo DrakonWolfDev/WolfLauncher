@@ -149,6 +149,7 @@ class CheckServerTests(unittest.TestCase):
             ping="42",
             password=True,
             modded=True,
+            perspective="third_person",
             connect="203.0.113.10:2302",
         )
         expected.query_started_at = status.query_started_at
