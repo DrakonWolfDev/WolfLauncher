@@ -192,12 +192,24 @@ npm ci --prefix packaging/npm --ignore-scripts
 
 ### Windows PowerShell
 
+Install Python 3.12 for Windows with the Python launcher available, then open a
+new PowerShell window. Check `py -3.12 --version` before creating the environment.
+If `py` is not recognised but `python --version` reports Python 3.12, use
+`python -m venv .venv` for the first command instead. You can also invoke your
+installed Python directly: `& 'C:\path\to\python.exe' -m venv .venv`.
+
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 npm.cmd ci --prefix .\packaging\npm --ignore-scripts
 .\.venv\Scripts\python.exe main.py
 ```
+
+Virtual environments are local to the operating system and Python installation
+that created them. If this checkout was also used on Linux, or its original
+Python installation was moved or removed, rename the old `.venv` folder and
+create a fresh one on Windows before installing dependencies. A missing `py`
+command is a Python installation/PATH issue and occurs before npm runs.
 
 Both use the lockfile-pinned GameDig dependency under `packaging/npm`.
 A global GameDig installation is unnecessary.

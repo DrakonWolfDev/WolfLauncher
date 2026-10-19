@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+Complete release notes for the 20 commits since `v0.9.0b2`, through `006101f`,
+are in [Changes since 0.9.0b2](docs/RELEASE_NOTES_SINCE_0.9.0b2.md).
+
 - Restore and focus WolfLauncher automatically when DayZ exits after a launch
   that minimized the launcher, including DayZ Editor launches.
 
@@ -32,6 +35,20 @@
   checks without changing system certificates. Support diagnostics identify the
   Python/TLS runtime and verification backend.
 
+- Added confirmed Steam Workshop mod uninstall to the Stable installed library.
+  Experimental continues to share Stable content and manages uninstalls there.
+- Fixed Editor mod-picker and selected-mod summary entries disappearing while
+  scrolling large selections by removing problematic opacity effects.
+- Fixed Windows DayZ launching while DayZ Tools / Publisher is open by targeting
+  the selected installation's BattlEye launcher directly.
+- Server query failures now distinguish unknown status from offline. Added an
+  unknown-status summary, a notice for widespread query failures, and query
+  timing, last-success and failure-history details in logs and diagnostics.
+- Fixed installed-library force updates requiring a server-specific mod check,
+  and edition-verification messages remaining after successful or invalidated checks.
+- Removed Recent servers shortcuts and launch-attempt history, and added handling
+  for server-cache contention during browser refreshes.
+- Improved update-check shutdown handling to ignore late results after shutdown begins.
 - Favourite-server startup checks now retry failed queries once immediately
   instead of waiting for the next refresh interval. Last known server details
   remain visible with a rechecking indicator until the startup check finishes;

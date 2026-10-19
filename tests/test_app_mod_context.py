@@ -30,6 +30,58 @@ def window_state(worker=None):
 
 
 class ModContextChangeTests(unittest.TestCase):
+    def test_clicking_highlighted_favourite_reclaims_browser_context(self):
+        window = SimpleNamespace(
+            table=Mock(currentRow=Mock(return_value=0), rowCount=Mock(return_value=1)),
+            active_discovered_server=object(),
+            handle_server_selection_changed=Mock(),
+            _sync_curated_card_selection=Mock(),
+        )
+        MainWindow._select_curated_table_row(window, 0)
+        window.handle_server_selection_changed.assert_called_once_with()
+        window.table.selectRow.assert_not_called()
+
+    def test_clicking_active_favourite_does_not_restart_mod_check(self):
+        window = SimpleNamespace(
+            table=Mock(currentRow=Mock(return_value=0), rowCount=Mock(return_value=1)),
+            active_discovered_server=None,
+            handle_server_selection_changed=Mock(),
+            _sync_curated_card_selection=Mock(),
+        )
+        MainWindow._select_curated_table_row(window, 0)
+        window.handle_server_selection_changed.assert_not_called()
+
+    def test_identity_check_replaces_previous_server_display_before_resolution(self):
+        server = Server("Browser server", "Tests", "203.0.113.10", 2302, 27016)
+        window = SimpleNamespace(
+            server_launch=Mock(),
+            last_mod_result=object(),
+            workshop_recovery_ids=("old-mod",),
+            mod_server_title=Mock(),
+            mod_readiness=Mock(),
+            mod_summary=Mock(),
+            mods_table=Mock(),
+            subscribe_missing_button=Mock(),
+            force_update_button=Mock(),
+            update_mod_detail_card=Mock(),
+        )
+
+        def prepare(requested, continuation, **kwargs):
+            self.assertIs(requested, server)
+            window.mod_server_title.setText.assert_called_once_with(
+                f"Required mods for {server.name}  ·  {server.connect_target}"
+            )
+            self.assertIsNone(window.last_mod_result)
+            self.assertEqual(window.workshop_recovery_ids, ())
+            window.mods_table.setRowCount.assert_called_once_with(0)
+            window.subscribe_missing_button.setEnabled.assert_called_once_with(False)
+            window.force_update_button.setEnabled.assert_called_once_with(False)
+            window.update_mod_detail_card.assert_called_once_with()
+
+        window.server_launch.prepare.side_effect = prepare
+        MainWindow.check_server_mods(window, server, silent=True)
+        window.server_launch.prepare.assert_called_once()
+
     def test_browser_to_mods_tab_follows_highlighted_discovered_server(self):
         discovered = DiscoveredServer(
             name="Browser server",

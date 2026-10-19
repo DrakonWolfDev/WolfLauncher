@@ -54,8 +54,11 @@ class CuratedServerCardsCoordinator:
 
     def select_table_row(self, row: int):
         window = self.window
-        if 0 <= row < window.table.rowCount() and window.table.currentRow() != row:
-            window.table.selectRow(row)
+        if 0 <= row < window.table.rowCount():
+            if window.table.currentRow() != row:
+                window.table.selectRow(row)
+            elif getattr(window, "active_discovered_server", None) is not None:
+                window.handle_server_selection_changed()
         self.sync_selection()
 
     def select_card(self, row: int):

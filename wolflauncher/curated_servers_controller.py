@@ -450,8 +450,11 @@ class CuratedServersMixin:
         self.update_launch_button_text()
 
     def _select_curated_table_row(self, row: int):
-        if 0 <= row < self.table.rowCount() and self.table.currentRow() != row:
-            self.table.selectRow(row)
+        if 0 <= row < self.table.rowCount():
+            if self.table.currentRow() != row:
+                self.table.selectRow(row)
+            elif getattr(self, "active_discovered_server", None) is not None:
+                self.handle_server_selection_changed()
         self._sync_curated_card_selection()
 
     def _select_curated_card(self, row: int):
@@ -749,6 +752,7 @@ class CuratedServersMixin:
         self.refresh_curated_server_cards()
 
     def handle_cell_clicked(self, row: int, column: int):
+        self._select_curated_table_row(row)
         if column == 0:
             self.toggle_favourite(row)
 

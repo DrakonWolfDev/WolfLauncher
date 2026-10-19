@@ -514,6 +514,21 @@ class ModsFeatureMixin:
 
     def check_server_mods(self, server: Server, silent: bool = False, force: bool = False):
         if hasattr(self, "server_launch"):
+            # Identity resolution can fail before a mod result is delivered.
+            # Show the requested server immediately rather than leaving another
+            # server's heading, counts and recovery actions on screen.
+            self.last_mod_result = None
+            self.workshop_recovery_ids = ()
+            self.mod_server_title.setText(
+                f"Required mods for {server.name}  ·  {server.connect_target}"
+            )
+            self.mod_readiness.setText("Verifying server edition…")
+            self.mod_summary.setText("Required mods have not been checked yet.")
+            self.mod_summary.setToolTip("")
+            self.mods_table.setRowCount(0)
+            self.subscribe_missing_button.setEnabled(False)
+            self.force_update_button.setEnabled(False)
+            self.update_mod_detail_card()
             self.server_launch.prepare(
                 server,
                 lambda context: self.server_launch.check_mods(
