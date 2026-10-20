@@ -34,6 +34,8 @@ class AboutFeatureTests(unittest.TestCase):
         self.assertIn(f"Version {__version__}", labels)
         self.assertIn("© 2026 Wolf Forge", labels)
         self.assertIn("A WOLF FORGE PROJECT 🐾", labels)
+        self.assertFalse(any("Discord" in label for label in labels))
+        self.assertFalse(any("discord" in label.casefold() for label in labels))
         check_updates = next(
             button
             for button in tab.findChildren(QPushButton)

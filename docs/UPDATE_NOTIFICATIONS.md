@@ -41,6 +41,21 @@ The two persisted settings are `update_last_successful_check` and
 `update_dismissed_version`. They use the existing WolfLauncher settings file and
 do not introduce another user-settings system.
 
+## Release publication path
+
+- A manual Installer workflow run produces internal Windows and Linux artifacts without
+  publishing a release.
+- Pushing a tag that exactly matches `v` plus `wolflauncher.__version__` builds and tests the
+  Windows installer, portable Windows archive and Linux installer from that tag.
+- The workflow publishes one GitHub prerelease only after both required platform installers and
+  their checksums are present.
+- After publication it sends a `desktop_release_published` event to the Wolf Forge website. The
+  website validates the version, expected artifact names and live GitHub URLs before committing
+  its new download manifest.
+- `WOLF_FORGE_SITE_TOKEN` must be configured as a fine-grained repository secret with Contents
+  read/write access limited to `DrakonWolfDev/wolf-forge-static`. A missing token stops tagged
+  publication during preflight; failed website validation leaves the previous links intact.
+
 ## Architecture and safety boundary
 
 The reusable `wolf_update` core owns discovery, version policy, throttling,

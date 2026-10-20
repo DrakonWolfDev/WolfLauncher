@@ -64,7 +64,6 @@ class AboutFeatureMixin:
                 "https://github.com/DrakonWolfDev/WolfLauncher",
                 "Open the WolfLauncher GitHub repository",
             ),
-            ("#  Discord", "https://discord.gg/ukquqMfbS9", "Join the WolfLauncher Discord"),
         ):
             link = QLabel(label)
             link.setAlignment(Qt.AlignCenter)
