@@ -40,14 +40,23 @@ def populate_browser_table(
     favourite_endpoints: set[tuple[str, int, int]] | None = None,
 ) -> None:
     """Replace the discovered-server table rows while preserving sortable metadata."""
-    table.setSortingEnabled(False)
-    table.setIconSize(QSize(20, 20))
-    table.setRowCount(len(servers))
-    for row, server in enumerate(servers):
-        _set_browser_table_row(table, row, server, favourite_endpoints or set())
-
-    table.resizeColumnsToContents()
-    table.setSortingEnabled(True)
+    # A provider refresh can replace hundreds of rows at once. Repainting after
+    # every inserted cell makes the GUI appear to hang while the background
+    # WolfAPI work is finishing. Column sizing is owned by
+    # ServerBrowserMixin.configure_browser_columns(); resizeColumnsToContents()
+    # would synchronously scan the whole table a second time here.
+    table.setUpdatesEnabled(False)
+    try:
+        table.setSortingEnabled(False)
+        table.setIconSize(QSize(20, 20))
+        table.setRowCount(len(servers))
+        favourites = favourite_endpoints or set()
+        for row, server in enumerate(servers):
+            _set_browser_table_row(table, row, server, favourites)
+        table.setSortingEnabled(True)
+    finally:
+        table.setUpdatesEnabled(True)
+        table.viewport().update()
 
 
 def update_browser_table_row(

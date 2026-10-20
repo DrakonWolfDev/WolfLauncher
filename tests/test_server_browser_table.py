@@ -136,6 +136,27 @@ class ServerBrowserTableTests(unittest.TestCase):
         )
         self.assertTrue(table.isSortingEnabled())
 
+    def test_population_does_not_rescan_every_cell_to_size_columns(self):
+        class ResizeTrackingTable(QTableWidget):
+            def __init__(self):
+                super().__init__(0, BROWSER_COLUMN_COUNT)
+                self.full_resize_count = 0
+
+            def resizeColumnsToContents(self):
+                self.full_resize_count += 1
+                super().resizeColumnsToContents()
+
+        table = ResizeTrackingTable()
+        servers = [
+            DiscoveredServer(f"Server {index}", f"host-{index}", 2302, 27016)
+            for index in range(25)
+        ]
+
+        populate_browser_table(table, servers)
+
+        self.assertEqual(table.full_resize_count, 0)
+        self.assertTrue(table.updatesEnabled())
+
     def test_game_time_uses_a_large_scalable_phase_icon(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)
         server = DiscoveredServer(
