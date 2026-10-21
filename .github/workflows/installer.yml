@@ -223,16 +223,17 @@ jobs:
       - name: Verify and name public platform artifacts
         run: |
           test -f "release/wolflauncher-${VERSION}-setup-windows-x64.exe"
-          test -f "release/WolfLauncher-${VERSION}-linux-x86_64-installer.tar.gz"
-          test -f "release/wolflauncher_${VERSION}_ubuntu24_amd64.deb"
-          test -f "release/wolflauncher-${VERSION}-1.x86_64.rpm"
-          test -f "release/WolfLauncher-${VERSION}-x86_64.AppImage"
+          test -f "release/dist/WolfLauncher-${VERSION}-linux-x86_64-installer.tar.gz"
+          test -f "release/dist/wolflauncher_${VERSION}_ubuntu24_amd64.deb"
+          test -f "release/dist/wolflauncher-${VERSION}-1.x86_64.rpm"
+          test -f "release/dist/WolfLauncher-${VERSION}-x86_64.AppImage"
           test -f "release/wolflauncher-${VERSION}-installer-source.tar.gz"
           (cd release && sha256sum --check *.sha256)
+          (cd release/dist && sha256sum --check *.sha256)
           cp "release/wolflauncher-${VERSION}-setup-windows-x64.exe" "release/wolflauncher-${VERSION}-windows.exe"
-          cp "release/wolflauncher_${VERSION}_ubuntu24_amd64.deb" "release/wolflauncher-${VERSION}.deb"
-          cp "release/wolflauncher-${VERSION}-1.x86_64.rpm" "release/wolflauncher-${VERSION}.rpm"
-          cp "release/WolfLauncher-${VERSION}-x86_64.AppImage" "release/wolflauncher-${VERSION}.AppImage"
+          cp "release/dist/wolflauncher_${VERSION}_ubuntu24_amd64.deb" "release/wolflauncher-${VERSION}.deb"
+          cp "release/dist/wolflauncher-${VERSION}-1.x86_64.rpm" "release/wolflauncher-${VERSION}.rpm"
+          cp "release/dist/WolfLauncher-${VERSION}-x86_64.AppImage" "release/wolflauncher-${VERSION}.AppImage"
 
       - name: Publish one GitHub prerelease
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
@@ -245,8 +246,8 @@ jobs:
             release/wolflauncher-${{ needs.release-preflight.outputs.version }}.deb
             release/wolflauncher-${{ needs.release-preflight.outputs.version }}.rpm
             release/wolflauncher-${{ needs.release-preflight.outputs.version }}.AppImage
-            release/WolfLauncher-${{ needs.release-preflight.outputs.version }}-linux-x86_64-installer.tar.gz
-            release/WolfLauncher-${{ needs.release-preflight.outputs.version }}-linux-x86_64-installer.tar.gz.sha256
+            release/dist/WolfLauncher-${{ needs.release-preflight.outputs.version }}-linux-x86_64-installer.tar.gz
+            release/dist/WolfLauncher-${{ needs.release-preflight.outputs.version }}-linux-x86_64-installer.tar.gz.sha256
             release/wolflauncher-${{ needs.release-preflight.outputs.version }}-windows.exe
             release/wolflauncher-${{ needs.release-preflight.outputs.version }}-windows-x64.zip
             release/wolflauncher-${{ needs.release-preflight.outputs.version }}-windows-x64.zip.sha256
