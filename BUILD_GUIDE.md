@@ -3,7 +3,7 @@
 A short, repeatable build guide for the two supported build platforms:
 
 - **Linux:** use the distro-neutral user-local installer, build a portable
-  AppImage, or build a native-architecture Debian package (`.deb`).
+  AppImage, or build a native-architecture Debian package (`.deb`) or x86_64 Fedora package (`.rpm`).
 - **Windows:** build a portable ZIP, then optionally a per-user Setup installer.
 
 > [!important]
@@ -320,3 +320,30 @@ PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m unittest discover
 - `scripts/build-windows.ps1` — Windows portable bundle.
 - `scripts/build-windows-installer.ps1` — Windows installer.
 - `README.md` — broader development, installation, and release context.
+
+## RPM and the GitHub Actions package set
+
+On Ubuntu 24.04 install `rpm` alongside the AppImage build dependencies. On Fedora
+install `rpm-build`, `python3-devel`, `libglvnd-egl`, `libglvnd-glx`,
+`libxkbcommon-x11`, `xcb-util-cursor`, `xcb-util-wm`, `xcb-util-keysyms`,
+`dbus-libs`, `fontconfig` and `squashfs-tools`. Set up the Python environment with
+`requirements-dev.txt` and `requirements-appimage.txt`, then run:
+
+```sh
+PYTHON=python3 bash scripts/build-rpm.sh
+sudo dnf install ./dist/wolflauncher-0.9.0b2-1.x86_64.rpm
+```
+
+The builder first creates and smoke-tests the pinned AppImage payload, then packages
+that same frozen application, bundled Node.js, desktop entry, icon and notices in
+RPM. The installed command is `wolflauncher`. A caller that built the AppDir in
+this same job may set `WOLFLAUNCHER_REUSE_APPDIR=1` to avoid freezing twice.
+Each RPM has a `.sha256` sidecar. Validate installation, launch and removal on Fedora.
+
+The **Tests** workflow builds RPM and AppImage on pushes, pull requests and manual
+runs, alongside its existing DEB and Windows jobs. **Installer** builds the complete
+Windows, DEB, RPM, AppImage and user-local installer set for manual previews and
+version-matched tags. Tag publication requires all files and checksums, then sends
+separate `windows`, `linux_rpm`, `linux_deb` and `linux_appimage` filenames to the
+website. DEB uses the `ubuntu24` artifact label with Python 3.12; RPM and AppImage
+are frozen on Ubuntu 24.04 and require target-desktop acceptance before release.

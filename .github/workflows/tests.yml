@@ -223,3 +223,42 @@ jobs:
             dist/windows/*-setup-*.exe
             dist/windows/*-setup-*.exe.sha256
           if-no-files-found: error
+
+  linux-rpm-appimage:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Linux packaging and runtime libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm libegl1 libgl1 libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxkbcommon-x11-0 libdbus-1-3
+          python -m pip install -r requirements-dev.txt -r requirements-appimage.txt
+      - name: Build and smoke-test AppImage, then package RPM
+        env:
+          PYTHON: python
+          WOLFLAUNCHER_REUSE_APPDIR: "1"
+        run: |
+          bash scripts/build-appimage.sh
+          bash scripts/build-rpm.sh
+          (cd dist && sha256sum --check *.rpm.sha256 *.AppImage.sha256)
+      - name: Verify RPM installation, startup and removal on Fedora 44
+        run: |
+          docker run --rm -v "$PWD/dist:/packages:ro" fedora:44 bash -euxc '
+            dnf install -y /packages/*.rpm
+            rpm -q wolflauncher
+            QT_QPA_PLATFORM=offscreen WOLFLAUNCHER_SMOKE_TEST=1 wolflauncher
+            dnf remove -y wolflauncher
+            test ! -e /usr/bin/wolflauncher
+          '
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wolflauncher-linux-rpm-appimage-${{ github.sha }}
+          path: |
+            dist/*.rpm
+            dist/*.rpm.sha256
+            dist/*.AppImage
+            dist/*.AppImage.sha256
+          if-no-files-found: error

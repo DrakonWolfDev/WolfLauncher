@@ -292,3 +292,9 @@ The vendored `dayz-linux-cli-launcher` is MIT-licensed; its licence and
 attribution remain in `external/dayz-linux-cli-launcher/`.
 
 Saved-data migration and restoration are described in the [combined browser validation notes](docs/COMBINED_BROWSER_VALIDATION.md#saved-data-and-restoration).
+
+### Linux package formats in CI
+
+GitHub Actions builds DEB, RPM and AppImage downloads in development and release
+workflows, alongside the Windows artifacts. See [BUILD_GUIDE.md](BUILD_GUIDE.md#rpm-and-the-github-actions-package-set)
+for the RPM command, prerequisites and release artifact contract.
