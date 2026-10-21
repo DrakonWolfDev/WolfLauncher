@@ -93,7 +93,8 @@ jobs:
         run: |
           python3 -m pip install -r requirements-dev.txt
           python3 -m build --sdist --no-isolation
-          cp "dist/wolflauncher-${version}.tar.gz" "wolflauncher-${version}-installer-source.tar.gz"
+          package_version="$(python3 -c 'from packaging.version import Version; import os; print(Version(os.environ["version"]))')"
+          cp "dist/wolflauncher-${package_version}.tar.gz" "wolflauncher-${version}-installer-source.tar.gz"
           sha256sum "wolflauncher-${version}-installer-source.tar.gz" > "wolflauncher-${version}-installer-source.tar.gz.sha256"
 
       - name: Install Qt runtime libraries
