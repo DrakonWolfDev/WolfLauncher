@@ -400,6 +400,13 @@ class CombinedPersistenceTests(unittest.TestCase):
                             server_cache.get_server(migrated, "legacy:2302:27016").product,
                             "unknown",
                         )
-                        self.assertEqual(migrated.execute("PRAGMA user_version").fetchone()[0], 8)
+                        self.assertEqual(
+                            migrated.execute("PRAGMA user_version").fetchone()[0],
+                            server_cache.SCHEMA_VERSION,
+                        )
+                        self.assertEqual(
+                            server_cache.get_server(migrated, "legacy:2302:27016").perspective,
+                            "unknown",
+                        )
                     finally:
                         migrated.close()
