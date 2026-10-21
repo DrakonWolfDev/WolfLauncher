@@ -70,6 +70,34 @@ class ServerLaunchContextTests(unittest.TestCase):
         self.assertEqual(context.server.product, "experimental")
         self.assertEqual(context.install.dayz_dir, self.installs["experimental"].dayz_dir)
 
+    def test_fresh_install_without_workshop_can_check_required_mods(self):
+        from wolflauncher.mods import RequiredMod, check_server_mods
+
+        for app_id, product in ((221100, STABLE), (1024020, EXPERIMENTAL)):
+            install = replace(self.installs[product.key], workshop_dir=None)
+            self.installs[product.key] = install
+            context = self.resolve(app_id)
+            expected = install.steamapps / "workshop" / "content" / "221100"
+            self.assertEqual(context.install.workshop_dir, expected)
+            self.assertFalse(expected.exists())
+            with patch(
+                "wolflauncher.mods.fetch_required_mods",
+                return_value=[RequiredMod("123", "Required mod")],
+            ):
+                result = check_server_mods(context.server, expected)
+            self.assertTrue(result.ok)
+            self.assertEqual(result.installed_count, 0)
+            self.assertEqual([mod.workshop_id for mod in result.missing_mods], ["123"])
+            self.assertFalse(expected.exists())
+
+    def test_missing_library_is_distinct_from_missing_workshop(self):
+        self.installs["experimental"] = replace(
+            self.installs["experimental"], steamapps=None, workshop_dir=None
+        )
+        with self.assertRaisesRegex(IdentityResolutionError, "could not locate the Steam library"):
+            self.resolve()
+
+
     def test_missing_malformed_truncated_and_unsupported_ids_never_prepare_install(self):
         for app_id in (None, "1024020", True, 46868, 42):
             detector = Mock()

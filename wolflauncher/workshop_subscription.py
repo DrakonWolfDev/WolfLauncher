@@ -1,7 +1,8 @@
 """Experimental Steam-native Workshop subscription support.
 
-This module deliberately loads Valve's Steam API redistributable from an
-existing Steam installation.  WolfLauncher does not vendor or modify it.
+This module loads Valve's Steam API redistributable or, on Linux, the native
+Steam client from an existing installation. WolfLauncher does not vendor or
+modify either library.
 """
 
 from __future__ import annotations
@@ -190,7 +191,7 @@ def workshop_recovery_state(
 
 
 def steam_api_library_candidates(install: SteamInstall | None) -> list[Path]:
-    """Return likely official 64-bit Steam API redistributables in priority order."""
+    """Return installed Steam API libraries, then the Linux client fallback."""
     candidates: list[Path] = []
     override = os.environ.get("WOLFLAUNCHER_STEAM_API_LIBRARY", "").strip()
     if override:
@@ -210,6 +211,14 @@ def steam_api_library_candidates(install: SteamInstall | None) -> list[Path]:
 
 def find_steam_api_library(install: SteamInstall | None) -> Path | None:
     return next((path for path in steam_api_library_candidates(install) if path.is_file()), None)
+
+
+def _workshop_client(library_path: Path):
+    if sys.platform.startswith("linux") and library_path.name == "steamclient.so":
+        from .linux_steam_client import LinuxSteamWorkshopClient
+
+        return LinuxSteamWorkshopClient(library_path)
+    return SteamWorkshopClient(library_path)
 
 
 class SteamWorkshopClient:
@@ -374,8 +383,9 @@ def subscribe_workshop_items(
     library_path = find_steam_api_library(install)
     if not library_path:
         raise WorkshopSubscriptionError(
-            "The selected Steam installation has no 64-bit Steam API redistributable. "
-            "Use the manual Workshop links instead."
+            "Could not find a supported Workshop library in the selected Steam installation. "
+            "Update or repair native Steam, restart it, and retry. "
+            "You can also use the manual Workshop links."
         )
     if not install.workshop_dir:
         raise WorkshopSubscriptionError("The selected DayZ Workshop directory is unavailable.")
@@ -385,7 +395,7 @@ def subscribe_workshop_items(
     last_activity = started
     previous_signature = None
     download_requested_at: dict[str, float] = {}
-    with SteamWorkshopClient(library_path) as client:
+    with _workshop_client(library_path) as client:
         for workshop_id in ids:
             if subscribe_missing:
                 client.subscribe(workshop_id)
@@ -477,10 +487,10 @@ def query_workshop_item_states(
     library_path = find_steam_api_library(install)
     if not library_path:
         return WorkshopStateResult(
-            error="The selected Steam installation has no 64-bit Steam API redistributable."
+            error="Could not find a supported Workshop library. Update or repair native Steam and retry."
         )
     try:
-        with SteamWorkshopClient(library_path) as client:
+        with _workshop_client(library_path) as client:
             client.run_callbacks()
             return WorkshopStateResult(tuple(client.item_progress(item) for item in ids))
     except Exception as exc:
@@ -546,10 +556,10 @@ def unsubscribe_workshop_item(
     if not library_path:
         return WorkshopUnsubscribeResult(
             item_id,
-            error="The selected Steam installation has no 64-bit Steam API redistributable.",
+            error="Could not find a supported Workshop library. Update or repair native Steam and retry.",
         )
     try:
-        with SteamWorkshopClient(library_path) as client:
+        with _workshop_client(library_path) as client:
             client.run_callbacks()
             if not client.item_progress(item_id).state & ITEM_STATE_SUBSCRIBED:
                 return WorkshopUnsubscribeResult(

@@ -8,6 +8,14 @@ by the maintainer. See [Installing on Linux](INSTALL_LINUX.md).
 
 This version requires native Steam. Flatpak and Snap Steam are not supported.
 
+For automatic DayZ mod downloads, start Steam and sign in to the account that
+owns DayZ. Select a server in WolfLauncher, inspect its mods, then choose
+**Resolve required mods** and confirm. Steam handles subscriptions and downloads.
+On Fedora and Mint, a fresh native Steam installation can use its own 64-bit
+client library; installing DayZ Server or copying Steam API files is unnecessary.
+If WolfLauncher asks you to update Steam, let Steam finish updating, restart it,
+and retry. Workshop pages remain available if automation cannot connect.
+
 ## Distro matrix
 
 The installer is distro-neutral; the table below lists what's been verified

@@ -44,6 +44,20 @@ server endpoint and required mods before preparing the Steam launch command.
 Workshop subscriptions, downloads and updates require explicit confirmation
 and are performed through Steam. WolfLauncher does not remove subscriptions.
 
+On 64-bit Linux, Workshop automation first uses an installed Steam API
+redistributable when available. Fresh installations can instead use the selected
+Steam root's `linux64`, `steamrt64` or `ubuntu12_64` `steamclient.so` without
+installing DayZ Server or downloading another native binary. Both paths run in
+the disposable helper process and use the signed-in Steam account. The fallback
+checks DayZ ownership and requests exact versioned interfaces; unsupported
+interfaces fail with an update-Steam message rather than guessed ABI offsets.
+The existing redistributable path remains available on Mint and Windows.
+The native binding follows Valve's published Proton SDK 1.61 interface layouts:
+[ISteamClient](https://github.com/ValveSoftware/Proton/blob/proton_10.0/lsteamclient/steamworks_sdk_161/isteamclient.h),
+[ISteamApps](https://github.com/ValveSoftware/Proton/blob/proton_10.0/lsteamclient/steamworks_sdk_161/isteamapps.h),
+and [ISteamUGC](https://github.com/ValveSoftware/Proton/blob/proton_10.0/lsteamclient/steamworks_sdk_161/isteamugc.h).
+Method offsets must only be changed together with their requested interface version.
+
 Platform backends own operating-system-specific detection and launch details.
 Linux also exposes the vendored shell launcher as a compatibility fallback.
 Its sources and license remain under `external/dayz-linux-cli-launcher/`.
@@ -84,7 +98,9 @@ not part of source distributions.
 Provider JSON, form and HTML requests share a verified HTTPS context. Windows
 uses truststore's CryptoAPI chain builder, avoiding OpenSSL selecting an expired
 cached intermediate or cross-sign instead of a valid server-supplied chain.
-Linux retains OpenSSL system trust. Certificate trust, expiry and hostname
+Linux retains OpenSSL system trust and discovers Fedora and Debian/Mint system
+CA bundles when packaged OpenSSL defaults differ from the host. Explicit
+`SSL_CERT_FILE` and `SSL_CERT_DIR` overrides take precedence. Certificate trust, expiry and hostname
 verification remain required, with TLS 1.2 as the minimum; no unverified retry,
 certificate-store edits or global SSL injection are used. Windows distributions
 include truststore and its native backend. Diagnostics report the runtime and
