@@ -632,7 +632,8 @@ class ServerEnrichmentWorker(QThread):
                 return None
             try:
                 status = ServerStatus(
-                    False, error="No valid query ports to probe.",
+                    False,
+                    error="No valid query ports to probe.",
                     outcome=ServerStatusOutcome.CHECK_ERROR,
                 )
                 probes = enrichment_probe_servers(server)
@@ -651,7 +652,8 @@ class ServerEnrichmentWorker(QThread):
                         break
             except Exception as exc:
                 status = ServerStatus(
-                    False, error=f"live check failed: {exc}",
+                    False,
+                    error=f"live check failed: {exc}",
                     outcome=ServerStatusOutcome.CHECK_ERROR,
                 )
             return enrich_discovered_server(server, status, checked_at)

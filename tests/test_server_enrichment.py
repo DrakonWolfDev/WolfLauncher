@@ -152,12 +152,16 @@ class ServerEnrichmentTests(unittest.TestCase):
                 self.assertEqual(browser_status(enriched)[0], "UNKNOWN")
                 self.assertIn("Local check unsuccessful", browser_inspector(enriched).truth)
                 self.assertIsNone(enriched.ping_ms)
-                self.assertFalse(local_enrichment_due(
-                    enriched, now=datetime(2026, 6, 20, 14, 4, tzinfo=timezone.utc)
-                ))
-                self.assertTrue(local_enrichment_due(
-                    enriched, now=datetime(2026, 6, 20, 14, 5, tzinfo=timezone.utc)
-                ))
+                self.assertFalse(
+                    local_enrichment_due(
+                        enriched, now=datetime(2026, 6, 20, 14, 4, tzinfo=timezone.utc)
+                    )
+                )
+                self.assertTrue(
+                    local_enrichment_due(
+                        enriched, now=datetime(2026, 6, 20, 14, 5, tzinfo=timezone.utc)
+                    )
+                )
 
     def test_parse_connect_port_reads_port_from_gamedig_connect_address(self):
         self.assertEqual(parse_connect_port("203.0.113.10:2302"), 2302)

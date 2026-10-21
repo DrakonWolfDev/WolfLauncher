@@ -16,8 +16,9 @@ FIXTURES = Path(__file__).parent / "fixtures" / "tls"
 class TLSVerificationTests(unittest.TestCase):
     def test_discovered_system_bundle_validates_real_chain(self):
         context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-        with patch.dict("os.environ", {}, clear=True), patch(
-            "wolflauncher.tls.LINUX_CA_BUNDLES", (str(FIXTURES / "root.pem"),)
+        with (
+            patch.dict("os.environ", {}, clear=True),
+            patch("wolflauncher.tls.LINUX_CA_BUNDLES", (str(FIXTURES / "root.pem"),)),
         ):
             _load_linux_system_cas(context)
         self.handshake(context)
@@ -33,9 +34,11 @@ class TLSVerificationTests(unittest.TestCase):
         ):
             context = Mock()
             context.load_verify_locations.side_effect = [ssl.SSLError("invalid"), None]
-            with patch.dict("os.environ", {}, clear=True), patch(
-                "wolflauncher.tls.LINUX_CA_BUNDLES", ("/missing", "/invalid", bundle)
-            ), patch.object(Path, "is_file", side_effect=[False, True, True]):
+            with (
+                patch.dict("os.environ", {}, clear=True),
+                patch("wolflauncher.tls.LINUX_CA_BUNDLES", ("/missing", "/invalid", bundle)),
+                patch.object(Path, "is_file", side_effect=[False, True, True]),
+            ):
                 _load_linux_system_cas(context)
             self.assertEqual(context.load_verify_locations.call_count, 2)
             context.load_verify_locations.assert_called_with(cafile=bundle)

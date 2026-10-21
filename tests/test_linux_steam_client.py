@@ -34,13 +34,17 @@ class LinuxSteamClientTests(unittest.TestCase):
                 calls[key] = Mock(return_value=values.get(key))
             return calls[key]
 
-        self.enterContext(
-            patch("wolflauncher.linux_steam_client.ctypes.CDLL", return_value=library)
+        cdll_patch = patch("wolflauncher.linux_steam_client.ctypes.CDLL", return_value=library)
+        method_patch = patch("wolflauncher.linux_steam_client._method", side_effect=bind)
+        machine_patch = patch(
+            "wolflauncher.linux_steam_client.platform.machine", return_value="x86_64"
         )
-        self.enterContext(patch("wolflauncher.linux_steam_client._method", side_effect=bind))
-        self.enterContext(
-            patch("wolflauncher.linux_steam_client.platform.machine", return_value="x86_64")
-        )
+        cdll_patch.start()
+        method_patch.start()
+        machine_patch.start()
+        self.addCleanup(cdll_patch.stop)
+        self.addCleanup(method_patch.stop)
+        self.addCleanup(machine_patch.stop)
         return client, library, calls
 
     def test_native_method_passes_this_pointer_and_uint64_without_truncation(self):

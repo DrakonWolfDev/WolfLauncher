@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.9.3b — 2026-10-21
 
 Complete release notes for the 20 commits since `v0.9.0b2`, through `006101f`,
 are in [Changes since 0.9.0b2](docs/RELEASE_NOTES_SINCE_0.9.0b2.md).

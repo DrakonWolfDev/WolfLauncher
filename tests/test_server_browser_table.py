@@ -148,8 +148,7 @@ class ServerBrowserTableTests(unittest.TestCase):
 
         table = ResizeTrackingTable()
         servers = [
-            DiscoveredServer(f"Server {index}", f"host-{index}", 2302, 27016)
-            for index in range(25)
+            DiscoveredServer(f"Server {index}", f"host-{index}", 2302, 27016) for index in range(25)
         ]
 
         populate_browser_table(table, servers)

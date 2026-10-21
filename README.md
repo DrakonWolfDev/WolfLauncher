@@ -6,7 +6,7 @@ It also includes DayZ Editor and local server tools.
 
 Linux and Windows are supported platforms. Linux offers a user-local installer
 and Debian packages; Windows offers a Setup installer and portable ZIP builds.
-The current source version is **0.9.0b2**;
+The current source version is **0.9.3b**;
 see the [changelog](CHANGELOG.md) for version history and unreleased changes.
 See the [roadmap](docs/ROADMAP.md) for planned features.
 
