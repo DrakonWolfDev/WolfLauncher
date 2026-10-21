@@ -12,6 +12,7 @@ else
   python_bin="$(command -v python3)"
 fi
 version="$($python_bin -c 'from wolflauncher import __version__; print(__version__)')"
+wheel_version="$($python_bin -c 'from packaging.version import Version; from wolflauncher import __version__; print(Version(__version__))')"
 debian_version="${version/.dev0/~dev0}"
 architecture="$(dpkg --print-architecture)"
 python_version="$($python_bin -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
@@ -52,7 +53,7 @@ mkdir -p \
   "$package_root/usr/share/doc/wolflauncher"
 
 "$python_bin" -m build --wheel --no-isolation
-wheel_path="$repo_root/dist/wolflauncher-${version}-py3-none-any.whl"
+wheel_path="$repo_root/dist/wolflauncher-${wheel_version}-py3-none-any.whl"
 "$python_bin" -m pip install \
   --disable-pip-version-check \
   --no-compile \
