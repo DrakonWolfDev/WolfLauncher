@@ -94,4 +94,11 @@ class LinuxPlatformBackend:
                 Path.home() / ".steam/steam/steamrt64/libsteam_api.so",
             ]
         )
+        # A fresh Steam/DayZ installation has steamclient.so but need not have
+        # the separate Steamworks redistributable. Keep existing API priority.
+        if steam_root:
+            candidates.extend(
+                steam_root / folder / "steamclient.so"
+                for folder in ("linux64", "steamrt64", "ubuntu12_64")
+            )
         return tuple(candidates)

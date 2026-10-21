@@ -198,10 +198,17 @@ def resolve_context(
         availability = inspect_install(install, product)
         if not availability.detected:
             raise IdentityResolutionError(setup_message(product, availability.detail), resolved)
-        if not install or not install.workshop_dir:
-            raise IdentityResolutionError(
-                f"{product.label}: the shared DayZ Workshop source is missing. Install the required Workshop content in Steam, then rescan.",
-                resolved,
+        if not install.workshop_dir:
+            if not install.steamapps or not install.steamapps.is_dir():
+                raise IdentityResolutionError(
+                    f"{product.label}: could not locate the Steam library. "
+                    "Check Settings health and rescan installations.",
+                    resolved,
+                )
+            # Steam creates this folder only after the first Workshop download.
+            # Scanning a nonexistent path correctly reports no installed mods.
+            install = replace(
+                install, workshop_dir=install.steamapps / "workshop" / "content" / "221100"
             )
         data = {
             "name": resolved.name,

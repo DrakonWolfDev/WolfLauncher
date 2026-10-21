@@ -6,13 +6,47 @@ import sys
 import threading
 import unittest
 from pathlib import Path
+from unittest.mock import Mock, patch
 
-from wolflauncher.tls import https_context
+from wolflauncher.tls import _load_linux_system_cas, https_context
 
 FIXTURES = Path(__file__).parent / "fixtures" / "tls"
 
 
 class TLSVerificationTests(unittest.TestCase):
+    def test_discovered_system_bundle_validates_real_chain(self):
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        with patch.dict("os.environ", {}, clear=True), patch(
+            "wolflauncher.tls.LINUX_CA_BUNDLES", (str(FIXTURES / "root.pem"),)
+        ):
+            _load_linux_system_cas(context)
+        self.handshake(context)
+        with self.assertRaises(ssl.SSLCertVerificationError):
+            self.handshake(context, hostname="wrong.invalid")
+        with self.assertRaises(ssl.SSLCertVerificationError):
+            self.handshake(context, expired=True)
+
+    def test_fedora_and_mint_bundle_discovery_skips_unusable_files(self):
+        for bundle in (
+            "/etc/pki/tls/certs/ca-bundle.crt",
+            "/etc/ssl/certs/ca-certificates.crt",
+        ):
+            context = Mock()
+            context.load_verify_locations.side_effect = [ssl.SSLError("invalid"), None]
+            with patch.dict("os.environ", {}, clear=True), patch(
+                "wolflauncher.tls.LINUX_CA_BUNDLES", ("/missing", "/invalid", bundle)
+            ), patch.object(Path, "is_file", side_effect=[False, True, True]):
+                _load_linux_system_cas(context)
+            self.assertEqual(context.load_verify_locations.call_count, 2)
+            context.load_verify_locations.assert_called_with(cafile=bundle)
+
+    def test_explicit_trust_overrides_are_preserved(self):
+        for key in ("SSL_CERT_FILE", "SSL_CERT_DIR"):
+            context = Mock()
+            with patch.dict("os.environ", {key: "/custom"}, clear=True):
+                _load_linux_system_cas(context)
+            context.load_verify_locations.assert_not_called()
+
     def handshake(self, context, *, hostname="localhost", expired=False):
         server_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
         server_context.load_cert_chain(

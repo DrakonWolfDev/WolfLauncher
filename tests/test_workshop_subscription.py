@@ -68,6 +68,28 @@ class WorkshopItemProgressTests(unittest.TestCase):
 
 
 class SteamApiLibraryTests(unittest.TestCase):
+    def test_fresh_linux_steam_uses_its_own_native_client(self):
+        from wolflauncher.platforms.linux import LinuxPlatformBackend
+
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            native = root / "linux64/steamclient.so"
+            native.parent.mkdir()
+            native.touch()
+            install = install_for(root, root / "workshop")
+            with (
+                patch(
+                    "wolflauncher.workshop_subscription.current_platform",
+                    return_value=LinuxPlatformBackend(),
+                ),
+                patch.object(Path, "home", return_value=root),
+            ):
+                self.assertEqual(find_steam_api_library(install), native)
+                api = root / "steamrt64/libsteam_api.so"
+                api.parent.mkdir()
+                api.touch()
+                self.assertEqual(find_steam_api_library(install), api)
+
     def test_helper_output_redirects_native_stdout_and_stderr(self):
         with (
             patch("wolflauncher.workshop_subscription.os.open", return_value=9) as open_mock,
