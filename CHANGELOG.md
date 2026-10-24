@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Explain missing Workshop items that Steam's public service reports as not found,
+  including their names and IDs, signed-in Steam checks and server administrator
+  guidance. Download failure messages now explain these recovery steps too.
+  Existing installed copies remain usable; metadata outages do not imply removal.
+
 ## 0.9.3b — 2026-10-21
 
 Complete release notes for the 20 commits since `v0.9.0b2`, through `006101f`,

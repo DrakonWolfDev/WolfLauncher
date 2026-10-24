@@ -82,6 +82,7 @@ class RequiredMod:
     installed_updated_at: int = 0
     workshop_description: str = ""
     workshop_preview_url: str = ""
+    workshop_metadata_result: int | None = None
 
     @property
     def ready(self) -> bool:
@@ -192,11 +193,16 @@ def fetch_workshop_metadata(
     for detail in details if isinstance(details, list) else []:
         try:
             workshop_id = str(detail["publishedfileid"])
+            item_result = int(detail.get("result") or 0)
         except (KeyError, TypeError, ValueError):
             continue
-        if workshop_id not in ids or int(detail.get("result") or 0) != 1:
+        if workshop_id not in ids:
+            continue
+        if item_result != 1:
+            metadata[workshop_id] = {"result": item_result}
             continue
         metadata[workshop_id] = {
+            "result": item_result,
             "title": str(detail.get("title") or "").strip(),
             "file_size": max(0, int(detail.get("file_size") or 0)),
             "description": str(detail.get("description") or "").strip(),
@@ -379,6 +385,7 @@ def apply_workshop_metadata(
 ) -> ModCheckResult:
     for mod in result.required_mods:
         detail = metadata.get(mod.workshop_id, {})
+        mod.workshop_metadata_result = detail.get("result")
         mod.workshop_file_size = max(0, int(detail.get("file_size") or 0))
         # A server rule can carry a generic label (for example, "GameLabs")
         # while Steam's item title identifies the required release channel.

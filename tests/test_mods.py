@@ -104,6 +104,39 @@ class WorkshopFileSizeTests(unittest.TestCase):
 
         self.assertEqual(result.required_mods[0].name, "Server GameLabs")
 
+    def test_unavailable_metadata_preserves_installed_copy_readiness(self):
+        payload = {
+            "response": {
+                "publishedfiledetails": [
+                    {"publishedfileid": "3681415744", "result": 9},
+                    {"publishedfileid": "111", "result": 1, "title": "Available mod"},
+                    {"publishedfileid": "222", "result": "invalid"},
+                ]
+            }
+        }
+        with patch("wolflauncher.mods.post_form_json", return_value=payload):
+            metadata = fetch_workshop_metadata(["3681415744", "111", "222"])
+        self.assertEqual(metadata["3681415744"], {"result": 9})
+        self.assertEqual(metadata["111"]["title"], "Available mod")
+        self.assertNotIn("222", metadata)
+        mod = RequiredMod("3681415744", "RaG_Expansion_Compatibility", installed=True)
+        result = ModCheckResult(True, make_server(), [mod])
+        apply_workshop_metadata(result, metadata)
+        self.assertEqual(mod.workshop_metadata_result, 9)
+        self.assertTrue(mod.ready)
+        self.assertEqual(result.missing_mods, [])
+
+    def test_metadata_outage_does_not_claim_item_unavailable(self):
+        from wolflauncher.http_client import HttpClientError
+
+        with patch(
+            "wolflauncher.mods.post_form_json", side_effect=HttpClientError("connection", "offline")
+        ):
+            metadata = fetch_workshop_metadata(["111"])
+        mod = RequiredMod("111")
+        apply_workshop_metadata(ModCheckResult(True, make_server(), [mod]), metadata)
+        self.assertIsNone(mod.workshop_metadata_result)
+
     def test_fetches_public_batch_file_sizes(self):
         payload = {
             "response": {

@@ -107,6 +107,7 @@ class ModsFeatureMixin:
         set_ui_role(self.mod_readiness, "metadata")
         layout.addWidget(self.mod_readiness)
         self.mod_summary = QLabel("")
+        self.mod_summary.setWordWrap(True)
         set_ui_role(self.mod_summary, "metadata")
         layout.addWidget(self.mod_summary)
 
@@ -1364,7 +1365,11 @@ class ModsFeatureMixin:
                 self,
                 "Steam Workshop incomplete",
                 (result.error or "Steam did not install every requested Workshop item.")
-                + "\n\nYou can still use the manual Workshop links.",
+                + "\n\nOpen the incomplete items' Workshop links while signed into Steam "
+                "and check whether you can subscribe and download. If Steam cannot find "
+                "an item or says it is unavailable, contact the server administrator "
+                "with its Workshop ID; it may need to be restored or replaced on the server. "
+                "Keep any working installed copies. Recheck mods after Steam finishes.",
             )
         self.workshop_subscription_names = {}
         self.check_selected_server_mods(force=True)

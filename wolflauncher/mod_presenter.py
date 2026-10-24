@@ -128,6 +128,19 @@ def mod_summary_text(result: ModCheckResult) -> str:
     )
     if result.workshop_state_error:
         summary += f" Steam item state unavailable: {result.workshop_state_error}"
+    unavailable = [mod for mod in result.absent_mods if mod.workshop_metadata_result == 9]
+    if unavailable:
+        labels = ", ".join(
+            f"{mod.name or mod.installed_name or 'Workshop item'} ({mod.workshop_id})"
+            for mod in unavailable
+        )
+        summary += (
+            f"\nSteam's public Workshop service could not find: {labels}. "
+            "Open the Workshop links while signed into Steam and check whether you can "
+            "subscribe and download. If unavailable, contact the server administrator; "
+            "the item may need to be restored or replaced on the server. "
+            "Keep any working installed copies."
+        )
     return summary
 
 
@@ -182,7 +195,9 @@ def mod_row(mod: RequiredMod) -> ModRow:
         status = "… Verifying install"
         colour = STATUS_COLOURS["warning"]
     elif not mod.installed:
-        status = "✗ Missing"
+        status = (
+            "✗ Missing; Steam item not found" if mod.workshop_metadata_result == 9 else "✗ Missing"
+        )
         colour = STATUS_COLOURS["negative"]
     else:
         status = "✓ Installed"

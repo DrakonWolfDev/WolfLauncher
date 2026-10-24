@@ -375,3 +375,23 @@ button had been enabled from an installed-library selection.
    than selected-server validation.
 
 Keep each issue as a separate reviewable change with its own regression tests.
+
+
+## Workshop item not found messaging - 2026-10-24
+
+Implemented for the next normal release; no version bump, installer build or deployment.
+Steam public metadata result 9 is retained for display. Missing items show a
+specific table status and a wrapped explanation with the server-reported name,
+Workshop ID, signed-in Steam download check and server administrator guidance.
+Download failure dialogs explain the same recovery options. Keep working local
+copies: public metadata availability does not change installed-mod readiness.
+Network failures and omitted metadata remain unknown, not evidence of removal.
+The motivating item was 3681415744 (RaG_Expansion_Compatibility); no server-specific
+IDs or overrides are hardcoded into the launcher.
+
+Validation: 44 focused mod/presenter tests pass. After integrating the latest
+remote main, full Windows discovery passes: 804 tests with 66 platform skips.
+Changed-file Ruff lint, formatting and git diff checks pass. The initial local
+run exposed an old schema-version assertion already repaired upstream; no
+persistence code or assertions were changed by this messaging work.
+GUI rendering has not been manually verified.

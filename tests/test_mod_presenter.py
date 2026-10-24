@@ -36,6 +36,31 @@ def make_result(ok=True, required_mods=None, **kwargs):
 
 
 class ModPresenterTests(unittest.TestCase):
+    def test_missing_unavailable_item_has_identity_and_recovery_guidance(self):
+        mod = RequiredMod("3681415744", "RaG_Expansion_Compatibility", workshop_metadata_result=9)
+        summary = mod_summary_text(make_result(required_mods=[mod]))
+        for text in (
+            "3681415744",
+            "RaG_Expansion_Compatibility",
+            "signed into Steam",
+            "server administrator",
+            "Keep any working installed copies",
+        ):
+            self.assertIn(text, summary)
+        self.assertIn("Steam item not found", mod_row(mod).values[0])
+
+    def test_unknown_metadata_and_installed_copies_do_not_show_missing_item_warning(self):
+        for mod in (
+            RequiredMod("111"),
+            RequiredMod("111", workshop_metadata_result=2),
+            RequiredMod("111", installed=True, workshop_metadata_result=9),
+        ):
+            with self.subTest(mod=mod):
+                self.assertNotIn(
+                    "could not find", mod_summary_text(make_result(required_mods=[mod]))
+                )
+                self.assertNotIn("Steam item not found", mod_row(mod).values[0])
+
     def test_default_sort_places_update_work_ahead_of_missing_and_ready_mods(self):
         ready = RequiredMod("300", name="Ready", installed=True)
         missing = RequiredMod("200", name="Missing")
