@@ -43,9 +43,12 @@ DayZ uses Proton. WolfLauncher leaves Workshop downloads under Steam's control.
 ### Linux
 
 The user-local installer works across Ubuntu 22.04/24.04/26.04, Debian 12+,
-Linux Mint 21+, Pop!_OS, Fedora 40+, Nobara, Arch Linux, Manjaro/EndeavourOS,
+Linux Mint 21+, Pop!_OS, Fedora 40+, Nobara, Arch Linux, CachyOS, Manjaro/EndeavourOS,
 openSUSE Tumbleweed/Leap, NixOS, Alpine 3.20+ in a non-musl environment, and
 SteamOS 3/HoloISO.
+
+A real-world user has confirmed WolfLauncher works on CachyOS, an Arch-based
+distribution, adding community confirmation for the Arch Linux family.
 
 Download the versioned Linux installer archive from Releases, verify its
 checksum, extract it and run:

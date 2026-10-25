@@ -1,10 +1,11 @@
 # Installing WolfLauncher on Linux
 
 The newer user-local installer works across Ubuntu 22.04/24.04/26.04,
-Debian 12+, Linux Mint 21+, Pop!_OS, Fedora 40+, Nobara, Arch Linux,
+Debian 12+, Linux Mint 21+, Pop!_OS, Fedora 40+, Nobara, Arch Linux, CachyOS,
 Manjaro/EndeavourOS, openSUSE Tumbleweed/Leap, NixOS, Alpine 3.20+
 (non-musl environment) and SteamOS 3/HoloISO. This distro coverage is confirmed
-by the maintainer. See [Installing on Linux](INSTALL_LINUX.md).
+by the maintainer. A real-world user has also confirmed WolfLauncher works on
+CachyOS, providing community confirmation for the Arch Linux family.
 
 This version requires native Steam. Flatpak and Snap Steam are not supported.
 
@@ -30,6 +31,7 @@ and the system packages you'll likely want for Steam and the Qt runtime.
 | Fedora 40+                      | yes                 | `steam` (RPM Fusion) | `mesa-libEGL libxkbcommon dbus-libs`        |
 | Nobara                          | yes                 | preinstalled           | preinstalled                                      |
 | Arch Linux                      | yes                 | `steam` (pacman) | `libegl libxkbcommon libxcursor dbus`        |
+| CachyOS                         | user-confirmed      | `steam`     | same as Arch                                      |
 | Manjaro / EndeavourOS           | yes                 | `steam`     | same as Arch                                      |
 | openSUSE Tumbleweed / Leap      | yes                 | `steam` (Packman/Education) | `libEGL1 libxkbcommon0 libdbus-1-3` |
 | NixOS (unstable)                | yes (in user dir)   | enable `programs.steam` | install `pkgs.libxkbcommon` etc. into profile    |

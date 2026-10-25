@@ -59,10 +59,11 @@ The checker is notification-only and does not require an installer asset to test
 ## Linux — user-local installer
 
 The newer user-local installer works across Ubuntu 22.04/24.04/26.04,
-Debian 12+, Linux Mint 21+, Pop!_OS, Fedora 40+, Nobara, Arch Linux,
+Debian 12+, Linux Mint 21+, Pop!_OS, Fedora 40+, Nobara, Arch Linux, CachyOS,
 Manjaro/EndeavourOS, openSUSE Tumbleweed/Leap, NixOS, Alpine 3.20+
 (non-musl environment) and SteamOS 3/HoloISO. This distro coverage is confirmed
-by the maintainer. See [Installing on Linux](docs/INSTALL_LINUX.md).
+by the maintainer, with additional real-world user confirmation on CachyOS
+(Arch-based). See [Installing on Linux](docs/INSTALL_LINUX.md).
 
 Run `./scripts/wolflauncher-install.sh` from the source checkout. For a release
 installer backed by the AppImage, run `./scripts/build-linux-installer.sh` after

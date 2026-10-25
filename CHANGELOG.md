@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Documented real-world user confirmation on CachyOS (Arch-based) and added
+  CachyOS to the Linux compatibility guides.
+
 - Explain missing Workshop items that Steam's public service reports as not found,
   including their names and IDs, signed-in Steam checks and server administrator
   guidance. Download failure messages now explain these recovery steps too.
