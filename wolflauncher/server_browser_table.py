@@ -150,6 +150,15 @@ def _set_browser_table_row(
         item.setData(Qt.UserRole, cache_key)
         if data_column in row_data.tooltips:
             item.setToolTip(row_data.tooltips[data_column])
+        if data_column == 7:
+            item.setData(
+                Qt.UserRole + 2,
+                (
+                    row_data.values[7].split(" · Queue:", 1)[0],
+                    server.queue_count,
+                    server.queue_checked_at,
+                ),
+            )
         if data_column == 5:
             item.setForeground(QColor(row_data.status_colour))
         if data_column == 8:

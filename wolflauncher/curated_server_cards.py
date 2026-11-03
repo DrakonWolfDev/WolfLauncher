@@ -9,7 +9,7 @@ from .theme import set_monospace, set_ui_role, theme_icon, time_icon
 
 class CuratedServerCard(QFrame):
     TIME_COLUMN_WIDTH = 42
-    STATS_COLUMN_WIDTH = 44
+    STATS_COLUMN_WIDTH = 145
 
     selected = Signal(int)
     activated = Signal(int)
@@ -142,7 +142,9 @@ class CuratedServerCard(QFrame):
 
     @staticmethod
     def _stats(values: list[str]) -> str:
-        return "\n".join(part for part in (values[10], values[12]) if part)
+        return "\n".join(
+            part for part in (values[10].replace(" · Queue:", "\nQueue:"), values[12]) if part
+        )
 
     @staticmethod
     def _game_time_is_day(value: str) -> bool | None:

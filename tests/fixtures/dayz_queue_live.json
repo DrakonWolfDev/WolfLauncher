@@ -1,0 +1,48 @@
+{
+  "captured_at": "2026-11-03T23:12:08.621044+00:00",
+  "gamedig": "5.3.3",
+  "responses": [
+    {
+      "name": "New Dawn Cherno PVE|Discord|Missions|DayzDog|Treasure|Trader|Ex",
+      "numplayers": 6,
+      "maxplayers": 30,
+      "query_endpoint": "198.244.177.109:2303",
+      "raw": {
+        "tags": [
+          "battleye",
+          "no3rd",
+          "external",
+          "privHive",
+          "shard123ABC",
+          "lqs0",
+          "etm2.000000",
+          "entm10.000000",
+          "mod",
+          "11:41"
+        ],
+        "queue": 0
+      }
+    },
+    {
+      "name": "New Dawn Deerisle PVE|Discord|Missions|DayzDog|Treasure|Trader|",
+      "numplayers": 1,
+      "maxplayers": 20,
+      "query_endpoint": "198.244.177.109:2503",
+      "raw": {
+        "tags": [
+          "battleye",
+          "no3rd",
+          "external",
+          "privHive",
+          "shard123ABC",
+          "lqs0",
+          "etm2.000000",
+          "entm10.000000",
+          "mod",
+          "06:58"
+        ],
+        "queue": 0
+      }
+    }
+  ]
+}

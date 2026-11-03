@@ -7,7 +7,7 @@ from .models import Server
 from .paths import user_data_dir
 from .persistence import ensure_private_directory
 from .settings import load_json, save_json, server_key
-from .status import ServerStatus, ServerStatusOutcome
+from .status import ServerStatus, ServerStatusOutcome, valid_queue_count
 
 DATA_DIR = user_data_dir()
 CURATED_STATUS_CACHE_PATH = DATA_DIR / "curated_status.json"
@@ -77,6 +77,7 @@ def _status_to_dict(status: ServerStatus) -> dict[str, object]:
         "server_name": status.server_name,
         "map_name": status.map_name,
         "players": status.players,
+        "queue_count": status.queue_count,
         "time": status.time,
         "day_acceleration": status.day_acceleration,
         "night_acceleration": status.night_acceleration,
@@ -110,6 +111,7 @@ def _status_from_dict(data: dict) -> ServerStatus:
         server_name=str(data.get("server_name") or ""),
         map_name=str(data.get("map_name") or ""),
         players=str(data.get("players") or ""),
+        queue_count=valid_queue_count(data.get("queue_count")),
         time=str(data.get("time") or ""),
         day_acceleration=_optional_float(data.get("day_acceleration")),
         night_acceleration=_optional_float(data.get("night_acceleration")),

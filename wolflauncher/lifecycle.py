@@ -40,6 +40,7 @@ WORKER_COLLECTION_ATTRIBUTES = (
 )
 
 TIMER_ATTRIBUTES = (
+    "queue_display_timer",
     "optional_polling_timer",
     "timer",
     "remote_search_timer",

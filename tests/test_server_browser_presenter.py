@@ -44,7 +44,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertEqual(detail.status_kind, "ready")
         self.assertEqual(detail.map_name, "Namalsk")
         self.assertEqual(detail.game_time, "Unknown until locally checked")
-        self.assertEqual(detail.players, "12/60")
+        self.assertEqual(detail.players, "12/60 · Queue: unknown")
         self.assertEqual(detail.ping, "42 ms")
         self.assertEqual(detail.mods, "Ready locally")
         self.assertIn("Query port  27016", detail.diagnostics)
@@ -166,7 +166,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
 
         self.assertEqual(row.values[0], "Live Name")
         self.assertEqual(row.values[1], "Live Name")
-        self.assertEqual(row.values[7], "12/60")
+        self.assertEqual(row.values[7], "12/60 · Queue: unknown")
         self.assertEqual(row.values[10], "Password, Modded")
         self.assertEqual(row.values[15], "—")
         self.assertEqual(row.sort_values[7], 12)

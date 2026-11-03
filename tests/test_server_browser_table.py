@@ -125,7 +125,7 @@ class ServerBrowserTableTests(unittest.TestCase):
 
         self.assertEqual(table.rowCount(), 1)
         self.assertEqual(table.item(0, 2).text(), "Live Name")
-        self.assertEqual(table.item(0, 8).text(), "12/60")
+        self.assertEqual(table.item(0, 8).text(), "12/60 · Queue: unknown")
         self.assertIsInstance(table.item(0, 8), SortableTableWidgetItem)
         self.assertEqual(table.item(0, 8).sort_value, 12)
         self.assertEqual(table.columnCount(), 18)

@@ -72,6 +72,8 @@ class DiscoveredServer:
     product: str = "unknown"
     identity_state: str = ""
     identity_evidence: tuple[dict, ...] = ()
+    queue_count: int | None = None
+    queue_checked_at: str = ""
 
     def __post_init__(self):
         if self.perspective not in ("first_person", "third_person", "unknown"):

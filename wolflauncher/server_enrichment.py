@@ -29,6 +29,8 @@ def enrich_discovered_server(
                 else f"local_{status.outcome.value}"
             ),
             ping_ms=None,
+            queue_count=None,
+            queue_checked_at="",
         )
 
     players_current, players_max = parse_players(status.players)
@@ -44,6 +46,10 @@ def enrich_discovered_server(
         night_acceleration=status.night_acceleration,
         players_current=players_current,
         players_max=players_max,
+        queue_count=status.queue_count,
+        queue_checked_at=(status.query_started_at or checked_at)
+        if status.queue_count is not None
+        else "",
         ping_ms=_optional_int(status.ping),
         version=status.version,
         password=status.password,

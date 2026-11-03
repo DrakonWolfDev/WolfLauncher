@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Show separate live DayZ queue counts beside players in the browser, details
+  and favourites, distinguishing measured zero, unknown and expired counts.
+
 - Share DayZ servers with validated HTTPS/protocol links. Review incoming targets
   before inspecting their live edition and mod requirements, including delivery
   to an already running launcher. Keep Connect and Workshop confirmations.

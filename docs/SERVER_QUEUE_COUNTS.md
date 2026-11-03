@@ -1,0 +1,51 @@
+# Separate live server queue counts
+
+Implemented on the development branch; no release or package publication implied.
+
+WolfLauncher reads the separate DayZ queue count exposed by the pinned GameDig
+5.3.3 DayZ protocol (`packaging/npm/node_modules/gamedig/protocols/dayz.js`,
+`processQueryInfo`). That upstream parser derives `raw.queue` from the `lqs`
+keyword in A2S_INFO tags. WolfLauncher validates the entire original token because
+GameDig's `parseInt` also accepts malformed numeric suffixes. A single ASCII
+unsigned integer from 0 through 65535 is accepted. Duplicate or malformed `lqs`
+tags are unknown; an integer `raw.queue` is also supported when no queue tag is
+present. Player count and capacity are never used to infer queue size.
+
+The Server Browser player column and selected-server summary show, for example,
+`60/60 · Queue: 12`. Favourites and their details use the same measurement.
+Automatic browser live checks, selected-server checks and favourite refreshes
+use the existing bounded query workers; no additional queue-specific requests
+are sent. Sorting by players still uses the numeric player count.
+
+- `Queue: 0` means the live response explicitly reported an empty queue.
+- `Queue: unknown` means no valid queue observation is available. Failed live
+  checks and successful responses without a queue clear earlier observations.
+- `Queue: 12 (stale)` means the recorded count is at least two minutes old, has
+  no usable timestamp, or has a timestamp in the future. Rendering rechecks age;
+  a ten-second display timer also expires visible labels when network polling
+  is disabled. That timer stops with normal runtime scheduling during shutdown.
+
+Browser cache schema 10 adds a nullable count and its own query timestamp;
+existing rows migrate to unknown. The favourite status cache also preserves the
+nullable count with its existing query timestamp. A directory/provider refresh
+cannot refresh a local queue timestamp or transfer its count to a changed
+endpoint. Browser cache expiry is independent of provider freshness.
+
+## Evidence and remaining checks
+
+`tests/fixtures/dayz_queue_live.json` contains minimal captured fields from two
+read-only public live queries on 3 November 2026: New Dawn Cherno
+`198.244.177.109:2303` (6/30 players) and Deerisle `198.244.177.109:2503` (1/20).
+Both returned `lqs0` and `raw.queue: 0`. The fixture excludes player lists.
+A positive queue of 12 is covered by a synthetic full-server response; a real
+nonzero queue has not yet been captured.
+
+Eight new tests cover strict decoding, captured live responses through status
+parsing and enrichment, unknown versus zero versus expiry, loss of evidence,
+old/invalid favourite caches, schema migration, provider refresh/endpoint changes,
+and incremental Qt updates with selection and numeric sort data preserved.
+Existing presentation, startup and shutdown tests cover the new labels/timer.
+Offscreen Qt previews checked positive, zero, unknown and stale rows/cards at
+1100px width. Native packaged Windows/Linux UI and a real positive queue remain
+release-time checks. No game launch, Workshop action, OS registration or release
+publication was needed for this feature.

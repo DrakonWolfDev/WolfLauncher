@@ -57,6 +57,7 @@ class ServerStatus:
     duration_ms: int = 0
     last_successful_query: str = ""
     consecutive_failures: int = 0
+    queue_count: int | None = None
 
     def __post_init__(self) -> None:
         if self.outcome is None:
@@ -290,6 +291,7 @@ def check_server(
             server_name=str(data.get("name", "")),
             map_name=str(map_name),
             players=f"{num_players}/{max_players}",
+            queue_count=dayz_queue_count(raw),
             time=str(server_time),
             day_acceleration=day_acceleration,
             night_acceleration=night_acceleration,
@@ -339,3 +341,25 @@ def _optional_float(value: Any) -> float | None:
     except (TypeError, ValueError):
         return None
     return parsed if parsed > 0 else None
+
+
+def dayz_queue_count(raw: dict) -> int | None:
+    """Read separate DayZ queue evidence, rejecting ambiguous/malformed tags.
+
+    GameDig 5.3.3 derives raw.queue from lqs tags using permissive parseInt.
+    Validate the original tags when present rather than accepting partial numbers.
+    """
+    tags = raw.get("tags")
+    if isinstance(tags, list):
+        values = [tag[3:] for tag in tags if isinstance(tag, str) and tag.startswith("lqs")]
+        if values:
+            if len(values) != 1 or not values[0].isascii() or not values[0].isdigit():
+                return None
+            value = values[0]
+            return int(value) if len(value) <= 5 and int(value) <= 65535 else None
+    return valid_queue_count(raw.get("queue"))
+
+
+def valid_queue_count(value: object) -> int | None:
+    """Queue observations must be bounded integers; missing is never zero."""
+    return value if type(value) is int and 0 <= value <= 65535 else None

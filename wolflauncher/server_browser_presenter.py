@@ -11,6 +11,7 @@ from .server_display import (
     is_displayable_server_name,
 )
 from .server_perspective import perspective_label
+from .server_queue import players_with_queue
 from .theme import STATUS_COLOURS
 
 
@@ -54,6 +55,14 @@ def players_text(current: int | None, maximum: int | None) -> str:
     if current is None:
         return f"?/{maximum}"
     return f"{current}/{maximum}"
+
+
+def browser_players_text(server: DiscoveredServer) -> str:
+    return players_with_queue(
+        players_text(server.players_current, server.players_max),
+        server.queue_count,
+        server.queue_checked_at,
+    )
 
 
 def game_time_text(server: DiscoveredServer, include_symbol: bool = True) -> str:
@@ -278,6 +287,11 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
             + ", ".join(flag.replace("_", " ") for flag in server.quality_flags)
             + ". This is advisory provider-data screening, not proof the server is unsafe."
         )
+    tooltips[7] = (
+        "Separate queue size reported by the live DayZ query; never inferred from players. "
+        "Unknown means no valid measurement; counts expire after two minutes."
+        + (f" Queue checked: {server.queue_checked_at}" if server.queue_checked_at else "")
+    )
     tooltips[15] = game_time_tooltip(server)
 
     return BrowserRow(
@@ -289,7 +303,7 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
             str(server.query_port),
             status_text,
             display_map_name(server.map_name),
-            players_text(server.players_current, server.players_max),
+            browser_players_text(server),
             f"{server.ping_ms}ms" if server.ping_ms is not None else "",
             server.version,
             flags_text,
@@ -335,7 +349,7 @@ def browser_inspector(
         if colour == STATUS_COLOURS["negative"]
         else "warning"
     )
-    players = players_text(server.players_current, server.players_max) or "Unknown"
+    players = browser_players_text(server)
     ping = f"{server.ping_ms} ms" if server.ping_ms is not None else "Unknown"
     features = display_server_flags(
         server.password,
@@ -395,7 +409,7 @@ def discovered_server_details(server: DiscoveredServer) -> str:
             f"Query port: {server.query_port}",
             f"Map: {display_map_name(server.map_name)}",
             f"Game time: {game_time_text(server)}",
-            f"Players: {players_text(server.players_current, server.players_max)}",
+            f"Players: {browser_players_text(server)}",
             f"Version: {server.version}",
             f"Features: {flags_text}",
             f"Perspective: {perspective_label(server.perspective)}",

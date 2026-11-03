@@ -524,3 +524,37 @@ game/Workshop action or website publication was performed.
 See [the complete contract and remaining checks](DIRECT_SERVER_LINKS.md).
 The next candidate is **FEATURE-04: separate live server queue counts**. REL-02
 and API-01 retain their earlier evidence requirements; do not guess missing inputs.
+
+
+## FEATURE-04 implementation update — 3 November 2026
+
+Separate live queue counts are implemented in development source. The pinned
+GameDig DayZ parser reads `lqs` keywords into `raw.queue`; the launcher validates
+whole tokens and keeps missing/malformed/ambiguous values unknown. Browser,
+selected-server details and favourite cards/details show counts alongside players
+without changing numeric player sorting or inferring anything from capacity.
+Existing automatic and selected live checks populate this data.
+
+A separate queue timestamp survives browser cache/provider updates without being
+refreshed by them, and is not carried to a moved endpoint. Schema 10 migrates old
+rows to unknown; favourite status caching preserves nullable counts. Failed or
+queue-less live checks clear previous evidence. Counts expire after two minutes;
+a presentation-only ten-second timer updates labels with polling disabled and
+stops during shutdown.
+
+Two read-only public live queries captured `lqs0` / queue 0: New Dawn Cherno
+198.244.177.109:2303 (6/30) and Deerisle :2503 (1/20). Minimal fixture fields are
+saved without player lists. Positive queue behaviour uses a synthetic queue of 12;
+a real positive queue remains uncaptured. Offscreen Qt preview checked positive,
+zero, unknown and stale rows/cards.
+
+Validation: **946 run / 939 passed / 7 skipped**. Eight new queue tests cover the
+live decoder/enrichment/presentation path, malformed evidence, expiry, cache
+migration, provider refresh/endpoint moves and incremental Qt updates. Required
+Ruff lint/formatting and whitespace checks pass. No package build, version bump,
+main merge, PR, publication, game or Workshop action was performed.
+
+See [queue behaviour and evidence](SERVER_QUEUE_COUNTS.md). Next candidate in list
+order: **PERF-01: profile the server browser before deciding whether a model/view
+change is justified**. PERF-02 already has implementation updates earlier in this
+handoff; preserve those results. REL-02 and API-01 retain their evidence needs.

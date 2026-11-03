@@ -15,7 +15,7 @@ from .paths import user_data_dir
 from .persistence import ensure_private_directory
 from .server_identity import identity_fields, merge_identity, normalize_product
 
-SCHEMA_VERSION = 9
+SCHEMA_VERSION = 10
 SQLITE_BUSY_TIMEOUT_MS = 5000
 DATA_DIR = user_data_dir()
 SERVER_CACHE_PATH = DATA_DIR / "server_cache.sqlite3"
@@ -157,6 +157,8 @@ def _initialize_schema_v1(connection: sqlite3.Connection) -> None:
             game_time TEXT NOT NULL DEFAULT '',
             day_acceleration REAL,
             night_acceleration REAL,
+            queue_count INTEGER,
+            queue_checked_at TEXT NOT NULL DEFAULT '',
             created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
         )
@@ -307,6 +309,13 @@ def _migrate(connection: sqlite3.Connection, current_version: int, target_versio
         )
         connection.execute("PRAGMA user_version = 9")
         current_version = 9
+    if current_version == 9 and target_version >= 10:
+        connection.execute("ALTER TABLE discovered_servers ADD COLUMN queue_count INTEGER")
+        connection.execute(
+            "ALTER TABLE discovered_servers ADD COLUMN queue_checked_at TEXT NOT NULL DEFAULT ''"
+        )
+        connection.execute("PRAGMA user_version = 10")
+        current_version = 10
     if current_version != target_version:
         raise RuntimeError(
             f"Unsupported server cache migration from version {current_version} to {target_version}."
@@ -339,6 +348,16 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             endpoint_aliases=tuple(
                 dict.fromkeys((*server.endpoint_aliases, *previous.endpoint_aliases))
             ),
+        )
+    # Provider updates cannot refresh or move a local queue observation.
+    if (
+        previous
+        and not server.status_source.startswith("local")
+        and (server.host, server.game_port, server.query_port)
+        == (previous.host, previous.game_port, previous.query_port)
+    ):
+        server = replace(
+            server, queue_count=previous.queue_count, queue_checked_at=previous.queue_checked_at
         )
     others = connection.execute(
         "SELECT * FROM discovered_servers WHERE host = ? AND game_port = ? "
@@ -414,7 +433,7 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             validation_checked_at, validation_seen_at, validation_error_code,
             provider_last_checked, provider_last_seen, quality_flags,
             country_code, country_source, game_time,
-            day_acceleration, night_acceleration
+            day_acceleration, night_acceleration, queue_count, queue_checked_at
         )
         VALUES (
             :product, :identity_state, :identity_evidence,
@@ -428,7 +447,7 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             :validation_checked_at, :validation_seen_at, :validation_error_code,
             :provider_last_checked, :provider_last_seen, :quality_flags,
             :country_code, :country_source, :game_time,
-            :day_acceleration, :night_acceleration
+            :day_acceleration, :night_acceleration, :queue_count, :queue_checked_at
         )
         ON CONFLICT(cache_key) DO UPDATE SET
             identity_state = excluded.identity_state,
@@ -476,6 +495,8 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
                 THEN excluded.day_acceleration ELSE discovered_servers.day_acceleration END,
             night_acceleration = CASE WHEN excluded.status_source = 'local'
                 THEN excluded.night_acceleration ELSE discovered_servers.night_acceleration END,
+            queue_count = excluded.queue_count,
+            queue_checked_at = excluded.queue_checked_at,
             updated_at = CURRENT_TIMESTAMP
         """,
         _server_params(server),
@@ -908,6 +929,8 @@ def _server_params(server: DiscoveredServer) -> dict[str, Any]:
         "map_name": server.map_name,
         "players_current": server.players_current,
         "players_max": server.players_max,
+        "queue_count": server.queue_count,
+        "queue_checked_at": server.queue_checked_at,
         "ping_ms": server.ping_ms,
         "version": server.version,
         "password": 1 if server.password else 0,
@@ -1081,6 +1104,8 @@ def _row_to_server(row: sqlite3.Row) -> DiscoveredServer:
         map_name=str(row["map_name"]),
         players_current=row["players_current"],
         players_max=row["players_max"],
+        queue_count=row["queue_count"],
+        queue_checked_at=str(row["queue_checked_at"]),
         ping_ms=row["ping_ms"],
         version=str(row["version"]),
         password=bool(row["password"]),

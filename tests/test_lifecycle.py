@@ -18,6 +18,7 @@ from wolflauncher.lifecycle import (
 def owner_with(**overrides):
     values = {
         "timer": Mock(),
+        "queue_display_timer": Mock(),
         "remote_search_timer": Mock(),
         "browser_filter_timer": Mock(),
         "browser_selection_timer": Mock(),
@@ -134,6 +135,7 @@ class LifecycleTests(unittest.TestCase):
         self.assertTrue(stop_runtime(owner, timeout_ms=100))
 
         owner.timer.stop.assert_called_once_with()
+        owner.queue_display_timer.stop.assert_called_once_with()
         owner.remote_search_timer.stop.assert_called_once_with()
         owner.browser_filter_timer.stop.assert_called_once_with()
         owner.browser_selection_timer.stop.assert_called_once_with()

@@ -4,6 +4,10 @@ Planned features below have no assigned release date.
 
 ## Server queue counts
 
+Implemented in development source. Two live empty queues are captured; a live
+positive queue and native packaged verification remain. See
+[behaviour and evidence](SERVER_QUEUE_COUNTS.md).
+
 Show the number of players waiting to join alongside the current player count,
 for example **60/60 · Queue: 12**.
 

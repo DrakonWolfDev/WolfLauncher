@@ -1,5 +1,6 @@
 from .models import Server
 from .server_display import display_map_name, display_server_flags, is_displayable_server_name
+from .server_queue import players_with_queue
 from .status import ServerStatus
 
 
@@ -39,7 +40,7 @@ def curated_server_row(server: Server, status: ServerStatus | None = None) -> li
     )
     values[8] = "ONLINE"
     values[9] = display_map_name(status.map_name)
-    values[10] = status.players
+    values[10] = players_with_queue(status.players, status.queue_count, status.query_started_at)
     values[11] = status.time
     values[12] = f"{status.ping}ms" if status.ping else ""
     values[13] = status.version

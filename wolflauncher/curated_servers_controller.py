@@ -46,6 +46,7 @@ from .server_enrichment import (
     parse_connect_port,
 )
 from .server_identity import saved_edition_label, saved_server_fields
+from .server_queue import players_with_queue
 from .settings import (
     server_key,
 )
@@ -259,6 +260,37 @@ class CuratedServersMixin:
         self._reindex_server_rows()
         self.refresh_curated_server_cards()
         self.update_launch_button_text()
+
+    def refresh_queue_displays(self):
+        """Expire queue labels without network work, selection changes or row rebuilds."""
+        changed = False
+        for row, server in enumerate(self.servers):
+            status = cached_status_for_server(self.curated_status_cache, server)
+            item = self.table.item(row, 10)
+            if status and status.online and item and " · Queue:" in item.text():
+                text = players_with_queue(
+                    status.players, status.queue_count, status.query_started_at
+                )
+                if item.text() != text:
+                    item.setText(text)
+                    changed = True
+        if changed:
+            self.refresh_curated_server_cards()
+        if not hasattr(self, "browser_table"):
+            return
+        for row in range(self.browser_table.rowCount()):
+            item = self.browser_table.item(row, 8)
+            observation = item.data(Qt.UserRole + 2) if item else None
+            if observation:
+                players, count, checked_at = observation
+                text = players_with_queue(players, count, checked_at)
+                if item.text() != text:
+                    item.setText(text)
+        selected = self.selected_discovered_server()
+        if selected is not None:
+            from .server_browser_presenter import browser_players_text
+
+            self.browser_detail_players.setText(browser_players_text(selected))
 
     def refresh_automatic_statuses(self):
         from .background_polling import optional_polling_paused
@@ -744,7 +776,11 @@ class CuratedServersMixin:
             self._set_item(row, 3, status.server_name or self.servers[row].name)
             self._set_item(row, 8, "ONLINE", STATUS_COLOURS["positive"])
             self._set_item(row, 9, display_map_name(status.map_name))
-            self._set_item(row, 10, status.players)
+            self._set_item(
+                row,
+                10,
+                players_with_queue(status.players, status.queue_count, status.query_started_at),
+            )
             self._set_item(row, 11, status.time)
             self._set_item(row, 12, ping_text)
             self._set_item(row, 13, status.version)

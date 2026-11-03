@@ -298,6 +298,11 @@ class MainWindow(
         self.setup_update_feature()
         self.optional_polling = OptionalPollingController(self)
 
+        self.queue_display_timer = QTimer(self)
+        self.queue_display_timer.setInterval(10000)
+        self.queue_display_timer.timeout.connect(self.refresh_queue_displays)
+        self.queue_display_timer.start()
+
         self.apply_refresh_timer()
         self.refresh_statuses(startup=True)
         self.refresh_server_browser()

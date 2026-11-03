@@ -82,10 +82,14 @@ class PerspectiveTests(unittest.TestCase):
             ),
         )
         connection.execute("ALTER TABLE discovered_servers DROP COLUMN perspective")
+        connection.execute("ALTER TABLE discovered_servers DROP COLUMN queue_count")
+        connection.execute("ALTER TABLE discovered_servers DROP COLUMN queue_checked_at")
         connection.execute("PRAGMA user_version = 8")
         server_cache.initialize(connection)
         self.assertEqual(server_cache.search_servers(connection)[0].perspective, "unknown")
-        self.assertEqual(connection.execute("PRAGMA user_version").fetchone()[0], 9)
+        self.assertEqual(
+            connection.execute("PRAGMA user_version").fetchone()[0], server_cache.SCHEMA_VERSION
+        )
 
 
 class PerspectiveEvidenceTests(unittest.TestCase):
