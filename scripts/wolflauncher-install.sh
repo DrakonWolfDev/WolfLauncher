@@ -380,6 +380,9 @@ if [[ -f "$icon_source" ]]; then
   install -m 0644 "$icon_source" \
                  "$XDG_DATA_HOME/icons/hicolor/scalable/apps/wolflauncher.svg"
 fi
+if have_cmd update-desktop-database; then
+  update-desktop-database "$XDG_DATA_HOME/applications" || warn "Desktop handler cache could not be refreshed."
+fi
 ok "Desktop entry installed (refresh icon cache or re-login if needed)"
 
 if [[ -f "$uninstaller_source" ]]; then

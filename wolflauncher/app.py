@@ -64,6 +64,8 @@ from .server_browser_feature import (
 from .server_browser_feature import (
     persist_enriched_server as persist_enriched_server,
 )
+from .server_link_controller import ServerLinkCoordinator
+from .server_links import ServerLinkError, parse_server_link, parse_startup_arguments
 from .settings import (
     curated_servers_path,
     load_settings,
@@ -108,6 +110,7 @@ class MainWindow(
         from .server_launch_coordinator import ServerLaunchCoordinator
 
         self.server_launch = ServerLaunchCoordinator(self)
+        self.server_links = ServerLinkCoordinator(self)
         self.settings_health = SettingsHealthCoordinator(self)
         self.workshop_resolution = WorkshopResolutionCoordinator(self)
         self._shutdown_dialog = None
@@ -420,12 +423,26 @@ def configure_packaged_smoke_test(app, window, environ=None) -> bool:
 
 
 def main():
-    app = QApplication(sys.argv)
+    incoming_url = parse_startup_arguments(sys.argv[1:])
+    app = QApplication([sys.argv[0]])
     app.setApplicationName("WolfLauncher")
     app.setApplicationVersion(__version__)
     app.setOrganizationName("WolfLauncher")
+    if incoming_url is not None:
+        try:
+            incoming_url = parse_server_link(incoming_url).url(https=False)
+        except ServerLinkError as exc:
+            QMessageBox.warning(None, "Server link unavailable", str(exc))
+            sys.exit(2)
     instance_guard = SingleInstanceGuard()
-    if not instance_guard.start_or_notify():
+    try:
+        primary_instance = instance_guard.start_or_notify(incoming_url)
+    except RuntimeError as exc:
+        QMessageBox.critical(None, "Could not open WolfLauncher", str(exc))
+        sys.exit(1)
+    if not primary_instance:
+        if instance_guard.delivery_error:
+            QMessageBox.warning(None, "Server link not confirmed", instance_guard.delivery_error)
         return
     run_local_retention()
     log_path = configure_local_logging()
@@ -441,7 +458,10 @@ def main():
     )
     window = MainWindow()
     instance_guard.set_activation_handler(lambda: activate_window(window))
+    instance_guard.set_url_handler(window.server_links.receive)
     window.show()
+    if incoming_url is not None:
+        QTimer.singleShot(0, lambda: window.server_links.receive(incoming_url))
     configure_packaged_smoke_test(app, window)
     try:
         exit_code = app.exec()

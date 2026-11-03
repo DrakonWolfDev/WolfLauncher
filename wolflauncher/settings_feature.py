@@ -101,6 +101,9 @@ class SettingsFeatureMixin:
             existing_profile.clicked.connect(self.choose_existing_player_profile)
             launcher_settings.addRow("Player profile", existing_profile)
         layout.addLayout(launcher_settings)
+        open_server_link = QPushButton("Open a server link…")
+        open_server_link.clicked.connect(lambda: self.server_links.prompt())
+        layout.addWidget(open_server_link)
         self.launch_engine.currentTextChanged.connect(
             self.update_external_launcher_settings_visibility
         )

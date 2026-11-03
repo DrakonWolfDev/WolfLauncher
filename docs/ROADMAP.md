@@ -15,6 +15,9 @@ for example **60/60 · Queue: 12**.
 
 ## Direct server links
 
+Implemented in development source; matching website deployment and native/package
+verification remain before release. See [contract and validation](DIRECT_SERVER_LINKS.md).
+
 Let communities share a link such as `https://wolf-forge.co.uk/join/...` in
 Discord or on their website. Clicking the link opens WolfLauncher, identifies
 the intended server, checks requirements, and prepares the connection.

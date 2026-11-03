@@ -45,6 +45,7 @@ CloseApplications=yes
 RestartApplications=no
 UsePreviousAppDir=yes
 UsePreviousGroup=yes
+ChangesAssociations=yes
 VersionInfoVersion={#NumericVersion}
 VersionInfoCompany=Wolf Forge
 VersionInfoCopyright=Copyright (C) 2026 Andrew Hodgson trading as Wolf Forge
@@ -54,6 +55,13 @@ VersionInfoProductVersion={#NumericVersion}
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a &desktop shortcut"; GroupDescription: "Additional shortcuts:"; Flags: unchecked
+Name: "serverlinks"; Description: "Open shared DayZ server links with WolfLauncher"; GroupDescription: "Link handling:"; Flags: unchecked
+
+[Registry]
+Root: HKCU; Subkey: "Software\Classes\wolflauncher"; ValueType: string; ValueData: "URL:WolfLauncher server link"; Tasks: serverlinks
+Root: HKCU; Subkey: "Software\Classes\wolflauncher"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""; Tasks: serverlinks
+Root: HKCU; Subkey: "Software\Classes\wolflauncher\DefaultIcon"; ValueType: string; ValueData: """{app}\WolfLauncher.exe"",0"; Tasks: serverlinks
+Root: HKCU; Subkey: "Software\Classes\wolflauncher\shell\open\command"; ValueType: string; ValueData: """{app}\WolfLauncher.exe"" --open-url ""%1"""; Tasks: serverlinks
 
 [Files]
 Source: "{#BundleRoot}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
@@ -64,3 +72,28 @@ Name: "{autodesktop}\WolfLauncher"; Filename: "{app}\WolfLauncher.exe"; WorkingD
 
 [Run]
 Filename: "{app}\WolfLauncher.exe"; Description: "Launch WolfLauncher"; Flags: nowait postinstall skipifsilent
+
+[Code]
+procedure RemoveOwnedServerLinkHandler;
+var
+  CurrentCommand: String;
+  ExpectedCommand: String;
+begin
+  ExpectedCommand := '"' + ExpandConstant('{app}\WolfLauncher.exe') + '" --open-url "%1"';
+  if RegQueryStringValue(HKCU, 'Software\Classes\wolflauncher\shell\open\command', '', CurrentCommand) then
+    if CompareText(CurrentCommand, ExpectedCommand) = 0 then
+      RegDeleteKeyIncludingSubkeys(HKCU, 'Software\Classes\wolflauncher');
+end;
+
+procedure CurUninstallStepChanged(CurUninstallStep: TUninstallStep);
+begin
+  if CurUninstallStep = usUninstall then
+    RemoveOwnedServerLinkHandler;
+end;
+
+procedure CurStepChanged(CurStep: TSetupStep);
+begin
+  if CurStep = ssPostInstall then
+    if not WizardIsTaskSelected('serverlinks') then
+      RemoveOwnedServerLinkHandler;
+end;

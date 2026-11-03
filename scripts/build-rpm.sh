@@ -37,6 +37,16 @@ install -Dm755 "$top/wolflauncher" "%{buildroot}/usr/bin/wolflauncher"
 mkdir -p "%{buildroot}/usr/share/doc/wolflauncher"
 cp "$repo_root/LICENSE" "$repo_root/COPYRIGHT" "$repo_root/THIRD_PARTY_NOTICES.md" "%{buildroot}/usr/share/doc/wolflauncher/"
 
+%post
+if command -v update-desktop-database >/dev/null 2>&1; then
+  update-desktop-database /usr/share/applications || true
+fi
+
+%postun
+if command -v update-desktop-database >/dev/null 2>&1; then
+  update-desktop-database /usr/share/applications || true
+fi
+
 %files
 /usr/lib/wolflauncher
 /usr/bin/wolflauncher

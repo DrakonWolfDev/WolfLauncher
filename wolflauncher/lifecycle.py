@@ -8,6 +8,7 @@ WORKER_ATTRIBUTES = (
     "worker",
     "mod_worker",
     "profile_discovery_worker",
+    "link_metadata_worker",
     "workshop_subscription_worker",
     "workshop_unsubscribe_worker",
     "workshop_state_worker",

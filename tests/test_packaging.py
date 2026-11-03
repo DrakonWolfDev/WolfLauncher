@@ -28,7 +28,8 @@ class PackagingMetadataTests(unittest.TestCase):
         parser = configparser.ConfigParser(interpolation=None)
         parser.read(ROOT / "packaging/linux/wolflauncher.desktop", encoding="utf-8")
         entry = parser["Desktop Entry"]
-        self.assertEqual(entry["Exec"], "wolflauncher")
+        self.assertEqual(entry["Exec"], "wolflauncher %u")
+        self.assertEqual(entry["MimeType"], "x-scheme-handler/wolflauncher;")
         self.assertEqual(entry["Icon"], "wolflauncher")
         self.assertEqual(entry["Terminal"], "false")
         self.assertEqual(entry["Actions"], "Uninstall;")

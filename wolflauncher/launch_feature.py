@@ -23,6 +23,7 @@ from .platform_detection import (
     install_label,
     select_steam_install,
 )
+from .server_links import ServerLinkError, build_server_link
 from .settings import (
     server_key,
 )
@@ -32,6 +33,14 @@ from .theme import (
 
 
 class LaunchFeatureMixin:
+    def copy_server_link(self, server):
+        try:
+            link = build_server_link(server)
+        except ServerLinkError as exc:
+            QMessageBox.warning(self, "Server link unavailable", str(exc))
+            return
+        self.copy_to_clipboard(link, "Server link")
+
     def dayz_product(self):
         return STABLE
 

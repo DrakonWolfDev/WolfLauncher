@@ -67,6 +67,10 @@ for f in "$XDG_DATA_HOME/applications/wolflauncher.desktop" \
   fi
 done
 
+if command -v update-desktop-database >/dev/null 2>&1; then
+  update-desktop-database "$XDG_DATA_HOME/applications" || true
+fi
+
 if (( PURGE )); then
   cfg="$XDG_CONFIG_HOME/wolflauncher"
   if [[ -d "$cfg" ]]; then

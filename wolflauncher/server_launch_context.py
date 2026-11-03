@@ -155,6 +155,7 @@ def resolve_context(
     else:
         directory_error = ""
     status = None
+    endpoint_error = ""
     for candidate in candidates[:3]:
         if cancel_event is not None and cancel_event.is_set():
             raise IdentityResolutionError("Server identity check cancelled.")
@@ -164,6 +165,12 @@ def resolve_context(
         from .server_enrichment import parse_connect_port
 
         game_port = parse_connect_port(status.connect) or candidate.game_port
+        if original.strict_endpoint and game_port != original.game_port:
+            endpoint_error = (
+                "The query reply advertises a different game port from the shared link. "
+                "Check the link's game and query ports before retrying."
+            )
+            continue
         endpoint = (status.resolved_ip, game_port, candidate.query_port)
         live = LiveIdentity(endpoint, request_id, monotonic(), status.app_id)
         product_key = resolve_launch_identity(
@@ -217,6 +224,7 @@ def resolve_context(
             "game_port": resolved.game_port,
             "query_port": resolved.query_port,
             "favourite": resolved.favourite,
+            "strict_endpoint": resolved.strict_endpoint,
             **saved_server_fields(resolved),
         }
         return ServerLaunchContext(
@@ -229,7 +237,9 @@ def resolve_context(
             steam_mode,
             live,
         )
-    detail = status.error if status and status.error else "No supported full game ID was returned."
+    detail = endpoint_error or (
+        status.error if status and status.error else "No supported full game ID was returned."
+    )
     raise IdentityResolutionError(
         f"Could not verify this server's DayZ edition: {detail} "
         f"{directory_error} Retry when the server responds; no game was launched."

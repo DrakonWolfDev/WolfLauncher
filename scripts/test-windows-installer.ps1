@@ -72,6 +72,13 @@ New-Item -ItemType Directory -Path (Split-Path -Parent $dataSentinel) -Force | O
 [System.IO.File]::WriteAllText($configSentinel, "preserve config")
 [System.IO.File]::WriteAllText($dataSentinel, "preserve data")
 $uninstallCompleted = $false
+$protocolRoot = "Registry::HKEY_CURRENT_USER\Software\Classes\wolflauncher"
+$protocolCommand = "$protocolRoot\shell\open\command"
+$testServerLinks = -not (Test-Path -LiteralPath $protocolRoot)
+$foreignHandler = $null
+if (-not $testServerLinks) {
+    Write-Host "Existing server-link registration preserved; skipping handler ownership smoke."
+}
 
 try {
     $installArguments = @(
@@ -80,6 +87,9 @@ try {
         "/NORESTART",
         "/DIR=$installRoot"
     )
+    if ($testServerLinks) {
+        $installArguments += "/TASKS=serverlinks"
+    }
     Invoke-Setup $InstallerPath $installArguments
 
     $applicationPath = Join-Path $installRoot "WolfLauncher.exe"
@@ -87,6 +97,13 @@ try {
     foreach ($requiredFile in @($applicationPath, $uninstallerPath)) {
         if (-not (Test-Path -LiteralPath $requiredFile -PathType Leaf)) {
             throw "Installed file is missing: $requiredFile"
+        }
+    }
+    if ($testServerLinks) {
+        $expectedHandler = '"{0}" --open-url "%1"' -f $applicationPath
+        $registeredHandler = (Get-Item -LiteralPath $protocolCommand).GetValue("")
+        if ($registeredHandler -cne $expectedHandler) {
+            throw "Server-link registration did not preserve the quoted executable and URL."
         }
     }
     Invoke-ApplicationSmoke $applicationPath
@@ -104,6 +121,20 @@ try {
             throw "Uninstall removed user-owned data: $sentinel"
         }
     }
+    if ($testServerLinks) {
+        if (Test-Path -LiteralPath $protocolRoot) {
+            throw "Uninstall left its own server-link registration behind."
+        }
+        $uninstallCompleted = $false
+        Invoke-Setup $InstallerPath $installArguments
+        $foreignHandler = '"{0}" "%1"' -f (Join-Path $smokeRoot "different-owner.exe")
+        Set-Item -LiteralPath $protocolCommand -Value $foreignHandler
+        Invoke-Setup $uninstallerPath @("/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART")
+        $uninstallCompleted = $true
+        if ((Get-Item -LiteralPath $protocolCommand).GetValue("") -cne $foreignHandler) {
+            throw "Uninstall changed a server-link registration owned by another installation."
+        }
+    }
     Write-Host "Installer reinstall/start/uninstall smoke test passed; user data was preserved."
 }
 finally {
@@ -114,6 +145,11 @@ finally {
         }
         catch {
             Write-Warning "Installer smoke cleanup could not run the uninstaller: $_"
+        }
+    }
+    if ($testServerLinks -and $foreignHandler -and (Test-Path -LiteralPath $protocolCommand)) {
+        if ((Get-Item -LiteralPath $protocolCommand).GetValue("") -ceq $foreignHandler) {
+            Remove-Item -LiteralPath $protocolRoot -Recurse -Force
         }
     }
     $resolvedSmokeRoot = [System.IO.Path]::GetFullPath($smokeRoot)

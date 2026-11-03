@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Share DayZ servers with validated HTTPS/protocol links. Review incoming targets
+  before inspecting their live edition and mod requirements, including delivery
+  to an already running launcher. Keep Connect and Workshop confirmations.
+  Add opt-in Windows and advertised Linux protocol-handler integration; prepare
+  the matching website installation fallback for release.
+
 - Choose an existing DayZ player profile name from Favourite Servers or Settings.
   Search the selected edition's Windows Documents or Proton profile folders in
   the background; show source locations and leave DayZ profile files unchanged.

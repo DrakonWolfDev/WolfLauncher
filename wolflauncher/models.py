@@ -16,6 +16,7 @@ class Server:
     product: str = "unknown"
     identity_state: str = ""
     identity_evidence: tuple[dict, ...] = ()
+    strict_endpoint: bool = False
 
     def __post_init__(self):
         for key, value in identity_fields(self).items():

@@ -117,6 +117,17 @@ Description: Linux-first DayZ launcher
  Native Steam and Workshop-aware DayZ server launcher for Linux.
 EOF
 
+for hook in postinst postrm; do
+  cat > "$package_root/DEBIAN/$hook" <<'HOOK'
+#!/bin/sh
+set -e
+if command -v update-desktop-database >/dev/null 2>&1; then
+  update-desktop-database /usr/share/applications || true
+fi
+HOOK
+  chmod 0755 "$package_root/DEBIAN/$hook"
+done
+
 artifact="$repo_root/dist/wolflauncher_${debian_version}_${artifact_label}_${architecture}.deb"
 dpkg-deb --root-owner-group --build "$package_root" "$artifact"
 (cd "$repo_root/dist" && sha256sum "$(basename "$artifact")") > "$artifact.sha256"

@@ -59,6 +59,23 @@ class ServerLaunchContextTests(unittest.TestCase):
             self.assertTrue(context.fresh(130))
             self.assertFalse(context.fresh(130.001))
 
+    def test_shared_link_rejects_a_query_reply_for_another_game_port_before_install_work(self):
+        server = replace(self.server, strict_endpoint=True)
+        detector = Mock()
+        checker = Mock(
+            return_value=ServerStatus(
+                True, resolved_ip="203.0.113.2", connect="203.0.113.2:2402", app_id=1024020
+            )
+        )
+        with self.assertRaisesRegex(IdentityResolutionError, "different game port"):
+            self.resolve(server=server, checker=checker, detector=detector)
+        detector.assert_not_called()
+
+    def test_shared_link_endpoint_lock_survives_resolved_context_serialization(self):
+        context = self.resolve(server=replace(self.server, strict_endpoint=True))
+        self.assertTrue(context.server.strict_endpoint)
+        self.assertEqual(context.server.game_port, self.server.game_port)
+
     def test_context_is_immutable_and_restored_install_is_an_independent_copy(self):
         context = self.resolve()
         with self.assertRaises(FrozenInstanceError):

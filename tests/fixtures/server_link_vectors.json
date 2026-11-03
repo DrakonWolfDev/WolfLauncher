@@ -1,0 +1,79 @@
+{
+  "valid": [
+    {
+      "url": "wolflauncher://join?v=1&host=203.0.113.10&game_port=2302&query_port=27016",
+      "expected": {
+        "host": "203.0.113.10",
+        "game_port": 2302,
+        "query_port": 27016,
+        "server_id": "",
+        "product": "unknown"
+      }
+    },
+    {
+      "url": "https://wolf-forge.co.uk/join/?v=1&host=203.0.113.10&game_port=2302&query_port=27016&server_id=dayz%3Aabc-123&product=experimental",
+      "expected": {
+        "host": "203.0.113.10",
+        "game_port": 2302,
+        "query_port": 27016,
+        "server_id": "dayz:abc-123",
+        "product": "experimental"
+      }
+    },
+    {
+      "url": "https://wolf-forge.co.uk/join?v=1&host=DAYZ.Example.COM&game_port=02302&query_port=65535&product=stable",
+      "expected": {
+        "host": "dayz.example.com",
+        "game_port": 2302,
+        "query_port": 65535,
+        "server_id": "",
+        "product": "stable"
+      }
+    },
+    {
+      "url": "wolflauncher://join/?v=1&host=localhost&game_port=1&query_port=2",
+      "expected": {
+        "host": "localhost",
+        "game_port": 1,
+        "query_port": 2,
+        "server_id": "",
+        "product": "unknown"
+      }
+    }
+  ],
+  "invalid": [
+    "wolflauncher://join?v=1&host=203.0.113.10&game_port=2302&query_port=27016&password=secret",
+    "wolflauncher://join?v=1&host=203.0.113.10&game_port=2302&query_port=27016&args=-mod%3Devil",
+    "wolflauncher://join?v=1&host=203.0.113.10&game_port=2302&query_port=27016&host=other",
+    "wolflauncher://join?v=1&host=203.0.113.10&game_port=2302&query_port=27016&v=1",
+    "wolflauncher://join?v=1&host=203.0.113.10&game_port=2302&query_port=27016&product=",
+    "wolflauncher://join?v=1&host=203.0.113.10&game_port=2302&query_port=27016&product=DayZ",
+    "wolflauncher://join?v=1&host=203.0.113.10&game_port=2302&query_port=27016&server_id=",
+    "wolflauncher://join?v=1&host=203.0.113.10&game_port=2302&query_port=27016&server_id=%0a",
+    "wolflauncher://join?v=1&host=203.0.113.10&game_port=2302&query_port=27016&",
+    "wolflauncher://join?v=1&host=203.0.113.10&game_port=2302&query_port=27016#anything",
+    "wolflauncher://join?v=2&host=203.0.113.10&game_port=2302&query_port=27016",
+    "wolflauncher://join?host=203.0.113.10&game_port=2302&query_port=27016",
+    "wolflauncher://join?v=1&host=&game_port=2302&query_port=27016",
+    "wolflauncher://join?v=1&host=192.168.001.1&game_port=2302&query_port=27016",
+    "wolflauncher://join?v=1&host=::1&game_port=2302&query_port=27016",
+    "wolflauncher://join?v=1&host=hello%252eworld&game_port=2302&query_port=27016",
+    "wolflauncher://join?v=1&host=foo%2fbar&game_port=2302&query_port=27016",
+    "wolflauncher://join?v=1&host=%FF&game_port=2302&query_port=27016",
+    "wolflauncher://join?v=1&host=foo%ZZ&game_port=2302&query_port=27016",
+    "wolflauncher://join?v=1&host=203.0.113.10&game_port=0&query_port=27016",
+    "wolflauncher://join?v=1&host=203.0.113.10&game_port=65536&query_port=27016",
+    "wolflauncher://join?v=1&host=203.0.113.10&game_port=+2302&query_port=27016",
+    "wolflauncher://join?v=1&host=203.0.113.10&game_port=000001&query_port=27016",
+    "wolflauncher://join?v=1&host=203.0.113.10&game_port=2302&query_port=",
+    "wolflauncher://user@join?v=1&host=203.0.113.10&game_port=2302&query_port=27016",
+    "wolflauncher://join:99?v=1&host=203.0.113.10&game_port=2302&query_port=27016",
+    "https://evil.example/join/?v=1&host=203.0.113.10&game_port=2302&query_port=27016",
+    "https://wolf-forge.co.uk:443/join/?v=1&host=203.0.113.10&game_port=2302&query_port=27016",
+    "http://wolf-forge.co.uk/join/?v=1&host=203.0.113.10&game_port=2302&query_port=27016",
+    "https://wolf-forge.co.uk/join/extra?v=1&host=203.0.113.10&game_port=2302&query_port=27016",
+    "wolflauncher://join?v=1&host=203.0.113.10&game_port=2302&query_port=27016\n",
+    "wolflauncher://join?v=1&host=203.0.113.10&game_port=2302&query_port=27016&server_id=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "wolflauncher://join?v=1&host=203.0.113.10&game_port=2302&query_port=27016&server_id=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  ]
+}

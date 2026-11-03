@@ -481,3 +481,46 @@ criteria still include validated inputs, cold/running-instance handoff, Windows
 and Linux scheme registration, HTTPS install fallback and the existing identity,
 preflight and Workshop confirmations. REL-02 and API-01 still need their previously
 recorded missing evidence; do not guess it or reopen completed fixes.
+
+
+### FEATURE-03 direct server links implemented - 3 November 2026
+
+Favourite Server and Server Browser menus can copy a versioned HTTPS server link.
+The launcher accepts canonical HTTPS/protocol links through its command line,
+Windows/Linux handlers or Settings paste. It shows a target review, then uses
+normal live edition/mod inspection. Receiving a link does not connect, start a
+Workshop download or create a favourite; Connect retains its existing guards.
+
+Links contain only a version, host, separate game/query ports and optional
+endpoint-bound directory reference/edition hint. Missing, repeated, unsupported
+or oversized input is rejected. An unconfirmed/moved reference has an explicit
+endpoint fallback; it cannot silently redirect the game address. Hints do not
+verify an edition. Shared targets reject live replies advertising a conflicting
+game port, and retain that restriction in resolved launch contexts.
+
+Cold startup and already-running delivery are implemented. Local handoff is
+user-restricted, framed and bounded, supports split input, and acknowledges URL
+receipt. An older running launcher without acknowledgement produces a retry /
+restart message. Windows Setup's per-user handler task is unchecked by default;
+cleanup preserves a different installation's handler. Linux advertises its
+protocol capability and refreshes desktop caches without forcing a default.
+The Windows installer smoke script includes registry ownership/reinstall checks.
+
+The matching HTTPS fallback is prepared in the separate `wolf-forge-static`
+branch **`dev/wolflauncher-server-links`**. It validates the same contract, displays
+the address, opens the app only on a click, and retains download/manual-paste
+instructions. No public page, download manifest or product placement was changed.
+Ship that route with a matching launcher release before advertising HTTPS links.
+
+Validation: launcher **938 run / 931 passed / 7 skipped**, including 22 new
+link/IPC/context/GIO regressions. Website: **4 existing Python tests and 41 new
+JavaScript tests pass**. Desktop/mobile headless Chrome previews and valid/invalid
+DOM checks pass. Ruff 0.15.22 lint/formatting, compilation, shell syntax,
+desktop-file, fixture parity and whitespace checks pass. Native Windows Setup,
+packaged handlers/browser permission flows, deployed HTTPS and real game joins
+remain release-time checks. No package build, version bump, live OS registration,
+game/Workshop action or website publication was performed.
+
+See [the complete contract and remaining checks](DIRECT_SERVER_LINKS.md).
+The next candidate is **FEATURE-04: separate live server queue counts**. REL-02
+and API-01 retain their earlier evidence requirements; do not guess missing inputs.

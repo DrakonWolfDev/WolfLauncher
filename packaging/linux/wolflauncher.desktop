@@ -2,7 +2,8 @@
 Type=Application
 Name=WolfLauncher
 Comment=Launch DayZ servers on Linux
-Exec=wolflauncher
+Exec=wolflauncher %u
+MimeType=x-scheme-handler/wolflauncher;
 Icon=wolflauncher
 Terminal=false
 Categories=Game;
