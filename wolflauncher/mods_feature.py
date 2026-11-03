@@ -533,7 +533,7 @@ class ModsFeatureMixin:
             self.server_launch.prepare(
                 server,
                 lambda context: self.server_launch.check_mods(
-                    context, lambda result: None, force=force
+                    context, lambda result: None, force=force, include_hashes=True
                 ),
                 silent=silent,
                 force=force,
@@ -593,7 +593,13 @@ class ModsFeatureMixin:
         self.pending_mod_check_row = None
         self.pending_mod_server = None
         workshop_install = install
-        worker = ModWorker(server, workshop_dir, steam_context, workshop_install=workshop_install)
+        worker = ModWorker(
+            server,
+            workshop_dir,
+            steam_context,
+            workshop_install=workshop_install,
+            include_hashes=True,
+        )
         self.mod_worker = worker
         product_key = self.dayz_product_key()
         worker.mods_ready.connect(
@@ -765,6 +771,14 @@ class ModsFeatureMixin:
         self.mod_detail_title.setText(mod.name or mod.installed_name or "Unknown mod")
         self.mod_detail_description.setText(mod_description_preview(mod, limit=900))
         self.mod_detail_description.setToolTip("")
+        if mod.hash_comparison:
+            self.mod_detail_description.setText(
+                self.mod_detail_description.text()
+                + "\n\nAt last check: "
+                + mod.hash_comparison.detail
+                + " Trailer comparisons are advisory and do not verify full file integrity. "
+                "Recheck after local files or server requirements change."
+            )
         status = mod_row(mod).values[0].lstrip("✓✗!↻… ")
         self.mod_detail_metadata.setText(
             f"Workshop {mod.workshop_id}  ·  {mod_file_size(mod)}  ·  {status}"

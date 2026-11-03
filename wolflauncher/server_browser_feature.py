@@ -1478,6 +1478,7 @@ class ServerBrowserMixin:
             self.mod_check_steam_context(install),
             workshop_install=install,
             include_metadata=False,
+            include_hashes=False,
         )
         self.browser_mod_workers[cache_key] = worker
         worker.mods_ready.connect(

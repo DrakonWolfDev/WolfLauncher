@@ -399,3 +399,46 @@ the full suite passed outside that restriction. Focused parser/mod-check coverag
 includes distinct hashes, byte stuffing, chunk boundaries, unpublished requirements,
 zero and missing hashes. No new packaged artifacts, Steam actions, version bump or
 release publication were performed in this step; earlier local builds predate it.
+
+
+### FEATURE-01 advisory comparisons implemented - 3 November 2026
+
+The source implementation now covers local/server PBO-trailer comparisons in
+selected-server Mods inspector checks. The main identity/request coordinator
+explicitly enables these checks; launch-preflight, LAN and browser-preview
+workers leave optional hash reads disabled. Requests retain their server,
+selected library, edition and cancellation context. An inspector hash request
+queued behind a readiness-only check is not silently lost, and a new hash check
+does not reuse a cached local comparison.
+
+Read-only queries to the saved New Dawn Cherno and DeerIsle public servers
+provided 53 and 56 installed requirements respectively. Independent aggregation
+of existing local PBO trailers matched all 109 advertised values; the finished
+comparison module matched them too. A small regression fixture retains a complete
+raw rules reply plus three matching local trailer sets, without PBO bodies or
+personal paths. This evidence validates the observed aggregation; it is not a
+claim about all DayZ versions or unique mods.
+
+The Mods table, details and copied report distinguish matching, different and
+unavailable results at the last check. Comparisons never change readiness or
+trigger a Steam download. File/directory changes during a comparison invalidate
+it; a newer Steam state clears earlier advisories. Every requested hash check
+rereads the selected files. Empty/unreadable data, linked PBOs, missing hashes,
+active updates, cancellation and work limits remain unknown. A bounded duplicate
+PBO allowance handles a possible Linux-server case and explains such a match;
+nonmatches above that allowance's cap remain unknown. There is no continuous file
+watcher: users recheck after later external edits.
+
+Final Linux validation: **896 tests run / 889 passed / 7 skipped**, including
+24 new hash/worker/coordinator/integration tests. Ruff 0.15.22 lint and the CI
+formatting gate, compilation and whitespace checks pass. Interactive UI,
+Windows/junction and packaged checks remain pending. Existing 0.9.3.5b local
+artifacts predate this change. No package build, version bump, game launch,
+Workshop update or release publication was performed for this feature.
+
+See [algorithm, captured evidence, bounds and limitations](MOD_HASH_COMPARISON.md).
+FEATURE-01 is implemented in source with live Linux aggregation evidence;
+remaining platform/manual checks are recorded there. The next feature candidate
+is **FEATURE-02: read-only discovery and selection of existing DayZ profiles**.
+REL-02 still requires verified camera settings; API-01 still needs the exact
+remembered alert. Do not invent those missing inputs or repeat completed fixes.

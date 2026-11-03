@@ -124,7 +124,7 @@ class ServerLaunchCoordinator:
                 self.window.identity_workers[key] = worker
                 self._start_identity(worker, key)
 
-    def check_mods(self, context, continuation, *, force=False):
+    def check_mods(self, context, continuation, *, force=False, include_hashes=False):
         from .workers import ModWorker
 
         if not self.current(context, require_fresh=False):
@@ -132,6 +132,7 @@ class ServerLaunchCoordinator:
         cached = getattr(self.window, "last_mod_result", None)
         if (
             not force
+            and not include_hashes
             and cached is not None
             and cached.ok
             and cached.request_id == context.request_id
@@ -141,10 +142,15 @@ class ServerLaunchCoordinator:
             return
         request = context.request_id
         if request in self.window.context_mod_workers:
+            if include_hashes and not self.window.context_mod_workers[request].include_hashes:
+                # Finish the readiness request, then perform the requested fresh
+                # advisory read rather than silently coalescing it away.
+                self.pending_mods = (context, continuation, True, True)
+                return
             self.mod_callbacks.setdefault(request, []).append(continuation)
             return
         if len(self.window.context_mod_workers) >= 2:
-            self.pending_mods = (context, continuation, force)
+            self.pending_mods = (context, continuation, force, include_hashes)
             return
         self.mod_callbacks[request] = [continuation]
         worker = ModWorker(
@@ -153,6 +159,7 @@ class ServerLaunchCoordinator:
             f"{context.product.label}: {context.install.dayz_dir}",
             workshop_install=context.install,
             launch_context=context,
+            include_hashes=include_hashes,
         )
         self.window.context_mod_workers[request] = worker
 
@@ -174,9 +181,9 @@ class ServerLaunchCoordinator:
     def _mod_finished(self, request):
         self.window.context_mod_workers.pop(request, None)
         if self.pending_mods is not None:
-            context, continuation, force = self.pending_mods
+            context, continuation, force, include_hashes = self.pending_mods
             self.pending_mods = None
-            self.check_mods(context, continuation, force=force)
+            self.check_mods(context, continuation, force=force, include_hashes=include_hashes)
 
     def revalidate(self, context, continuation):
         if not self.current(context, require_fresh=False):

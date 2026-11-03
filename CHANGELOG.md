@@ -2,8 +2,11 @@
 
 ## Unreleased
 
-- Retain server-advertised mod hashes through parsing and mod checks, including
-  unpublished requirements. Local hash comparison is not yet implemented.
+- Compare selected-server mod hashes with local PBO trailers in the background.
+  Show matching, different and unavailable results as last-check advisories;
+  preserve library/edition isolation and existing readiness/download policy.
+  Recheck files on each request and invalidate comparisons during Steam updates.
+  Retain hashes for unpublished requirements without inventing Workshop IDs.
 
 - Documented real-world user confirmation on CachyOS (Arch-based) and added
   CachyOS to the Linux compatibility guides.

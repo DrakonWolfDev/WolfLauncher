@@ -1,0 +1,60 @@
+{
+  "description": "Read-only live A2S_RULES and local installed PBO SHA-1 trailers. No PBO bodies or user paths. All three advertised hashes matched independently aggregated local trailers.",
+  "source": "New Dawn Cherno public server and existing local Stable Workshop content",
+  "algorithm_reference": "https://github.com/CallMeLewis/flare-launcher/blob/89954428a15745fe10d5f3dc351ac6fdedd20f8c/src-tauri/src/mod_hash.rs",
+  "endpoint": [
+    "198.244.177.109",
+    2303
+  ],
+  "captured_at": "2026-11-03T18:55:49.038762+00:00",
+  "binary_rules": {
+    "0113": "AgECAQIBAjaVV0y/BHPSjOMSQ09UIEJ1bmRsZSBVdGlsaXR5yB9ycwTmsyyfF0J1aWxkaW5nIEZvcnRpZmljYXRpb25zOtlC1AQCQ9TiFkZpbGwgRGlyZWN0IEZyb20gUHVtcHP4mlykBIX2u+MVUlpaIE1vdG9yYmlrZSBTdA==",
+    "0213": "b3JhZ2WKI121BDXCoqMXTG9mdERNb2RHUiBDbG90aGVzIFBhY2s7G7O3BCbGTZMIRGF5WiBEb2ehQnr9BFJPMXMMQ2FubmFiaXNQbHVzd2WqeASDuGWBCURydWdzUExVU+bQra0ENlr12w9BZ3JpY3VsdHVyZUNvcmUfRKTDBA==",
+    "0313": "CZLuyRU0S0JPU1NLVmVoaWNsZVBhY2thZ2WYKAyYBIe5duQLQ2FyUGFja19GSVhk6HNTBJLBmasNUmFHX0Jhc2VJdGVtcwhS5ZgEipw2vBBSYUdfQmFzZUJ1aWxkaW5nAQL694IEUUH20whSYUdfQ29yZUR6kGkEt/A4bQ1GbA==",
+    "0413": "aXBUcmFuc3BvcnTEGE1pBCWHNMwPVmVoaWNsZVJlY292ZXJ5ZzjpWwTMhh7QD0R1ZGVXaGVyZXNNeUNhcrvJrYQEEHGApw9DdXN0b20gS2V5Y2FyZHPq7nh+BLSme+EZQS02X1NlY3VyZV9Db250YWluZXJzX0ZpeHOCZQUEqw==",
+    "0513": "TerfHEluZmVjdGVkIEhvcmRlIEF1ZGlvIExpbWl0ZXIs9v7pBPp+edsUTlZHIFJlc3RyaWN0ZWQgWm9uZXMIlD6HBBZOdeMTQEJldHRlclZhbmlsbGFCaWtlcz7YJdsEJg2MnxxCdWxsZXRTdGFja3NQbHVzUGx1c0VuaGFuYw==",
+    "0613": "ZWQBAQnUdASa4+y/C05FUlZfR2FtaW5nAQGvyfsEHPIwdghUcmVhc3VyZZ7pmK4Eg3uApw1TdGF0aWMgUGxhbmVz8y4h7QRiQNq0FlNob290aW5nIFJhbmdlIE9iamVjdHOI1sACBN7qQLMRTWVnYSBDb2xsZWN0YWJsZXOZfQ==",
+    "0713": "x+AEyWbt3A9Ob3haIENhckFpckRyb3CCAQJNyARzDazjE0NKMTg3LUxvb3RDaGVzdCAyLjDnx0BxBPCtrYIUQ0oxODctTW9yZUNyYXNoc2l0ZXOgux/iBJJRH4QOUHJpc3RpbmVSZXBhaXKxB4hRBFUKSHUJTXVjaERlY29zNg==",
+    "0813": "FIE5BD+2bZkITWFnaWNCb3hieJbuBKBRR5MSR2FzLVB1bXAtUmVmdWVsaW5nMCNJYATaXBqsD1JlZEZhbGNvbiBUcmFzaN1QcwMEJjXQhAxUcmFkZXJNYXJrZXJPv4DUBHyr7mMRVEVQQmlsbGJvYXJkU2lnbnP0n8K3BOSGVw==",
+    "0913": "hhpUcmFkZXIgQnVsayBTZWxsIEV4dGVuc2lvbksy74AEmmbX4w1UcmFkZXIgUmV3b3JrS6uIFQRkseWSCEdhbWVMYWJzCC7xsQSQPMulC05EQ29yZUZpeGVziLdc9ASFLfO8Ck5EQ29yZVBhY2vkWa3aBHYw+dANTkRDb3JlVA==",
+    "0a13": "eXJmaW5nrsN7yAS7tMinCE5ERml4ZXMy0bl+2QSY6jqrBE5ETFNokerGBKUHBp4dQXJtYSAyIEhlbGljb3B0ZXJzIFJlbWFzdGVyZWSaorc9BJcoqYcSRGF5WiBFZGl0b3IgTG9hZGVyNgb2SATebIemGURheVotRXhwYW5zaQ==",
+    "0b13": "b24tQW5pbWF0aW9ucz1i8skEigEDIX4XRGF5Wi1FeHBhbnNpb24tTGljZW5zZWTylUzkBAEDp1KZFURheVotRXhwYW5zaW9uLUJ1bmRsZfp13DsEkCc5XRZDb21tdW5pdHkgT25saW5lIFRvb2xzDLjv2wQgnraXDkRhYnMgRg==",
+    "0c13": "cmFtZXdvcmshnSX0BASw71wTQ29tbXVuaXR5IEZyYW1ld29ya1MHNEtCT1NTSwM3a2EaYWdlbnQwMDEuS25vY2tLbm9ja1pvbWJpZXMMQW5kaVRoZUJhbWJpCEFyY3hNb2RzB2FybWFkYTMQQXVzc2llY3JheXpfTW9kcw9CZQ==",
+    "0d13": "YXV0aWZ1bFBvdGF0bwRCT0ZBF0J1aWxkaW5nLUZvcnRpZmljYXRpb25zC2NmdG9vbHNSb290DENKMTg3X1B1YmxpYwVDcmFpZwNkYWIEZGF5egpkYXl6dHJhZGVyBmRvYnJvRwdET0JST2cxCkRyYWtvbldvbGYDRU1HC0VxdQ==",
+    "0e13": "aWxpYnJpdW0JRXZnZW55X19OCUV4cGFuc2lvbgtGSVNIX0hVTlRFUgRGb1h5B0Z1bmtkb2MKRnV0dXJlU2l4eAxHZW5lc2lhX3BhcHkKR2VybWFuRGF5WgtHcmF2aXR5V29sZglIZWxraGlhbmELSGVyb3MtSGF2ZW4HSHVudA==",
+    "0f13": "ZXJ6CEljZUJsYWRlDEluY2xlbWVudERhYgZpbmtpaGgOSmFjb2JfTWFuZ29fVjMJSm9zZWNpdG94CEp1bGVzX0taBkthdGFtaQRLZG9nBktvVDlwQQRMNERTBExld2sKbGlxdWlkcm9jawVMaXZlbhtMTV9BNl9TZWN1cmVfQw==",
+    "1013": "b250YWluZXJzX0ZpeAVseWtvcwJNNgVNQk12MwtNb29ucm9ja1BWRQdNVGFrZWRhBk5lcnJhZAdORVJWX0hRCk5FUlZfSFFfMDEKTmV3RGF3blB2RQVuaWdlbgpOaWthcG9sc2V0BE5veFoVTzEyX01lZ2FfQ29sbGVjdGFibA==",
+    "1113": "ZXMGT2xpcHJvEE91ckRheVpDb21tdW5pdHkET3dlbglyYWdfdHlzb24KUkVERU1QVElPTglSZWRGYWxjb24LUkZCaWxsYm9hcmQJUkZGU0hlbGl6ClJNNzhQdWJsaWMDUlpaCVNhZ2FIdW1taQdzbjB3TG93CHhvZmhvdW5mCA==",
+    "1213": "U3RhckNhcnMKU1RBWS1BTElWRQxzdGVwaGFuYzkyODgOVGVkZHlzYW1tbGVyVjIKVEVQU2lnbnNWMwlUaGVLbGluaWMFVHJhcXUPVHJpdW1waEFJQ29udm95CVdhcmRvZy52Mwd6bWdfZnRmR05ldyBEYXduIENoZXJubyBQVg==",
+    "1313": "RXxEaXNjb3JkfE1pc3Npb25zfERheXpEb2d8VHJlYXN1cmV8VHJhZGVyfEV4cGFuc2lvbnw="
+  },
+  "local_mods": [
+    {
+      "workshop_id": 3817656947,
+      "name": "COT Bundle Utility",
+      "server_hash": 3209451413,
+      "pbo_trailers": [
+        "9cc62c54b605ccbd98eb39befb53ad0af2370829"
+      ]
+    },
+    {
+      "workshop_id": 2670506982,
+      "name": "Building Fortifications",
+      "server_hash": 1936859080,
+      "pbo_trailers": [
+        "da04c056bd6a1f04338007e5df406ce480226bbd",
+        "fe2c421cf0b179455fc9d621e466f612ffa00bf3"
+      ]
+    },
+    {
+      "workshop_id": 1559212036,
+      "name": "Community Framework",
+      "server_hash": 4096105761,
+      "pbo_trailers": [
+        "54e29d5b86370472649aa46b67de6145c12fda1f",
+        "7898614e884a8a59e5706bbcb19d2edfbe3d0f09",
+        "893ff87721ef60057d345edeb6c5cf2fe77aaba3"
+      ]
+    }
+  ]
+}

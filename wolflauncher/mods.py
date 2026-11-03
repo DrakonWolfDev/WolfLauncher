@@ -9,6 +9,7 @@ from urllib.parse import parse_qs, urlparse
 
 from .dayz_mod_query import query_dayz_required_mods
 from .http_client import HttpClientError, fetch_html, fetch_json, post_form_json, post_json
+from .mod_hash import ModHashComparison
 from .models import Server
 from .redaction import redact_support_text
 from .status import resolve_host
@@ -87,6 +88,7 @@ class RequiredMod:
     workshop_completion_pending: bool = False
     # Advertised protocol value; not proof of freshness or file integrity.
     server_hash: int | None = None
+    hash_comparison: ModHashComparison | None = None
 
     @property
     def downloadable(self) -> bool:
@@ -163,6 +165,8 @@ def apply_workshop_item_states(result: ModCheckResult, states) -> ModCheckResult
     """Attach Steam item-state snapshots to an existing local-directory check."""
     by_id = {item.workshop_id: item for item in states}
     for mod in result.required_mods:
+        # A newer Steam snapshot invalidates any earlier file comparison.
+        mod.hash_comparison = None
         item = by_id.get(mod.workshop_id)
         if item is None:
             continue
@@ -633,6 +637,18 @@ def format_mod_check_report(
         for mod in required:
             state = "installed" if mod.installed else "missing"
             lines.append(f"- {_mod_report_label(mod)} [{state}]")
+            if mod.hash_comparison:
+                comparison = mod.hash_comparison
+                lines.append(
+                    f"  server hash at last check: {comparison.status}; {comparison.detail}"
+                )
+                if mod.server_hash is not None:
+                    lines.append(f"  advertised hash: {mod.server_hash:08x}")
+                if comparison.local_hash is not None:
+                    lines.append(f"  local trailer hash: {comparison.local_hash:08x}")
+                lines.append(
+                    "  Advisory only; recheck after file changes. Not a full integrity check."
+                )
             if mod.installed_name and mod.installed_name != mod.name:
                 lines.append(f"  local name: {mod.installed_name}")
             if mod.workshop_url:

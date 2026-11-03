@@ -56,6 +56,8 @@ def mod_inspector_type_scale(window_height: int) -> float:
 
 
 def mod_detail_status(mod: RequiredMod) -> str:
+    if mod.hash_comparison and mod.hash_comparison.status == "different":
+        return "warning"
     if mod.ready:
         return "ready"
     if not mod.installed:
@@ -141,6 +143,18 @@ def mod_summary_text(result: ModCheckResult) -> str:
             "the item may need to be restored or replaced on the server. "
             "Keep any working installed copies."
         )
+    comparisons = [mod.hash_comparison for mod in result.required_mods if mod.hash_comparison]
+    if comparisons:
+        counts = {
+            status: sum(item.status == status for item in comparisons)
+            for status in ("match", "different", "unknown")
+        }
+        summary += (
+            f"\nServer hashes at last check: {counts['match']} matching, "
+            f"{counts['different']} different, {counts['unknown']} unavailable. "
+            "Advisory trailer comparison; recheck after file changes. "
+            "Differences do not show which copy is newer."
+        )
     guidance = local_mod_guidance(result.required_mods)
     if guidance:
         summary += "\n" + guidance
@@ -221,6 +235,15 @@ def mod_row(mod: RequiredMod) -> ModRow:
     else:
         status = "✓ Installed"
         colour = STATUS_COLOURS["positive"]
+        if mod.hash_comparison:
+            label = {
+                "match": "server hash matches",
+                "different": "different from server",
+                "unknown": "server hash unavailable",
+            }[mod.hash_comparison.status]
+            status += f" · {label} at last check"
+            if mod.hash_comparison.status == "different":
+                colour = STATUS_COLOURS["warning"]
     return ModRow(
         values=[
             status,

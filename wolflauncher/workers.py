@@ -7,6 +7,7 @@ from pathlib import Path
 from PySide6.QtCore import QThread, Signal
 
 from . import server_cache
+from .mod_hash import apply_mod_hash_comparisons
 from .models import Server
 from .mods import (
     WORKSHOP_URL,
@@ -134,6 +135,7 @@ class ModWorker(QThread):
         workshop_install=None,
         include_metadata: bool = True,
         launch_context=None,
+        include_hashes: bool = False,
     ):
         super().__init__()
         self.server = server
@@ -142,6 +144,7 @@ class ModWorker(QThread):
         self.workshop_install = workshop_install
         self.include_metadata = include_metadata
         self.launch_context = launch_context
+        self.include_hashes = include_hashes
 
     def cancel(self):
         self.requestInterruption()
@@ -191,6 +194,8 @@ class ModWorker(QThread):
                 apply_workshop_item_states(result, states.items)
         if install:
             apply_completed_checks(install, result.required_mods)
+        if self.include_hashes and not self.isInterruptionRequested():
+            apply_mod_hash_comparisons(result, install, cancelled=self.isInterruptionRequested)
         return result
 
 
