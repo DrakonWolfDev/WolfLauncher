@@ -35,6 +35,8 @@ from .platform_detection import (
     steam_mode_label,
 )
 from .platforms import current_platform
+from .player_profile_dialog import PlayerProfileDialog, PlayerProfileWorker
+from .player_profiles import profile_context_key, profile_still_exists
 from .redaction import redact_support_text
 from .secret_store import (
     settings_with_stored_steam_api_key,
@@ -83,13 +85,21 @@ class SettingsFeatureMixin:
         if capabilities.platform_id == "windows":
             self.settings_player_name = QLineEdit(self.player_name.text())
             self.settings_player_name.setToolTip(
-                "This is the same player name shown on Favourite Servers."
+                "DayZ saves settings per profile name. This is the same name shown on Favourite Servers."
             )
             self.settings_player_name.textChanged.connect(self.sync_favourites_player_name)
             self.settings_player_name.returnPressed.connect(self.save_player_name)
-            launcher_settings.addRow("Player name", self.settings_player_name)
+            name_controls = QHBoxLayout()
+            name_controls.addWidget(self.settings_player_name, 1)
+            existing_profile = QPushButton("Existing profile…")
+            existing_profile.clicked.connect(self.choose_existing_player_profile)
+            name_controls.addWidget(existing_profile)
+            launcher_settings.addRow("Player name", name_controls)
         else:
             launcher_settings.addRow("Steam installation", self.native_steam_mode)
+            existing_profile = QPushButton("Choose existing profile…")
+            existing_profile.clicked.connect(self.choose_existing_player_profile)
+            launcher_settings.addRow("Player profile", existing_profile)
         layout.addLayout(launcher_settings)
         self.launch_engine.currentTextChanged.connect(
             self.update_external_launcher_settings_visibility
@@ -421,6 +431,75 @@ class SettingsFeatureMixin:
             self._check_pending_server_mods()
             return
         self.check_server_mods_for_row(row, silent=True, force=True)
+
+    def choose_existing_player_profile(self):
+        if getattr(self, "_shutting_down", False):
+            return
+        active = getattr(self, "profile_discovery_worker", None)
+        if active is not None and active.isRunning():
+            self.statusBar().showMessage(
+                "The previous profile search is stopping. Try again shortly.", 5000
+            )
+            return
+        install = self.selected_steam_install()
+        if install is None or not install.dayz_dir:
+            QMessageBox.information(
+                self,
+                "DayZ profiles",
+                "Select an installed DayZ edition before looking for profiles.",
+            )
+            return
+        original_context = profile_context_key(install)
+        dialog = PlayerProfileDialog(self, install.product.label, self.player_name.text())
+        worker = PlayerProfileWorker(install, current_platform().capabilities.platform_id, self)
+        self.profile_discovery_worker = worker
+        dialog.scan_worker = worker
+        worker.profiles_ready.connect(dialog.show_profiles)
+        worker.finished.connect(dialog.scan_finished)
+        worker.finished.connect(lambda: self._profile_search_finished(worker))
+        worker.finished.connect(worker.deleteLater)
+        worker.start()
+        try:
+            if dialog.exec() != QDialog.Accepted or dialog.selected_profile is None:
+                return
+            self.apply_existing_player_profile(dialog.selected_profile, original_context)
+        finally:
+            if dialog.scan_worker is not None:
+                worker.cancel()
+            dialog.deleteLater()
+
+    def _profile_search_finished(self, worker):
+        if getattr(self, "profile_discovery_worker", None) is worker:
+            self.profile_discovery_worker = None
+
+    def apply_existing_player_profile(self, profile, original_context):
+        if getattr(self, "_shutting_down", False):
+            return
+        if (
+            not original_context
+            or profile_context_key(self.selected_steam_install()) != original_context
+        ):
+            QMessageBox.information(
+                self,
+                "Installation changed",
+                "The selected DayZ installation changed. Reopen the profile picker.",
+            )
+            return
+        if not profile_still_exists(profile):
+            QMessageBox.information(
+                self,
+                "Profile unavailable",
+                "This profile is no longer available. Reopen the profile picker.",
+            )
+            return
+        previous = self.player_name.text()
+        self.player_name.setText(profile.name)
+        if not self.save_user_settings(silent=True):
+            self.player_name.setText(previous)
+            return
+        self.statusBar().showMessage(
+            f"Player name saved as {profile.name}. Profile files are unchanged.", 5000
+        )
 
     def save_player_name(self):
         if not self.player_name.text().strip():

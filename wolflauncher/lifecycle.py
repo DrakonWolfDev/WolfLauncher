@@ -7,6 +7,7 @@ from PySide6.QtCore import QProcess
 WORKER_ATTRIBUTES = (
     "worker",
     "mod_worker",
+    "profile_discovery_worker",
     "workshop_subscription_worker",
     "workshop_unsubscribe_worker",
     "workshop_state_worker",

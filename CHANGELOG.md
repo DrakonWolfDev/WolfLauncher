@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Choose an existing DayZ player profile name from Favourite Servers or Settings.
+  Search the selected edition's Windows Documents or Proton profile folders in
+  the background; show source locations and leave DayZ profile files unchanged.
+
 - Compare selected-server mod hashes with local PBO trailers in the background.
   Show matching, different and unavailable results as last-check advisories;
   preserve library/edition isolation and existing readiness/download policy.

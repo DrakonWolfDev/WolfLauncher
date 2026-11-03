@@ -88,11 +88,17 @@ class CuratedServersMixin:
         common_settings = QFormLayout()
         player_name_row = QHBoxLayout()
         player_name_row.addWidget(self.player_name)
+        self.player_name.setToolTip(
+            "DayZ saves settings per profile name. Use Existing profile to keep an existing profile's name."
+        )
         self.player_name.returnPressed.connect(self.save_player_name)
         self.player_name.textChanged.connect(self.sync_settings_player_name)
         set_player_name = QPushButton("Set name")
         set_player_name.clicked.connect(self.save_player_name)
         player_name_row.addWidget(set_player_name)
+        existing_profile = QPushButton("Existing profile…")
+        existing_profile.clicked.connect(self.choose_existing_player_profile)
+        player_name_row.addWidget(existing_profile)
         common_settings.addRow("Player name", player_name_row)
         common_settings.addRow("Auto refresh", self.refresh_seconds)
         layout.addLayout(common_settings)

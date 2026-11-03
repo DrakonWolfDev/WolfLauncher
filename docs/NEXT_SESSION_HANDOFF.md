@@ -442,3 +442,42 @@ remaining platform/manual checks are recorded there. The next feature candidate
 is **FEATURE-02: read-only discovery and selection of existing DayZ profiles**.
 REL-02 still requires verified camera settings; API-01 still needs the exact
 remembered alert. Do not invent those missing inputs or repeat completed fixes.
+
+
+### FEATURE-02 existing-profile picker implemented - 3 November 2026
+
+Favourite Servers and Settings now offer an explicit existing-player-profile
+picker. It scans recognised primary files in the selected edition's Windows
+Documents location or its actual library's Proton prefix, groups matching names
+and shows modification dates and locations. Discovery reads names and metadata
+only. Choosing a row updates the existing launcher-wide player-name setting;
+DayZ profile files are not opened, created, renamed or cloned.
+
+A window-owned cancellable Qt worker bounds enumeration and participates in
+shutdown. Closing the picker or encountering a changed installation, removed
+profile or save failure cannot apply an unintended name. Windows uses Qt's
+Documents known-folder lookup, including redirection. Stable and Experimental
+folders/app IDs stay separate; Linux never falls back to another library or the
+host Documents directory. Character/variable caches, backups, empty files and
+ambiguous encoded names are not guessed as primary profiles. Custom `-profiles`
+locations, custom prefix overrides and alternate Wine usernames remain outside
+this initial discovery scope; manual name entry remains available.
+
+Read-only local discovery found one primary profile in each installed Proton
+edition, correctly excluding their character and variable caches. Real names and
+contents were not captured. No configured name or game profile was changed.
+An offscreen synthetic picker preview was inspected. Twenty new regression
+tests include a real Qt worker/dialog cancellation case.
+
+Final Linux validation: **916 run / 909 passed / 7 skipped**. Ruff 0.15.22 lint
+and formatting, compilation and whitespace checks pass. Native Windows/OneDrive,
+packaged UI and in-game settings reuse remain manual checks; source completion
+is not a claim that those boundaries are verified. No version bump, package
+build, game launch or publication was performed for FEATURE-02.
+
+See [scope, locations, evidence and limitations](PLAYER_PROFILE_DISCOVERY.md).
+The next feature candidate is **FEATURE-03: direct server links**. Its acceptance
+criteria still include validated inputs, cold/running-instance handoff, Windows
+and Linux scheme registration, HTTPS install fallback and the existing identity,
+preflight and Workshop confirmations. REL-02 and API-01 still need their previously
+recorded missing evidence; do not guess it or reopen completed fixes.
