@@ -333,6 +333,11 @@ def _prepare_experimental_native_launch(
             guidance="Launch DayZ Experimental once through Steam and complete BattlEye setup, then retry.",
         )
     workshop_dir = _require_dir(install.workshop_dir, "Stable DayZ Workshop")
+    from .mods import local_mod_guidance
+
+    guidance = local_mod_guidance(mods)
+    if guidance:
+        raise NativeLaunchError(guidance, stage="mod setup")
     local_paths = _experimental_mod_paths(dayz_dir, workshop_dir, mods)
     missing = [str(mod.workshop_id) for mod, path in zip(mods, local_paths) if not path.is_dir()]
     if missing:
@@ -687,6 +692,11 @@ def prepare_mod_links(
     dayz_dir: Path, workshop_dir: Path, required_mods: list[RequiredMod]
 ) -> NativeModSetup:
     """Prepare the legacy-compatible DayZ @mod symlinks for installed mods."""
+    from .mods import local_mod_guidance
+
+    guidance = local_mod_guidance(required_mods)
+    if guidance:
+        raise NativeLaunchError(guidance, stage="mod setup")
     setup = NativeModSetup()
 
     for mod in required_mods:

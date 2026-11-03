@@ -23,12 +23,13 @@ def _stuff(payload: bytes) -> bytes:
     return bytes(result)
 
 
-def _manifest(*mods, overflow=0, signatures=(), protocol=2) -> bytes:
+def _manifest(*mods, overflow=0, signatures=(), protocol=2, hashes=None) -> bytes:
     payload = bytearray((protocol, overflow, 0, 0, len(mods)))
-    for workshop_id, name in mods:
+    for index, (workshop_id, name) in enumerate(mods):
         encoded_id = int(workshop_id).to_bytes(8, "little").rstrip(b"\0")
         encoded_name = name.encode("utf-8")
-        payload.extend((0x12345678).to_bytes(4, "little"))
+        mod_hash = hashes[index] if hashes is not None else 0x12345678
+        payload.extend(mod_hash.to_bytes(4, "little"))
         payload.append(len(encoded_id))
         payload.extend(encoded_id)
         payload.append(len(encoded_name))
@@ -61,10 +62,21 @@ class DecodeDayzModRulesTests(unittest.TestCase):
         self.assertEqual(
             decode_dayz_mod_rules(_rules(payload, split_at=17)),
             [
-                DayzRequiredMod(1559212036, "Community Framework"),
-                DayzRequiredMod(2116151222, "Namalsk Island"),
+                DayzRequiredMod(1559212036, "Community Framework", 0x12345678),
+                DayzRequiredMod(2116151222, "Namalsk Island", 0x12345678),
             ],
         )
+
+    def test_preserves_distinct_unsigned_hashes_including_stuffed_bytes(self):
+        hashes = [0, 0xFF0100FF, 0xFFFFFFFF]
+        mods = decode_dayz_mod_rules(
+            _rules(
+                _manifest((0, "Local"), (111, "One"), (222, "Two"), hashes=hashes),
+                split_at=9,
+            )
+        )
+        self.assertEqual([mod.server_hash for mod in mods], hashes)
+        self.assertEqual([mod.workshop_id for mod in mods], [None, 111, 222])
 
     def test_accepts_complete_zero_mod_manifest(self):
         self.assertEqual(decode_dayz_mod_rules(_rules(_manifest())), [])
@@ -98,7 +110,7 @@ class QueryDayzRequiredModsTests(unittest.TestCase):
         rules.return_value = _rules(_manifest((111, "Example")))
         self.assertEqual(
             query_dayz_required_mods("203.0.113.10", 27016),
-            [DayzRequiredMod(111, "Example")],
+            [DayzRequiredMod(111, "Example", 0x12345678)],
         )
         rules.assert_called_once_with(("203.0.113.10", 27016), timeout=10.0, encoding=None)
 
@@ -110,3 +122,31 @@ class QueryDayzRequiredModsTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class UnpublishedManifestTests(unittest.TestCase):
+    def test_mixed_local_and_workshop_entries_preserve_order_and_names(self):
+        mods = decode_dayz_mod_rules(
+            _rules(_manifest((0, "Local First"), (111, "CF"), (0, "Local Last")))
+        )
+        self.assertEqual(
+            mods,
+            [
+                DayzRequiredMod(None, "Local First", 0x12345678),
+                DayzRequiredMod(111, "CF", 0x12345678),
+                DayzRequiredMod(None, "Local Last", 0x12345678),
+            ],
+        )
+
+    def test_truncated_unpublished_entry_still_rejects_atomically(self):
+        with self.assertRaises(DayzModQueryError):
+            decode_dayz_mod_rules(_rules(_manifest((0, "Local"), (111, "CF"))[:-3]))
+
+    def test_nonempty_zero_id_is_still_invalid(self):
+        payload = b"\x02\x00\x00\x00\x01" + bytes(4) + b"\x01\x00\x00\x00"
+        with self.assertRaisesRegex(DayzModQueryError, "invalid or duplicate"):
+            decode_dayz_mod_rules(_rules(_stuff(payload)))
+
+    def test_unpublished_entries_keep_signature_framing_checks(self):
+        with self.assertRaisesRegex(DayzModQueryError, "signature"):
+            decode_dayz_mod_rules(_rules(_manifest((0, "Local"), signatures=("key",))[:-1]))

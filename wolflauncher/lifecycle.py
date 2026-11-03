@@ -23,6 +23,7 @@ WORKER_ATTRIBUTES = (
     "results_freshness_worker",
     "workshop_library_worker",
     "editor_dependency_worker",
+    "local_mod_worker",
     "editor_addon_dependency_worker",
     "update_thread",
 )
@@ -37,6 +38,7 @@ WORKER_COLLECTION_ATTRIBUTES = (
 )
 
 TIMER_ATTRIBUTES = (
+    "optional_polling_timer",
     "timer",
     "remote_search_timer",
     "remote_map_timer",
@@ -87,6 +89,9 @@ def stop_runtime_scheduling(owner) -> None:
         timer = getattr(owner, name, None)
         if timer is not None:
             timer.stop()
+    monitor = getattr(owner, "game_session_monitor", None)
+    if monitor is not None:
+        monitor.timer.stop()
     for name in NETWORK_REPLY_ATTRIBUTES:
         reply = getattr(owner, name, None)
         if reply is not None and not reply.isFinished():

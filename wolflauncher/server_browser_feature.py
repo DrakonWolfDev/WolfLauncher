@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
 )
 
 from . import server_cache
+from .background_polling import optional_polling_paused
 from .browser_filter_options import combo_filter_value, set_combo_filter_options
 from .config import (
     add_curated_server,
@@ -823,6 +824,8 @@ class ServerBrowserMixin:
         self.wolfapi_worker.start()
 
     def maybe_auto_refresh_configured_provider(self):
+        if optional_polling_paused(self):
+            return
         if (
             not hasattr(self, "discovery_auto_refresh")
             or not self.discovery_auto_refresh.isChecked()
@@ -1259,6 +1262,8 @@ class ServerBrowserMixin:
         ServerBrowserMixin._schedule_results_freshness_check(self)
 
     def _schedule_results_freshness_check(self):
+        if optional_polling_paused(self):
+            return
         if not hasattr(self, "browser_servers"):
             return
         context = (
@@ -1368,6 +1373,8 @@ class ServerBrowserMixin:
         QTimer.singleShot(0, self.schedule_results_freshness_check)
 
     def schedule_selected_discovered_server_check(self):
+        if optional_polling_paused(self):
+            return
         if not hasattr(self, "browser_selection_timer"):
             return
         self.browser_selection_timer.stop()
@@ -1378,6 +1385,8 @@ class ServerBrowserMixin:
             self.start_selected_server_mod_preview(server)
 
     def check_selected_discovered_server_status(self):
+        if optional_polling_paused(self):
+            return
         server = self.selected_discovered_server()
         if server is None:
             return
@@ -1394,6 +1403,8 @@ class ServerBrowserMixin:
         self.start_selected_discovered_enrichment(server)
 
     def start_selected_discovered_enrichment(self, server: DiscoveredServer):
+        if optional_polling_paused(self):
+            return
         cache_key = server.cache_key
         if cache_key in self.selection_enrichment_workers:
             return

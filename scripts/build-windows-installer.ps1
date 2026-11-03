@@ -57,11 +57,10 @@ $version = (& $Python -c "from wolflauncher import __version__; print(__version_
 if (-not $version) {
     throw "Could not determine the WolfLauncher version."
 }
-$numericParts = [regex]::Matches($version, "\d+") | Select-Object -First 3 | ForEach-Object { $_.Value }
-if ($numericParts.Count -ne 3) {
+$numericVersion = (& $Python -c "from wolflauncher import __version__; from wolflauncher.versioning import windows_version_tuple; print('.'.join(map(str, windows_version_tuple(__version__))))").Trim()
+if ($LASTEXITCODE -ne 0 -or -not $numericVersion) {
     throw "Could not derive a Windows numeric version from $version."
 }
-$numericVersion = ($numericParts + @("0")) -join "."
 New-Item -ItemType Directory -Path $OutputRoot -Force | Out-Null
 $installerName = "wolflauncher-$version-setup-$ArtifactLabel.exe"
 $installerPath = Join-Path $OutputRoot $installerName

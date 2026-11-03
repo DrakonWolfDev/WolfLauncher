@@ -321,6 +321,22 @@ class CheckServerTests(unittest.TestCase):
         self.assertEqual(status.resolved_ip, "203.0.113.10")
         self.assertEqual(status.error, "offline, restarting, or incomplete query response")
 
+    @patch("wolflauncher.status.resolve_host", return_value="203.0.113.10")
+    @patch("wolflauncher.status.gamedig_command", return_value=["node", "gamedig"])
+    @patch("wolflauncher.status.subprocess.run")
+    def test_gamedig_json_error_reports_attempted_query_port_without_claiming_offline(
+        self, run, *_
+    ):
+        run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout=json.dumps({"error": "Failed all 2 attempts"}), stderr=""
+        )
+        server = self.make_server()
+        status = check_server(server)
+        self.assertIs(status.outcome, ServerStatusOutcome.TIMEOUT)
+        self.assertIn(f"Query port {server.query_port}", status.error)
+        self.assertIn("Check the saved query port", status.user_message())
+        self.assertNotIn("offline, restarting", status.user_message())
+
 
 if __name__ == "__main__":
     unittest.main()

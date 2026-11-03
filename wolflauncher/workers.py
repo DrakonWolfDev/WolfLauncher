@@ -38,6 +38,11 @@ from .server_discovery import (
 from .server_display import map_filter_key
 from .server_enrichment import enrich_discovered_server, enrichment_probe_servers
 from .status import ServerStatus, ServerStatusOutcome, check_server
+from .workshop_freshness import (
+    apply_completed_checks,
+    capture_update_targets,
+    record_completed_checks,
+)
 from .workshop_subscription import (
     WorkshopSubscriptionResult,
     query_workshop_item_states_isolated,
@@ -178,12 +183,14 @@ class ModWorker(QThread):
             return
         if result.ok and result.required_mods and install and install.running:
             states = query_workshop_item_states_isolated(
-                (mod.workshop_id for mod in result.required_mods), install
+                (mod.workshop_id for mod in result.required_mods if mod.downloadable), install
             )
             if states.error:
                 result.workshop_state_error = states.error
             else:
                 apply_workshop_item_states(result, states.items)
+        if install:
+            apply_completed_checks(install, result.required_mods)
         return result
 
 
@@ -234,6 +241,7 @@ def load_installed_workshop_library(install, *, local_ready=None) -> tuple[list[
             mod.workshop_state = item.state
             mod.workshop_downloaded = item.downloaded
             mod.workshop_total = item.total
+    apply_completed_checks(install, mods)
     return mods, ""
 
 
@@ -312,6 +320,13 @@ class WorkshopSubscriptionWorker(QThread):
 
     def run(self):
         try:
+            targets = (
+                capture_update_targets(
+                    self.install, self.workshop_ids, fetch_workshop_metadata(self.workshop_ids)
+                )
+                if self.force_update
+                else {}
+            )
             result = subscribe_workshop_items_isolated(
                 self.workshop_ids,
                 self.install,
@@ -322,6 +337,8 @@ class WorkshopSubscriptionWorker(QThread):
             )
         except Exception as exc:
             result = WorkshopSubscriptionResult((), tuple(self.workshop_ids), error=str(exc))
+        if result.ok and self.force_update:
+            record_completed_checks(self.install, result, targets)
         self.subscription_ready.emit(result)
 
 

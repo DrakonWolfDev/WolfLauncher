@@ -1,0 +1,23 @@
+{
+  "captured_date": "2026-11-03",
+  "source": "Direct A2S_INFO; exact query ports resolved through WolfAPI",
+  "classification_basis": "User selected candidates by server names; camera settings unverified",
+  "servers": [
+    {
+      "host": "194.55.236.254",
+      "game_port": 2053,
+      "query_port": 4053,
+      "name": "Broken Line -PVP- -HC- -FIRST PERSON- -LOOT+-",
+      "version": "1.30.164289",
+      "keywords": "battleye,no3rd,external,privHive,shard123ABC,lqs0,etm10.000000,entm7.000000,mod,10:22"
+    },
+    {
+      "host": "194.55.236.70",
+      "game_port": 2026,
+      "query_port": 4026,
+      "name": "Gears of War -PVP- -THIRD PERSON- -ARENA-",
+      "version": "1.30.164289",
+      "keywords": "battleye,no3rd,external,privHive,shard123ABC,lqs0,etm10.000000,entm3.000000,mod,isDLC4,09:02"
+    }
+  ]
+}

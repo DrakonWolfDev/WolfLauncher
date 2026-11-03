@@ -175,3 +175,203 @@ class LocalToolsTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LanModDiscoveryTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.app = QApplication.instance() or QApplication([])
+
+    def harness(self):
+        from unittest.mock import Mock
+
+        from wolflauncher.local_tools import LocalToolProfile
+
+        profile = LocalToolProfile("LAN", endpoint="192.168.1.25:2302", query_port="27016")
+        harness = SimpleNamespace(
+            _current_local_tool_profile=lambda: profile,
+            _local_required_mods=lambda **kwargs: [],
+            local_tools_status=QLabel(),
+            _launch_local_server_with_mods=Mock(),
+            _local_missing_mod_status=LocalToolsFeatureMixin._local_missing_mod_status,
+            _update_mod_selection_summary=Mock(),
+        )
+        return harness, profile
+
+    def test_discovered_installed_mods_launch_without_manual_selection(self):
+        from wolflauncher.models import Server
+        from wolflauncher.mods import ModCheckResult, RequiredMod
+
+        harness, profile = self.harness()
+        mods = [RequiredMod("123", "CF", installed=True)]
+        result = ModCheckResult(True, Server("LAN", "LAN", "lan", 2302, 27016), mods)
+        LocalToolsFeatureMixin._finish_local_server_mod_check(harness, result, "install", profile)
+        harness._launch_local_server_with_mods.assert_called_once_with(
+            "install", result.server, mods
+        )
+
+    def test_missing_mods_are_listed_and_launch_is_blocked(self):
+        from wolflauncher.models import Server
+        from wolflauncher.mods import ModCheckResult, RequiredMod
+
+        harness, profile = self.harness()
+        mods = [
+            RequiredMod("123", "CF", workshop_state=0),
+            RequiredMod("456", "Other", workshop_state=1),
+        ]
+        result = ModCheckResult(True, Server("LAN", "LAN", "lan", 2302, 27016), mods)
+        with patch("wolflauncher.local_tools_feature.QMessageBox.warning") as warning:
+            LocalToolsFeatureMixin._finish_local_server_mod_check(
+                harness, result, "install", profile
+            )
+        message = warning.call_args.args[2]
+        self.assertIn("CF (123) - not subscribed", message)
+        self.assertIn("Other (456) - subscribed; download incomplete", message)
+        self.assertIn("?id=123", message)
+        harness._launch_local_server_with_mods.assert_not_called()
+
+    def test_changed_profile_discards_query_result(self):
+        harness, profile = self.harness()
+        harness._current_local_tool_profile = lambda: None
+        LocalToolsFeatureMixin._finish_local_server_mod_check(harness, None, "install", profile)
+        harness._launch_local_server_with_mods.assert_not_called()
+
+    def test_query_failure_requires_explicit_manual_fallback(self):
+        from PySide6.QtWidgets import QMessageBox
+
+        from wolflauncher.models import Server
+        from wolflauncher.mods import ModCheckResult
+
+        harness, profile = self.harness()
+        result = ModCheckResult(
+            False, Server("LAN", "LAN", "lan", 2302, 27016), [], error="timeout"
+        )
+        with patch(
+            "wolflauncher.local_tools_feature.QMessageBox.question", return_value=QMessageBox.No
+        ):
+            LocalToolsFeatureMixin._finish_local_server_mod_check(
+                harness, result, "install", profile
+            )
+        harness._launch_local_server_with_mods.assert_not_called()
+        with patch(
+            "wolflauncher.local_tools_feature.QMessageBox.question", return_value=QMessageBox.Yes
+        ):
+            LocalToolsFeatureMixin._finish_local_server_mod_check(
+                harness, result, "install", profile
+            )
+        harness._launch_local_server_with_mods.assert_called_once_with("install", result.server, [])
+
+    def test_query_port_survives_profile_loading(self):
+        profile = profiles_from_settings([{"name": "LAN", "query_port": "27016"}])[0]
+        self.assertEqual(profile.query_port, "27016")
+
+    def test_discovery_uses_query_port_and_keeps_game_port(self):
+        from unittest.mock import Mock
+
+        harness, profile = self.harness()
+        harness.local_mod_worker = None
+        harness._finish_local_server_mod_check = Mock()
+        harness._clear_local_mod_worker = Mock()
+        install = SimpleNamespace(workshop_dir="workshop")
+        with patch("wolflauncher.local_tools_feature.ModWorker") as worker:
+            LocalToolsFeatureMixin._launch_verified_local_test_server(harness, install)
+        server = worker.call_args.args[0]
+        self.assertEqual(server.game_port, 2302)
+        self.assertEqual(server.query_port, 27016)
+        worker.return_value.start.assert_called_once()
+
+
+class LanReviewTests(unittest.TestCase):
+    setUpClass = LanModDiscoveryTests.setUpClass
+    harness = LanModDiscoveryTests.harness
+
+    def test_query_lists_requirements_without_launching(self):
+        from wolflauncher.models import Server
+        from wolflauncher.mods import ModCheckResult, RequiredMod
+
+        harness, profile = self.harness()
+        result = ModCheckResult(
+            True,
+            Server("LAN", "LAN", "lan", 2302, 27016),
+            [RequiredMod("123", "CF", installed=True)],
+        )
+        LocalToolsFeatureMixin._finish_local_server_mod_check(
+            harness, result, "install", profile, launch_after_query=False
+        )
+        self.assertEqual(harness.local_server_mods, result.required_mods)
+        self.assertEqual(harness.local_server_query_profile, profile)
+        harness._update_mod_selection_summary.assert_called_once_with()
+        harness._launch_local_server_with_mods.assert_not_called()
+        self.assertIn("Review", harness.local_tools_status.text())
+
+    def test_vanilla_server_gaining_mods_requires_review_before_join(self):
+        from wolflauncher.models import Server
+        from wolflauncher.mods import ModCheckResult, RequiredMod
+
+        harness, profile = self.harness()
+        harness.local_server_query_profile = profile
+        harness.local_server_mods = []
+        result = ModCheckResult(
+            True,
+            Server("LAN", "LAN", "lan", 2302, 27016),
+            [RequiredMod("123", "CF", installed=True)],
+        )
+        LocalToolsFeatureMixin._finish_local_server_mod_check(harness, result, "install", profile)
+        harness._launch_local_server_with_mods.assert_not_called()
+        self.assertEqual(harness.local_server_mods, result.required_mods)
+
+    def test_failed_preview_clears_old_mods_without_manual_launch_prompt(self):
+        from wolflauncher.models import Server
+        from wolflauncher.mods import ModCheckResult, RequiredMod
+
+        harness, profile = self.harness()
+        harness.local_server_mods = [RequiredMod("123", "Old", installed=True)]
+        result = ModCheckResult(
+            False, Server("LAN", "LAN", "lan", 2302, 27016), [], error="timeout"
+        )
+        with patch("wolflauncher.local_tools_feature.QMessageBox.question") as question:
+            LocalToolsFeatureMixin._finish_local_server_mod_check(
+                harness, result, "install", profile, launch_after_query=False
+            )
+        self.assertEqual(harness.local_server_mods, [])
+        question.assert_not_called()
+        harness._launch_local_server_with_mods.assert_not_called()
+
+    def test_legacy_endpoint_populates_explicit_address_and_port_fields(self):
+        from wolflauncher.local_tools import LocalToolProfile, local_endpoint_fields
+
+        self.assertEqual(
+            local_endpoint_fields(
+                LocalToolProfile("LAN", endpoint="192.168.1.180:3302", query_port="3303")
+            ),
+            ("192.168.1.180", 3302, 3303),
+        )
+        self.assertEqual(
+            local_endpoint_fields(LocalToolProfile("LAN", endpoint="lan:2302")), ("lan", 2302, 2305)
+        )
+
+    def test_server_requirements_appear_in_selection_and_are_not_duplicated_as_extras(self):
+        from wolflauncher.mods import RequiredMod
+
+        picker = EditorModPickerHarness()
+        picker.local_extra_mod_ids = {"123"}
+        picker.local_server_mods = [
+            RequiredMod("123", "CF", installed=True),
+            RequiredMod("456", "Missing", workshop_state=0),
+        ]
+        with patch(
+            "wolflauncher.local_tools_feature.scan_installed_mods", return_value={"123": "CF"}
+        ):
+            entries = LocalToolsFeatureMixin._enabled_mod_entries(picker, editor=False)
+        self.assertEqual(len(entries), 2)
+        self.assertIn("installed - included automatically", entries[0])
+        self.assertIn("not subscribed", entries[1])
+
+    def test_first_join_queries_and_stops_for_review(self):
+        from unittest.mock import Mock
+
+        harness, _ = self.harness()
+        harness._query_local_server_mods = Mock()
+        LocalToolsFeatureMixin._join_local_test_server(harness)
+        harness._query_local_server_mods.assert_called_once_with()
+        harness._launch_local_server_with_mods.assert_not_called()

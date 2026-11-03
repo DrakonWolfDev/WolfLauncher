@@ -924,7 +924,7 @@ class ModsFeatureMixin:
         url = mod.workshop_url if mod else ""
         if not url:
             workshop_id = self._mods_cell(row, 2)
-            if workshop_id:
+            if workshop_id.isdigit() and int(workshop_id) > 0:
                 url = f"https://steamcommunity.com/sharedfiles/filedetails/?id={workshop_id}"
         if not url:
             QMessageBox.warning(
@@ -1143,7 +1143,15 @@ class ModsFeatureMixin:
                 "Check the selected server mods successfully before opening missing Workshop pages.",
             )
             return
-        missing = result.missing_mods
+        missing = [mod for mod in result.missing_mods if mod.downloadable]
+        if result.local_requirements:
+            from .mods import local_mod_guidance
+
+            QMessageBox.warning(
+                self, "Manual/local mods required", local_mod_guidance(result.required_mods)
+            )
+            if not missing:
+                return
         if not missing:
             QMessageBox.information(self, "Mods ready", "All required mods appear to be ready.")
             return

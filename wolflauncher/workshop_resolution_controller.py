@@ -3,6 +3,7 @@
 from PySide6.QtWidgets import QMessageBox, QProgressDialog
 
 from .mod_presenter import combined_download_estimate, mod_download_size
+from .mods import local_mod_guidance
 from .platform_detection import best_install, install_label
 from .settings import server_key
 from .workers import WorkshopSubscriptionWorker
@@ -25,7 +26,12 @@ class WorkshopResolutionCoordinator:
                 "Check the selected server mods successfully before subscribing.",
             )
             return
-        missing = result.missing_mods
+        local_guidance = local_mod_guidance(result.required_mods)
+        if local_guidance:
+            QMessageBox.warning(window, "Manual/local mods required", local_guidance)
+        missing = [mod for mod in result.missing_mods if mod.downloadable]
+        if not missing and local_guidance:
+            return
         if not missing:
             QMessageBox.information(
                 window, "No missing mods", "All required mods appear to be installed."
@@ -216,6 +222,10 @@ class WorkshopResolutionCoordinator:
 
     def start_resolution(self, mods, result, install, *, force_update: bool = False):
         window = self.window
+        guidance = local_mod_guidance(mods)
+        if guidance:
+            QMessageBox.warning(window, "Manual/local mods required", guidance)
+            return
         window.workshop_subscription_names = {
             mod.workshop_id: (mod.name or mod.workshop_id) for mod in mods
         }

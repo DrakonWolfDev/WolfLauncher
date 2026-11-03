@@ -66,7 +66,7 @@ try {
         "/CURRENTUSER",
         "/DIR=$DestinationRoot"
     )
-    $process = Start-Process -FilePath $installerPath -ArgumentList $arguments -Wait -PassThru
+    $process = Start-Process -FilePath $installerPath -ArgumentList $arguments -Wait -WindowStyle Hidden -PassThru
     if ($process.ExitCode -ne 0) {
         throw "Inno Setup installation failed with exit code $($process.ExitCode)."
     }

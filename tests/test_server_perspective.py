@@ -86,3 +86,46 @@ class PerspectiveTests(unittest.TestCase):
         server_cache.initialize(connection)
         self.assertEqual(server_cache.search_servers(connection)[0].perspective, "unknown")
         self.assertEqual(connection.execute("PRAGMA user_version").fetchone()[0], 9)
+
+
+class PerspectiveEvidenceTests(unittest.TestCase):
+    def test_names_never_override_raw_keywords(self):
+        from wolflauncher.server_perspective import perspective_from_provider
+
+        for name in ("FIRST PERSON ONLY", "THIRD PERSON"):
+            self.assertEqual(
+                perspective_from_provider(
+                    {"name": name, "version": "1.30.164289", "gametype": "battleye,no3rd"}
+                ),
+                "first_person",
+            )
+
+    def test_normalized_provider_fields_remain_authoritative(self):
+        from wolflauncher.server_perspective import perspective_from_provider
+
+        for value in ("first_person", "third_person"):
+            self.assertEqual(
+                perspective_from_provider(
+                    {"perspective": value, "version": "1.30.164289", "gametype": "battleye,no3rd"}
+                ),
+                value,
+            )
+        self.assertEqual(
+            perspective_from_provider(
+                {"perspective": [], "version": "1.30.164289", "gametype": "mod"}
+            ),
+            "unknown",
+        )
+
+    def test_captured_candidates_have_same_tag_and_do_not_prove_an_inversion(self):
+        import json
+        from pathlib import Path
+
+        path = Path(__file__).parent / "fixtures" / "perspective_candidates_2026-11-03.json"
+        samples = json.loads(path.read_text())["servers"]
+        self.assertEqual({sample["version"] for sample in samples}, {"1.30.164289"})
+        self.assertTrue(all("no3rd" in sample["keywords"].split(",") for sample in samples))
+        self.assertEqual(
+            [perspective_from_keywords(sample["keywords"]) for sample in samples],
+            ["first_person", "first_person"],
+        )

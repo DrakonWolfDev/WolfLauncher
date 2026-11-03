@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 )
 
 from .diagnostics import format_launch_output_report
-from .game_session import minimize_for_game
+from .game_session import minimize_for_game, monitor_game_handoff
 from .platform_detection import (
     dayz_battleye_process_check,
     dayz_game_process_check,
@@ -156,9 +156,11 @@ class LaunchDialog(PostHandoffProcessCheckMixin, QDialog):
             self.close_button.setEnabled(True)
 
     def handle_verified_handoff(self):
-        if not self.minimize_on_handoff:
-            return
         parent = self.parentWidget()
+        if not self.minimize_on_handoff:
+            if parent:
+                monitor_game_handoff(parent)
+            return
         self.close()
         if parent:
             minimize_for_game(parent)

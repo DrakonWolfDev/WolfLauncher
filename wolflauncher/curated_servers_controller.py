@@ -254,6 +254,13 @@ class CuratedServersMixin:
         self.refresh_curated_server_cards()
         self.update_launch_button_text()
 
+    def refresh_automatic_statuses(self):
+        from .background_polling import optional_polling_paused
+
+        if optional_polling_paused(self) or self.refresh_seconds.value() <= 0:
+            return
+        self.refresh_statuses()
+
     def refresh_statuses(self, *, startup=False):
         self.refresh_status_rows(
             list(range(len(self.servers))), "Last updated: refreshing...", startup=startup

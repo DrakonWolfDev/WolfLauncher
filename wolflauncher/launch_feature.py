@@ -11,6 +11,7 @@ from .launch_preflight import (
 from .models import Server
 from .mods import (
     apply_workshop_item_states,
+    local_mod_guidance,
 )
 from .native_launcher import (
     NativeLaunchError,
@@ -161,6 +162,10 @@ class LaunchFeatureMixin:
             native_engine=self.launch_engine_key() == "native",
         )
         missing = self.last_mod_result.missing_mods if state.mods_checked else []
+        guidance = local_mod_guidance(missing)
+        if guidance:
+            QMessageBox.warning(self, "Manual/local mods required", guidance)
+            return False
         steam_stopped_confirmed = False
 
         action = next_launch_preflight_action(state)

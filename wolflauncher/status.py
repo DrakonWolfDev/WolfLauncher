@@ -242,6 +242,21 @@ def check_server(
             )
         )
 
+    if isinstance(data, dict) and data.get("error"):
+        detail = str(data["error"])
+        timed_out = "failed all" in detail.casefold() or "timed out" in detail.casefold()
+        return finish(
+            ServerStatus(
+                False,
+                resolved_ip=ip,
+                error=f"Query port {server.query_port} did not answer: {detail}. "
+                "Check the saved query port; the game port can be different.",
+                outcome=ServerStatusOutcome.TIMEOUT
+                if timed_out
+                else ServerStatusOutcome.CHECK_ERROR,
+            )
+        )
+
     # Some restart/offline states can produce a partial response. Treat those
     # as unavailable instead of showing ONLINE with Unknown / 0/? fields.
     if not isinstance(data, dict) or not data.get("name") or data.get("maxplayers") is None:

@@ -15,6 +15,7 @@ from wolflauncher.server_browser_feature import ServerBrowserMixin
 from wolflauncher.server_browser_table import (
     BROWSER_COLUMN_COUNT,
     BROWSER_FAVOURITE_COLUMN,
+    BROWSER_FAVOURITE_ROLE,
     BROWSER_PASSWORD_COLUMN,
     populate_browser_table,
     selected_browser_cache_key,
@@ -179,8 +180,9 @@ class ServerBrowserTableTests(unittest.TestCase):
 
         populate_browser_table(table, [server])
 
-        marker = table.cellWidget(0, BROWSER_FAVOURITE_COLUMN)
-        self.assertIsNotNone(marker)
+        self.assertIsNone(table.cellWidget(0, BROWSER_FAVOURITE_COLUMN))
+        self.assertEqual(table.item(0, BROWSER_FAVOURITE_COLUMN).text(), "\u2606")
+        self.assertFalse(table.item(0, BROWSER_PASSWORD_COLUMN).icon().isNull())
 
     def test_updating_favourite_marker_does_not_duplicate_the_star_glyph(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)
@@ -189,12 +191,12 @@ class ServerBrowserTableTests(unittest.TestCase):
 
         set_browser_favourite_marker(table, 0, True)
 
-        self.assertEqual(table.item(0, BROWSER_FAVOURITE_COLUMN).text(), "")
+        self.assertEqual(table.item(0, BROWSER_FAVOURITE_COLUMN).text(), "\u2605")
         self.assertEqual(
             table.item(0, BROWSER_FAVOURITE_COLUMN).toolTip(),
             "Remove from Favourite Servers",
         )
-        self.assertIsNotNone(table.cellWidget(0, BROWSER_FAVOURITE_COLUMN))
+        self.assertIsNone(table.cellWidget(0, BROWSER_FAVOURITE_COLUMN))
 
     def test_visible_selection_wins_over_a_stale_current_row(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)
@@ -803,7 +805,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         )
 
         self.assertTrue(update_browser_table_row(table, original.cache_key, enriched))
-        self.assertEqual(table.item(0, BROWSER_FAVOURITE_COLUMN).text(), "")
+        self.assertEqual(table.item(0, BROWSER_FAVOURITE_COLUMN).text(), "\u2605")
 
     def test_local_mod_preview_replaces_only_the_matching_mods_cell(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)
@@ -924,6 +926,155 @@ class ServerBrowserTableTests(unittest.TestCase):
             table.item(1, 9).foreground().color().name(),
             STATUS_COLOURS["negative"],
         )
+
+    def test_enrichment_keeps_complete_rows_together_for_every_sort_column(self):
+        from dataclasses import replace
+
+        for column in range(BROWSER_COLUMN_COUNT):
+            for order in (Qt.AscendingOrder, Qt.DescendingOrder):
+                with self.subTest(column=column, order=order):
+                    table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+                    servers = [
+                        DiscoveredServer(
+                            f"Server {i}",
+                            f"host{i}",
+                            2302,
+                            27016,
+                            players_current=i,
+                            ping_ms=i * 20,
+                        )
+                        for i in range(3)
+                    ]
+                    selected = servers[1]
+                    populate_browser_table(
+                        table, servers, {(selected.host, selected.game_port, selected.query_port)}
+                    )
+                    table.sortItems(column, order)
+                    row = next(
+                        r
+                        for r in range(3)
+                        if table.item(r, 1).data(Qt.UserRole) == selected.cache_key
+                    )
+                    table.selectRow(row)
+                    updated = replace(
+                        selected,
+                        name="AAA moved",
+                        online=True,
+                        ping_ms=999,
+                        players_current=60,
+                        password=True,
+                        game_time="13:10",
+                    )
+                    self.assertTrue(update_browser_table_row(table, selected.cache_key, updated))
+                    self.assertEqual(selected_browser_cache_key(table), selected.cache_key)
+                    for row in range(3):
+                        key = table.item(row, 1).data(Qt.UserRole)
+                        self.assertTrue(
+                            all(
+                                table.item(row, c).data(Qt.UserRole) == key
+                                for c in range(BROWSER_COLUMN_COUNT)
+                            )
+                        )
+                    row = next(
+                        r
+                        for r in range(3)
+                        if table.item(r, 1).data(Qt.UserRole) == selected.cache_key
+                    )
+                    self.assertEqual(table.item(row, 1).text(), "AAA moved")
+                    self.assertTrue(table.item(row, 0).data(BROWSER_FAVOURITE_ROLE))
+                    self.assertEqual(table.item(row, 9).text(), "999ms")
+                    sort_values = [table.item(r, column)._normalized_sort_value() for r in range(3)]
+                    self.assertEqual(
+                        sort_values, sorted(sort_values, reverse=order == Qt.DescendingOrder)
+                    )
+                    table.deleteLater()
+
+    def test_background_enrichment_does_not_create_selection(self):
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        server = DiscoveredServer("Server", "host", 2302, 27016)
+        populate_browser_table(table, [server])
+        table.clearSelection()
+        update_browser_table_row(table, server.cache_key, server)
+        self.assertEqual(selected_browser_cache_key(table), "")
+
+    def test_favourite_can_be_removed_and_stays_removed_after_enrichment(self):
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        server = DiscoveredServer("Server", "host", 2302, 27016)
+        populate_browser_table(table, [server], {(server.host, 2302, 27016)})
+        set_browser_favourite_marker(table, 0, False)
+        update_browser_table_row(table, server.cache_key, server)
+        self.assertFalse(table.item(0, 0).data(BROWSER_FAVOURITE_ROLE))
+        self.assertEqual(table.item(0, 0).text(), "\u2606")
+        self.assertIsNone(table.cellWidget(0, 0))
+
+    def test_mod_preview_reorders_only_its_row_and_preserves_selection(self):
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        servers = [
+            DiscoveredServer("One", "one", 2302, 27016),
+            DiscoveredServer("Two", "two", 2302, 27016),
+        ]
+        populate_browser_table(table, servers)
+        table.sortItems(12, Qt.AscendingOrder)
+        table.selectRow(0)
+        selected = selected_browser_cache_key(table)
+        other = next(server for server in servers if server.cache_key != selected)
+        self.assertTrue(update_browser_mod_cell(table, other.cache_key, "ZZZ", "Updated"))
+        self.assertEqual(selected_browser_cache_key(table), selected)
+        values = [table.item(row, 12)._normalized_sort_value() for row in range(2)]
+        self.assertEqual(values, sorted(values))
+        updated_row = next(
+            row for row in range(2) if table.item(row, 1).data(Qt.UserRole) == other.cache_key
+        )
+        self.assertEqual(table.item(updated_row, 12).text(), "ZZZ")
+        for row in range(2):
+            key = table.item(row, 1).data(Qt.UserRole)
+            self.assertTrue(
+                all(
+                    table.item(row, c).data(Qt.UserRole) == key for c in range(BROWSER_COLUMN_COUNT)
+                )
+            )
+
+    def test_background_updates_preserve_scroll_and_keyboard_navigation(self):
+        from PySide6.QtTest import QTest
+
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        table.setSelectionBehavior(QTableWidget.SelectRows)
+        table.setSelectionMode(QTableWidget.SingleSelection)
+        table.setEditTriggers(QTableWidget.NoEditTriggers)
+        table.resize(900, 180)
+        servers = [DiscoveredServer(f"Server {i:03}", f"host{i}", 2302, 27016) for i in range(100)]
+        populate_browser_table(table, servers)
+        table.sortItems(1, Qt.AscendingOrder)
+        table.show()
+        self.app.processEvents()
+        table.selectRow(50)
+        table.verticalScrollBar().setValue(45)
+        scroll = table.verticalScrollBar().value()
+        selected = selected_browser_cache_key(table)
+        update_browser_table_row(table, servers[0].cache_key, servers[0])
+        self.assertEqual(table.verticalScrollBar().value(), scroll)
+        self.assertEqual(selected_browser_cache_key(table), selected)
+        update_browser_mod_cell(table, servers[0].cache_key, "READY", "Ready")
+        self.assertEqual(table.verticalScrollBar().value(), scroll)
+        self.assertEqual(selected_browser_cache_key(table), selected)
+        QTest.keyClick(table, Qt.Key_Down)
+        self.assertEqual(table.currentRow(), 51)
+        table.close()
+
+    def test_star_cell_still_receives_clicks(self):
+        from PySide6.QtTest import QTest
+
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        populate_browser_table(table, [DiscoveredServer("Server", "host", 2302, 27016)])
+        table.resize(900, 180)
+        table.show()
+        self.app.processEvents()
+        clicks = []
+        table.cellClicked.connect(lambda row, column: clicks.append((row, column)))
+        point = table.visualItemRect(table.item(0, 0)).center()
+        QTest.mouseClick(table.viewport(), Qt.LeftButton, pos=point)
+        self.assertEqual(clicks, [(0, 0)])
+        table.close()
 
 
 if __name__ == "__main__":

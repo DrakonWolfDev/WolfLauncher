@@ -13,16 +13,9 @@ import os
 import platform
 from pathlib import Path
 
+from .workshop_callbacks import CallbackMessage as _Callback
+from .workshop_callbacks import record_download_result
 from .workshop_subscription import WorkshopItemProgress, WorkshopSubscriptionError
-
-
-class _Callback(ctypes.Structure):
-    _fields_ = [
-        ("user", ctypes.c_int32),
-        ("callback", ctypes.c_int32),
-        ("data", ctypes.c_void_p),
-        ("size", ctypes.c_int32),
-    ]
 
 
 def _method(pointer, index, result, *arguments):
@@ -42,6 +35,7 @@ class LinuxSteamWorkshopClient:
         self._pipe = 0
         self._user = 0
         self._environment = {}
+        self.download_completions: dict[str, int] = {}
 
     def __enter__(self):
         if (
@@ -147,13 +141,16 @@ class LinuxSteamWorkshopClient:
                 self._environment.clear()
 
     def run_callbacks(self):
-        # Steam owns the downloads; drain notifications while polling item state.
+        # Keep completion evidence before freeing Steam's callback buffer.
         message = _Callback()
         ignored = ctypes.c_int32()
         for _ in range(1000):
             if not self._callback(self._pipe, ctypes.byref(message), ctypes.byref(ignored)):
                 break
-            self._free_callback(self._pipe)
+            try:
+                record_download_result(message, self.download_completions)
+            finally:
+                self._free_callback(self._pipe)
 
     def subscribe(self, workshop_id: str):
         if not self._subscribe(int(workshop_id)):
@@ -166,6 +163,7 @@ class LinuxSteamWorkshopClient:
             )
 
     def request_download(self, workshop_id: str, *, high_priority=False):
+        self.download_completions.pop(workshop_id, None)
         return bool(self._download(int(workshop_id), high_priority))
 
     def item_progress(self, workshop_id: str):

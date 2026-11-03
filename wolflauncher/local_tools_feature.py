@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QScrollArea,
+    QSpinBox,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -37,11 +38,12 @@ from .local_server import (
 from .local_tools import (
     DAYZ_EDITOR_MODS,
     LocalToolProfile,
+    local_endpoint_fields,
     parse_local_endpoint,
     profiles_from_settings,
 )
 from .models import Server
-from .mods import WORKSHOP_URL, RequiredMod, scan_installed_mods
+from .mods import WORKSHOP_URL, RequiredMod, local_mod_guidance, scan_installed_mods
 from .native_launcher import NativeLaunchError, prepare_native_launch, prepare_native_local_launch
 from .platform_detection import build_steam_start_command
 from .platforms import current_platform
@@ -53,7 +55,7 @@ from .thumbnail_safety import (
     is_safe_thumbnail_dimensions,
     is_safe_thumbnail_url,
 )
-from .workers import WorkshopDependencyWorker, WorkshopSubscriptionWorker
+from .workers import ModWorker, WorkshopDependencyWorker, WorkshopSubscriptionWorker
 
 DAYZ_EDITOR_IMAGE_URL = (
     "https://images.steamusercontent.com/ugc/11750326816948686244/"
@@ -73,7 +75,7 @@ class LocalToolsFeatureMixin:
         widget = QWidget()
         set_ui_role(widget, "workspace")
         layout = QVBoxLayout(widget)
-        title = QLabel("Editor / Local Tools")
+        title = QLabel("Editor / LAN Play")
         set_ui_role(title, "summary")
         layout.addWidget(title)
         intro = QLabel(
@@ -86,6 +88,10 @@ class LocalToolsFeatureMixin:
         self.local_tool_profiles = profiles_from_settings(self.settings.get("local_tool_profiles"))
         self.local_host_settings = dict(self.settings.get("local_host_settings") or {})
         self.local_tool_active_index = 0
+        self.local_mod_worker = None
+        self.local_server_mods = []
+        self.local_server_query_profile = None
+        self.local_server_query_ok = False
         # Editor selections are an ephemeral launch workspace. Keeping them
         # between app sessions is surprising and can quietly launch old mods.
         self.editor_extra_mod_ids = set()
@@ -119,10 +125,40 @@ class LocalToolsFeatureMixin:
         self.local_profile_mods.setPlaceholderText(
             "Packed or unpacked local mod folders, separated by ;"
         )
-        self.local_profile_endpoint = QLineEdit()
-        self.local_profile_endpoint.setPlaceholderText("192.168.1.25:2302")
         form.addRow("Name", self.local_profile_name)
-        form.addRow("LAN test server", self.local_profile_endpoint)
+        address_row = QHBoxLayout()
+        self.local_server_host = QLineEdit()
+        self.local_server_host.setPlaceholderText("192.168.1.25")
+        self.local_server_host.setMaximumWidth(220)
+        self.local_server_host.setToolTip(
+            "IP address or hostname only; enter the ports separately."
+        )
+        self.local_game_port = QSpinBox()
+        self.local_query_port = QSpinBox()
+        for control, value in ((self.local_game_port, 2302), (self.local_query_port, 2305)):
+            control.setRange(1, 65535)
+            control.setValue(value)
+            control.setMaximumWidth(90)
+        for label, control in (
+            ("IP / hostname", self.local_server_host),
+            ("Game port", self.local_game_port),
+            ("Query port", self.local_query_port),
+        ):
+            column = QVBoxLayout()
+            column.addWidget(QLabel(label))
+            control.setAccessibleName(label)
+            column.addWidget(control)
+            address_row.addLayout(column, 1 if control is self.local_server_host else 0)
+        address_row.addStretch(1)
+        form.addRow("LAN server", address_row)
+        port_hint = QLabel("Game port joins DayZ. Query port reads the server's mod list.")
+        port_hint.setWordWrap(True)
+        set_ui_role(port_hint, "metadata")
+        form.addRow("", port_hint)
+        self.local_query_port.setToolTip("Use steamQueryPort from the server configuration.")
+        self.local_server_host.textChanged.connect(self._invalidate_local_server_mods)
+        self.local_game_port.valueChanged.connect(self._invalidate_local_server_mods)
+        self.local_query_port.valueChanged.connect(self._invalidate_local_server_mods)
         local_mod_row = QHBoxLayout()
         local_mod_row.addWidget(self.local_profile_mods, 1)
         browse_local_mod = QPushButton("Browse")
@@ -144,7 +180,7 @@ class LocalToolsFeatureMixin:
         profile_actions.addStretch(1)
         profile_layout.addLayout(profile_actions)
         self.local_tools_status = QLabel(
-            "Save a local mod profile, then verify its Workshop items before launching."
+            "Query a LAN server to preview its required mods before joining."
         )
         self.local_tools_status.setWordWrap(True)
         set_ui_role(self.local_tools_status, "metadata")
@@ -246,9 +282,8 @@ class LocalToolsFeatureMixin:
         set_ui_role(local_title, "cardTitle")
         local_layout.addWidget(local_title)
         local_detail = QLabel(
-            "Select the installed Workshop mods required for this local development profile, then launch DayZ "
-            "and connect to an already-running local or LAN test server. Local server hosting, process control "
-            "and logs are planned follow-on work."
+            "Enter the LAN server's address and ports, then query it to see its required mods. "
+            "Installed Workshop items are included automatically. Review the selection before joining."
         )
         local_detail.setWordWrap(True)
         set_ui_role(local_detail, "metadata")
@@ -256,7 +291,10 @@ class LocalToolsFeatureMixin:
         local_layout.addWidget(profile_card)
 
         local_actions = QHBoxLayout()
-        verify_local = QPushButton("Verify profile mods")
+        query_local = QPushButton("Query server")
+        query_local.clicked.connect(self._query_local_server_mods)
+        local_actions.addWidget(query_local)
+        verify_local = QPushButton("Verify additional mods")
         verify_local.clicked.connect(lambda: self._verify_local_tool_mods(editor=False))
         self.local_session_button = QPushButton("Choose local server")
         set_ui_role(self.local_session_button, "primary")
@@ -363,7 +401,10 @@ class LocalToolsFeatureMixin:
         profile = self.local_tool_profiles[index]
         self.local_profile_name.setText(profile.name)
         self.local_profile_mods.setText("; ".join(profile.mod_paths))
-        self.local_profile_endpoint.setText(profile.endpoint)
+        host, game_port, query_port = local_endpoint_fields(profile)
+        self.local_server_host.setText(host)
+        self.local_game_port.setValue(game_port)
+        self.local_query_port.setValue(query_port)
         self.local_extra_mod_ids = set(profile.workshop_mod_ids)
         self._refresh_editor_mod_picker()
 
@@ -372,7 +413,10 @@ class LocalToolsFeatureMixin:
         self.local_profile_picker.setCurrentIndex(-1)
         self.local_profile_name.setText("New local profile")
         self.local_profile_mods.clear()
-        self.local_profile_endpoint.clear()
+        self.local_server_host.clear()
+        self.local_game_port.setValue(2302)
+        self.local_query_port.setValue(2305)
+        self._invalidate_local_server_mods()
         self.local_extra_mod_ids.clear()
         self._refresh_editor_mod_picker()
 
@@ -381,8 +425,9 @@ class LocalToolsFeatureMixin:
         return LocalToolProfile(
             name,
             tuple(str(path) for path in self._local_path_list(self.local_profile_mods.text())),
-            self.local_profile_endpoint.text().strip(),
+            f"{self.local_server_host.text().strip()}:{self.local_game_port.value()}",
             tuple(sorted(self.local_extra_mod_ids, key=int)),
+            str(self.local_query_port.value()),
         )
 
     def _save_local_tool_profile(self):
@@ -625,7 +670,23 @@ class LocalToolsFeatureMixin:
             if editor
             else self._selected_local_extra_mod_ids()
         )
+        server_mods = [] if editor else getattr(self, "local_server_mods", [])
+        server_ids = {mod.workshop_id for mod in server_mods}
+        for mod in server_mods:
+            status = (
+                "manual/local requirement"
+                if not mod.downloadable
+                else "installed - included automatically"
+                if mod.ready
+                else self._local_missing_mod_status(mod)
+                if not mod.installed
+                else "update/download pending"
+            )
+            identity = f" ({mod.workshop_id})" if mod.workshop_id else ""
+            entries.append(f"{mod.name or 'Workshop item'}{identity} - {status}")
         for workshop_id in selected_ids:
+            if workshop_id in server_ids:
+                continue
             name = installed.get(workshop_id) or dependency_names.get(workshop_id) or workshop_id
             entries.append(f"{name} ({workshop_id})")
         return entries
@@ -640,6 +701,13 @@ class LocalToolsFeatureMixin:
             else []
         )
         self._update_selected_mod_pills(entries, local_paths)
+        if self.mod_selection_target == "local" and getattr(self, "local_server_query_ok", False):
+            mods = getattr(self, "local_server_mods", [])
+            ready = sum(mod.ready for mod in mods)
+            self.selected_mods_hint.setText(
+                f"Server requires {len(mods)} mod(s): {ready} ready, "
+                f"{len(mods) - ready} missing or pending. Additional selections are shown below."
+            )
 
     def _update_selected_mod_pills(self, entries: list[str], local_paths: list[str]):
         """Keep the focused workspace's selection readable as individual pills."""
@@ -649,6 +717,7 @@ class LocalToolsFeatureMixin:
             item = self.selected_mods_layout.takeAt(0)
             widget = item.widget()
             if widget:
+                widget.hide()
                 widget.deleteLater()
         all_entries = entries + [f"Local folder: {path}" for path in local_paths]
         session_name = "DayZ Editor" if self.mod_selection_target == "editor" else "Local Server"
@@ -668,6 +737,7 @@ class LocalToolsFeatureMixin:
             pill_layout = QHBoxLayout(pill)
             pill_layout.setContentsMargins(9, 5, 9, 5)
             label = QLabel(entry)
+            label.setTextFormat(Qt.PlainText)
             label.setWordWrap(True)
             pill_layout.addWidget(label)
             self.selected_mods_layout.addWidget(pill)
@@ -1149,7 +1219,23 @@ class LocalToolsFeatureMixin:
             updated.append("-filePatching")
         return updated
 
+    def _query_local_server_mods(self):
+        if getattr(self, "local_tool_active_target", None) != "local":
+            self._choose_local_tool_session("local")
+        install = self._native_local_install()
+        if install:
+            self._launch_verified_local_test_server(install, launch_after_query=False)
+
+    def _invalidate_local_server_mods(self, *_args):
+        self.local_server_mods = []
+        self.local_server_query_profile = None
+        self.local_server_query_ok = False
+        self._update_mod_selection_summary()
+
     def _join_local_test_server(self):
+        if getattr(self, "local_server_query_profile", None) != self._current_local_tool_profile():
+            self._query_local_server_mods()
+            return
         install = self._native_local_install()
         if not install:
             return
@@ -1190,14 +1276,140 @@ class LocalToolsFeatureMixin:
         if install:
             self._launch_verified_local_test_server(install)
 
-    def _launch_verified_local_test_server(self, install):
+    def _launch_verified_local_test_server(self, install, *, launch_after_query=True):
         profile = self._current_local_tool_profile()
         try:
             host, port = parse_local_endpoint(profile.endpoint)
-        except ValueError as exc:
-            QMessageBox.warning(self, "LAN test server required", str(exc))
+        except ValueError:
+            QMessageBox.warning(
+                self,
+                "LAN server address required",
+                "Enter the IP address or hostname. Set Game port and Query port in their own fields.",
+            )
             return
-        mods = self._verify_local_tool_mods(editor=False)
+        if ":" in host or any(character.isspace() for character in host):
+            QMessageBox.warning(
+                self,
+                "LAN server address required",
+                "Use only an IP address or hostname in the address field; enter ports separately.",
+            )
+            return
+        query_text = profile.query_port or str(port + 3)
+        if not query_text.isdigit() or not 1 <= int(query_text) <= 65535:
+            QMessageBox.warning(
+                self, "Invalid LAN query port", "Enter a query port from 1 to 65535."
+            )
+            return
+        active = getattr(self, "local_mod_worker", None)
+        if active and active.isRunning():
+            self.local_tools_status.setText("Already checking the LAN server's required mods.")
+            return
+        server = Server(profile.name, "LAN Play", host, port, int(query_text))
+        worker = ModWorker(
+            server, install.workshop_dir, workshop_install=install, include_metadata=False
+        )
+        self.local_mod_worker = worker
+        self.local_tools_status.setText("Discovering the LAN server's required Workshop mods...")
+        worker.mods_ready.connect(
+            lambda result: self._finish_local_server_mod_check(
+                result, install, profile, launch_after_query=launch_after_query
+            )
+        )
+        worker.finished.connect(lambda: self._clear_local_mod_worker(worker))
+        worker.start()
+
+    def _clear_local_mod_worker(self, worker):
+        if self.local_mod_worker is worker:
+            self.local_mod_worker = None
+        worker.deleteLater()
+
+    def _finish_local_server_mod_check(self, result, install, profile, *, launch_after_query=True):
+        if getattr(self, "_shutting_down", False):
+            return
+        if self._current_local_tool_profile() != profile:
+            self.local_tools_status.setText("LAN profile changed; connect again to check its mods.")
+            return
+        was_queried = getattr(self, "local_server_query_profile", None) == profile
+        previous = getattr(self, "local_server_mods", [])
+        self.local_server_mods = list(result.required_mods) if result.ok else []
+        self.local_server_query_profile = profile
+        self.local_server_query_ok = result.ok
+        self._update_mod_selection_summary()
+        if not result.ok:
+            self.local_tools_status.setText(
+                "Could not discover LAN server mods. Check the IP, Game port and Query port. "
+                "Join can retry or offer your manually selected mods."
+            )
+            if not launch_after_query:
+                return
+            reply = QMessageBox.question(
+                self,
+                "LAN mod discovery unavailable",
+                "Could not read required mods from the LAN server. Check its query port and "
+                "firewall settings.\n\n"
+                + (result.error or "Server did not answer.")
+                + "\n\nConnect using only your manually selected mods?",
+                QMessageBox.Yes | QMessageBox.No,
+                QMessageBox.No,
+            )
+            if reply != QMessageBox.Yes:
+                return
+        guidance = local_mod_guidance(result.required_mods) if result.ok else ""
+        if guidance:
+            self.local_tools_status.setText(guidance)
+            QMessageBox.warning(self, "Manual/local mods required", guidance)
+            return
+        mods_by_id = {mod.workshop_id: mod for mod in result.required_mods} if result.ok else {}
+        for mod in self._local_required_mods(editor=False):
+            mods_by_id.setdefault(mod.workshop_id, mod)
+        mods = list(mods_by_id.values())
+        missing = [mod for mod in mods if not mod.ready]
+        if missing:
+            details = "\n".join(
+                f"{mod.name or 'Workshop item'} ({mod.workshop_id}) - "
+                f"{self._local_missing_mod_status(mod)}\n"
+                f"{mod.workshop_url or WORKSHOP_URL.format(mod_id=mod.workshop_id)}"
+                for mod in missing
+            )
+            self.local_tools_status.setText(
+                f"LAN mods missing or not downloaded: {len(missing)}.\n" + details
+            )
+            QMessageBox.warning(
+                self,
+                "LAN Workshop mods missing",
+                "Subscribe to these items in Steam and let their downloads finish, then "
+                "connect again:\n\n" + details,
+            )
+            return
+        changed = [(mod.workshop_id, mod.name) for mod in previous] != [
+            (mod.workshop_id, mod.name) for mod in result.required_mods
+        ]
+        if (
+            not launch_after_query
+            or (changed and was_queried)
+            or getattr(self, "local_tool_active_target", "local") != "local"
+        ):
+            self.local_tools_status.setText(
+                f"Server queried: {len(result.required_mods)} required mod(s). "
+                "Review the Local Server selection, then choose Join local test server."
+            )
+            return
+        self.local_tools_status.setText(f"LAN mods ready: {len(mods)}. Joining server.")
+        self._launch_local_server_with_mods(install, result.server, mods)
+
+    @staticmethod
+    def _local_missing_mod_status(mod):
+        from .workshop_subscription import ITEM_STATE_SUBSCRIBED
+
+        if mod.installed and not mod.ready:
+            return "installed; update/download pending"
+        if mod.workshop_state is None:
+            return "not installed; subscription status unavailable"
+        if mod.workshop_state & ITEM_STATE_SUBSCRIBED:
+            return "subscribed; download incomplete"
+        return "not subscribed"
+
+    def _launch_local_server_with_mods(self, install, server, mods):
         if any(not mod.installed for mod in mods):
             QMessageBox.warning(
                 self,
@@ -1205,7 +1417,6 @@ class LocalToolsFeatureMixin:
                 "Install every listed Workshop item before joining the local test server.",
             )
             return
-        server = Server(profile.name, "Local development", host, port, port)
         try:
             prepared = prepare_native_launch(
                 install, server, self.player_name.text().strip() or DEFAULT_PLAYER_NAME, mods

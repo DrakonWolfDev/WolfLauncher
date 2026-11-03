@@ -23,3 +23,11 @@ def perspective_label(value: str) -> str:
         "first_person": "First-person only",
         "third_person": "Third-person enabled",
     }.get(value, "Unknown")
+
+
+def perspective_from_provider(row: dict) -> str:
+    """An explicit normalized provider field is independent of ambiguous raw tags."""
+    value = row.get("perspective")
+    if isinstance(value, str) and value in {"first_person", "third_person"}:
+        return value
+    return perspective_from_keywords(str(row.get("gametype") or ""))

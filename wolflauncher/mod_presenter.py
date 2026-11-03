@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass
 
-from .mods import ModCheckResult, RequiredMod
+from .mods import ModCheckResult, RequiredMod, local_mod_guidance
 from .theme import STATUS_COLOURS
 
 
@@ -141,6 +141,9 @@ def mod_summary_text(result: ModCheckResult) -> str:
             "the item may need to be restored or replaced on the server. "
             "Keep any working installed copies."
         )
+    guidance = local_mod_guidance(result.required_mods)
+    if guidance:
+        summary += "\n" + guidance
     return summary
 
 
@@ -152,6 +155,8 @@ def mod_server_heading(result: ModCheckResult) -> str:
 def mod_readiness_text(result: ModCheckResult) -> str:
     if not result.ok:
         return "Mod readiness could not be confirmed. Recheck before launching."
+    if result.local_requirements:
+        return local_mod_guidance(result.required_mods)
     missing_count = len(result.missing_mods)
     if missing_count:
         noun = "item" if missing_count == 1 else "items"
@@ -162,6 +167,17 @@ def mod_readiness_text(result: ModCheckResult) -> str:
 
 
 def mod_row(mod: RequiredMod) -> ModRow:
+    if not mod.downloadable:
+        return ModRow(
+            [
+                "Manual/local mod required",
+                mod.name or "Unnamed local mod",
+                "Not published",
+                "Unavailable",
+            ],
+            "",
+            STATUS_COLOURS["negative"],
+        )
     from .workshop_subscription import (
         ITEM_STATE_DOWNLOAD_PENDING,
         ITEM_STATE_DOWNLOADING,
@@ -169,7 +185,10 @@ def mod_row(mod: RequiredMod) -> ModRow:
         ITEM_STATE_NEEDS_UPDATE,
     )
 
-    if mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_DOWNLOADING:
+    if mod.workshop_completion_pending:
+        status = "Waiting for Steam completion"
+        colour = STATUS_COLOURS["warning"]
+    elif mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_DOWNLOADING:
         percent = (
             f" ({int(mod.workshop_downloaded * 100 / mod.workshop_total)}%)"
             if mod.workshop_total > 0

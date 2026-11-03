@@ -471,6 +471,7 @@ class SettingsFeatureMixin:
                     "name": profile.name,
                     "mod_paths": list(profile.mod_paths),
                     "endpoint": profile.endpoint,
+                    "query_port": profile.query_port,
                     "workshop_mod_ids": list(profile.workshop_mod_ids),
                 }
                 for profile in getattr(self, "local_tool_profiles", [])

@@ -2,16 +2,16 @@ from collections.abc import Sequence
 
 from PySide6.QtCore import QSignalBlocker, QSize, Qt
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QTableWidget, QWidget
+from PySide6.QtWidgets import QTableWidget
 
 from .models import DiscoveredServer
 from .server_browser_presenter import browser_row, game_time_is_day
 from .server_display import ping_severity
 from .table_items import SortableTableWidgetItem
 from .theme import (
+    COLOURS,
     STATUS_COLOURS,
     monospace_font,
-    set_ui_role,
     theme_icon,
     time_icon,
 )
@@ -22,6 +22,7 @@ BROWSER_NAME_COLUMN = 1
 BROWSER_MODS_COLUMN = 12
 BROWSER_GAME_TIME_COLUMN = 16
 BROWSER_PASSWORD_COLUMN = 17
+BROWSER_FAVOURITE_ROLE = Qt.UserRole + 1
 
 
 def selected_browser_cache_key(table: QTableWidget) -> str:
@@ -69,19 +70,18 @@ def update_browser_table_row(
         item = table.item(row, BROWSER_NAME_COLUMN)
         if item and item.data(Qt.UserRole) == old_cache_key:
             selected_key = _selected_cache_key(table)
-            sorting = table.isSortingEnabled()
             scroll_value = table.verticalScrollBar().value()
             with QSignalBlocker(table):
-                table.setSortingEnabled(False)
                 favourite = table.item(row, BROWSER_FAVOURITE_COLUMN)
                 favourite_endpoints = (
                     {(server.host, server.game_port, server.query_port)}
-                    if favourite and favourite.text() == "★"
+                    if favourite and favourite.data(BROWSER_FAVOURITE_ROLE)
                     else set()
                 )
                 _set_browser_table_row(table, row, server, favourite_endpoints)
-                table.setSortingEnabled(sorting)
-                _restore_selection(table, selected_key or server.cache_key)
+                if selected_key == old_cache_key:
+                    selected_key = server.cache_key
+                _restore_selection(table, selected_key)
             table.verticalScrollBar().setValue(scroll_value)
             return True
     return False
@@ -100,10 +100,8 @@ def update_browser_mod_cell(
         if not name_item or name_item.data(Qt.UserRole) != cache_key:
             continue
         selected_key = _selected_cache_key(table)
-        sorting = table.isSortingEnabled()
         scroll_value = table.verticalScrollBar().value()
         with QSignalBlocker(table):
-            table.setSortingEnabled(False)
             item = SortableTableWidgetItem(text, text)
             item.setData(Qt.UserRole, cache_key)
             item.setToolTip(tooltip)
@@ -111,7 +109,6 @@ def update_browser_mod_cell(
             if colour:
                 item.setForeground(QColor(colour))
             table.setItem(row, BROWSER_MODS_COLUMN, item)
-            table.setSortingEnabled(sorting)
             _restore_selection(table, selected_key)
         table.verticalScrollBar().setValue(scroll_value)
         return True
@@ -119,13 +116,22 @@ def update_browser_mod_cell(
 
 
 def set_browser_favourite_marker(table: QTableWidget, row: int, is_favourite: bool) -> None:
-    """Update the star widget without duplicating its glyph in the table item."""
+    """Paint a single star through Qt's item delegate, without a child widget."""
     item = table.item(row, BROWSER_FAVOURITE_COLUMN)
     if item is None:
         return
-    item.setText("")
+    _style_browser_favourite(table, item, is_favourite)
+
+
+def _style_browser_favourite(table, item, is_favourite):
+    item.setText("\u2605" if is_favourite else "\u2606")
+    item.setData(BROWSER_FAVOURITE_ROLE, is_favourite)
     item.setToolTip("Remove from Favourite Servers" if is_favourite else "Add to Favourite Servers")
-    table.setCellWidget(row, BROWSER_FAVOURITE_COLUMN, _browser_marker(is_favourite))
+    item.setForeground(QColor(COLOURS["accent" if is_favourite else "text_muted"]))
+    item.setTextAlignment(Qt.AlignCenter)
+    font = table.font()
+    font.setPixelSize(15)
+    item.setFont(font)
 
 
 def _set_browser_table_row(
@@ -135,10 +141,13 @@ def _set_browser_table_row(
     favourite_endpoints: set[tuple[str, int, int]] | None = None,
 ) -> None:
     row_data = browser_row(server)
+    cache_key = server.cache_key
+    mono_font = monospace_font()
+    items = []
     for data_column, value in enumerate(row_data.values):
         column = data_column + 1
         item = SortableTableWidgetItem(value, row_data.sort_values[data_column])
-        item.setData(Qt.UserRole, server.cache_key)
+        item.setData(Qt.UserRole, cache_key)
         if data_column in row_data.tooltips:
             item.setToolTip(row_data.tooltips[data_column])
         if data_column == 5:
@@ -152,45 +161,33 @@ def _set_browser_table_row(
         if data_column in {7, 8}:
             item.setTextAlignment(Qt.AlignRight | Qt.AlignVCenter)
         if data_column in {2, 3, 4, 8, 9, 11, 15}:
-            item.setFont(monospace_font())
+            item.setFont(mono_font)
         if data_column == 15:
             is_day = game_time_is_day(server)
             if is_day is not None:
                 item.setIcon(time_icon(is_day))
-        table.setItem(row, column, item)
+        items.append((column, item))
     is_favourite = (server.host, server.game_port, server.query_port) in (
         favourite_endpoints or set()
     )
     favourite = SortableTableWidgetItem("", 0)
-    favourite.setData(Qt.UserRole, server.cache_key)
-    favourite.setToolTip(
-        "Remove from Favourite Servers" if is_favourite else "Add to Favourite Servers"
-    )
-    table.setItem(row, BROWSER_FAVOURITE_COLUMN, favourite)
-    table.setCellWidget(row, BROWSER_FAVOURITE_COLUMN, _browser_marker(is_favourite))
+    favourite.setData(Qt.UserRole, cache_key)
+    _style_browser_favourite(table, favourite, is_favourite)
+    items.append((BROWSER_FAVOURITE_COLUMN, favourite))
     password = SortableTableWidgetItem("", int(server.password))
-    password.setData(Qt.UserRole, server.cache_key)
+    password.setData(Qt.UserRole, cache_key)
     password.setTextAlignment(Qt.AlignCenter)
     if server.password:
         password.setIcon(theme_icon("lock-table"))
         password.setToolTip("Password required to join this server")
-    table.setItem(row, BROWSER_PASSWORD_COLUMN, password)
-
-
-def _browser_marker(is_favourite: bool) -> QWidget:
-    marker = QWidget()
-    marker.setAttribute(Qt.WA_TransparentForMouseEvents)
-    layout = QHBoxLayout(marker)
-    layout.setContentsMargins(10, 0, 0, 0)
-    layout.setSpacing(4)
-    star = QLabel("★" if is_favourite else "☆")
-    set_ui_role(star, "browserStar")
-    star.setProperty("favourite", is_favourite)
-    star.setFixedWidth(28)
-    star.setAlignment(Qt.AlignCenter)
-    layout.addWidget(star)
-    layout.addStretch(1)
-    return marker
+    items.append((BROWSER_PASSWORD_COLUMN, password))
+    # Replacing the active sort cell can move this row immediately. Set it last
+    # so all cells stay together, and let Qt reposition only this changed row
+    # instead of disabling/re-enabling sorting (which sorts the whole table).
+    sort_column = table.horizontalHeader().sortIndicatorSection()
+    items.sort(key=lambda entry: entry[0] == sort_column)
+    for column, item in items:
+        table.setItem(row, column, item)
 
 
 def _selected_cache_key(table: QTableWidget) -> str:

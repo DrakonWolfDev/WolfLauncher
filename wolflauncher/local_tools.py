@@ -15,6 +15,7 @@ class LocalToolProfile:
     mod_paths: tuple[str, ...] = ()
     endpoint: str = ""
     workshop_mod_ids: tuple[str, ...] = ()
+    query_port: str = ""
 
 
 def normalise_workshop_ids(value: str | list[str] | tuple[str, ...]) -> tuple[str, ...]:
@@ -53,6 +54,7 @@ def profile_from_data(data: object) -> LocalToolProfile | None:
             str(item).strip() for item in data.get("mod_paths", []) if str(item).strip()
         ),
         endpoint=str(data.get("endpoint") or "").strip(),
+        query_port=str(data.get("query_port") or "").strip(),
         workshop_mod_ids=normalise_workshop_ids(data.get("workshop_mod_ids", [])),
     )
 
@@ -60,3 +62,14 @@ def profile_from_data(data: object) -> LocalToolProfile | None:
 def profiles_from_settings(value: object) -> list[LocalToolProfile]:
     profiles = [profile_from_data(item) for item in value] if isinstance(value, list) else []
     return [profile for profile in profiles if profile is not None]
+
+
+def local_endpoint_fields(profile: LocalToolProfile) -> tuple[str, int, int]:
+    """Split legacy saved host:port profiles into the three visible controls."""
+    try:
+        host, game_port = parse_local_endpoint(profile.endpoint)
+    except ValueError:
+        host, game_port = profile.endpoint.strip(), 2302
+    query = profile.query_port or str(game_port + 3)
+    query_port = int(query) if query.isdigit() and 1 <= int(query) <= 65535 else 2305
+    return host, game_port, query_port

@@ -83,10 +83,18 @@ class RequiredMod:
     workshop_description: str = ""
     workshop_preview_url: str = ""
     workshop_metadata_result: int | None = None
+    workshop_acknowledged_at: int = 0
+    workshop_completion_pending: bool = False
+    # Advertised protocol value; not proof of freshness or file integrity.
+    server_hash: int | None = None
+
+    @property
+    def downloadable(self) -> bool:
+        return self.workshop_id.isdigit() and int(self.workshop_id) > 0
 
     @property
     def ready(self) -> bool:
-        if not self.installed:
+        if not self.downloadable or not self.installed or self.workshop_completion_pending:
             return False
         if self.workshop_state is None:
             return not self.remote_update_available
@@ -104,7 +112,8 @@ class RequiredMod:
         return bool(
             self.workshop_updated_at
             and self.installed_updated_at
-            and self.workshop_updated_at > self.installed_updated_at
+            and self.workshop_updated_at
+            > max(self.installed_updated_at, self.workshop_acknowledged_at)
         )
 
 
@@ -122,6 +131,10 @@ class ModCheckResult:
     launch_context_key: tuple = ()
 
     @property
+    def local_requirements(self) -> list[RequiredMod]:
+        return [mod for mod in self.required_mods if not mod.downloadable]
+
+    @property
     def missing_mods(self) -> list[RequiredMod]:
         return [mod for mod in self.required_mods if not mod.ready]
 
@@ -134,6 +147,18 @@ class ModCheckResult:
         return [mod for mod in self.required_mods if mod.installed and not mod.ready]
 
 
+def local_mod_guidance(mods) -> str:
+    local = [mod.name or "Unnamed local mod" for mod in mods if not mod.downloadable]
+    if not local:
+        return ""
+    return (
+        "The server requires unpublished/local mods: " + ", ".join(local) + ". "
+        "Steam cannot subscribe to these requirements. Ask the server administrator "
+        "for the matching mod folders and launch instructions. Automatic local-mod "
+        "matching is unavailable; these requirements remain unresolved."
+    )
+
+
 def apply_workshop_item_states(result: ModCheckResult, states) -> ModCheckResult:
     """Attach Steam item-state snapshots to an existing local-directory check."""
     by_id = {item.workshop_id: item for item in states}
@@ -142,6 +167,7 @@ def apply_workshop_item_states(result: ModCheckResult, states) -> ModCheckResult
         if item is None:
             continue
         mod.workshop_state = item.state
+        mod.workshop_completion_pending = getattr(item, "awaiting_download_result", False)
         mod.workshop_downloaded = item.downloaded
         mod.workshop_total = item.total
     return result
@@ -149,7 +175,13 @@ def apply_workshop_item_states(result: ModCheckResult, states) -> ModCheckResult
 
 def fetch_workshop_file_sizes(workshop_ids) -> dict[str, int]:
     """Fetch published Workshop file sizes from Steam's public batch endpoint."""
-    ids = tuple(dict.fromkeys(str(item).strip() for item in workshop_ids if str(item).strip()))
+    ids = tuple(
+        dict.fromkeys(
+            str(item).strip()
+            for item in workshop_ids
+            if str(item).strip().isdigit() and int(str(item).strip()) > 0
+        )
+    )
     if not ids:
         return {}
     fields = [("itemcount", str(len(ids)))]
@@ -175,7 +207,13 @@ def fetch_workshop_metadata(
     workshop_ids, *, include_children: bool = False
 ) -> dict[str, dict[str, Any]]:
     """Fetch public display metadata for Workshop items in one bounded batch."""
-    ids = tuple(dict.fromkeys(str(item).strip() for item in workshop_ids if str(item).strip()))
+    ids = tuple(
+        dict.fromkeys(
+            str(item).strip()
+            for item in workshop_ids
+            if str(item).strip().isdigit() and int(str(item).strip()) > 0
+        )
+    )
     if not ids:
         return {}
     fields = [("itemcount", str(len(ids)))]
@@ -403,6 +441,15 @@ def apply_workshop_metadata(
 
 
 def workshop_install_timestamps(install) -> dict[str, int]:
+    if getattr(install, "workshop_dir", None):
+        from .workshop_freshness import installed_manifest
+
+        entries = installed_manifest(install)
+        return {
+            item: int(entry["timeupdated"])
+            for item, entry in entries.items()
+            if isinstance(entry, dict) and str(entry.get("timeupdated", "")).isdigit()
+        }
     paths = [
         Path(item) / "workshop" / "appworkshop_221100.acf"
         for item in getattr(install, "library_steamapps", ())
@@ -493,9 +540,12 @@ def fetch_required_mods(server: Server) -> list[RequiredMod]:
     address = resolve_host(server.host)
     return [
         RequiredMod(
-            workshop_id=str(mod.workshop_id),
+            workshop_id=str(mod.workshop_id) if mod.workshop_id is not None else "",
             name=mod.name,
-            workshop_url=WORKSHOP_URL.format(mod_id=mod.workshop_id),
+            server_hash=mod.server_hash,
+            workshop_url=WORKSHOP_URL.format(mod_id=mod.workshop_id)
+            if mod.workshop_id is not None
+            else "",
         )
         for mod in query_dayz_required_mods(address, server.query_port)
     ]

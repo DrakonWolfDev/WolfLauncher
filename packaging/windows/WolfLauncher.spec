@@ -2,6 +2,8 @@ import os
 import re
 from pathlib import Path
 
+from wolflauncher.versioning import windows_version_tuple
+
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules, copy_metadata
 from PyInstaller.utils.win32.versioninfo import (
     FixedFileInfo,
@@ -17,9 +19,7 @@ from PyInstaller.utils.win32.versioninfo import (
 project_root = Path(SPECPATH).parents[1]
 version_text = (project_root / "wolflauncher" / "__init__.py").read_text(encoding="utf-8")
 version = re.search(r'__version__\s*=\s*"([^"]+)"', version_text).group(1)
-numeric_version = [int(value) for value in re.findall(r"\d+", version)[:3]]
-numeric_version.extend([0] * (4 - len(numeric_version)))
-version_tuple = tuple(numeric_version[:4])
+version_tuple = windows_version_tuple(version)
 
 node_executable = Path(os.environ["WOLFLAUNCHER_NODE_EXE"]).resolve()
 node_modules = Path(os.environ["WOLFLAUNCHER_NODE_MODULES"]).resolve()

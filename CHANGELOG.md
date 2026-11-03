@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Retain server-advertised mod hashes through parsing and mod checks, including
+  unpublished requirements. Local hash comparison is not yet implemented.
+
 - Documented real-world user confirmation on CachyOS (Arch-based) and added
   CachyOS to the Linux compatibility guides.
 
@@ -10,10 +13,41 @@
   guidance. Download failure messages now explain these recovery steps too.
   Existing installed copies remain usable; metadata outages do not imply removal.
 
+## 0.9.3.5b - 2026-11-03 (local test build)
+
+- LAN test feedback: show queried server requirements in Local Server selection
+  before launch, with ready/missing states and explicit review. Separate compact
+  IP/hostname, Game port and Query port controls; preserve existing profiles.
+- Report failed GameDig queries with the attempted query port and useful guidance.
+  Diagnosed the reported DrakonCherno favourite as query 2303 instead of 3303;
+  a successful reply identified game 3302/query 3303.
+
+- Renamed Editor / Local Tools to Editor / LAN Play. LAN joining discovers
+  required Workshop mods, matches installed items and lists missing requirements.
+  Profiles save a separate query port.
+- Wait for successful Steam download callbacks and idle state before finishing
+  updates. Scope metadata-only acknowledgements to the selected library, edition,
+  published revision and unchanged local evidence.
+- Preserve unpublished requirements in mixed server manifests, with manual/local
+  guidance and guarded launch blocking.
+- Speed up server-list rendering and incremental status/mod updates; preserve
+  sorting, selection, scrolling and favourite markers.
+- Pause optional background polling during joins, Workshop resolution, monitored
+  game sessions and hidden/minimised windows, then resume stale-data checks.
+- Preserve explicit normalized provider perspective fields. A version-specific
+  raw-tag correction remains pending confirmed camera settings.
+- Preserve all four release components in Windows executable/installer numeric
+  metadata (0.9.3.5), while showing the requested version 0.9.3.5b.
+- Local Windows portable/Setup and Linux AppImage/installer artifacts were built
+  for testing. These have not been published as a release. Live Steam/LAN and
+  interactive game/update checks remain part of manual testing.
+
 ## 0.9.3b — 2026-10-21
 
-Complete release notes for the 20 commits since `v0.9.0b2`, through `006101f`,
-are in [Changes since 0.9.0b2](docs/RELEASE_NOTES_SINCE_0.9.0b2.md).
+This release contains 33 commits since `v0.9.0b2`. Detailed notes for the first
+20 commits, through `006101f`, are in
+[Changes since 0.9.0b2](docs/RELEASE_NOTES_SINCE_0.9.0b2.md); the remaining
+release and packaging changes are included below.
 
 - Restore and focus WolfLauncher automatically when DayZ exits after a launch
   that minimized the launcher, including DayZ Editor launches.
@@ -71,6 +105,8 @@ are in [Changes since 0.9.0b2](docs/RELEASE_NOTES_SINCE_0.9.0b2.md).
   preview and Editor image downloads by checking replies before reading them.
 - Linux Steam Workshop automation now also finds `libsteam_api.so` in sibling
   DayZ Server installations when the Steam runtime does not provide it.
+- Fixed fresh native Steam installations on Fedora and Mint failing Workshop
+  downloads when Steam exposes only its own 64-bit client library.
 - Fixed Workshop mod uninstall refreshing the entire list, jumping to the top
   and showing the removed item again before Steam finished deleting its files.
   Confirmed uninstalls now remove the row while preserving the scroll position.
@@ -85,6 +121,10 @@ are in [Changes since 0.9.0b2](docs/RELEASE_NOTES_SINCE_0.9.0b2.md).
 - Fixed a server-browser worker lifetime race when searching or scrolling around
   completion of a live freshness check. A replacement now waits for the previous
   worker's completion callback.
+- Fixed server-browser refresh stalls caused by sorting while rows were being
+  populated or updated.
+- Fixed the Mods page retaining a previously selected server when the active
+  server selection was cleared or changed.
 - Recorded code signing as post-1.0 distribution work. Unsigned packages published
   through GitHub and the official WolfLauncher website do not block the 1.0 release.
 - Added notification-only WolfLauncher update checks. GitHub Releases supplies
@@ -107,6 +147,16 @@ are in [Changes since 0.9.0b2](docs/RELEASE_NOTES_SINCE_0.9.0b2.md).
 - Fixed a native Qt crash after update checks by replacing cross-thread worker
   object destruction with a bounded `QThreadPool` task. Repeated manual checks
   and 25 rapid worker-completion cycles now pass without a crash.
+
+- Added complete tagged-release automation for the Windows installer and
+  portable ZIP plus Linux DEB, RPM, AppImage and user-local installer formats.
+  Published artifacts include SHA-256 checksums and must pass platform-specific
+  build, installation and startup checks.
+- Added an RPM build and Fedora installation/removal smoke test, and made the
+  release workflow notify the official website after a complete release is
+  published.
+- Fixed prerelease version normalisation and final artifact paths for Python
+  source archives, Debian packages and GitHub release publication.
 
 ## 0.9.0b2 — 2026-10-04
 

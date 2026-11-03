@@ -3,7 +3,7 @@ name: Installer
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, dev/release-preparation]
     tags: ["v*"]
   pull_request:
 

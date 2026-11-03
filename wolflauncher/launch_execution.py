@@ -169,6 +169,11 @@ class LaunchExecutionCoordinator:
                 raise LaunchError(
                     "Required mods were not checked for this launch context. Retry Join."
                 )
+            from .mods import local_mod_guidance
+
+            guidance = local_mod_guidance(result.required_mods)
+            if guidance:
+                raise LaunchError(guidance)
             launch_server = context.server
             player_name = window.player_name.text().strip() or DEFAULT_PLAYER_NAME
             if context.engine == "external":

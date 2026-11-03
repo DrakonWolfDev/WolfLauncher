@@ -177,8 +177,12 @@ class FakeWorkshopClient:
     download_results = []
     unsubscribed = []
 
+    completion_frames = None
+
     def __init__(self, _path):
         self.index = 0
+        self.download_completions = {}
+        self.requested = set()
 
     def __enter__(self):
         return self
@@ -193,7 +197,11 @@ class FakeWorkshopClient:
         self.unsubscribed.append(workshop_id)
 
     def run_callbacks(self):
-        return None
+        if self.completion_frames is not None:
+            frame = self.completion_frames[min(self.index, len(self.completion_frames) - 1)]
+            self.download_completions.update(frame)
+        elif self.index >= len(self.snapshots) - 1:
+            self.download_completions.update({item: 1 for item in self.requested})
 
     def item_progress(self, workshop_id):
         states = self.snapshots[min(self.index, len(self.snapshots) - 1)]
@@ -206,9 +214,11 @@ class FakeWorkshopClient:
         self.downloads.append(workshop_id)
         if high_priority:
             self.high_priority_downloads.append(workshop_id)
-        if self.download_results:
-            return self.download_results.pop(0)
-        return True
+        accepted = self.download_results.pop(0) if self.download_results else True
+        if accepted:
+            self.requested.add(workshop_id)
+            self.download_completions.pop(workshop_id, None)
+        return accepted
 
 
 class SubscribeWorkshopItemsTests(unittest.TestCase):
@@ -219,6 +229,7 @@ class SubscribeWorkshopItemsTests(unittest.TestCase):
         FakeWorkshopClient.high_priority_downloads = []
         FakeWorkshopClient.download_results = []
         FakeWorkshopClient.unsubscribed = []
+        FakeWorkshopClient.completion_frames = None
 
     def test_subscribes_requests_download_and_waits_for_directories(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -499,6 +510,99 @@ class SubscribeWorkshopItemsTests(unittest.TestCase):
         self.assertEqual([item.workshop_id for item in result.items], ["111", "222"])
         self.assertEqual(FakeWorkshopClient.subscribed, [])
         self.assertEqual(FakeWorkshopClient.downloads, [])
+
+
+class WorkshopCompletionRaceTests(unittest.TestCase):
+    setUp = SubscribeWorkshopItemsTests.setUp
+
+    def run_scenario(self, states, completions, *, cancel_on_progress=False, **options):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            workshop = root / "workshop"
+            (workshop / "111").mkdir(parents=True)
+            FakeWorkshopClient.snapshots = [
+                {"111": WorkshopItemProgress("111", state)} for state in states
+            ]
+            FakeWorkshopClient.completion_frames = completions
+            seen = []
+            cancelled = threading.Event()
+
+            def progress(items):
+                seen.append(items[0])
+                if cancel_on_progress:
+                    cancelled.set()
+
+            with (
+                patch(
+                    "wolflauncher.workshop_subscription.find_steam_api_library",
+                    return_value=root / "steam_api64.dll",
+                ),
+                patch("wolflauncher.workshop_subscription.SteamWorkshopClient", FakeWorkshopClient),
+            ):
+                result = subscribe_workshop_items(
+                    ["111"],
+                    install_for(root, workshop),
+                    force_update=True,
+                    poll_seconds=0,
+                    progress_callback=progress,
+                    cancelled=cancelled,
+                    **options,
+                )
+            return result, seen
+
+    def test_delayed_update_does_not_accept_old_installed_snapshot(self):
+        result, seen = self.run_scenario(
+            [
+                ITEM_STATE_INSTALLED,
+                ITEM_STATE_INSTALLED | ITEM_STATE_NEEDS_UPDATE,
+                ITEM_STATE_INSTALLED | ITEM_STATE_DOWNLOADING,
+                ITEM_STATE_INSTALLED,
+            ],
+            [{}, {}, {}, {"111": 1}],
+        )
+        self.assertTrue(result.ok)
+        self.assertEqual([item.installed for item in seen], [False, False, False, True])
+        self.assertEqual(FakeWorkshopClient.downloads, ["111"])
+
+    def test_noop_requires_success_callback_even_without_state_changes(self):
+        result, seen = self.run_scenario([ITEM_STATE_INSTALLED] * 3, [{}, {}, {"111": 1}])
+        self.assertTrue(result.ok)
+        self.assertEqual([item.installed for item in seen], [False, False, True])
+
+    def test_quiet_installed_state_without_callback_is_incomplete(self):
+        result, seen = self.run_scenario([ITEM_STATE_INSTALLED], [{}], stall_timeout_seconds=0)
+        self.assertFalse(result.ok)
+        self.assertEqual(result.incomplete_ids, ("111",))
+        self.assertFalse(seen[0].installed)
+
+    def test_failure_callback_cannot_be_hidden_by_installed_flag(self):
+        result, _ = self.run_scenario([ITEM_STATE_INSTALLED], [{"111": 9}])
+        self.assertFalse(result.ok)
+        self.assertIn("111 (result 9)", result.error)
+
+    def test_success_callback_does_not_override_busy_or_pending_state(self):
+        result, seen = self.run_scenario(
+            [ITEM_STATE_INSTALLED | ITEM_STATE_DOWNLOAD_PENDING, ITEM_STATE_INSTALLED],
+            [{"111": 1}, {"111": 1}],
+        )
+        self.assertTrue(result.ok)
+        self.assertEqual([item.installed for item in seen], [False, True])
+
+    def test_cancel_wins_over_installed_state_and_success_callback(self):
+        result, _ = self.run_scenario([ITEM_STATE_INSTALLED], [{"111": 1}], cancel_on_progress=True)
+        self.assertTrue(result.cancelled)
+        self.assertFalse(result.ok)
+
+    def test_accepted_request_with_no_callback_times_out(self):
+        result, _ = self.run_scenario([ITEM_STATE_INSTALLED], [{}], timeout_seconds=0)
+        self.assertFalse(result.ok)
+        self.assertIn("timeout", result.error)
+
+    def test_rejected_force_request_cannot_pass_on_old_installed_state(self):
+        FakeWorkshopClient.download_results = [False]
+        result, _ = self.run_scenario([ITEM_STATE_INSTALLED], [{}], stall_timeout_seconds=0)
+        self.assertFalse(result.ok)
+        self.assertEqual(result.incomplete_ids, ("111",))
 
 
 if __name__ == "__main__":

@@ -5,11 +5,11 @@ import time
 from PySide6.QtCore import QProcess, QTimer
 from PySide6.QtWidgets import QMessageBox
 
-from .game_session import minimize_for_game
+from .game_session import minimize_for_game, monitor_game_handoff
 from .launch_dialogs import PreflightLaunchDialog
 from .launcher import LaunchError
 from .models import Server
-from .mods import ModCheckResult
+from .mods import ModCheckResult, local_mod_guidance
 from .native_launcher import NativeLaunchError
 from .platform_detection import (
     best_install,
@@ -91,6 +91,7 @@ class ConnectPreflightCoordinator:
         window.preflight_dialog.launcher_minimize_requested.connect(
             lambda: minimize_for_game(window)
         )
+        window.preflight_dialog.process.started.connect(lambda: monitor_game_handoff(window))
         window.preflight_dialog.show()
         window.launch_button.setEnabled(False)
         self.ensure_steam()
@@ -250,6 +251,10 @@ class ConnectPreflightCoordinator:
             )
             self.finish()
             return
+        local_guidance = local_mod_guidance(result.required_mods)
+        if local_guidance:
+            self.fail("mods", local_guidance)
+            return
         install = self._install()
         if not install or not install.running:
             self.fail("mods", "Steam stopped before required mods could be installed.")
@@ -263,7 +268,9 @@ class ConnectPreflightCoordinator:
             f"Installing or updating {len(result.missing_mods)} required Workshop item(s)…",
         )
         window.preflight_workshop_worker = WorkshopSubscriptionWorker(
-            [mod.workshop_id for mod in result.missing_mods], install
+            [mod.workshop_id for mod in result.missing_mods],
+            install,
+            force_update=any(mod.remote_update_available for mod in result.missing_mods),
         )
         context = self.context
         window.preflight_workshop_worker.progress_ready.connect(

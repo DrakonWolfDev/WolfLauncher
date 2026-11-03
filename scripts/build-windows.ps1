@@ -101,7 +101,7 @@ try {
         $env:QT_QPA_PLATFORM = "offscreen"
         $env:WOLFLAUNCHER_SMOKE_TEST = "1"
         $env:WOLFLAUNCHER_SMOKE_REQUIRE_KEYRING = "1"
-        $process = Start-Process -FilePath (Join-Path $bundleRoot "WolfLauncher.exe") -PassThru
+        $process = Start-Process -FilePath (Join-Path $bundleRoot "WolfLauncher.exe") -WindowStyle Hidden -PassThru
         try {
             Wait-Process -Id $process.Id -Timeout 45 -ErrorAction Stop
         }

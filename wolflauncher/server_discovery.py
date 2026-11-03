@@ -11,7 +11,7 @@ from .http_client import HttpClientError, fetch_json
 from .models import DiscoveredServer
 from .server_display import display_map_name
 from .server_identity import product_from_app_id, provider_identity
-from .server_perspective import perspective_from_keywords
+from .server_perspective import perspective_from_keywords, perspective_from_provider
 
 DAYZ_APP_ID = 221100
 STEAM_WEB_API_SERVER_LIST_URL = "https://api.steampowered.com/IGameServersService/GetServerList/v1/"
@@ -726,7 +726,7 @@ def discovered_server_from_wolfapi_row(row: dict, timestamp: str = "") -> Discov
         version=version,
         password=bool(row.get("password", False)),
         modded="mod" in gametype.lower() or bool(row.get("modded", False)),
-        perspective=perspective_from_keywords(gametype),
+        perspective=perspective_from_provider(row),
         online=bool(online),
         last_checked=str(
             row.get("validation_checked_at")

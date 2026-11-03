@@ -21,6 +21,7 @@ from PySide6.QtWidgets import (
 
 from . import __version__, server_cache
 from .about_feature import AboutFeatureMixin
+from .background_polling import OptionalPollingController
 from .config import (
     CURATED_SERVERS_PATH,
     ensure_empty_servers_file,
@@ -225,7 +226,7 @@ class MainWindow(
         set_ui_role(self.last_refresh_label, "metadata")
 
         self.timer = QTimer(self)
-        self.timer.timeout.connect(self.refresh_statuses)
+        self.timer.timeout.connect(self.refresh_automatic_statuses)
         self.remote_search_timer = QTimer(self)
         self.remote_search_timer.setSingleShot(True)
         self.remote_search_timer.setInterval(450)
@@ -266,7 +267,7 @@ class MainWindow(
         self.local_tools_tab_index = self.tabs.addTab(
             self._scrollable_workspace(self._build_local_tools_tab()),
             theme_icon("mods"),
-            "Editor / Local Tools",
+            "Editor / LAN Play",
         )
         self.tabs.addTab(
             self._scrollable_workspace(self._build_settings_tab()),
@@ -292,6 +293,7 @@ class MainWindow(
         self.setCentralWidget(central)
 
         self.setup_update_feature()
+        self.optional_polling = OptionalPollingController(self)
 
         self.apply_refresh_timer()
         self.refresh_statuses(startup=True)

@@ -15,12 +15,13 @@ import signal
 import sys
 import threading
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Callable, Iterable
 
 from .platform_detection import STEAM_APP_ID_DAYZ, SteamInstall
 from .platforms import current_platform
+from .workshop_callbacks import CallbackMessage, record_download_result
 
 ITEM_STATE_SUBSCRIBED = 1
 ITEM_STATE_INSTALLED = 4
@@ -61,11 +62,15 @@ class WorkshopItemProgress:
     state: int
     downloaded: int = 0
     total: int = 0
+    awaiting_download_result: bool = False
 
     @property
     def installed(self) -> bool:
-        return bool(self.state & ITEM_STATE_INSTALLED) and not bool(
-            self.state & ITEM_STATE_NEEDS_UPDATE
+        blocked = ITEM_STATE_NEEDS_UPDATE | ITEM_STATE_DOWNLOADING | ITEM_STATE_DOWNLOAD_PENDING
+        return (
+            not self.awaiting_download_result
+            and bool(self.state & ITEM_STATE_INSTALLED)
+            and not bool(self.state & blocked)
         )
 
     @property
@@ -228,6 +233,8 @@ class SteamWorkshopClient:
         self.library_path = Path(library_path)
         self._library: ctypes.CDLL | None = None
         self._ugc = None
+        self.download_completions: dict[str, int] = {}
+        self._pipe = 0
         self._previous_environment: dict[str, str | None] = {}
 
     def __enter__(self) -> "SteamWorkshopClient":
@@ -242,6 +249,10 @@ class SteamWorkshopClient:
                     "Steamworks could not initialize. Start the selected Steam client, confirm "
                     "that its current account owns DayZ, and try again."
                 )
+            self._library.SteamAPI_ManualDispatch_Init()
+            self._pipe = self._library.SteamAPI_GetHSteamPipe()
+            if not self._pipe:
+                raise WorkshopSubscriptionError("Steam did not provide a callback connection.")
             self._ugc = self._ugc_accessor()
             if not self._ugc:
                 raise WorkshopSubscriptionError(
@@ -262,8 +273,25 @@ class SteamWorkshopClient:
         library.SteamAPI_InitSafe.restype = ctypes.c_bool
         library.SteamAPI_Shutdown.argtypes = []
         library.SteamAPI_Shutdown.restype = None
-        library.SteamAPI_RunCallbacks.argtypes = []
-        library.SteamAPI_RunCallbacks.restype = None
+        try:
+            library.SteamAPI_ManualDispatch_Init.argtypes = []
+            library.SteamAPI_ManualDispatch_Init.restype = None
+            library.SteamAPI_GetHSteamPipe.argtypes = []
+            library.SteamAPI_GetHSteamPipe.restype = ctypes.c_int32
+            library.SteamAPI_ManualDispatch_RunFrame.argtypes = [ctypes.c_int32]
+            library.SteamAPI_ManualDispatch_RunFrame.restype = None
+            library.SteamAPI_ManualDispatch_GetNextCallback.argtypes = [
+                ctypes.c_int32,
+                ctypes.POINTER(CallbackMessage),
+            ]
+            library.SteamAPI_ManualDispatch_GetNextCallback.restype = ctypes.c_bool
+            library.SteamAPI_ManualDispatch_FreeLastCallback.argtypes = [ctypes.c_int32]
+            library.SteamAPI_ManualDispatch_FreeLastCallback.restype = None
+        except AttributeError as exc:
+            raise WorkshopSubscriptionError(
+                "The Steam API library cannot report download completion. "
+                "Update or repair Steam/DayZ and retry."
+            ) from exc
 
         self._ugc_accessor = None
         for version in range(21, 13, -1):
@@ -315,7 +343,17 @@ class SteamWorkshopClient:
 
     def run_callbacks(self) -> None:
         assert self._library is not None
-        self._library.SteamAPI_RunCallbacks()
+        self._library.SteamAPI_ManualDispatch_RunFrame(self._pipe)
+        message = CallbackMessage()
+        for _ in range(1000):
+            if not self._library.SteamAPI_ManualDispatch_GetNextCallback(
+                self._pipe, ctypes.byref(message)
+            ):
+                break
+            try:
+                record_download_result(message, self.download_completions)
+            finally:
+                self._library.SteamAPI_ManualDispatch_FreeLastCallback(self._pipe)
 
     def subscribe(self, workshop_id: str) -> None:
         assert self._library is not None and self._ugc
@@ -339,6 +377,7 @@ class SteamWorkshopClient:
 
     def request_download(self, workshop_id: str, *, high_priority: bool = False) -> bool:
         assert self._library is not None and self._ugc
+        self.download_completions.pop(workshop_id, None)
         return bool(
             self._library.SteamAPI_ISteamUGC_DownloadItem(
                 self._ugc, ctypes.c_uint64(int(workshop_id)), high_priority
@@ -374,7 +413,7 @@ def subscribe_workshop_items(
     force_update: bool = False,
     subscribe_missing: bool = True,
 ) -> WorkshopSubscriptionResult:
-    """Subscribe through Steam and wait until local item directories are ready."""
+    """Wait for accepted download callbacks, idle Steam state and local directories."""
     ids = tuple(dict.fromkeys(str(item).strip() for item in workshop_ids if str(item).strip()))
     if not ids:
         return WorkshopSubscriptionResult((), ())
@@ -395,16 +434,34 @@ def subscribe_workshop_items(
     last_activity = started
     previous_signature = None
     download_requested_at: dict[str, float] = {}
+    awaiting_results: set[str] = set()
+    accepted_requests: set[str] = set()
     with _workshop_client(library_path) as client:
         for workshop_id in ids:
             if subscribe_missing:
                 client.subscribe(workshop_id)
             if force_update:
-                client.request_download(workshop_id, high_priority=True)
+                awaiting_results.add(workshop_id)
+                download_requested_at[workshop_id] = time.monotonic()
+                if client.request_download(workshop_id, high_priority=True):
+                    accepted_requests.add(workshop_id)
 
         while True:
             client.run_callbacks()
-            snapshots = tuple(client.item_progress(workshop_id) for workshop_id in ids)
+            completed = {
+                item: code
+                for item, code in client.download_completions.items()
+                if item in accepted_requests
+            }
+            snapshots = tuple(
+                replace(
+                    client.item_progress(workshop_id),
+                    awaiting_download_result=(
+                        workshop_id in awaiting_results and completed.get(workshop_id) != 1
+                    ),
+                )
+                for workshop_id in ids
+            )
             if progress_callback:
                 progress_callback(snapshots)
 
@@ -413,6 +470,24 @@ def subscribe_workshop_items(
                 for item in snapshots
                 if item.installed and (install.workshop_dir / item.workshop_id).is_dir()
             )
+            if cancel_event.is_set():
+                return WorkshopSubscriptionResult(
+                    installed, tuple(item for item in ids if item not in installed), cancelled=True
+                )
+            failures = {
+                item: completed[item]
+                for item in awaiting_results
+                if item in completed and completed[item] != 1
+            }
+            if failures:
+                return WorkshopSubscriptionResult(
+                    installed,
+                    tuple(item for item in ids if item not in installed),
+                    error="Steam reported a Workshop download failure: "
+                    + ", ".join(
+                        f"{item} (result {code})" for item, code in sorted(failures.items())
+                    ),
+                )
             if len(installed) == len(ids):
                 return WorkshopSubscriptionResult(installed, ())
             signature = tuple(
@@ -421,6 +496,7 @@ def subscribe_workshop_items(
                     item.state,
                     item.downloaded,
                     item.total,
+                    completed.get(item.workshop_id),
                     (install.workshop_dir / item.workshop_id).is_dir(),
                 )
                 for item in snapshots
@@ -429,12 +505,6 @@ def subscribe_workshop_items(
             if signature != previous_signature:
                 previous_signature = signature
                 last_activity = now
-            if cancel_event.is_set():
-                return WorkshopSubscriptionResult(
-                    installed,
-                    tuple(item for item in ids if item not in installed),
-                    cancelled=True,
-                )
             if now - started >= timeout_seconds:
                 incomplete = tuple(item for item in ids if item not in installed)
                 return WorkshopSubscriptionResult(
@@ -459,9 +529,13 @@ def subscribe_workshop_items(
                 )
 
             for snapshot in snapshots:
-                if snapshot.installed:
+                if snapshot.workshop_id in installed:
                     continue
-                if snapshot.state & ITEM_STATE_SUBSCRIBED:
+                # Accepted requests own their callback. Do not replace an in-flight
+                # request or let a quiet queue count as a completed no-op.
+                if snapshot.workshop_id in accepted_requests:
+                    continue
+                if force_update or snapshot.state & ITEM_STATE_SUBSCRIBED:
                     last_request = download_requested_at.get(snapshot.workshop_id)
                     now = time.monotonic()
                     if (
@@ -469,8 +543,10 @@ def subscribe_workshop_items(
                         and now - last_request < DOWNLOAD_REQUEST_RETRY_SECONDS
                     ):
                         continue
-                    if client.request_download(snapshot.workshop_id):
-                        download_requested_at[snapshot.workshop_id] = now
+                    awaiting_results.add(snapshot.workshop_id)
+                    download_requested_at[snapshot.workshop_id] = now
+                    if client.request_download(snapshot.workshop_id, high_priority=force_update):
+                        accepted_requests.add(snapshot.workshop_id)
             time.sleep(poll_seconds)
 
 
