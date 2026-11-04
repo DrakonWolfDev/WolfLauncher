@@ -32,7 +32,9 @@ class BrowserSnapshot:
     cache_summary: dict[str, int]
 
 
-def load_browser_snapshot(connection: Any, query: BrowserQuery) -> BrowserSnapshot:
+def load_browser_snapshot(
+    connection: Any, query: BrowserQuery, *, cache_summary=None
+) -> BrowserSnapshot:
     filters = {
         "text": query.text,
         "online_only": query.online_only,
@@ -57,7 +59,11 @@ def load_browser_snapshot(connection: Any, query: BrowserQuery) -> BrowserSnapsh
     return BrowserSnapshot(
         servers=servers,
         match_count=server_cache.count_search_servers(connection, **filters),
-        cache_summary=server_cache.cache_summary(connection, products=query.products),
+        cache_summary=(
+            server_cache.cache_summary(connection, products=query.products)
+            if cache_summary is None
+            else cache_summary
+        ),
     )
 
 

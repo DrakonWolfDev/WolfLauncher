@@ -517,25 +517,31 @@ _NAME_RE = re.compile(r'name\s*=\s*"([^"]+)"')
 
 
 def _read_mod_name(meta_path: Path) -> str:
-    try:
-        text = meta_path.read_text(errors="ignore")
-    except OSError:
-        return ""
+    from .mod_name_cache import mod_name_cache
+
+    return mod_name_cache.read(meta_path, _read_mod_name_file)
+
+
+def _read_mod_name_file(meta_path: Path) -> str:
+    text = meta_path.read_text(errors="ignore")
     match = _NAME_RE.search(text)
     return match.group(1).strip() if match else ""
 
 
-def scan_installed_mods(workshop_dir: Path | None) -> dict[str, str]:
+def scan_installed_mods(workshop_dir: Path | None, *, names_for=None) -> dict[str, str]:
     """Return installed DayZ Workshop mods as {workshop_id: display_name}."""
     if not workshop_dir or not workshop_dir.exists():
         return {}
 
     mods: dict[str, str] = {}
-    for child in workshop_dir.iterdir():
-        if not child.is_dir() or not child.name.isdigit():
-            continue
-        mod_name = _read_mod_name(child / "meta.cpp") or child.name
-        mods[child.name] = mod_name
+    with os.scandir(workshop_dir) as children:
+        for child in children:
+            if not child.name.isdigit() or not child.is_dir():
+                continue
+            name = child.name
+            if names_for is None or child.name in names_for:
+                name = _read_mod_name(Path(child.path) / "meta.cpp") or child.name
+            mods[child.name] = name
     return mods
 
 
@@ -567,7 +573,8 @@ def scan_experimental_local_mods(
         workshop_id = target.name if target.is_dir() and target.name.isdigit() else ""
         if not workshop_id:
             continue
-        mods.setdefault(workshop_id, _read_mod_name(target / "meta.cpp") or target.name)
+        if workshop_id not in mods:
+            mods[workshop_id] = _read_mod_name(target / "meta.cpp") or target.name
     return mods
 
 
@@ -593,11 +600,13 @@ def check_server_mods(
     steam_context: str = "",
     installed_mods: dict[str, str] | None = None,
 ) -> ModCheckResult:
-    installed = installed_mods if installed_mods is not None else scan_installed_mods(workshop_dir)
+    installed = installed_mods
     workshop_dir_text = str(workshop_dir) if workshop_dir else ""
     try:
         required = fetch_required_mods(server)
     except Exception as exc:
+        if installed is None:
+            installed = scan_installed_mods(workshop_dir, names_for=set())
         return ModCheckResult(
             False,
             server,
@@ -608,6 +617,10 @@ def check_server_mods(
             workshop_dir=workshop_dir_text,
         )
 
+    if installed is None:
+        installed = scan_installed_mods(
+            workshop_dir, names_for={mod.workshop_id for mod in required if mod.downloadable}
+        )
     for mod in required:
         mod.installed = mod.workshop_id in installed
         mod.installed_name = installed.get(mod.workshop_id, "")

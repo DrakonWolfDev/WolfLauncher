@@ -168,7 +168,9 @@ class ModContextChangeTests(unittest.TestCase):
         self.assertIn("1.0 KiB", window.mod_detail_metadata.setText.call_args.args[0])
         window.mod_detail_open_button.setEnabled.assert_called_once_with(True)
         window._set_mod_detail_status.assert_called_once_with("ready")
-        window.load_mod_thumbnail.assert_called_once_with("https://example.test/preview.jpg")
+        window.load_mod_thumbnail.assert_called_once_with(
+            "https://example.test/preview.jpg", revision=0
+        )
 
     def test_launch_actions_follow_the_active_server_context(self):
         server = Server("Example", "Tests", "dayz.test", 2302, 27016)

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Reuse validated mod previews and unchanged table cells, reduce repeated
+  Workshop name reads, and filter cached servers through a cancellable
+  background query while preserving live readiness and edition isolation.
+
 - Show completed browser checks immediately and display required mods while
   readiness checks finish. Share overlapping Workshop metadata requests, retain
   a bounded display cache and keep launch/Steam freshness checks authoritative.

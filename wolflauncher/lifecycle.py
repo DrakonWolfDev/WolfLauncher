@@ -23,6 +23,7 @@ WORKER_ATTRIBUTES = (
     "wolfapi_map_worker",
     "wolfapi_map_catalog_worker",
     "results_freshness_worker",
+    "browser_snapshot_worker",
     "workshop_library_worker",
     "editor_dependency_worker",
     "local_mod_worker",

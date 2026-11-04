@@ -253,3 +253,111 @@ with its existing environment/handoff regressions passing.
 Source completion is verified locally. Current packaged Linux, native Windows
 and real Steam/DayZ validation remain pending. No version change, build, tag,
 release publication, public-link change or API deployment was performed.
+
+## Remaining performance review areas — 4 November 2026
+
+Andi requested continuation through as many of the remaining improvements as
+practical. All four suggested areas now have bounded source improvements.
+
+### Thumbnail reuse
+
+The mod inspector reuses the same pending URL/revision request and validated
+cached previews. Returning to a mod avoids clearing/refetching its image while
+the entry is valid. Published revision changes and five-minute expiry require a
+new request. Cache entries retain original validated images so rendering at a
+different inspector size need not magnify an already downscaled thumbnail.
+The cache is limited to 32 entries and 16 MiB of decoded pixel storage estimates;
+this is not a process-RSS bound.
+
+Original/final HTTPS URL checks, raster MIME checks, transfer limits and timeout
+remain. Reply buffering is limited, image dimensions are checked before decoding,
+and the detected format must also be PNG/JPEG/WebP. Bad responses are not cached.
+Changing selection aborts obsolete requests, whose late replies cannot repaint
+another mod. No persistent disk cache or speculative image prefetch was added.
+
+### Incremental mod tables and download progress
+
+Rows retain native table items when their presentation is unchanged. Metadata
+updates alter affected cells, preserve selection/sort/scroll, and retain user
+column widths. Published IDs and separate local-requirement identities keep rows
+associated with their contents. Short columns use representative text sizing;
+the name stretches and full cell text remains available in tooltips. Population
+restores signal, paint and sorting state even if an update raises an exception.
+
+Progress snapshots are indexed once by ID, removing the per-row linear snapshot
+search. Unchanged text, values and progress widgets are reused. Sorting is paused
+only when a change requires it, preventing moving rows from mixing item updates.
+Terminal states remove completed progress overlays. All Steam state/callback
+processing remains immediate; no terminal updates or cancellation events are
+dropped, and this makes no claim to increase Steam's content-transfer rate.
+
+### Browser filtering outside the GUI thread
+
+The application loads SQLite browser snapshots through one cancellable worker
+with one latest pending query. Each worker owns a read-only connection and uses
+one read transaction for filter options, result rows, match count and summary.
+Cancellation reaches SQLite's progress handler; lock waits have a 100 ms timeout.
+The main thread applies only matching query/filter/edition generations against
+an unchanged database token. It keeps the displayed rows while a same-edition
+query runs; edition changes clear the previous edition's rows immediately.
+
+Filter options and edition summaries are reused only while the database token
+is unchanged. Main-connection writes, external commits and transaction-state
+changes invalidate reuse. Disappearing options trigger a query for the resulting
+controls. Pending live freshness checks wait for the applied rows before resuming
+their existing bounded batches. Shutdown cancels and waits for the worker through
+the existing lifecycle coordinator. In-memory fixtures retain a direct path.
+Substring/alias matching, provider freshness timestamps and live evidence rules
+are unchanged; no database schema or API contract changed.
+
+### Less repeated Workshop name work
+
+Server checks first obtain the manifest, freshly enumerate numeric directories
+with `scandir`, and read names only for required IDs. Total installed counts stay
+accurate without reading every unrelated `meta.cpp`. Failed server queries still
+report the installed count without reading mod names. Full library/Experimental
+views reuse names only when their path and current device/inode/size/mtime/ctime
+match, and validate identity again after a file read. The thread-safe name cache
+retains at most 1,024 names, each at most 8 KiB of encoded value. Missing files,
+changed/replaced content and concurrent edits cannot reuse an old identity.
+
+This is a display-name cache and targeted scan, not a cached claim that a mod is
+installed/current. Directory presence is still enumerated on each check; native
+launch path checks, selected-library revision/state checks and Experimental's
+official-launcher path precedence remain. A persistent directory index would need
+additional cross-platform invalidation evidence and was not introduced.
+
+### Measurements and validation
+
+`scripts/benchmark-mod-table.py` records five-sample medians for initial
+population, unchanged refresh and a one-row size change, including event
+processing. Linux offscreen Qt, application theme, 1200×600 table and synthetic
+mods only; filtering/detail-card work is stubbed. The baseline method is loaded
+from `ccf2a55` while using the same current presenter and dependencies:
+
+| Rows | Initial baseline / current (ms) | Unchanged baseline / current (ms) | One changed baseline / current (ms) |
+| --- | --- | --- | --- |
+| 200 | 23.82 / 15.02 | 17.67 / 4.90 | 17.69 / 5.12 |
+| 500 | 39.41 / 33.32 | 38.78 / 7.85 | 39.72 / 7.77 |
+| 1,000 | 73.10 / 61.78 | 66.14 / 12.13 | 67.38 / 12.65 |
+
+Reproduce in separate processes:
+
+```sh
+QT_QPA_PLATFORM=offscreen .venv/bin/python scripts/benchmark-mod-table.py --revision ccf2a55
+QT_QPA_PLATFORM=offscreen .venv/bin/python scripts/benchmark-mod-table.py
+```
+
+These timings are not packaged scrolling, disk, network or end-to-end join
+benchmarks. Deterministic regressions also verify one GET for repeated pending/
+cached thumbnails, no item allocations for unchanged mod rows, and one name-file
+read for a server requiring one item from a ten-mod library. No live server,
+Steam/game or Workshop action was needed.
+
+Final Linux verification: **1,013 tests run / 1,006 passed / 7 skipped**, including
+**23 new regressions** for these changes. Required Ruff lint/formatting, hardened
+core type checks, compilation and whitespace checks pass; the release-lock
+dependency audit reports no known vulnerabilities. Packaged Linux, native Windows,
+high-DPI/manual accessibility and real Steam/DayZ checks remain distinct follow-up
+evidence. No package build, version bump, tag, release publication, public-link
+change or API deployment was performed.

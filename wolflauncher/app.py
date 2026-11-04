@@ -181,6 +181,12 @@ class MainWindow(
         self.pending_mod_server = None
         self.browser_servers = []
         self.server_cache, self.recovered_server_cache_path = server_cache.connect_recovering()
+        from .browser_snapshot import BrowserSnapshotLoader
+
+        cache_file = self.server_cache.execute("PRAGMA database_list").fetchone()[2]
+        self.browser_snapshot_loader = (
+            BrowserSnapshotLoader(self, cache_file) if cache_file else None
+        )
 
         if self.saved_server_repository.errors:
             QTimer.singleShot(

@@ -1,14 +1,13 @@
 from dataclasses import replace
 
-from PySide6.QtCore import QPoint, Qt, QTimer, QUrl
-from PySide6.QtGui import QAction, QColor, QDesktopServices, QPixmap
+from PySide6.QtCore import QBuffer, QByteArray, QIODevice, QPoint, QSignalBlocker, Qt, QTimer, QUrl
+from PySide6.QtGui import QAction, QColor, QDesktopServices, QImageReader, QPixmap
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 from PySide6.QtWidgets import (
     QApplication,
     QComboBox,
     QFrame,
     QHBoxLayout,
-    QHeaderView,
     QLabel,
     QMenu,
     QMessageBox,
@@ -17,7 +16,6 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSplitter,
     QTableWidget,
-    QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
@@ -59,7 +57,6 @@ from .settings import (
 from .theme import (
     ASSETS_DIR,
     configure_data_table,
-    monospace_font,
     set_ui_role,
     theme_icon,
 )
@@ -436,48 +433,10 @@ class ModsFeatureMixin:
                 self.show_installed_workshop_library()
 
     def _display_mod_rows(self, mods, *, preserve_position=False):
-        selected_id = ""
-        scroll = self.mods_table.verticalScrollBar().value()
-        sorting = self.mods_table.isSortingEnabled()
-        header = self.mods_table.horizontalHeader()
-        sort_column, sort_order = header.sortIndicatorSection(), header.sortIndicatorOrder()
-        if preserve_position and self.mods_table.currentRow() >= 0:
-            selected_id = self._mods_cell(self.mods_table.currentRow(), 2)
-        self.mods_table.blockSignals(True)
-        self.mods_table.setSortingEnabled(False)
-        self.mods_table.setRowCount(len(mods))
-        for row, mod in enumerate(mods):
-            row_data = mod_row(mod)
-            for column, value in enumerate(row_data.values):
-                item = QTableWidgetItem(value)
-                item.setData(Qt.UserRole, row_data.workshop_id)
-                if column in {2, 3}:
-                    item.setFont(monospace_font())
-                if column in {0, 2, 3}:
-                    item.setTextAlignment(Qt.AlignCenter)
-                if column == 0:
-                    item.setForeground(QColor(row_data.status_colour))
-                self.mods_table.setItem(row, column, item)
-        self.mods_table.resizeColumnsToContents()
-        self.mods_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        self.mods_table.setSortingEnabled(False)
+        from .mod_table import populate_mod_table
+
+        populate_mod_table(self.mods_table, mods, preserve_position=preserve_position)
         self.apply_mod_filter()
-        if preserve_position and sorting:
-            self.mods_table.setSortingEnabled(True)
-            self.mods_table.sortItems(sort_column, sort_order)
-        if self.mods_table.rowCount() > 0:
-            row = next(
-                (
-                    row
-                    for row in range(self.mods_table.rowCount())
-                    if self._mods_cell(row, 2) == selected_id
-                ),
-                0,
-            )
-            self.mods_table.selectRow(row)
-        if preserve_position:
-            self.mods_table.verticalScrollBar().setValue(scroll)
-        self.mods_table.blockSignals(False)
         self.update_mod_detail_card()
 
     def check_initial_server_mods(self):
@@ -756,6 +715,9 @@ class ModsFeatureMixin:
             self.mod_detail_thumbnail.setPixmap(QPixmap())
             self.mod_detail_thumbnail.setText("No preview")
             self.mod_thumbnail_url = ""
+            if self.mod_thumbnail_reply is not None:
+                reply, self.mod_thumbnail_reply = self.mod_thumbnail_reply, None
+                reply.abort()
             return
         self._set_mod_detail_status(mod_detail_status(mod))
         self.mod_detail_title.setText(mod.name or mod.installed_name or "Unknown mod")
@@ -774,16 +736,26 @@ class ModsFeatureMixin:
             f"Workshop {mod.workshop_id}  ·  {mod_file_size(mod)}  ·  {status}"
         )
         self.mod_detail_open_button.setEnabled(bool(mod.workshop_url))
-        self.load_mod_thumbnail(mod.workshop_preview_url)
+        self.load_mod_thumbnail(mod.workshop_preview_url, revision=mod.workshop_updated_at)
 
     def _set_mod_detail_status(self, status: str):
         self.mod_detail_card.setProperty("modStatus", status)
         self.mod_detail_card.style().unpolish(self.mod_detail_card)
         self.mod_detail_card.style().polish(self.mod_detail_card)
 
-    def load_mod_thumbnail(self, url: str):
+    def load_mod_thumbnail(self, url: str, *, revision=0):
+        from .thumbnail_cache import ThumbnailCache
+
+        if not hasattr(self, "mod_thumbnail_cache"):
+            self.mod_thumbnail_cache = ThumbnailCache()
         normalized_url = normalize_thumbnail_url(url)
         self.mod_thumbnail_url = normalized_url if is_safe_thumbnail_url(normalized_url) else ""
+        key = (self.mod_thumbnail_url, revision)
+        if (
+            self.mod_thumbnail_reply is not None
+            and getattr(self, "mod_thumbnail_request_key", None) == key
+        ):
+            return
         if self.mod_thumbnail_reply is not None:
             previous_reply = self.mod_thumbnail_reply
             self.mod_thumbnail_reply = None
@@ -792,6 +764,11 @@ class ModsFeatureMixin:
         if not self.mod_thumbnail_url:
             self._show_mod_thumbnail_placeholder()
             return
+        self.mod_thumbnail_request_key = key
+        cached = self.mod_thumbnail_cache.get(key)
+        if cached is not None:
+            self._display_mod_thumbnail(cached)
+            return
         self.mod_detail_thumbnail.setText("Loading…")
         request = QNetworkRequest(QUrl(self.mod_thumbnail_url))
         request.setAttribute(
@@ -799,6 +776,7 @@ class ModsFeatureMixin:
         )
         reply = self.mod_thumbnail_manager.get(request)
         self.mod_thumbnail_reply = reply
+        reply.setReadBufferSize(MAX_THUMBNAIL_BYTES + 1)
         reply.downloadProgress.connect(
             lambda received, _total, active_reply=reply: self._abort_oversize_thumbnail(
                 active_reply, received
@@ -868,22 +846,35 @@ class ModsFeatureMixin:
             if len(payload) <= MAX_THUMBNAIL_BYTES and is_safe_thumbnail_content_type(
                 str(content_type)
             ):
-                pixmap.loadFromData(payload)
-                if not is_safe_thumbnail_dimensions(pixmap.width(), pixmap.height()):
-                    pixmap = QPixmap()
+                buffer = QBuffer()
+                buffer.setData(QByteArray(payload))
+                buffer.open(QIODevice.ReadOnly)
+                reader = QImageReader(buffer)
+                size = reader.size()
+                if bytes(reader.format()).lower() in {
+                    b"png",
+                    b"jpeg",
+                    b"jpg",
+                    b"webp",
+                } and is_safe_thumbnail_dimensions(size.width(), size.height()):
+                    image = reader.read()
+                    if is_safe_thumbnail_dimensions(image.width(), image.height()):
+                        pixmap = QPixmap.fromImage(image)
             if pixmap.isNull():
                 self._show_mod_thumbnail_placeholder()
                 return
-            self.mod_detail_thumbnail.setText("")
-            self.mod_detail_thumbnail.setPixmap(
-                pixmap.scaled(
-                    self.mod_detail_thumbnail.size(),
-                    Qt.KeepAspectRatio,
-                    Qt.SmoothTransformation,
-                )
-            )
+            self.mod_thumbnail_cache.put(self.mod_thumbnail_request_key, pixmap)
+            self._display_mod_thumbnail(pixmap)
         finally:
             reply.deleteLater()
+
+    def _display_mod_thumbnail(self, pixmap):
+        self.mod_detail_thumbnail.setText("")
+        self.mod_detail_thumbnail.setPixmap(
+            pixmap.scaled(
+                self.mod_detail_thumbnail.size(), Qt.KeepAspectRatio, Qt.SmoothTransformation
+            )
+        )
 
     def mod_check_steam_context(self, install: SteamInstall | None) -> str:
         if not install:
@@ -1310,11 +1301,26 @@ class ModsFeatureMixin:
         dialog.setValue(progress)
 
     def update_mod_progress_rows(self, snapshots):
+        sorting = self.mods_table.isSortingEnabled()
+        updates = self.mods_table.updatesEnabled()
+        with QSignalBlocker(self.mods_table):
+            self.mods_table.setUpdatesEnabled(False)
+            try:
+                ModsFeatureMixin._apply_mod_progress_rows(self, snapshots)
+            finally:
+                if self.mods_table.isSortingEnabled() != sorting:
+                    self.mods_table.setSortingEnabled(sorting)
+                self.mods_table.setUpdatesEnabled(updates)
+
+    def _apply_mod_progress_rows(self, snapshots):
         result = self._selected_mod_result(successful=True)
         if not result:
             return
         apply_workshop_item_states(result, snapshots)
         mods = {mod.workshop_id: mod for mod in result.required_mods}
+        by_id = {snapshot.workshop_id: snapshot for snapshot in snapshots}
+        from .mod_table import SIGNATURE_ROLE
+
         for row in range(self.mods_table.rowCount()):
             id_item = self.mods_table.item(row, 2)
             workshop_id = id_item.data(Qt.UserRole) if id_item else ""
@@ -1324,30 +1330,58 @@ class ModsFeatureMixin:
             row_data = mod_row(mod)
             status_item = self.mods_table.item(row, 0)
             size_item = self.mods_table.item(row, 3)
-            if status_item:
-                status_item.setText(row_data.values[0])
-                status_item.setForeground(QColor(row_data.status_colour))
-            if size_item:
-                size_item.setText(row_data.values[3])
-            snapshot = next(
-                (item for item in snapshots if item.workshop_id == mod.workshop_id),
-                None,
-            )
+            snapshot = by_id.get(mod.workshop_id)
             percent = snapshot.percent if snapshot else None
-            if (
+            show_progress = bool(
                 snapshot
                 and snapshot.state & ITEM_STATE_DOWNLOADING
                 and percent is not None
                 and 0 <= percent < 100
+            )
+            widget = self.mods_table.cellWidget(row, 0)
+            same_progress = (
+                (
+                    isinstance(widget, QProgressBar)
+                    and widget.value() == percent
+                    and widget.format() == f"Downloading {percent}%"
+                )
+                if show_progress
+                else widget is None
+            )
+            if (
+                status_item
+                and status_item.text() == row_data.values[0]
+                and size_item
+                and size_item.text() == row_data.values[3]
+                and same_progress
             ):
+                continue
+            if self.mods_table.isSortingEnabled():
+                self.mods_table.setSortingEnabled(False)
+            changed = False
+            if status_item and status_item.text() != row_data.values[0]:
+                status_item.setText(row_data.values[0])
+                status_item.setToolTip(row_data.values[0])
+                status_item.setForeground(QColor(row_data.status_colour))
+                changed = True
+            if size_item and size_item.text() != row_data.values[3]:
+                size_item.setText(row_data.values[3])
+                size_item.setToolTip(row_data.values[3])
+                changed = True
+            if changed and self.mods_table.item(row, 1):
+                self.mods_table.item(row, 1).setData(SIGNATURE_ROLE, None)
+            if show_progress:
                 progress = self.mods_table.cellWidget(row, 0)
                 if not isinstance(progress, QProgressBar):
                     progress = QProgressBar()
                     progress.setTextVisible(True)
                     self.mods_table.setCellWidget(row, 0, progress)
-                progress.setValue(percent)
-                progress.setFormat(f"Downloading {percent}%")
-            else:
+                if progress.value() != percent:
+                    progress.setValue(percent)
+                text = f"Downloading {percent}%"
+                if progress.format() != text:
+                    progress.setFormat(text)
+            elif self.mods_table.cellWidget(row, 0) is not None:
                 self.mods_table.removeCellWidget(row, 0)
 
     def finish_workshop_subscription(self, result):

@@ -3,7 +3,9 @@
 Review of development source at `aed2fa4` on `dev/release-preparation`.
 This records the assessment before implementation, not a release claim.
 Priorities 1–3 were subsequently approved and implemented; see
-[the follow-up evidence](DEVELOPMENT_FOLLOWUP_2026-11-04.md#further-performance-work-review-priorities-13-implemented). Existing PERF-01,
+[the follow-up evidence](DEVELOPMENT_FOLLOWUP_2026-11-04.md#further-performance-work-review-priorities-13-implemented). The remaining four areas subsequently received source improvements as well;
+see [their implementation and measurements](DEVELOPMENT_FOLLOWUP_2026-11-04.md#remaining-performance-review-areas--4-november-2026).
+Existing PERF-01,
 PERF-02 and gzip improvements documented in DEVELOPMENT_FOLLOWUP_2026-11-04.md
 remain complete. No Steam/game action or public network request was performed.
 

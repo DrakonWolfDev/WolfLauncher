@@ -609,3 +609,19 @@ evidence](DEVELOPMENT_FOLLOWUP_2026-11-04.md#further-performance-work-review-pri
 Packaged/native Windows and live Steam/DayZ evidence remains pending. Review items
 4–7 remain candidates; no release, version bump, package build or API deployment
 was performed. Preserve this completion update before planning further work.
+
+
+## Remaining performance areas implemented — 4 November 2026
+
+Andi approved continuing the remaining source performance improvements. Validated
+thumbnail reuse, incremental mod-table/progress updates, asynchronous read-only
+browser snapshots with bounded scheduling/invalidation, and targeted Workshop
+name reads with a file-identity display cache are implemented. Directory presence
+and launch freshness remain freshly checked; no persistent installed-state cache
+was added. Final Linux checks: 1,013 run, 1,006 passed, 7 skipped; required quality
+checks and the release-lock dependency audit pass. See [measurements, safeguards
+and remaining platform evidence](DEVELOPMENT_FOLLOWUP_2026-11-04.md#remaining-performance-review-areas--4-november-2026).
+All four remaining review areas now have source improvements; do not reopen them
+from the earlier candidate list. Packaged Linux, native Windows, high-DPI/manual
+accessibility and live Steam/DayZ validation remain pending. No release, version
+bump, package build, public-link change or API deployment was performed.

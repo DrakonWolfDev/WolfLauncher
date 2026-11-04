@@ -178,6 +178,8 @@ class ServerBrowserMixin:
         self.active_discovered_server = None
         self.active_discovered_cache_key = ""
         self.browser_table.clearSelection()
+        self.browser_table.setRowCount(0)
+        self.browser_servers = []
         self.pending_wolfapi_search = ""
         self.pending_wolfapi_map = ""
         self.browser_mod_results.clear()
@@ -1264,6 +1266,10 @@ class ServerBrowserMixin:
     def _schedule_results_freshness_check(self):
         if optional_polling_paused(self):
             return
+        loader = getattr(self, "browser_snapshot_loader", None)
+        if loader is not None and getattr(self, "browser_snapshot_worker", None) is not None:
+            loader.pending_freshness = True
+            return
         if not hasattr(self, "browser_servers"):
             return
         context = (
@@ -1663,10 +1669,18 @@ class ServerBrowserMixin:
         if not hasattr(self, "browser_table"):
             return
 
-        selected = self.selected_discovered_server()
-        selected_key = selected.cache_key if selected else ""
-        scroll_value = self.browser_table.verticalScrollBar().value()
+        loader = getattr(self, "browser_snapshot_loader", None)
+        if loader is not None:
+            loader.request(self.current_browser_query())
+            return
+        # In-memory callers retain the direct path; the application uses the
+        # read-only worker against its persistent cache.
         self._refresh_browser_filter_options()
+        self.apply_browser_snapshot(
+            load_browser_snapshot(self.server_cache, self.current_browser_query())
+        )
+
+    def current_browser_query(self):
         sort_key = self.browser_sort.currentText().lower().replace(" ", "_")
         modded = None
         if self.browser_modded.currentText() == "Modded":
@@ -1680,25 +1694,28 @@ class ServerBrowserMixin:
         style_terms = browser_style_terms(self.browser_style.currentText())
         limit = int(self.browser_limit.currentText())
 
-        snapshot = load_browser_snapshot(
-            self.server_cache,
-            BrowserQuery(
-                text=self.browser_search.text(),
-                online_only=self.browser_online_only.isChecked(),
-                map_name=map_name,
-                version=version,
-                source=source,
-                source_namespace=source_namespace,
-                products=(ServerBrowserMixin.browser_product_key(self),),
-                style_terms=tuple(style_terms),
-                modded=modded,
-                perspective=self.browser_perspective.currentData(),
-                hide_quality_flagged=self.browser_hide_quality_flagged.isChecked(),
-                sort_by=sort_key,
-                descending=self.browser_descending.isChecked(),
-                limit=limit,
-            ),
+        return BrowserQuery(
+            text=self.browser_search.text(),
+            online_only=self.browser_online_only.isChecked(),
+            map_name=map_name,
+            version=version,
+            source=source,
+            source_namespace=source_namespace,
+            products=(ServerBrowserMixin.browser_product_key(self),),
+            style_terms=tuple(style_terms),
+            modded=modded,
+            perspective=self.browser_perspective.currentData(),
+            hide_quality_flagged=self.browser_hide_quality_flagged.isChecked(),
+            sort_by=sort_key,
+            descending=self.browser_descending.isChecked(),
+            limit=limit,
         )
+
+    def apply_browser_snapshot(self, snapshot):
+        selected = self.selected_discovered_server()
+        selected_key = selected.cache_key if selected else ""
+        scroll_value = self.browser_table.verticalScrollBar().value()
+        limit = int(self.browser_limit.currentText())
         servers = snapshot.servers
         if selected_key and selected_key not in {server.cache_key for server in servers}:
             if hasattr(self, "server_launch"):
@@ -1919,6 +1936,9 @@ class ServerBrowserMixin:
             source_namespace,
             products=(ServerBrowserMixin.browser_product_key(self),),
         )
+        self.apply_browser_filter_options(options)
+
+    def apply_browser_filter_options(self, options):
         self._set_combo_filter_options(
             self.browser_map,
             "Any map",
