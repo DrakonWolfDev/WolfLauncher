@@ -558,3 +558,39 @@ See [queue behaviour and evidence](SERVER_QUEUE_COUNTS.md). Next candidate in li
 order: **PERF-01: profile the server browser before deciding whether a model/view
 change is justified**. PERF-02 already has implementation updates earlier in this
 handoff; preserve those results. REL-02 and API-01 retain their evidence needs.
+
+
+## List follow-up — 4 November 2026
+
+Continued unattended work after FEATURE-04, preserving the existing PERF-01 and
+PERF-02 implementations. Linux benchmarks confirm the table improvement and add
+process RSS evidence. API-02 evaluation found a 92% body-size reduction using
+WolfAPI's existing gzip support; bounded client decoding is now implemented.
+Conditional persistence, compact schemas and count deltas still need an agreed
+age/deletion/generation contract and were not introduced speculatively.
+
+PLATFORM-01 was reproduced using the existing AppImage: an external system Python
+loaded bundled SSL libraries. Frozen Linux host handoffs now use child-only
+loader/PATH/Qt cleanup while bundled helpers keep their environment. A real
+harmless QProcess child verifies delivery. PLATFORM-02 adds the read-only,
+qualified community-recommendation memory-map check in Settings.
+
+BUILD-01 now has source-snapshot consistency, tool/dependency inputs, artifact
+hashes and staged bundle inventories for AppImage and Windows portable builds;
+sidecars and clean matching-source checks are retained by the existing tag-release
+workflow. Native wrappers/Setup/DEB/RPM provenance and independent signatures
+remain open. QUALITY-01 adds five integrated simulated join/cancel/failure flows
+using the real coordinators and command builder without a game/Steam launch.
+
+Validation: **971 run / 964 passed / 7 skipped**, required Ruff lint/formatting,
+compilation, shell syntax, workflow YAML and whitespace checks. Current native
+packages were not rebuilt (PyInstaller is absent here), and Windows/PowerShell
+validation remains pending. No main merge, PR, version bump, publication, API
+deployment, Workshop action or system setting change was performed.
+
+See [full evidence, decisions and remaining list items](DEVELOPMENT_FOLLOWUP_2026-11-04.md)
+and [provenance usage](BUILD_PROVENANCE.md). Next useful work: wrapper/native
+package provenance and isolated rebuilt Linux validation. Localisation, signed
+installable updates and broader support collection retain their design choices;
+LAN discovery still needs interface/custom-port coverage and real LAN evidence.
+REL-02/API-01 retain their specific missing inputs; do not guess them.

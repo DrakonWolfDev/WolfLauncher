@@ -94,3 +94,63 @@ class HttpClientTests(unittest.TestCase):
             context = call.kwargs["context"]
             self.assertEqual(context.verify_mode, ssl.CERT_REQUIRED)
             self.assertTrue(context.check_hostname)
+
+
+class CompressedJsonTests(unittest.TestCase):
+    def response(self, body, encoding="gzip"):
+        response = _Response(body)
+        response.headers["Content-Encoding"] = encoding
+        return response
+
+    @patch("wolflauncher.http_client.urllib.request.urlopen")
+    def test_gzip_json_is_negotiated_and_decoded_with_existing_size_limits(self, urlopen):
+        import gzip
+
+        urlopen.return_value = self.response(gzip.compress(b'{"ready":true}'))
+        self.assertEqual(fetch_json("https://example.test", retries=0), {"ready": True})
+        self.assertEqual(urlopen.call_args.args[0].headers["Accept-encoding"], "gzip")
+
+    @patch("wolflauncher.http_client.urllib.request.urlopen")
+    def test_compressed_bomb_is_rejected_before_unbounded_allocation(self, urlopen):
+        import gzip
+
+        urlopen.return_value = self.response(gzip.compress(b" " * 1_000_000))
+        with self.assertRaises(HttpClientError) as caught:
+            fetch_json("https://example.test", max_bytes=4096, retries=0)
+        self.assertEqual(caught.exception.category, "too_large")
+
+    @patch("wolflauncher.http_client.urllib.request.urlopen")
+    def test_invalid_truncated_trailing_and_unsupported_encoding_are_rejected(self, urlopen):
+        import gzip
+
+        body = gzip.compress(b"[]")
+        for payload, encoding in (
+            (b"bad", "gzip"),
+            (body[:-1], "gzip"),
+            (body + b"extra", "gzip"),
+            (body + body, "gzip"),
+            (b"[]", "br"),
+        ):
+            with self.subTest(payload=payload, encoding=encoding):
+                urlopen.return_value = self.response(payload, encoding)
+                with self.assertRaises(HttpClientError) as caught:
+                    fetch_json("https://example.test", retries=0)
+                self.assertEqual(caught.exception.category, "content_encoding")
+
+    @patch("wolflauncher.http_client.urllib.request.urlopen")
+    def test_exact_decoded_limit_and_cancellation_after_read(self, urlopen):
+        import gzip
+        from unittest.mock import Mock
+
+        payload = b'"' + b"a" * 1022 + b'"'
+        urlopen.return_value = self.response(gzip.compress(payload))
+        self.assertEqual(len(fetch_json("https://example.test", max_bytes=1024, retries=0)), 1022)
+        urlopen.return_value = self.response(gzip.compress(payload))
+        with self.assertRaises(HttpClientError) as caught:
+            fetch_json(
+                "https://example.test",
+                max_bytes=1024,
+                retries=0,
+                cancel=Mock(side_effect=[False, False, True]),
+            )
+        self.assertEqual(caught.exception.category, "cancelled")

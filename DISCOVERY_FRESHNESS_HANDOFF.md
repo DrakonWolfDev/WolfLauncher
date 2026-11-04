@@ -108,3 +108,13 @@ Node runtime imports successfully, and a private/no-store response is rejected
 by the cache storage policy. cacheable-request checks storable() before storage;
 this is not a full advisory exploit regression test. No live-server query or
 installer build was performed. Existing published installers are unchanged.
+
+## Existing gzip transport — 4 November 2026
+
+The launcher now negotiates the API's existing gzip representation and enforces
+both wire and decoded response-size limits. A bounded 500-row public sample was
+968,784 bytes decoded and 77,829 bytes on the wire. Existing ETag/304 support was
+observed but no persistent conditional client cache or new counts/delta schema
+was introduced. Observation ages, expiry, identity and edition isolation retain
+the existing contract; no producer change or deployment is required. See
+[evaluation and remaining contract questions](docs/DEVELOPMENT_FOLLOWUP_2026-11-04.md).

@@ -136,6 +136,7 @@ jobs:
             dist/*.rpm.sha256
             dist/WolfLauncher-*-x86_64.AppImage
             dist/WolfLauncher-*-x86_64.AppImage.sha256
+            dist/WolfLauncher-*-x86_64.AppImage.provenance.json
             dist/WolfLauncher-*-linux-x86_64-installer.tar.gz
             dist/WolfLauncher-*-linux-x86_64-installer.tar.gz.sha256
             wolflauncher-*-installer-source.tar.gz
@@ -199,6 +200,7 @@ jobs:
           path: |
             dist/windows/*.zip
             dist/windows/*.zip.sha256
+            dist/windows/*.zip.provenance.json
             dist/windows/*-setup-*.exe
             dist/windows/*-setup-*.exe.sha256
           if-no-files-found: error
@@ -213,6 +215,9 @@ jobs:
     env:
       VERSION: ${{ needs.release-preflight.outputs.version }}
     steps:
+      - name: Check out matching provenance verifier
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7
+
       - name: Download complete release set
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
         with:
@@ -230,6 +235,12 @@ jobs:
           test -f "release/wolflauncher-${VERSION}-installer-source.tar.gz"
           (cd release && sha256sum --check *.sha256)
           (cd release/dist && sha256sum --check *.sha256)
+          python3 -m wolflauncher.build_provenance verify --commit "$GITHUB_SHA" --require-clean \
+            --manifest "release/dist/WolfLauncher-${VERSION}-x86_64.AppImage.provenance.json" \
+            "release/dist/WolfLauncher-${VERSION}-x86_64.AppImage"
+          python3 -m wolflauncher.build_provenance verify --commit "$GITHUB_SHA" --require-clean \
+            --manifest "release/wolflauncher-${VERSION}-windows-x64.zip.provenance.json" \
+            "release/wolflauncher-${VERSION}-windows-x64.zip"
           cp "release/wolflauncher-${VERSION}-setup-windows-x64.exe" "release/wolflauncher-${VERSION}-windows.exe"
           cp "release/dist/wolflauncher_${VERSION}_ubuntu24_amd64.deb" "release/wolflauncher-${VERSION}.deb"
           cp "release/dist/wolflauncher-${VERSION}-1.x86_64.rpm" "release/wolflauncher-${VERSION}.rpm"
@@ -251,6 +262,8 @@ jobs:
             release/wolflauncher-${{ needs.release-preflight.outputs.version }}-windows.exe
             release/wolflauncher-${{ needs.release-preflight.outputs.version }}-windows-x64.zip
             release/wolflauncher-${{ needs.release-preflight.outputs.version }}-windows-x64.zip.sha256
+            release/wolflauncher-${{ needs.release-preflight.outputs.version }}-windows-x64.zip.provenance.json
+            release/dist/WolfLauncher-${{ needs.release-preflight.outputs.version }}-x86_64.AppImage.provenance.json
             release/wolflauncher-${{ needs.release-preflight.outputs.version }}-installer-source.tar.gz
             release/wolflauncher-${{ needs.release-preflight.outputs.version }}-installer-source.tar.gz.sha256
           fail_on_unmatched_files: true

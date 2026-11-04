@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Reduce directory transfer sizes with bounded gzip decoding.
+- Keep AppImage loader paths out of external Steam, game and desktop handoffs.
+- Show read-only Linux memory-map compatibility guidance in Settings.
+- Record AppImage/Windows portable build inputs and packaged-file inventories,
+  with source consistency and matching-commit release checks.
+
 - Show separate live DayZ queue counts beside players in the browser, details
   and favourites, distinguishing measured zero, unknown and expired counts.
 

@@ -45,3 +45,12 @@ Validation covers every column in ascending/descending sorting, row consistency,
 selection, scroll position, keyboard navigation, star clicks, favourites, mod
 previews and existing table/presenter behaviour. All 79 targeted tests pass. A
 themed render was visually inspected for the stars, lock and game-time icons.
+
+## Linux follow-up — 4 November 2026
+
+The existing optimisation was remeasured on Linux with queue labels. At 1,000
+rows, population was 436.71 / 129.58 ms and 50 enrichments 237.27 / 16.84 ms
+(baseline / current). Separate-process RSS samples measured about 84.7 / 20.8 MiB
+above the pre-population process size. The benchmark now supports `--rows` and
+reports Linux RSS; use separate processes for memory comparisons. See
+[complete method, measurements and limits](DEVELOPMENT_FOLLOWUP_2026-11-04.md).

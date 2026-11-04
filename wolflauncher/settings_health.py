@@ -20,6 +20,35 @@ from .platform_detection import (
 from .platforms import current_platform
 
 HealthRow = tuple[str, str, str]
+DAYZ_PROTON_RECOMMENDED_MAP_COUNT = 1048576
+
+
+def linux_memory_map_health(path: Path = Path("/proc/sys/vm/max_map_count")) -> HealthRow:
+    """Read a Linux limit; never change sysctls or make this a launch blocker."""
+    try:
+        with path.open("r", encoding="ascii") as stream:
+            value = stream.read(64).strip()
+        if not value.isascii() or not value.isdecimal() or len(value) > 12 or int(value) <= 0:
+            raise ValueError("Invalid limit")
+        count = int(value)
+    except (OSError, ValueError, UnicodeError):
+        return (
+            "Linux memory maps",
+            "WARN",
+            "vm.max_map_count could not be read; compatibility is unknown. No system setting was changed.",
+        )
+    recommended = DAYZ_PROTON_RECOMMENDED_MAP_COUNT
+    if count < recommended:
+        return (
+            "Linux memory maps",
+            "WARN",
+            f"vm.max_map_count is {count:,}. DayZ/Proton community guidance recommends at least {recommended:,}; a lower limit can cause loading freezes. Review your distribution's guidance. WolfLauncher does not change this setting.",
+        )
+    return (
+        "Linux memory maps",
+        "OK",
+        f"vm.max_map_count is {count:,}; meets the DayZ/Proton community recommendation of {recommended:,}. This check alone does not establish game compatibility.",
+    )
 
 
 @dataclass(frozen=True)
@@ -111,6 +140,7 @@ def build_settings_health_snapshot(
         rows.extend(
             [
                 ("Proton compatdata", "OK", proton_compatdata_detail(selected_install)),
+                linux_memory_map_health(),
             ]
         )
     if capabilities.supports_external_launcher:

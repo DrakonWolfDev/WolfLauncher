@@ -36,6 +36,17 @@ def flush_events(app):
     QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
 
 
+def linux_rss_kib():
+    """Current process RSS, not Python allocations or a peak-memory claim."""
+    try:
+        for line in Path("/proc/self/status").read_text().splitlines():
+            if line.startswith("VmRSS:"):
+                return int(line.split()[1])
+    except (OSError, ValueError, IndexError):
+        pass
+    return None
+
+
 def measure(app, implementation, count, repeats):
     servers = [
         DiscoveredServer(
@@ -51,12 +62,15 @@ def measure(app, implementation, count, repeats):
     table.sortItems(1, Qt.AscendingOrder)
     table.show()
     flush_events(app)
+    rss_before = linux_rss_kib()
+    rss_samples = []
     population, enrichment, previews = [], [], []
     for _ in range(repeats):
         start = time.perf_counter()
         implementation.populate_browser_table(table, servers)
         flush_events(app)
         population.append((time.perf_counter() - start) * 1000)
+        rss_samples.append(linux_rss_kib())
         start = time.perf_counter()
         for server in servers[:50]:
             updated = replace(server, ping_ms=server.ping_ms + 1, players_current=61)
@@ -74,6 +88,8 @@ def measure(app, implementation, count, repeats):
         "50_enrichments_ms": round(statistics.median(enrichment), 2),
         "50_mod_previews_ms": round(statistics.median(previews), 2),
         "descendant_widgets": len(table.findChildren(QWidget)),
+        "rss_before_kib": rss_before,
+        "rss_populated_kib": max((value for value in rss_samples if value is not None), default=None),
     }
     table.close()
     table.deleteLater()
@@ -85,9 +101,12 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--revision", help="Read the table module from this local Git revision")
     parser.add_argument("--repeats", type=int, default=5)
+    parser.add_argument("--rows", type=int, nargs="+", default=[200, 500, 1000])
     args = parser.parse_args()
     if args.repeats < 1:
         parser.error("--repeats must be at least 1")
+    if any(count < 1 or count > 10000 for count in args.rows):
+        parser.error("--rows must be between 1 and 10000")
     implementation = server_browser_table
     if args.revision:
         source = subprocess.run(
@@ -109,7 +128,7 @@ def main():
         "implementation": args.revision or "working tree",
         "python": sys.version.split()[0],
         "measurements": [measure(app, implementation, count, args.repeats)
-                         for count in (200, 500, 1000)],
+                         for count in args.rows],
     }, indent=2))
 
 

@@ -6,6 +6,7 @@ from PySide6.QtCore import QProcess, QTimer
 from PySide6.QtWidgets import QMessageBox
 
 from .game_session import minimize_for_game, monitor_game_handoff
+from .host_environment import start_host_detached
 from .launch_dialogs import PreflightLaunchDialog
 from .launcher import LaunchError
 from .models import Server
@@ -152,7 +153,7 @@ class ConnectPreflightCoordinator:
             self.fail("steam", "The selected Steam client has no runnable command.")
             return
         dialog.set_working("steam", f"Starting {install_label(install)}…")
-        started, _pid = QProcess.startDetached(command[0], command[1:])
+        started, _pid = start_host_detached(command, detached_start=QProcess.startDetached)
         if not started:
             self.fail("steam", "Steam could not be started.")
             return

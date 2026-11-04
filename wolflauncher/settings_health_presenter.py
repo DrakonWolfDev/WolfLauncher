@@ -32,7 +32,7 @@ GROUP_SPECS = (
     (
         "graphics",
         "Linux graphics and compatibility",
-        ("Proton compatdata",),
+        ("Proton compatdata", "Linux memory maps"),
     ),
 )
 

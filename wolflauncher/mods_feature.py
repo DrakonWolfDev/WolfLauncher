@@ -23,6 +23,7 @@ from PySide6.QtWidgets import (
 )
 
 from . import server_cache
+from .host_environment import open_host_url
 from .launch_preflight import (
     matching_mod_result,
     usable_mod_result,
@@ -945,7 +946,7 @@ class ModsFeatureMixin:
                 self, "No Workshop URL", "This mod row does not have a Workshop URL."
             )
             return
-        QDesktopServices.openUrl(QUrl(url))
+        open_host_url(QUrl(url), desktop_open=QDesktopServices.openUrl)
 
     def copy_mod_check_report(self):
         result = self._selected_mod_result()
@@ -1178,7 +1179,7 @@ class ModsFeatureMixin:
             if reply != QMessageBox.Yes:
                 return
         for mod in missing:
-            QDesktopServices.openUrl(QUrl(mod.workshop_url))
+            open_host_url(QUrl(mod.workshop_url), desktop_open=QDesktopServices.openUrl)
 
     def subscribe_missing_workshop_mods(self):
         self.workshop_resolution.subscribe_missing_mods()

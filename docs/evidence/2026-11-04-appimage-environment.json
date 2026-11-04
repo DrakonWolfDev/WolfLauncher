@@ -1,0 +1,20 @@
+{
+  "date": "2026-11-04",
+  "artifact": "WolfLauncher-0.9.3.5b-x86_64.AppImage",
+  "sha256": "19f9bf3bafc302cb47454194e8a95fbb09975bd84cc9de66ca0887e0e51e9927",
+  "scope": "Existing packaged startup with temporary config/data and local query stub; no Steam/game launch. Before-fix reproduction, not rebuilt-fix verification.",
+  "result": {
+    "loader_path": "[extracted-appimage]/usr/lib/wolflauncher/_internal",
+    "original_loader_path": null,
+    "inherited": {
+      "status": 0,
+      "stdout": "{\"ssl\": \"OpenSSL 3.0.2 15 Mar 2022\", \"loaded_libraries\": [\"[extracted-appimage]/usr/lib/wolflauncher/_internal/libcrypto.so.3\", \"[extracted-appimage]/usr/lib/wolflauncher/_internal/libssl.so.3\"]}\n",
+      "stderr": ""
+    },
+    "restored": {
+      "status": 0,
+      "stdout": "{\"ssl\": \"OpenSSL 3.0.13 30 Jan 2024\", \"loaded_libraries\": [\"/usr/lib/x86_64-linux-gnu/libcrypto.so.3\", \"/usr/lib/x86_64-linux-gnu/libssl.so.3\"]}\n",
+      "stderr": ""
+    }
+  }
+}

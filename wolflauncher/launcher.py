@@ -1,6 +1,7 @@
 import subprocess
 from pathlib import Path
 
+from .host_environment import host_process_environment
 from .models import Server
 from .status import resolve_host
 
@@ -49,4 +50,4 @@ def build_launch_command(launcher_path: str, player_name: str, server: Server) -
 
 def launch_dayz(launcher_path: str, player_name: str, server: Server) -> subprocess.Popen:
     command = build_launch_command(launcher_path, player_name, server)
-    return subprocess.Popen(command)
+    return subprocess.Popen(command, env=host_process_environment())

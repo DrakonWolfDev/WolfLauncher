@@ -130,3 +130,60 @@ class SettingsHealthSnapshotTests(unittest.TestCase):
         rows = {name: (status, detail) for name, status, detail in snapshot.rows}
         self.assertNotIn("DayZ", rows)
         self.assertEqual(rows["DayZ Experimental"], ("MISSING", "Not detected"))
+
+
+class LinuxMemoryMapHealthTests(unittest.TestCase):
+    def test_read_only_check_distinguishes_low_recommended_and_high_values(self):
+        from wolflauncher.settings_health import linux_memory_map_health
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "max_map_count"
+            for value, status in ((65530, "WARN"), (1048576, "OK"), (2147483642, "OK")):
+                with self.subTest(value=value):
+                    original = f"{value}\n"
+                    path.write_text(original)
+                    row = linux_memory_map_health(path)
+                    self.assertEqual(row[1], status)
+                    self.assertIn(f"{value:,}", row[2])
+                    self.assertEqual(path.read_text(), original)
+
+    def test_unavailable_or_malformed_limit_is_unknown_never_ok(self):
+        from wolflauncher.settings_health import linux_memory_map_health
+
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "max_map_count"
+            self.assertEqual(linux_memory_map_health(path)[1], "WARN")
+            for value in ("", "bad", "-1", "0", "1.5", "１２", "1" * 80):
+                path.write_text(value)
+                with self.subTest(value=value):
+                    row = linux_memory_map_health(path)
+                    self.assertEqual(row[1], "WARN")
+                    self.assertIn("unknown", row[2])
+
+    def test_snapshot_adds_linux_only_check_to_compatibility_group(self):
+        from wolflauncher.settings_health_presenter import settings_health_groups
+
+        for uses_proton in (False, True):
+            with (
+                self.subTest(uses_proton=uses_proton),
+                patch("wolflauncher.settings_health.current_platform") as platform,
+                patch(
+                    "wolflauncher.settings_health.linux_memory_map_health",
+                    return_value=("Linux memory maps", "WARN", "Low limit"),
+                ) as read,
+            ):
+                platform.return_value.capabilities = SimpleNamespace(
+                    uses_proton=uses_proton, diagnostic_tools=(), supports_external_launcher=False
+                )
+                snapshot = build_settings_health_snapshot(
+                    "", "native", "auto", "OK", "API", [], launcher_candidates=()
+                )
+                groups = {group.key: group for group in settings_health_groups(snapshot.rows)}
+                if uses_proton:
+                    read.assert_called_once_with()
+                    self.assertEqual(groups["graphics"].status, "WARN")
+                    self.assertIn(
+                        ("Linux memory maps", "WARN", "Low limit"), groups["graphics"].rows
+                    )
+                else:
+                    read.assert_not_called()

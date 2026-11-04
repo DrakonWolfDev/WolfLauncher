@@ -73,6 +73,10 @@ try {
     $env:WOLFLAUNCHER_NODE_MODULES = Join-Path $npmProject "node_modules"
     $env:WOLFLAUNCHER_ICON_PATH = $iconPath
 
+    $provenanceInputs = Join-Path $projectRoot "build\windows\provenance-inputs.json"
+    & $Python -m wolflauncher.build_provenance begin --output $provenanceInputs --tool "node=$nodePath"
+    if ($LASTEXITCODE -ne 0) { throw "Build input capture failed." }
+
     & $Python -m PyInstaller `
         --noconfirm `
         --clean `
@@ -132,6 +136,11 @@ try {
     $hash = Get-Sha256Digest $archivePath
     $hashPath = "$archivePath.sha256"
     [System.IO.File]::WriteAllText($hashPath, "$hash  $archiveName`n", [System.Text.Encoding]::ASCII)
+
+    & $Python -m wolflauncher.build_provenance finish --inputs $provenanceInputs --bundle-root $bundleRoot $archivePath
+    if ($LASTEXITCODE -ne 0) { throw "Build provenance failed." }
+    & $Python -m wolflauncher.build_provenance verify --manifest "$archivePath.provenance.json" --bundle-root $bundleRoot $archivePath
+    if ($LASTEXITCODE -ne 0) { throw "Packaged-file verification failed." }
 
     Write-Host "Built $archivePath"
     Write-Host "SHA256 $hash"

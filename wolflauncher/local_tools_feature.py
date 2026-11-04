@@ -25,6 +25,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from .host_environment import configure_host_process, open_host_url, start_host_detached
 from .launch_dialogs import LaunchDialog
 from .launcher import DEFAULT_PLAYER_NAME
 from .local_server import (
@@ -787,7 +788,7 @@ class LocalToolsFeatureMixin:
     def _open_missing_local_tool_pages(self, *, editor: bool):
         missing = [mod for mod in self._verify_local_tool_mods(editor=editor) if not mod.installed]
         for mod in missing:
-            QDesktopServices.openUrl(QUrl(mod.workshop_url))
+            open_host_url(QUrl(mod.workshop_url), desktop_open=QDesktopServices.openUrl)
 
     def _native_local_install(self):
         install = self.selected_local_tool_install()
@@ -807,7 +808,10 @@ class LocalToolsFeatureMixin:
         self.save_user_settings(silent=True)
         if not install.running:
             command = build_steam_start_command(install)
-            if not command or not QProcess.startDetached(command[0], command[1:])[0]:
+            if (
+                not command
+                or not start_host_detached(command, detached_start=QProcess.startDetached)[0]
+            ):
                 QMessageBox.warning(
                     self,
                     "Steam could not start",
@@ -1038,6 +1042,7 @@ class LocalToolsFeatureMixin:
             return
         self._save_local_host_settings()
         process = QProcess(self)
+        configure_host_process(process)
         process.setWorkingDirectory(str(root.parent))
         process.finished.connect(lambda _code, _status: self._finish_temporary_server_install())
         self.local_server_install_process = process
@@ -1075,7 +1080,7 @@ class LocalToolsFeatureMixin:
                 self, "Steam not detected", "Open Steam, then try the Steam-owned install again."
             )
             return
-        if not QDesktopServices.openUrl(QUrl("steam://install/223350")):
+        if not open_host_url(QUrl("steam://install/223350"), desktop_open=QDesktopServices.openUrl):
             QMessageBox.warning(
                 self,
                 "Steam install unavailable",
@@ -1149,6 +1154,7 @@ class LocalToolsFeatureMixin:
             return
         self._save_local_host_settings()
         process = QProcess(self)
+        configure_host_process(process)
         process.setWorkingDirectory(str(launch.root))
         process.finished.connect(self._local_server_finished)
         self.local_server_process = process

@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 
 from .diagnostics import format_launch_output_report
 from .game_session import minimize_for_game, monitor_game_handoff
+from .host_environment import configure_host_process
 from .platform_detection import (
     dayz_battleye_process_check,
     dayz_game_process_check,
@@ -85,6 +86,7 @@ class LaunchDialog(PostHandoffProcessCheckMixin, QDialog):
         self.minimize_on_handoff = minimize_on_handoff
         self.command_text = format_launch_command(command)
         self.process = QProcess(self)
+        configure_host_process(self.process)
         self.process.setProcessChannelMode(QProcess.MergedChannels)
 
         layout = QVBoxLayout(self)
@@ -183,6 +185,7 @@ class PreflightLaunchDialog(QDialog):
         self.setWindowTitle(f"Connecting to {server_name}")
         self.resize(560, 330)
         self.process = QProcess(self)
+        configure_host_process(self.process)
         self.process.setProcessChannelMode(QProcess.MergedChannels)
         self.process.readyReadStandardOutput.connect(self.read_output)
         self.process.finished.connect(self.handle_finished)
@@ -388,6 +391,7 @@ class NativeLaunchPreviewDialog(PostHandoffProcessCheckMixin, QDialog):
         self.launch_callback = launch_callback
         self.command_text = format_launch_command(command) if command else ""
         self.process = QProcess(self)
+        configure_host_process(self.process)
         self.process.setProcessChannelMode(QProcess.MergedChannels)
 
         layout = QVBoxLayout(self)

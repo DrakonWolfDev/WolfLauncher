@@ -86,6 +86,10 @@ PATH="$node_extract/bin:$PATH" "$node_extract/bin/npm" ci \
 
 export WOLFLAUNCHER_NODE_EXE="$node_extract/bin/node"
 export WOLFLAUNCHER_NODE_MODULES="$npm_root/node_modules"
+provenance_inputs="$repo_root/build/appimage/provenance-inputs.json"
+"$python_bin" -m wolflauncher.build_provenance begin --output "$provenance_inputs" \
+  --tool "node=$node_extract/bin/node" --tool "appimagetool=$appimagetool" \
+  --tool "appimage-runtime=$appimage_runtime"
 "$python_bin" -m PyInstaller --noconfirm --clean \
   --distpath "$pyinstaller_dist" \
   --workpath "$pyinstaller_work" \
@@ -124,4 +128,8 @@ WOLFLAUNCHER_SMOKE_TEST=1 \
 
 (cd "$repo_root/dist" && sha256sum "$(basename "$artifact")") > "$artifact.sha256"
 chmod 0644 "$artifact.sha256"
+"$python_bin" -m wolflauncher.build_provenance finish \
+  --inputs "$provenance_inputs" --bundle-root "$appdir" "$artifact"
+"$python_bin" -m wolflauncher.build_provenance verify \
+  --manifest "$artifact.provenance.json" --bundle-root "$appdir" "$artifact"
 printf '%s\n' "$artifact"

@@ -7,6 +7,7 @@ import random
 import time
 import urllib.error
 import urllib.request
+import zlib
 from dataclasses import dataclass
 from typing import Any, Callable
 
@@ -141,7 +142,7 @@ def request_json(
     retries: int = 1,
 ) -> Any:
     """Perform a JSON request, retrying only idempotent GET failures."""
-    headers = {"User-Agent": user_agent(), "Accept": "application/json"}
+    headers = {"User-Agent": user_agent(), "Accept": "application/json", "Accept-Encoding": "gzip"}
     if data is not None:
         headers["Content-Type"] = "application/x-www-form-urlencoded"
         retries = 0
@@ -210,6 +211,32 @@ def _read_bounded(response, max_bytes: int, cancel: Callable[[], bool] | None) -
     payload = response.read(max_bytes + 1)
     if len(payload) > max_bytes:
         raise HttpClientError("too_large", "Provider response exceeded the size limit")
+    encoding = (
+        ((getattr(response, "headers", None) or {}).get("Content-Encoding", "") or "")
+        .strip()
+        .lower()
+    )
+    if encoding == "gzip":
+        try:
+            decoder = zlib.decompressobj(16 + zlib.MAX_WBITS)
+            decoded = decoder.decompress(payload, max_bytes + 1)
+        except zlib.error as exc:
+            raise HttpClientError(
+                "content_encoding", "Provider returned invalid gzip content"
+            ) from exc
+        if len(decoded) > max_bytes or decoder.unconsumed_tail:
+            raise HttpClientError("too_large", "Provider response exceeded the size limit")
+        if not decoder.eof or decoder.unused_data:
+            raise HttpClientError(
+                "content_encoding", "Provider returned incomplete or trailing gzip content"
+            )
+        payload = decoded
+    elif encoding not in {"", "identity"}:
+        raise HttpClientError(
+            "content_encoding", "Provider returned an unsupported content encoding"
+        )
+    if cancel and cancel():
+        raise HttpClientError("cancelled", "Request cancelled")
     return payload
 
 

@@ -5,6 +5,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from ..host_environment import host_process_environment
 from .base import PlatformCapabilities
 
 
@@ -47,6 +48,7 @@ class LinuxPlatformBackend:
         try:
             result = subprocess.run(
                 ["pgrep", "-x", process_name],
+                env=host_process_environment(),
                 capture_output=True,
                 text=True,
                 timeout=2,
@@ -59,6 +61,7 @@ class LinuxPlatformBackend:
         try:
             result = subprocess.run(
                 ["pgrep", "-afi", "|".join(patterns)],
+                env=host_process_environment(),
                 capture_output=True,
                 text=True,
                 timeout=2,

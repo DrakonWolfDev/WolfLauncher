@@ -348,3 +348,10 @@ version-matched tags. Tag publication requires all files and checksums, then sen
 separate `windows`, `linux_rpm`, `linux_deb` and `linux_appimage` filenames to the
 website. DEB uses the `ubuntu24` artifact label with Python 3.12; RPM and AppImage
 are frozen on Ubuntu 24.04 and require target-desktop acceptance before release.
+
+## Build provenance
+
+AppImage and Windows portable builds now emit `.provenance.json` sidecars and
+reject source changes during compilation. Keep these beside their artifacts.
+Tag publication checks clean matching-source provenance for these formats.
+See [recorded inputs, verification and format limits](docs/BUILD_PROVENANCE.md).
