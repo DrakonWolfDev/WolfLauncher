@@ -427,6 +427,12 @@ def configure_packaged_smoke_test(app, window, environ=None) -> bool:
     from .tls import https_context
 
     https_context()
+    if environment.get("WOLFLAUNCHER_SMOKE_VALIDATE_UI") == "1":
+        from .packaged_validation import schedule_validation
+
+        schedule_validation(app, window, environment)
+        QTimer.singleShot(30000, lambda: app.exit(124))
+        return True
     for delay in (1000, 5000, 10000):
         QTimer.singleShot(delay, window.close)
     QTimer.singleShot(30000, lambda: app.exit(124))
@@ -480,4 +486,6 @@ def main():
         window.close()
         exit_code = 130
     instance_guard.close()
+    if app.property("packagedValidationFailed") is True:
+        exit_code = 126
     sys.exit(exit_code)
