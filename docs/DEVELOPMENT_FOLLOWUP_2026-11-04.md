@@ -430,3 +430,42 @@ compatibility, native Wayland/X11 rendering, manual accessibility, native Window
 or actual Steam/Workshop/DayZ joins. Those remain open. No Steam/game/Workshop
 action, installer execution, version bump, tag, publication, public-download change
 or API deployment was performed.
+
+
+## Resource soak and live Steam state — 4 November 2026
+
+Andi authorized opening Steam/DayZ and confirmed Steam was open. Added repeatable
+Linux source diagnostics in `scripts/soak-launcher.py` and
+`scripts/check-live-workshop.py`; see [usage and boundaries](RESOURCE_SOAK_VALIDATION.md).
+No application runtime behaviour changed in this batch.
+
+Two accelerated offscreen source soaks passed: 300 cycles in 49.3 seconds and
+600 cycles in 96.9 seconds. The longer run issued 1,800 explicit rapid browser
+requests, alternated Stable/Experimental each cycle, refreshed 200 mod rows each
+cycle and churned 1,200 unique 512×512 previews. The real snapshot loader handled
+replacement/cancellation, with correct final edition/filter results. Mod item
+identity and selection survived refreshes. Temporary data and private PID/network
+namespaces prevented changes to everyday configuration or public queries.
+
+At cycle 50/600, RSS was 204,728/215,984 KiB (about 200/211 MiB). The final ten
+sampled checkpoints were identical at 215,984 KiB. Descendant Qt objects held at
+940; threads fell from 13 to 11 and file descriptors from 21 to 19. Thumbnail
+storage held at its 16 MiB pixel estimate (16 entries); the browser auxiliary
+cache held two entries. Thresholds allow allocator/cache slack; this short,
+accelerated scenario does not prove multi-hour leak freedom. A final 100-cycle
+check verifies the added pre-initialization child isolation guard; direct child
+invocation without isolated paths is rejected before application imports.
+
+The production disposable Steam state helper queried 20 existing installed mods
+three times: all returned ready (state 5), with no remaining multiprocessing
+children. Initial timings were 74/75/70 ms; the repeatable diagnostic returned
+72/78/76 ms. This is actual read-only Steam evidence, without a game launch,
+subscription changes or requested downloads. Steam's own automatic activity was
+not controlled. It does not verify download completion/cancellation or game joins.
+
+Source checks: **1,016 run / 1,009 passed / 7 skipped**, required Ruff formatting/
+lint, four core type boundaries, compilation, whitespace and release-lock audit.
+Normalized [resource and Steam evidence](evidence/2026-11-04-resource-steam-validation.json)
+retains samples without account IDs, item IDs or local library paths. Packaged
+resource behaviour, native Windows, older Linux/FUSE, real downloads and real
+DayZ joins remain open. No version bump, release/publication or API deployment.

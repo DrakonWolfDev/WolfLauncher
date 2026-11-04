@@ -644,3 +644,23 @@ synthetic scenarios. FUSE, older distros, native desktop/a11y, Windows and live
 Steam/Workshop/DayZ checks remain open. Existing artifacts, user configuration and
 Steam content were preserved. Version stays 0.9.3.5b; no tag, installer execution,
 publication, public-link change or API deployment occurred.
+
+
+## Bounded resource soak and live Steam evidence — 4 November 2026
+
+Added repeatable isolated source UI resource and read-only Steam diagnostics.
+300- and 600-cycle soaks passed; the longer run's final ten sampled RSS values
+were identical, with stable Qt object/cache counts and decreasing threads/file
+handles. The production Steam state helper successfully queried 20 installed
+mods three times, all ready, and left no helper process behind. No game launch,
+subscription change or download request was needed. See [results and limits](DEVELOPMENT_FOLLOWUP_2026-11-04.md#resource-soak-and-live-steam-state--4-november-2026)
+and [repeatable diagnostics](RESOURCE_SOAK_VALIDATION.md). Final runner guard also
+has a passing 100-cycle check and rejects direct child use against ordinary data.
+
+1,016 regression tests run / 1,009 passed / 7 skipped; workflow quality checks
+pass. This adds accelerated synthetic source resource evidence and actual
+read-only Steam state/cleanup evidence. It does not close multi-hour stability,
+real downloads/cancellation, game joins, frozen-package resource behaviour,
+Windows, native desktop/accessibility or older distro/FUSE checks. Native wrapper
+package provenance also remains useful follow-up work. No runtime change,
+release/version/publication or API deployment in this batch.

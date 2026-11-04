@@ -1,0 +1,1140 @@
+{
+  "date": "2026-11-04",
+  "runtime_source_commit": "aab054273a7745f4920a3a504e8d3b6d58f24669",
+  "diagnostic_sha256": {
+    "scripts/soak-launcher.py": "aeb12969071eaf601b5246206c18ca5b69eff110f96d6336163ce37d432c2616",
+    "scripts/check-live-workshop.py": "14425c0126794c75a4c66af29b0df3a99f2e8dd11f8d75ddbafea3f695cb7853"
+  },
+  "harness_note": "300/600 scenarios preceded the final pre-initialization child guard. The 100-cycle run used the final guard and current diagnostic hash. Application runtime source unchanged.",
+  "synthetic_source_soaks": [
+    {
+      "scenario": "initial_300",
+      "exit_code": 0,
+      "soak": "passed",
+      "cycles": 300,
+      "explicit_browser_requests": 900,
+      "samples": [
+        {
+          "cycle": 10,
+          "rss_kib": 199808,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 20,
+          "rss_kib": 202356,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 30,
+          "rss_kib": 203060,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 40,
+          "rss_kib": 203740,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 50,
+          "rss_kib": 205052,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 60,
+          "rss_kib": 205708,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 70,
+          "rss_kib": 206352,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 80,
+          "rss_kib": 207008,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 90,
+          "rss_kib": 207660,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 100,
+          "rss_kib": 208316,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 110,
+          "rss_kib": 208968,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 120,
+          "rss_kib": 209620,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 130,
+          "rss_kib": 210272,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 140,
+          "rss_kib": 210924,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 150,
+          "rss_kib": 211576,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 160,
+          "rss_kib": 212020,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 170,
+          "rss_kib": 212036,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 180,
+          "rss_kib": 212036,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 190,
+          "rss_kib": 214000,
+          "threads": 12,
+          "file_descriptors": 20,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 200,
+          "rss_kib": 216228,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 210,
+          "rss_kib": 216088,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 220,
+          "rss_kib": 216088,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 230,
+          "rss_kib": 217112,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 240,
+          "rss_kib": 217112,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 250,
+          "rss_kib": 217116,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 260,
+          "rss_kib": 217116,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 270,
+          "rss_kib": 217116,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 280,
+          "rss_kib": 217116,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 290,
+          "rss_kib": 217116,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 300,
+          "rss_kib": 217116,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        }
+      ],
+      "warmup_cycles": 50,
+      "rss_growth_kib": 12064,
+      "elapsed_ms": 49281,
+      "max_tick_gap_ms": 241.6,
+      "limits": "Synthetic source/offscreen test; no public network, Steam, real downloads or packaged/live compatibility evidence."
+    },
+    {
+      "scenario": "extended_600",
+      "exit_code": 0,
+      "soak": "passed",
+      "cycles": 600,
+      "explicit_browser_requests": 1800,
+      "samples": [
+        {
+          "cycle": 10,
+          "rss_kib": 199552,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 20,
+          "rss_kib": 202756,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 30,
+          "rss_kib": 203416,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 40,
+          "rss_kib": 204072,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 50,
+          "rss_kib": 204728,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 60,
+          "rss_kib": 205384,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 70,
+          "rss_kib": 206036,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 80,
+          "rss_kib": 206688,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 90,
+          "rss_kib": 207344,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 100,
+          "rss_kib": 207996,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 110,
+          "rss_kib": 208648,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 120,
+          "rss_kib": 209300,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 130,
+          "rss_kib": 209952,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 140,
+          "rss_kib": 210604,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 150,
+          "rss_kib": 211320,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 160,
+          "rss_kib": 211760,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 170,
+          "rss_kib": 211780,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 180,
+          "rss_kib": 211780,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 190,
+          "rss_kib": 213744,
+          "threads": 12,
+          "file_descriptors": 20,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 200,
+          "rss_kib": 213752,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 210,
+          "rss_kib": 215980,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 220,
+          "rss_kib": 215980,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 230,
+          "rss_kib": 215980,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 240,
+          "rss_kib": 215980,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 250,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 260,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 270,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 280,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 290,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 300,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 310,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 320,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 330,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 340,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 350,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 360,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 370,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 380,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 390,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 400,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 410,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 420,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 430,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 440,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 450,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 460,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 470,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 480,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 490,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 500,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 510,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 520,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 530,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 540,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 550,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 560,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 570,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 580,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 590,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 600,
+          "rss_kib": 215984,
+          "threads": 11,
+          "file_descriptors": 19,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        }
+      ],
+      "warmup_cycles": 50,
+      "rss_growth_kib": 11256,
+      "elapsed_ms": 96932,
+      "max_tick_gap_ms": 240.4,
+      "limits": "Synthetic source/offscreen test; no public network, Steam, real downloads or packaged/live compatibility evidence."
+    },
+    {
+      "scenario": "final_guard_100",
+      "exit_code": 0,
+      "soak": "passed",
+      "cycles": 100,
+      "explicit_browser_requests": 300,
+      "samples": [
+        {
+          "cycle": 10,
+          "rss_kib": 197660,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 20,
+          "rss_kib": 200108,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 30,
+          "rss_kib": 200792,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 40,
+          "rss_kib": 201464,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 50,
+          "rss_kib": 202904,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 60,
+          "rss_kib": 203556,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 70,
+          "rss_kib": 204208,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 80,
+          "rss_kib": 204860,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 90,
+          "rss_kib": 205516,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        },
+        {
+          "cycle": 100,
+          "rss_kib": 206168,
+          "threads": 13,
+          "file_descriptors": 21,
+          "qt_objects": 940,
+          "thumbnail_entries": 16,
+          "thumbnail_bytes": 16777216,
+          "auxiliary_entries": 2
+        }
+      ],
+      "warmup_cycles": 50,
+      "rss_growth_kib": 3264,
+      "elapsed_ms": 16446,
+      "max_tick_gap_ms": 226.4,
+      "limits": "Synthetic source/offscreen test; no public network, Steam, real downloads or packaged/live compatibility evidence."
+    }
+  ],
+  "live_steam_initial": {
+    "kind": "live_read_only_steam_workshop",
+    "requested_items": 20,
+    "steam_detected_running": true,
+    "samples": [
+      {
+        "elapsed_ms": 74,
+        "error": "",
+        "items": 20,
+        "ready": 20,
+        "states": [
+          5
+        ],
+        "active_children_after_return": 0
+      },
+      {
+        "elapsed_ms": 75,
+        "error": "",
+        "items": 20,
+        "ready": 20,
+        "states": [
+          5
+        ],
+        "active_children_after_return": 0
+      },
+      {
+        "elapsed_ms": 70,
+        "error": "",
+        "items": 20,
+        "ready": 20,
+        "states": [
+          5
+        ],
+        "active_children_after_return": 0
+      }
+    ],
+    "passed": true
+  },
+  "live_steam_repeatable": {
+    "kind": "live_read_only_steam_workshop",
+    "requested_items": 20,
+    "steam_detected_running": true,
+    "samples": [
+      {
+        "elapsed_ms": 72,
+        "error": "",
+        "items": 20,
+        "ready": 20,
+        "states": [
+          5
+        ],
+        "active_children_after_return": 0
+      },
+      {
+        "elapsed_ms": 78,
+        "error": "",
+        "items": 20,
+        "ready": 20,
+        "states": [
+          5
+        ],
+        "active_children_after_return": 0
+      },
+      {
+        "elapsed_ms": 76,
+        "error": "",
+        "items": 20,
+        "ready": 20,
+        "states": [
+          5
+        ],
+        "active_children_after_return": 0
+      }
+    ],
+    "passed": true
+  },
+  "regression": {
+    "run": 1016,
+    "passed": 1009,
+    "skipped": 7
+  },
+  "quality": "Ruff format/lint, four core mypy boundaries, compileall, whitespace and locked release dependency audit passed.",
+  "limits": [
+    "Accelerated offscreen source scenario, not multi-hour or frozen-package resource evidence.",
+    "Read-only Steam item states and disposable helper cleanup, not real downloads or DayZ joins.",
+    "No Steam subscriptions, requested downloads, versions, releases, public links or deployments changed."
+  ]
+}
