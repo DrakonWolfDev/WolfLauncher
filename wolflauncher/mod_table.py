@@ -3,7 +3,7 @@
 from collections import Counter
 
 from PySide6.QtCore import QSignalBlocker, Qt
-from PySide6.QtGui import QColor
+from PySide6.QtGui import QColor, QFontMetrics
 from PySide6.QtWidgets import QHeaderView, QTableWidgetItem
 
 from .mod_presenter import mod_row
@@ -91,13 +91,14 @@ def populate_mod_table(table, mods, *, preserve_position=False):
     # Measure representative text only, never every cell. Respect user widths
     # after initial setup; Qt's stretch name column handles window resizing.
     if not table.property("modColumnSizingSet"):
-        metrics = table.fontMetrics()
         for column, text in (
             (0, "Waiting for Steam completion"),
             (2, "00000000000000000000"),
-            (3, "000.0 GiB"),
+            (3, "Unavailable"),
         ):
-            table.setColumnWidth(column, metrics.horizontalAdvance(text) + 28)
+            metrics = QFontMetrics(monospace_font()) if column in {2, 3} else table.fontMetrics()
+            width = max(metrics.horizontalAdvance(text), metrics.horizontalAdvance("000.0 GiB"))
+            table.setColumnWidth(column, width + 28)
         table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
         table.setProperty("modColumnSizingSet", True)
     with QSignalBlocker(table):

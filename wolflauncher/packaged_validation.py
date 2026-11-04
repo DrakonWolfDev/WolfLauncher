@@ -11,7 +11,7 @@ import time
 from pathlib import Path
 
 from PySide6.QtCore import QSignalBlocker, Qt, QTimer
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QFontMetrics, QPixmap
 
 from . import server_cache
 from .host_environment import host_process_environment
@@ -154,6 +154,12 @@ class PackagedValidation:
             )
             window.last_mod_result = result
             window.display_mods_result(result)
+            size_item = window.mods_table.item(0, 3)
+            if (
+                window.mods_table.columnWidth(3)
+                < QFontMetrics(size_item.font()).horizontalAdvance("Unavailable") + 16
+            ):
+                raise AssertionError("Size column clips its unavailable label")
             window.mods_table.selectRow(150)
             identity = window.mods_table.item(150, 2).text()
             item = window.mods_table.item(150, 1)
