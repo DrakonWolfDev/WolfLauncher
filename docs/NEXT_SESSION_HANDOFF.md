@@ -684,3 +684,28 @@ passed / 7 skipped; Windows needs the next native runner result. Initial indepen
 native extraction also found DEB control-file mode normalization and extra RPM
 build-ID links; source corrections are included and clean rebuilds are next.
 See [details](DEVELOPMENT_FOLLOWUP_2026-11-04.md#windows-ci-repair-and-native-payload-corrections--4-november-2026).
+
+
+## Native/Linux/live validation and startup refinement — 4 November 2026
+
+Clean private 13649a7 AppImage/Linux installer/DEB/RPM artifacts now have passing
+independent extracted inventories. DEB/RPM extracted startup smoke and native
+X11 AppImage checks at 1×/2× pass; host FUSE mount/unmount passes separately.
+These artifacts predate the subsequent IPC/startup source refinements. Keep
+exact source identities and do not relabel them or publish them as current.
+
+Real Steam no-byte completion, cancellation and retry pass on one existing
+subscribed item with no helper left behind. DayZ menu/process launch and normal
+exit were verified; no server join occurred. Andi has now supplied a Stable test endpoint; its real join check follows
+separately. No bulk or changed-content download claim is made.
+
+Startup profiling found repeated Editor/LAN library scans; source now performs
+one fresh construction scan and shares its result within that redraw. Later
+refreshes remain fresh. Controlled source browser-paint median improved from
+807.77 to 758.33 ms. See [full evidence and boundaries](DEVELOPMENT_FOLLOWUP_2026-11-04.md#native-evidence-live-checks-and-measured-startup-refinement--4-november-2026).
+Windows activation now passes in CI; the final font-adaptive table fixture still
+needs its next runner result, followed by portable/Setup compilation and smoke.
+Remaining broader items: chosen real join, changed-content/bulk download evidence,
+Windows/native accessibility, older distro evidence, multi-hour stability,
+REL-02/API-01 specifics, LAN discovery coverage and the documented product/signing
+choices. No release/version/publication or API deployment.

@@ -2,8 +2,8 @@
 
 Work remains on `dev/release-preparation`, pushed directly without a PR. This
 record separates local evidence from future native builds and release checks.
-No version change, release publication, API deployment, Steam/game launch,
-Workshop download or system configuration change was performed.
+The initial source pass made no version/release/API or Steam/game changes.
+Later sections separately record authorized native and live Steam/DayZ checks.
 
 ## PERF-01 and PERF-02: preserve the measured improvements
 
@@ -549,3 +549,61 @@ Linux source verification: **1,022 run / 1,015 passed / 7 skipped**; required
 format/lint, core type checks, compilation and whitespace pass. Windows results
 remain pending the next native run. Private Linux native artifacts remain tied
 to their exact 13649a7 source; they are not relabelled as this newer IPC change.
+
+
+## Native evidence, live checks and measured startup refinement — 4 November 2026
+
+Clean private Linux builds from **13649a77a15026a3c0f5e2290bc9628472ac532e** now
+pass independent extraction/inventory comparisons: AppImage (1,111 entries),
+Linux installer archive (9), RPM (1,111) and DEB including controls (5,020).
+DEB/RPM extracted startup smoke exits 0. Rebuilt AppImage extended UI/runtime
+checks pass on actual X11 at 1×/2×, and both screenshots were inspected. At 2×
+on this 1920×1080 desktop, the workspace requires horizontal scrolling; this is
+not complete accessibility certification. A host FUSE mount exposed the launcher
+and unmounted cleanly; this checks mounting only. Application tests used
+extraction-and-run. Namespace FUSE could not use the host setuid helper and is
+not claimed as an application failure. Local packages were not installed.
+The artifacts remain under `/tmp/wolflauncher-native-final/dist/` and retain
+their exact source identities; subsequent IPC/startup changes are source-only.
+See [artifact hashes, inventories and normalized results](evidence/2026-11-04-native-package-validation.json).
+
+A real Steam helper sequence on one existing subscribed/installed 1,596-byte
+item observed pending state 37, then successful callback/idle state 5. Forced
+completion took 575 ms; cancellation on a pending callback returned cancelled
+and incomplete in 323 ms; retry completed in 574 ms. All helpers exited, and
+final live state was ready. No subscription/unsubscription calls were enabled.
+Reported transfer counters stayed zero: this is real no-byte completion/cancel/
+retry evidence, not bulk-download or changed-content freshness verification.
+DayZ launched through the open Steam session; the production detector observed
+its game process after about 10.2 seconds. The main menu was visually verified,
+then the normal quit flow was used and process exit confirmed. No target server
+or mod arguments were requested. Andi supplied a Stable test endpoint after these checks; real join validation
+follows separately.
+See [live evidence and limits](evidence/2026-11-04-live-workshop-dayz.json).
+
+Added a repeatable [controlled startup benchmark](STARTUP_BENCHMARK.md), keeping
+instrumentation outside production. A profile identified repeated Editor/LAN
+library scans during construction. Profile loading and target selection now
+coalesce to one fresh picker scan; its summary reuses that dictionary within the
+same redraw. Selection changes, subsequent refreshes and launch checks remain
+fresh. A regression covers empty/saved profiles, preserved local selections,
+exactly one construction scan and fresh changed names/removals on later refresh.
+
+Five-sample source medians improved from **438.48 to 397.64 ms** construction and
+**807.77 to 758.33 ms** to the first browser paint with 200 cached rows. The
+fixture has 1,000 rows, with a reused temporary profile, optional polling paused
+and network isolated. OS caches are not flushed; this is not packaged cold-start
+or verified mod/server readiness evidence. Raw samples retain the runtime file
+hashes and baseline commit rather than attributing an uncommitted refinement to
+an older clean source snapshot.
+
+The last native Windows run passes activation delivery and all but the dynamic
+column test. Its fixture now reserves room for the content columns using actual
+font metrics, then asserts Mods grows, Name yields and horizontal overflow stays
+zero. This preserves the regression's purpose across platform fonts without
+relaxing production widths. The next Windows runner must confirm the change.
+No version bump, release, tag, public download change, package installation or
+API deployment was performed.
+
+Integrated validation: **1,023 run / 1,016 passed / 7 skipped**; required Ruff
+format/lint, core mypy, compilation/whitespace and locked dependency audit pass.

@@ -47,10 +47,53 @@ class SelectedModPillsHarness(LocalToolsFeatureMixin):
         self.selected_mods_layout = QVBoxLayout(self.selected_mods_widget)
 
 
+class LocalWorkspaceHarness(LocalToolsFeatureMixin, QWidget):
+    def __init__(self, profiles):
+        super().__init__()
+        self.settings = {"local_tool_profiles": profiles}
+
+    def selected_local_tool_install(self, *, editor=None):
+        return None
+
+
 class LocalToolsTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
+
+    def test_workspace_construction_scans_once_and_later_refreshes_stay_fresh(self):
+        profile = {
+            "name": "Local test",
+            "mod_paths": [],
+            "endpoint": "localhost:2302",
+            "workshop_mod_ids": ["1005"],
+            "query_port": "2305",
+        }
+        for profiles in ([], [profile]):
+            with self.subTest(saved_profile=bool(profiles)):
+                workspace = LocalWorkspaceHarness(profiles)
+                self.addCleanup(workspace.deleteLater)
+                mods = {"1005": "First mod", "1006": "Second mod"}
+                with (
+                    patch.object(workspace, "_load_editor_image"),
+                    patch(
+                        "wolflauncher.local_tools_feature.scan_installed_mods", return_value=mods
+                    ) as scan,
+                ):
+                    page = workspace._build_local_tools_tab()
+                    self.addCleanup(page.deleteLater)
+                    scan.assert_called_once_with(None)
+                    self.assertEqual(workspace.editor_mod_picker.count(), 2)
+                    self.assertEqual(workspace.mod_selection_target, "editor")
+                    self.assertEqual(workspace.local_extra_mod_ids, {"1005"} if profiles else set())
+                    scan.return_value = {"1006": "Updated name"}
+                    workspace._refresh_editor_mod_picker()
+                    self.assertEqual(scan.call_count, 2)
+                    self.assertEqual(workspace.editor_mod_picker.count(), 1)
+                    self.assertIn("Updated name", workspace.editor_mod_picker.item(0).text())
+                    workspace._set_mod_selection_target("local")
+                    self.assertEqual(scan.call_count, 3)
+                    self.assertEqual(workspace.local_extra_mod_ids, {"1005"} if profiles else set())
 
     def test_editor_defaults_are_the_documented_required_mods(self):
         self.assertEqual(

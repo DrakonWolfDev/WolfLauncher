@@ -41,3 +41,13 @@ normal-use latency benchmark. The external wall time also includes extraction.
 These offscreen checks do not certify FUSE mounting, native Wayland/X11 rendering,
 manual accessibility, actual Steam/Workshop/game joins, native Windows or older
 Linux distributions. Keep those boundaries separate from a local passing result.
+
+
+On an authorized, idle X11 desktop, `--platform xcb` runs the same synthetic
+checks in a visible native window. It requires a local `DISPLAY` and binds the
+X11 socket directory into private `/tmp`; settings, PID and public-network
+isolation remain. Default mode stays offscreen. Use `--scale 2` for high-DPI
+inspection, including the workspace scrollbars when its logical width exceeds
+the display. Retained results identify the selected platform and extraction mode.
+This runner uses extraction-and-run; FUSE mounting requires a separate host check
+because private user namespaces may not use the host setuid mount helper.

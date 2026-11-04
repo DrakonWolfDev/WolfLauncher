@@ -1,0 +1,89 @@
+{
+  "passed": true,
+  "cache_rows": 1000,
+  "displayed_rows": 200,
+  "samples": [
+    {
+      "sample": 1,
+      "process_wall_ms": 1000.6066039986763,
+      "startup": "passed",
+      "imports_ms": 225.0363160001143,
+      "construction_ms": 440.04146000042965,
+      "first_window_paint_ms": 738.1570090001333,
+      "rows_applied": 200,
+      "snapshot_applied_ms": 785.5492409998988,
+      "browser_painted_ms": 807.7732319998177,
+      "snapshot_worker_ms": [
+        52.75712000002386
+      ]
+    },
+    {
+      "sample": 2,
+      "process_wall_ms": 983.9699330004805,
+      "startup": "passed",
+      "imports_ms": 224.78329700061295,
+      "construction_ms": 420.9742400016694,
+      "rows_applied": 200,
+      "snapshot_applied_ms": 750.9488180003245,
+      "first_window_paint_ms": 766.5344899996853,
+      "browser_painted_ms": 780.0942610010679,
+      "snapshot_worker_ms": [
+        47.825673000261304
+      ]
+    },
+    {
+      "sample": 3,
+      "process_wall_ms": 1009.5681000002514,
+      "startup": "passed",
+      "imports_ms": 231.7839080005797,
+      "construction_ms": 435.8305919995473,
+      "first_window_paint_ms": 729.018147001625,
+      "rows_applied": 200,
+      "snapshot_applied_ms": 786.908679001499,
+      "browser_painted_ms": 808.5306440007116,
+      "snapshot_worker_ms": [
+        50.92631300067296
+      ]
+    },
+    {
+      "sample": 4,
+      "process_wall_ms": 997.485580999637,
+      "startup": "passed",
+      "imports_ms": 222.8225709986873,
+      "construction_ms": 438.4811740001169,
+      "first_window_paint_ms": 725.6398699992133,
+      "rows_applied": 200,
+      "snapshot_applied_ms": 777.8143599989562,
+      "browser_painted_ms": 799.4728140001826,
+      "snapshot_worker_ms": [
+        16.62298799965356
+      ]
+    },
+    {
+      "sample": 5,
+      "process_wall_ms": 1001.2253139993845,
+      "startup": "passed",
+      "imports_ms": 221.19317699980456,
+      "construction_ms": 454.65898599832144,
+      "rows_applied": 200,
+      "snapshot_applied_ms": 778.8019019990315,
+      "first_window_paint_ms": 794.5871069987334,
+      "browser_painted_ms": 808.2032940001227,
+      "snapshot_worker_ms": [
+        10.858259998713038
+      ]
+    }
+  ],
+  "median_ms": {
+    "imports_ms": 224.78,
+    "construction_ms": 438.48,
+    "first_window_paint_ms": 738.16,
+    "snapshot_applied_ms": 778.8,
+    "browser_painted_ms": 807.77,
+    "process_wall_ms": 1000.61
+  },
+  "limits": "Fresh source processes, seeded/reused temporary profile, offscreen Qt, optional polling paused and network isolated. OS caches are not flushed; these are not disk-cold, packaged or real server/mod-readiness timings.",
+  "runtime_source_commit": "a6c72069831f90f35a2cae712992021ce0873952",
+  "benchmark_sha256": "5a53c327549f90ae605d238ea083e869038612bf450461c69dd1b108b50c623f",
+  "snapshot_worker_median_ms": 47.83
+}

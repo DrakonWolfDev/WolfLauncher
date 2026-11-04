@@ -1,0 +1,95 @@
+{
+  "passed": true,
+  "cache_rows": 1000,
+  "displayed_rows": 200,
+  "samples": [
+    {
+      "sample": 1,
+      "process_wall_ms": 973.7285999999585,
+      "startup": "passed",
+      "imports_ms": 230.56224600077257,
+      "construction_ms": 401.3185500007239,
+      "first_window_paint_ms": 693.2086490014626,
+      "rows_applied": 200,
+      "snapshot_applied_ms": 747.1496560010564,
+      "browser_painted_ms": 769.5014649998484,
+      "snapshot_worker_ms": [
+        10.589293000521138
+      ]
+    },
+    {
+      "sample": 2,
+      "process_wall_ms": 961.9690319996153,
+      "startup": "passed",
+      "imports_ms": 231.50865899879136,
+      "construction_ms": 395.9989700015285,
+      "rows_applied": 200,
+      "snapshot_applied_ms": 730.0076510000508,
+      "first_window_paint_ms": 745.4101949988399,
+      "browser_painted_ms": 758.1770979995781,
+      "snapshot_worker_ms": [
+        47.33829799988598
+      ]
+    },
+    {
+      "sample": 3,
+      "process_wall_ms": 949.4102829994517,
+      "startup": "passed",
+      "imports_ms": 233.53724999833503,
+      "construction_ms": 397.51441899898055,
+      "rows_applied": 200,
+      "snapshot_applied_ms": 725.3998989999673,
+      "first_window_paint_ms": 741.1386109997693,
+      "browser_painted_ms": 761.2310259992228,
+      "snapshot_worker_ms": [
+        44.914748999872245
+      ]
+    },
+    {
+      "sample": 4,
+      "process_wall_ms": 966.9490450014564,
+      "startup": "passed",
+      "imports_ms": 220.86308500001905,
+      "construction_ms": 397.6388940009201,
+      "first_window_paint_ms": 678.9718589989207,
+      "rows_applied": 200,
+      "snapshot_applied_ms": 731.0499960003654,
+      "browser_painted_ms": 756.2853340004949,
+      "snapshot_worker_ms": [
+        50.21028400005889
+      ]
+    },
+    {
+      "sample": 5,
+      "process_wall_ms": 946.7111499998282,
+      "startup": "passed",
+      "imports_ms": 213.1437089992687,
+      "construction_ms": 407.6350020004611,
+      "first_window_paint_ms": 678.3948409993172,
+      "rows_applied": 200,
+      "snapshot_applied_ms": 734.377200000381,
+      "browser_painted_ms": 758.3305820007809,
+      "snapshot_worker_ms": [
+        46.631245999378734
+      ]
+    }
+  ],
+  "median_ms": {
+    "imports_ms": 230.56,
+    "construction_ms": 397.64,
+    "first_window_paint_ms": 693.21,
+    "snapshot_applied_ms": 731.05,
+    "browser_painted_ms": 758.33,
+    "process_wall_ms": 961.97
+  },
+  "limits": "Fresh source processes, seeded/reused temporary profile, offscreen Qt, optional polling paused and network isolated. OS caches are not flushed; these are not disk-cold, packaged or real server/mod-readiness timings.",
+  "runtime_source_base_commit": "a6c72069831f90f35a2cae712992021ce0873952",
+  "runtime_change": "Uncommitted one-scan Editor/LAN presentation refinement atop the recorded base commit; runtime file hashes identify the measured source.",
+  "runtime_file_sha256": {
+    "wolflauncher/local_tools_feature.py": "dd2d5d10cd124ffd2370022f5df3fe900b6048cb778406729a9e6aa8449b77f4",
+    "wolflauncher/app.py": "334aeabc82330d68fcfa8f49ca4fc60a4f60cf1b9723303f81aebd4f80b23c27",
+    "wolflauncher/browser_snapshot.py": "95bf4a7392b20e75fe4fbae7997be3c005221bfc2cd4cd7e55ffbf9e54cb585e"
+  },
+  "benchmark_sha256": "5a53c327549f90ae605d238ea083e869038612bf450461c69dd1b108b50c623f",
+  "snapshot_worker_median_ms": 46.63
+}

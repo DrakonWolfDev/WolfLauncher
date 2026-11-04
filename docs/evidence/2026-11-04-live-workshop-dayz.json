@@ -1,0 +1,123 @@
+{
+  "date": "2026-11-04",
+  "workshop": {
+    "kind": "live_existing_item_completion_cancel_retry",
+    "local_item_bytes_before": 1596,
+    "subscription_calls_enabled": false,
+    "runs": [
+      {
+        "scenario": "forced_recheck",
+        "elapsed_ms": 575,
+        "ok": true,
+        "cancel_requested": false,
+        "cancelled": false,
+        "error": "",
+        "installed": 1,
+        "incomplete": 0,
+        "snapshots": [
+          {
+            "state": 37,
+            "awaiting_callback": true,
+            "downloaded": 0,
+            "total": 0
+          },
+          {
+            "state": 37,
+            "awaiting_callback": true,
+            "downloaded": 0,
+            "total": 0
+          },
+          {
+            "state": 5,
+            "awaiting_callback": false,
+            "downloaded": 0,
+            "total": 0
+          }
+        ],
+        "active_children_after_return": 0
+      },
+      {
+        "scenario": "cancel_on_pending",
+        "elapsed_ms": 323,
+        "ok": false,
+        "cancel_requested": true,
+        "cancelled": true,
+        "error": "",
+        "installed": 0,
+        "incomplete": 1,
+        "snapshots": [
+          {
+            "state": 37,
+            "awaiting_callback": true,
+            "downloaded": 0,
+            "total": 0
+          },
+          {
+            "state": 37,
+            "awaiting_callback": true,
+            "downloaded": 0,
+            "total": 0
+          }
+        ],
+        "active_children_after_return": 0
+      },
+      {
+        "scenario": "retry",
+        "elapsed_ms": 574,
+        "ok": true,
+        "cancel_requested": false,
+        "cancelled": false,
+        "error": "",
+        "installed": 1,
+        "incomplete": 0,
+        "snapshots": [
+          {
+            "state": 37,
+            "awaiting_callback": true,
+            "downloaded": 0,
+            "total": 0
+          },
+          {
+            "state": 37,
+            "awaiting_callback": true,
+            "downloaded": 0,
+            "total": 0
+          },
+          {
+            "state": 5,
+            "awaiting_callback": false,
+            "downloaded": 0,
+            "total": 0
+          }
+        ],
+        "active_children_after_return": 0
+      }
+    ],
+    "final": {
+      "error": "",
+      "ready": 1,
+      "states": [
+        5
+      ]
+    },
+    "passed": true
+  },
+  "dayz": {
+    "kind": "dayz_menu_launch",
+    "observed_game_process": true,
+    "observation_ms": 10192,
+    "server_requested": false,
+    "mods_requested": false,
+    "menu_visually_verified": true,
+    "game_version_displayed": "1.30.164289.70",
+    "limits": "Steam menu launch only; no server join or in-game compatibility verification.",
+    "normal_menu_exit_verified": true
+  },
+  "limits": [
+    "Workshop item was already subscribed, installed and idle; no new subscriptions or local-content deletion.",
+    "Live completion/cancellation/retry evidence covers no-byte callbacks, not large transfers, slow-network behaviour or changed-content freshness.",
+    "DayZ reached its menu through Steam; no server was selected and no join/in-game validation was performed. Raw screenshots remain temporary and are not committed."
+  ],
+  "workshop_source_commit": "13649a77a15026a3c0f5e2290bc9628472ac532e",
+  "dayz_menu_source_commit": "a6c72069831f90f35a2cae712992021ce0873952"
+}

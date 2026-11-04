@@ -1,0 +1,270 @@
+{
+  "date": "2026-11-04",
+  "artifacts": [
+    {
+      "artifact": {
+        "file": "WolfLauncher-0.9.3.5b-linux-x86_64-installer.tar.gz",
+        "sha256": "1091d8dd9d82a8c09e6e9605533fb7a01b1c1fe8f83ea871a31aa529250fbde1",
+        "size": 108934048
+      },
+      "manifest_sha256": "bd4f34d590640332ec2fb4aea1888f67487aa15a4a4007df9e198306f9d03f87",
+      "source_commit": "13649a77a15026a3c0f5e2290bc9628472ac532e",
+      "source_dirty": false,
+      "source_snapshot_sha256": "b209c7b09e5fea1e2e9b32613953bfe70d7c0163e16d6f8f1f5d182500ed71be",
+      "inventory_entries": 9,
+      "staged_inputs_verified": true,
+      "parent": {
+        "artifact": {
+          "file": "WolfLauncher-0.9.3.5b-x86_64.AppImage",
+          "sha256": "61e345e19a140155809527ed38ba60a9cd5a6a52dfbb7a8116280522da8d4aca",
+          "size": 109742584
+        },
+        "manifest": {
+          "file": "WolfLauncher-0.9.3.5b-x86_64.AppImage.provenance.json",
+          "sha256": "a6818f3f3bef18f6414c7c2f21771408d1b4923742e8264bf3d55a06fd634e72",
+          "size": 315794
+        }
+      },
+      "toolchain": {
+        "architecture": "x86_64",
+        "packages": {
+          "PyInstaller": "6.21.0",
+          "PySide6": "6.11.1",
+          "shiboken6": "6.11.1"
+        },
+        "platform": "Linux",
+        "python": "3.12.3",
+        "tools": {
+          "tar": {
+            "file": "tar",
+            "sha256": "3ee2c3c0b4dd9aacebfd2f0fbae44bad36348203acff78a44888dd58c05f811c",
+            "size": 440264
+          }
+        }
+      },
+      "independent_extracted_inventory_verified": true
+    },
+    {
+      "artifact": {
+        "file": "WolfLauncher-0.9.3.5b-x86_64.AppImage",
+        "sha256": "61e345e19a140155809527ed38ba60a9cd5a6a52dfbb7a8116280522da8d4aca",
+        "size": 109742584
+      },
+      "manifest_sha256": "a6818f3f3bef18f6414c7c2f21771408d1b4923742e8264bf3d55a06fd634e72",
+      "source_commit": "13649a77a15026a3c0f5e2290bc9628472ac532e",
+      "source_dirty": false,
+      "source_snapshot_sha256": "b209c7b09e5fea1e2e9b32613953bfe70d7c0163e16d6f8f1f5d182500ed71be",
+      "inventory_entries": 1111,
+      "staged_inputs_verified": false,
+      "parent": null,
+      "toolchain": {
+        "architecture": "x86_64",
+        "packages": {
+          "PyInstaller": "6.21.0",
+          "PySide6": "6.11.1",
+          "shiboken6": "6.11.1"
+        },
+        "platform": "Linux",
+        "python": "3.12.3",
+        "tools": {
+          "appimage-runtime": {
+            "file": "appimage-runtime-20251108-x86_64",
+            "sha256": "2fca8b443c92510f1483a883f60061ad09b46b978b2631c807cd873a47ec260d",
+            "size": 944632
+          },
+          "appimagetool": {
+            "file": "appimagetool-1.9.1-x86_64.AppImage",
+            "sha256": "ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0",
+            "size": 15092216
+          },
+          "node": {
+            "file": "node",
+            "sha256": "6295488653f0d93b0a157841746fef7e72cc4328cfb60c4bbe0ca2668a836ffd",
+            "size": 98932688
+          }
+        }
+      },
+      "independent_extracted_inventory_verified": true
+    },
+    {
+      "artifact": {
+        "file": "wolflauncher-0.9.3.5b-1.x86_64.rpm",
+        "sha256": "37ab2622159692a968bbb192ae3c5990b426a016ddc96286ab95ffbf49700161",
+        "size": 118068144
+      },
+      "manifest_sha256": "95bae496e5ca47cf5e07205c1a43c27264d745a5500cab7bd76d56a64f223acc",
+      "source_commit": "13649a77a15026a3c0f5e2290bc9628472ac532e",
+      "source_dirty": false,
+      "source_snapshot_sha256": "b209c7b09e5fea1e2e9b32613953bfe70d7c0163e16d6f8f1f5d182500ed71be",
+      "inventory_entries": 1111,
+      "staged_inputs_verified": true,
+      "parent": {
+        "artifact": {
+          "file": "WolfLauncher-0.9.3.5b-x86_64.AppImage",
+          "sha256": "61e345e19a140155809527ed38ba60a9cd5a6a52dfbb7a8116280522da8d4aca",
+          "size": 109742584
+        },
+        "bundle_sha256": "8a3c3f672a10e05e2ce6ce6681308bda54131388882c31f7281e7887df87eb0f",
+        "manifest": {
+          "file": "WolfLauncher-0.9.3.5b-x86_64.AppImage.provenance.json",
+          "sha256": "a6818f3f3bef18f6414c7c2f21771408d1b4923742e8264bf3d55a06fd634e72",
+          "size": 315794
+        }
+      },
+      "toolchain": {
+        "architecture": "x86_64",
+        "packages": {},
+        "platform": "Linux",
+        "python": "3.11.2",
+        "tools": {
+          "rpmbuild": {
+            "file": "rpmbuild",
+            "sha256": "3ef4cd1c8a479f87a25a07b0870cb2ed5257fef6dfc0ad56461f06e673475f19",
+            "size": 33688
+          }
+        }
+      },
+      "independent_extracted_inventory_verified": true
+    },
+    {
+      "artifact": {
+        "file": "wolflauncher_0.9.3.5b_amd64_amd64.deb",
+        "sha256": "fbdb97cf52ac24bda9c2ca811c3b6647d7477ef3e6b79e8bf8b1410daccbcc31",
+        "size": 225777612
+      },
+      "manifest_sha256": "222d86dd49721faf600d51f23414410924e4d86c8f2c92204aeae4282fe7ffb8",
+      "source_commit": "13649a77a15026a3c0f5e2290bc9628472ac532e",
+      "source_dirty": false,
+      "source_snapshot_sha256": "b209c7b09e5fea1e2e9b32613953bfe70d7c0163e16d6f8f1f5d182500ed71be",
+      "inventory_entries": 5020,
+      "staged_inputs_verified": true,
+      "parent": null,
+      "toolchain": {
+        "architecture": "x86_64",
+        "packages": {
+          "PyInstaller": "6.21.0",
+          "PySide6": "6.11.1",
+          "shiboken6": "6.11.1"
+        },
+        "platform": "Linux",
+        "python": "3.12.3",
+        "tools": {
+          "dpkg-deb": {
+            "file": "dpkg-deb",
+            "sha256": "fc9dde782ca8309b65ab92e61d13318bf463cd1aa71daa8967b87b81b48b63d2",
+            "size": 146000
+          }
+        }
+      },
+      "independent_extracted_inventory_verified": true
+    }
+  ],
+  "extracted_startup_smoke": [
+    {
+      "format": "deb",
+      "exit_code": 0,
+      "passed": true
+    },
+    {
+      "format": "rpm",
+      "exit_code": 0,
+      "passed": true
+    }
+  ],
+  "xcb_validation": [
+    {
+      "artifact": "WolfLauncher-0.9.3.5b-x86_64.AppImage",
+      "sha256": "61e345e19a140155809527ed38ba60a9cd5a6a52dfbb7a8116280522da8d4aca",
+      "exit_code": 0,
+      "passed": true,
+      "scale": "1",
+      "platform": "xcb",
+      "launch_mode": "extract-and-run",
+      "wall_ms": 2152,
+      "validation": [
+        {
+          "packaged_validation": "passed",
+          "checks": {
+            "browser": {
+              "stable_rows": 1000,
+              "experimental_rows": 10,
+              "latest_search": true,
+              "scroll_and_selection": true
+            },
+            "mods": {
+              "rows": 200,
+              "items_reused": true,
+              "selection_preserved": true,
+              "cached_thumbnail": true
+            },
+            "runtime": {
+              "node": "v20.20.2",
+              "host_child": {
+                "ssl": "OpenSSL 3.0.13 30 Jan 2024",
+                "bundle_ssl": false
+              }
+            }
+          },
+          "elapsed_ms": 550,
+          "max_tick_gap_ms": 275.0
+        }
+      ],
+      "screenshot_sha256": "2ae9d6056d6b583da0f14404a00b7924b13f79fac81a4e327f1f5b60ba448ff0",
+      "screenshot_inspected": true
+    },
+    {
+      "artifact": "WolfLauncher-0.9.3.5b-x86_64.AppImage",
+      "sha256": "61e345e19a140155809527ed38ba60a9cd5a6a52dfbb7a8116280522da8d4aca",
+      "exit_code": 0,
+      "passed": true,
+      "scale": "2",
+      "platform": "xcb",
+      "launch_mode": "extract-and-run",
+      "wall_ms": 2208,
+      "validation": [
+        {
+          "packaged_validation": "passed",
+          "checks": {
+            "browser": {
+              "stable_rows": 1000,
+              "experimental_rows": 10,
+              "latest_search": true,
+              "scroll_and_selection": true
+            },
+            "mods": {
+              "rows": 200,
+              "items_reused": true,
+              "selection_preserved": true,
+              "cached_thumbnail": true
+            },
+            "runtime": {
+              "node": "v20.20.2",
+              "host_child": {
+                "ssl": "OpenSSL 3.0.13 30 Jan 2024",
+                "bundle_ssl": false
+              }
+            }
+          },
+          "elapsed_ms": 610,
+          "max_tick_gap_ms": 277.6
+        }
+      ],
+      "screenshot_sha256": "f604fe59b662294745000e26626656bac7edd09d7dfd2d33fef5d0b1c4ec6ddf",
+      "screenshot_inspected": true
+    }
+  ],
+  "host_fuse_mount": {
+    "kind": "host_fuse_mount_only",
+    "passed": true,
+    "mounted": true,
+    "launcher_visible": true,
+    "mount_remaining": false,
+    "stderr": ""
+  },
+  "limits": [
+    "Private development artifacts from clean 13649a7, not later IPC changes or published builds.",
+    "Independent extraction compares file bytes, modes and relative links; package installation/uninstallation was not performed locally.",
+    "Host FUSE check mounted and unmounted only; application checks used extraction-and-run. Private namespace FUSE launch could not use host setuid helper.",
+    "At 2x on this 1920x1080 desktop, workspace horizontal scrolling is required. X11 smoke and screenshot inspection do not certify manual accessibility or older distributions."
+  ]
+}

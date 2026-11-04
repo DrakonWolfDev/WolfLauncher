@@ -16,6 +16,7 @@ from wolflauncher.server_browser_table import (
     BROWSER_COLUMN_COUNT,
     BROWSER_FAVOURITE_COLUMN,
     BROWSER_FAVOURITE_ROLE,
+    BROWSER_NAME_COLUMN,
     BROWSER_PASSWORD_COLUMN,
     populate_browser_table,
     selected_browser_cache_key,
@@ -897,6 +898,19 @@ class ServerBrowserTableTests(unittest.TestCase):
         table.show()
         self.app.processEvents()
 
+        # Leave enough room for the fixed/content columns under the platform's
+        # font metrics, so the regression measures name yielding rather than an
+        # impossible layout whose non-name columns already exceed the viewport.
+        other_width = sum(
+            table.columnWidth(column)
+            for column in range(table.columnCount())
+            if column != BROWSER_NAME_COLUMN and not table.isColumnHidden(column)
+        )
+        table.resize(max(1200, other_width + 320 + 2 * table.frameWidth()), 300)
+        self.app.processEvents()
+        name_before = table.columnWidth(BROWSER_NAME_COLUMN)
+        mods_before = table.columnWidth(12)
+
         update_browser_mod_cell(
             table,
             server.cache_key,
@@ -906,6 +920,8 @@ class ServerBrowserTableTests(unittest.TestCase):
         )
         self.app.processEvents()
 
+        self.assertGreater(table.columnWidth(12), mods_before)
+        self.assertLess(table.columnWidth(BROWSER_NAME_COLUMN), name_before)
         self.assertEqual(table.horizontalScrollBar().maximum(), 0)
 
     def test_ping_colours_follow_dayz_warning_thresholds(self):

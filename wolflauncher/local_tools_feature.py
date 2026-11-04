@@ -375,9 +375,15 @@ class LocalToolsFeatureMixin:
         # page above keeps its cards compact through its own top alignment.
         layout.addWidget(self.local_tool_workspace, 1)
         layout.addWidget(self.local_tools_status)
-        self._refresh_local_profile_picker()
+        # Profile loading and target selection both request picker refreshes.
+        # Build their controls first, then scan the selected library once.
+        self._initializing_editor_mod_picker = True
+        try:
+            self._refresh_local_profile_picker()
+            self._set_mod_selection_target("editor")
+        finally:
+            self._initializing_editor_mod_picker = False
         self._refresh_editor_mod_picker()
-        self._set_mod_selection_target("editor")
         return widget
 
     def _refresh_local_profile_picker(self):
@@ -443,6 +449,8 @@ class LocalToolsFeatureMixin:
         self.local_tools_status.setText(f"Saved local profile: {profile.name}.")
 
     def _refresh_editor_mod_picker(self):
+        if getattr(self, "_initializing_editor_mod_picker", False):
+            return
         if not hasattr(self, "editor_mod_picker"):
             return
         install = self.selected_local_tool_install()
@@ -489,7 +497,7 @@ class LocalToolsFeatureMixin:
             self.editor_mod_picker.addItem(item)
         self.editor_mod_picker.blockSignals(False)
         self._filter_editor_mod_picker(self.editor_mod_filter.text())
-        self._update_mod_selection_summary()
+        self._render_mod_selection_summary(installed=installed)
 
     def _filter_editor_mod_picker(self, text: str):
         needle = text.strip().casefold()
@@ -652,10 +660,11 @@ class LocalToolsFeatureMixin:
                 f"Added {count} detected Workshop requirement(s) to the selection."
             )
 
-    def _enabled_mod_entries(self, *, editor: bool) -> list[str]:
-        """Return readable entries for the selected launch mode."""
-        install = self.selected_local_tool_install(editor=editor)
-        installed = scan_installed_mods(install.workshop_dir if install else None)
+    def _enabled_mod_entries(self, *, editor: bool, installed=None) -> list[str]:
+        """Return readable entries, optionally sharing this redraw's fresh scan."""
+        if installed is None:
+            install = self.selected_local_tool_install(editor=editor)
+            installed = scan_installed_mods(install.workshop_dir if install else None)
         dependency_names = {
             workshop_id: str(detail.get("title") or "")
             for workshop_id, detail in self.editor_dependency_metadata.items()
@@ -693,9 +702,16 @@ class LocalToolsFeatureMixin:
         return entries
 
     def _update_mod_selection_summary(self):
+        self._render_mod_selection_summary()
+
+    def _render_mod_selection_summary(self, *, installed=None):
+        if getattr(self, "_initializing_editor_mod_picker", False):
+            return
         if not hasattr(self, "selected_mods_layout"):
             return
-        entries = self._enabled_mod_entries(editor=self.mod_selection_target == "editor")
+        entries = self._enabled_mod_entries(
+            editor=self.mod_selection_target == "editor", installed=installed
+        )
         local_paths = (
             [str(path) for path in self._current_local_tool_profile().mod_paths]
             if self.mod_selection_target == "local"

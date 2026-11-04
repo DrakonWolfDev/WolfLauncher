@@ -15,12 +15,17 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("artifact", type=Path)
     parser.add_argument("--scale", choices=("1", "1.5", "2"), default="1")
+    parser.add_argument("--platform", choices=("offscreen", "xcb"), default="offscreen")
     args = parser.parse_args()
     artifact = args.artifact.resolve(strict=True)
     if not artifact.is_file() or not os.access(artifact, os.X_OK):
         parser.error("artifact must be an executable AppImage")
     if shutil.which("bwrap") is None:
         parser.error("bubblewrap is required for isolated Linux validation")
+    if args.platform == "xcb" and (
+        not os.environ.get("DISPLAY", "").startswith(":") or not Path("/tmp/.X11-unix").is_dir()
+    ):
+        parser.error("xcb validation requires a local X11 display and its socket directory")
     root = Path(tempfile.mkdtemp(prefix="wolflauncher-package-ui-"))
     (root / "config/wolflauncher").mkdir(parents=True)
     (root / "data").mkdir()
@@ -56,13 +61,15 @@ def main():
         "/proc",
         "--unshare-net",
     ]
+    if args.platform == "xcb":
+        command.extend(("--ro-bind", "/tmp/.X11-unix", "/tmp/.X11-unix"))
     for name, value in {
         "XDG_CONFIG_HOME": str(root / "config"),
         "XDG_DATA_HOME": str(root / "data"),
         "XDG_CACHE_HOME": str(root / "cache"),
         "XDG_RUNTIME_DIR": str(root / "runtime"),
         "DBUS_SESSION_BUS_ADDRESS": "unix:path=/nonexistent-wolf-validation",
-        "QT_QPA_PLATFORM": "offscreen",
+        "QT_QPA_PLATFORM": args.platform,
         "QT_SCALE_FACTOR": args.scale,
         "WOLFLAUNCHER_SMOKE_TEST": "1",
         "WOLFLAUNCHER_SMOKE_VALIDATE_UI": "1",
@@ -101,6 +108,8 @@ def main():
         "exit_code": result.returncode,
         "passed": passed,
         "scale": args.scale,
+        "platform": args.platform,
+        "launch_mode": "extract-and-run",
         "wall_ms": round((time.monotonic() - started) * 1000),
         "validation": validations,
     }
