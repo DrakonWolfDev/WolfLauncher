@@ -1,5 +1,6 @@
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from copy import deepcopy
 from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
@@ -126,6 +127,8 @@ class StatusWorker(QThread):
 
 class ModWorker(QThread):
     mods_ready = Signal(object)
+    mods_progress = Signal(object)
+    readiness_ready = Signal(object)
 
     def __init__(
         self,
@@ -136,6 +139,7 @@ class ModWorker(QThread):
         include_metadata: bool = True,
         launch_context=None,
         include_hashes: bool = False,
+        force_metadata: bool = False,
     ):
         super().__init__()
         self.server = server
@@ -145,9 +149,15 @@ class ModWorker(QThread):
         self.include_metadata = include_metadata
         self.launch_context = launch_context
         self.include_hashes = include_hashes
+        self.force_metadata = force_metadata
+        self._cancel_event = threading.Event()
 
     def cancel(self):
+        self._cancel_event.set()
         self.requestInterruption()
+
+    def isInterruptionRequested(self):
+        return self._cancel_event.is_set() or super().isInterruptionRequested()
 
     def run(self):
         try:
@@ -160,6 +170,13 @@ class ModWorker(QThread):
             result.request_id = self.launch_context.request_id
             result.launch_context_key = self.launch_context.mod_context_key
         self.mods_ready.emit(result)
+
+    def _snapshot(self, result):
+        snapshot = deepcopy(result)
+        if self.launch_context is not None:
+            snapshot.request_id = self.launch_context.request_id
+            snapshot.launch_context_key = self.launch_context.mod_context_key
+        return snapshot
 
     def _check(self):
         if self.isInterruptionRequested():
@@ -175,10 +192,27 @@ class ModWorker(QThread):
         )
         if self.isInterruptionRequested():
             return
+        if result.ok:
+            progress = self._snapshot(result)
+            progress.checking = True
+            for mod in progress.required_mods:
+                mod.checking = True
+            # Display-only cached fields never supply revision/readiness evidence.
+            from .mods import cached_workshop_display_metadata
+
+            apply_workshop_metadata(
+                progress,
+                cached_workshop_display_metadata(mod.workshop_id for mod in progress.required_mods),
+            )
+            self.mods_progress.emit(progress)
         if self.include_metadata and result.ok and result.required_mods:
             apply_workshop_metadata(
                 result,
-                fetch_workshop_metadata(mod.workshop_id for mod in result.required_mods),
+                fetch_workshop_metadata(
+                    (mod.workshop_id for mod in result.required_mods),
+                    cancelled=self.isInterruptionRequested,
+                    force_refresh=self.force_metadata,
+                ),
             )
             if install:
                 apply_workshop_install_timestamps(result, workshop_install_timestamps(install))
@@ -195,7 +229,20 @@ class ModWorker(QThread):
         if install:
             apply_completed_checks(install, result.required_mods)
         if self.include_hashes and not self.isInterruptionRequested():
-            apply_mod_hash_comparisons(result, install, cancelled=self.isInterruptionRequested)
+            # Launch continuations receive their own completed readiness snapshot
+            # before the optional advisory scan mutates the worker's result.
+            self.readiness_ready.emit(self._snapshot(result))
+            try:
+                apply_mod_hash_comparisons(result, install, cancelled=self.isInterruptionRequested)
+            except Exception:
+                # A failed advisory must not revoke completed readiness or
+                # accidentally run its launch continuation again.
+                from .mod_hash import ModHashComparison
+
+                for mod in result.required_mods:
+                    mod.hash_comparison = ModHashComparison(
+                        detail="Server hash comparison unavailable. Recheck to retry."
+                    )
         return result
 
 
@@ -327,7 +374,13 @@ class WorkshopSubscriptionWorker(QThread):
         try:
             targets = (
                 capture_update_targets(
-                    self.install, self.workshop_ids, fetch_workshop_metadata(self.workshop_ids)
+                    self.install,
+                    self.workshop_ids,
+                    fetch_workshop_metadata(
+                        self.workshop_ids,
+                        cancelled=self._cancelled.is_set,
+                        force_refresh=True,
+                    ),
                 )
                 if self.force_update
                 else {}
@@ -646,7 +699,7 @@ class ServerEnrichmentWorker(QThread):
 
     def run(self):
         checked_at = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
-        enriched = []
+        enriched = {}
         total = len(self.servers)
 
         def enrich_one(server):
@@ -682,11 +735,16 @@ class ServerEnrichmentWorker(QThread):
 
         max_workers = min(MAX_ENRICHMENT_WORKERS, total) if total else 1
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            for completed, (original, server) in enumerate(
-                zip(self.servers, executor.map(enrich_one, self.servers)), 1
-            ):
-                if server is None:
+            futures = {
+                executor.submit(enrich_one, server): (index, server)
+                for index, server in enumerate(self.servers)
+            }
+            for completed, future in enumerate(as_completed(futures), 1):
+                index, original = futures[future]
+                server = future.result()
+                if server is None or self._cancel_event.is_set():
                     continue
-                enriched.append(server)
+                enriched[index] = server
                 self.enrichment_progress.emit((original.cache_key, server), completed, total)
-        self.enrichment_ready.emit(enriched, "")
+        if not self._cancel_event.is_set():
+            self.enrichment_ready.emit([enriched[index] for index in sorted(enriched)], "")

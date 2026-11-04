@@ -318,10 +318,13 @@ class WorkerTests(unittest.TestCase):
 
         worker.run()
 
-        self.assertEqual([item[1] for item in progress], ["One", "Two"])
+        self.assertEqual(sorted(item[1] for item in progress), ["One", "Two"])
         self.assertEqual([item[2] for item in progress], [1, 2])
         self.assertTrue(all(item[3] == 2 for item in progress))
-        self.assertEqual(progress[0][0], servers[0].cache_key)
+        self.assertEqual(
+            {item[1]: item[0] for item in progress},
+            {server.name: server.cache_key for server in servers},
+        )
         self.assertEqual(len(completed[0][0]), 2)
         self.assertEqual(completed[0][1], "")
 

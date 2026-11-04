@@ -594,3 +594,18 @@ package provenance and isolated rebuilt Linux validation. Localisation, signed
 installable updates and broader support collection retain their design choices;
 LAN discovery still needs interface/custom-port coverage and real LAN evidence.
 REL-02/API-01 retain their specific missing inputs; do not guess them.
+
+
+## Performance priorities 1–3 — 4 November 2026
+
+Andi approved the first three items from the additional source performance review.
+Completion-order browser results, staged required-mod presentation/readiness and
+bounded shared Workshop metadata requests are now implemented. Early snapshots
+cannot authorize launch; forced rechecks bypass older metadata requests and late
+advisories cannot replace newer Steam evidence. Final Linux validation: 990 tests
+run, 983 passed, 7 skipped; required lint/formatting, core type checks, compilation,
+whitespace and release-lock dependency audit pass. See the [implementation and
+evidence](DEVELOPMENT_FOLLOWUP_2026-11-04.md#further-performance-work-review-priorities-13-implemented).
+Packaged/native Windows and live Steam/DayZ evidence remains pending. Review items
+4–7 remain candidates; no release, version bump, package build or API deployment
+was performed. Preserve this completion update before planning further work.

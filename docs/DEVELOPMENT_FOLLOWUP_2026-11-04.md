@@ -182,3 +182,74 @@ checks pass. These are source/local checks, not a native release certification.
 The next useful unattended work is extending provenance to wrapper/native package
 formats and validating rebuilt Linux artifacts in isolation. Native Windows,
 real Steam/DayZ joins and the previously documented release checks remain needed.
+
+## Further performance work: review priorities 1–3 implemented
+
+Andi approved the first three items in
+[the source performance review](PERFORMANCE_REVIEW_2026-11-04.md). The other
+opportunities remain candidates; this work does not reopen PERF-01, PERF-02 or
+the completed gzip change.
+
+**Completion-order browser results.** `ServerEnrichmentWorker` now delivers each
+finished query immediately, preserving its original server/cache-key association
+and completed count. Its final aggregate retains input order. Cancellation
+suppresses late progress and final result delivery. The existing eight-query
+concurrency cap and endpoint/edition guards remain in place.
+
+The same local two-query probe used for the review simulated a 200 ms first
+query and a 5 ms second query. Before: the fast query completed at 6.2 ms and its
+progress arrived at 201.2 ms. After: it completed at 6.1 ms and its progress
+arrived at 6.2 ms, while the slow reply arrived at 201.2 ms. These demonstrate
+delivery latency, not public server/network performance. An event-gated
+regression requires the fast reply to arrive before releasing the slow query.
+
+**Staged required-mod results.** The coordinated inspector shows a copied
+requirements/local-presence snapshot before HTTP metadata and live Steam state
+finish. Rows and the heading explicitly say readiness is being checked. Cached
+display fields may supply names/descriptions/previews, but never cached revision
+timestamps or installed-state evidence. The displayed snapshot is separate from
+the launch cache; checking results are rejected by cached preflight and command
+preparation. Workshop resolution/force-update controls stay disabled while checking.
+
+Completed readiness can reach launch continuations before optional PBO advisory
+comparisons finish. The advisory completion never runs the same continuation
+twice, revokes readiness merely because an advisory read failed, or replaces a
+newer check/Steam progress snapshot. Generations reject superseded queued signals;
+request, installation, edition and endpoint checks remain active. Staged refreshes
+reuse the existing mod-table population helper to preserve selected mod, sorting
+and scroll. Live manifest, state, completion and post-download checks remain.
+
+**Shared metadata requests.** A process-local broker shares overlapping requests
+by public Workshop ID and children/dependency completeness. Identical concurrent
+requests use one HTTP load; partially overlapping batches share the repeated IDs.
+Authoritative calls always obtain live HTTP evidence rather than completed cached
+revisions. Explicit forced rechecks and forced-update revision capture bypass
+older in-flight requests. Steam revision acknowledgements remain installation-
+and edition-scoped; public display metadata cannot bless another library.
+
+HTTP batches contain at most 100 IDs, at most four HTTP loads run concurrently,
+and at most 400 owned item requests are active. The display cache retains at most
+512 entries and 8 MiB of encoded field payload for five minutes. Results are
+copied between callers. Missing/error responses are not cached as successes.
+Followers can cancel independently; a cancelled owner releases followers to
+retry. Mod-worker cancellation reaches HTTP admission/read checks and shared
+request waits. An active blocking socket operation can still wait for its existing
+timeout; this is not a claim of immediate cancellation throughout network I/O.
+
+Validation: **990 tests run / 983 passed / 7 skipped**, including **19 new
+regressions** for completion order, staged ownership, real Qt table selection,
+early-result launch exclusion, stale advisory results, cancellation, forced
+rechecks, metadata sharing, limits, expiry and failure recovery. The sandbox
+initially denied the suite's local IPC/TLS sockets; the final complete run passed
+with those local sockets available. No public live query, Steam/game action or
+Workshop transfer was needed for these checks.
+
+Ruff 0.15.22 lint/formatting, hardened-boundary mypy, compilation and whitespace
+checks pass. The release-lock dependency audit reports no known vulnerabilities.
+The type check exposed an existing Qt enum alias absent from the installed
+stubs; host URL handling now uses the equivalent fully qualified enum member,
+with its existing environment/handoff regressions passing.
+
+Source completion is verified locally. Current packaged Linux, native Windows
+and real Steam/DayZ validation remain pending. No version change, build, tag,
+release publication, public-link change or API deployment was performed.

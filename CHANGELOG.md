@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Show completed browser checks immediately and display required mods while
+  readiness checks finish. Share overlapping Workshop metadata requests, retain
+  a bounded display cache and keep launch/Steam freshness checks authoritative.
+
 - Reduce directory transfer sizes with bounded gzip decoding.
 - Keep AppImage loader paths out of external Steam, game and desktop handoffs.
 - Show read-only Linux memory-map compatibility guidance in Settings.

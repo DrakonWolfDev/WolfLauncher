@@ -217,6 +217,7 @@ class ConnectPreflightCoordinator:
             server,
             install.workshop_dir,
             window.mod_check_steam_context(install),
+            force_metadata=True,
             workshop_install=install,
             launch_context=self.context,
         )

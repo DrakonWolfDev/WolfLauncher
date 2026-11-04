@@ -163,6 +163,7 @@ class LaunchExecutionCoordinator:
             if (
                 result is None
                 or not result.ok
+                or result.checking
                 or result.request_id != context.request_id
                 or result.launch_context_key != context.mod_context_key
             ):

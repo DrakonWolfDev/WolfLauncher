@@ -89,6 +89,7 @@ class RequiredMod:
     # Advertised protocol value; not proof of freshness or file integrity.
     server_hash: int | None = None
     hash_comparison: ModHashComparison | None = None
+    checking: bool = False
 
     @property
     def downloadable(self) -> bool:
@@ -96,7 +97,12 @@ class RequiredMod:
 
     @property
     def ready(self) -> bool:
-        if not self.downloadable or not self.installed or self.workshop_completion_pending:
+        if (
+            self.checking
+            or not self.downloadable
+            or not self.installed
+            or self.workshop_completion_pending
+        ):
             return False
         if self.workshop_state is None:
             return not self.remote_update_available
@@ -131,6 +137,7 @@ class ModCheckResult:
     workshop_state_error: str = ""
     request_id: str = ""
     launch_context_key: tuple = ()
+    checking: bool = False
 
     @property
     def local_requirements(self) -> list[RequiredMod]:
@@ -208,9 +215,9 @@ def fetch_workshop_file_sizes(workshop_ids) -> dict[str, int]:
 
 
 def fetch_workshop_metadata(
-    workshop_ids, *, include_children: bool = False
+    workshop_ids, *, include_children: bool = False, cancelled=None, force_refresh=False
 ) -> dict[str, dict[str, Any]]:
-    """Fetch public display metadata for Workshop items in one bounded batch."""
+    """Fetch live metadata, sharing overlapping requests but never cached revisions."""
     ids = tuple(
         dict.fromkeys(
             str(item).strip()
@@ -220,6 +227,29 @@ def fetch_workshop_metadata(
     )
     if not ids:
         return {}
+    from .workshop_metadata import metadata_broker
+
+    try:
+        return metadata_broker.fetch(
+            ids,
+            include_children=include_children,
+            load=lambda batch: _fetch_workshop_metadata_batch(
+                batch, include_children=include_children, cancelled=cancelled
+            ),
+            cancelled=cancelled,
+            force_refresh=force_refresh,
+        )
+    except HttpClientError:
+        return {}
+
+
+def cached_workshop_display_metadata(workshop_ids):
+    from .workshop_metadata import metadata_broker
+
+    return metadata_broker.display(workshop_ids)
+
+
+def _fetch_workshop_metadata_batch(ids, *, include_children=False, cancelled=None):
     fields = [("itemcount", str(len(ids)))]
     if include_children:
         # Steam calls Workshop dependencies "children" in this public endpoint.
@@ -227,8 +257,10 @@ def fetch_workshop_metadata(
         fields.append(("return_children", "true"))
     fields.extend((f"publishedfileids[{index}]", item) for index, item in enumerate(ids))
     try:
-        payload = post_form_json(WORKSHOP_DETAILS_URL, fields, timeout=10)
-    except HttpClientError:
+        payload = post_form_json(WORKSHOP_DETAILS_URL, fields, timeout=10, cancel=cancelled)
+    except HttpClientError as exc:
+        if exc.category == "cancelled":
+            raise
         return {}
     details = payload.get("response", {}).get("publishedfiledetails", [])
     metadata = {}

@@ -36,7 +36,7 @@ def matching_mod_result(
     """Return a cached result only when its server and optional Workshop context match."""
     if getattr(server, "identity_state", "") == "conflict":
         return None
-    if not mod_result or server_key(mod_result.server) != server_key(server):
+    if not mod_result or mod_result.checking or server_key(mod_result.server) != server_key(server):
         return None
     if workshop_dir is not None and mod_result.workshop_dir != str(workshop_dir):
         return None

@@ -2,6 +2,7 @@
 
 import threading
 import uuid
+from copy import deepcopy
 from dataclasses import replace
 
 from PySide6.QtCore import QThread, Signal
@@ -49,10 +50,12 @@ class ServerLaunchCoordinator:
         self.mod_callbacks = {}
         self.pending_identity = None
         self.pending_mods = None
+        self.mod_generation = 0
         self.identity_status_request = ""
         self.identity_status_message = ""
 
     def invalidate(self):
+        self.mod_generation += 1
         self._clear_identity_status(self.request_id)
         self.request_id = ""
         self.context = None
@@ -135,6 +138,7 @@ class ServerLaunchCoordinator:
             and not include_hashes
             and cached is not None
             and cached.ok
+            and not cached.checking
             and cached.request_id == context.request_id
             and cached.launch_context_key == context.mod_context_key
         ):
@@ -142,6 +146,13 @@ class ServerLaunchCoordinator:
             return
         request = context.request_id
         if request in self.window.context_mod_workers:
+            if force:
+                self.mod_generation += 1
+                self.window.context_mod_workers[request].cancel()
+                self.mod_callbacks.pop(request, None)
+                self.window.last_mod_result = None
+                self.pending_mods = (context, continuation, True, include_hashes)
+                return
             if include_hashes and not self.window.context_mod_workers[request].include_hashes:
                 # Finish the readiness request, then perform the requested fresh
                 # advisory read rather than silently coalescing it away.
@@ -152,6 +163,8 @@ class ServerLaunchCoordinator:
         if len(self.window.context_mod_workers) >= 2:
             self.pending_mods = (context, continuation, force, include_hashes)
             return
+        self.mod_generation += 1
+        generation = self.mod_generation
         self.mod_callbacks[request] = [continuation]
         worker = ModWorker(
             context.server,
@@ -160,21 +173,61 @@ class ServerLaunchCoordinator:
             workshop_install=context.install,
             launch_context=context,
             include_hashes=include_hashes,
+            force_metadata=force,
         )
+        self.window.last_mod_result = None
         self.window.context_mod_workers[request] = worker
 
+        readiness_snapshot = None
+        readiness_baseline = None
+
+        def accepts(result):
+            return (
+                self.current(context, require_fresh=False)
+                and generation == self.mod_generation
+                and result.request_id == request
+                and result.launch_context_key == context.mod_context_key
+            )
+
+        def progress(result):
+            if accepts(result) and result.checking:
+                self.window.display_mods_result(result)
+
         def ready(result):
+            nonlocal readiness_snapshot, readiness_baseline
+            if result.checking or not accepts(result):
+                return
             callbacks = self.mod_callbacks.pop(request, [])
-            if not self.current(context, require_fresh=False):
-                return
-            if result.request_id != request or result.launch_context_key != context.mod_context_key:
-                return
             self.window.last_mod_result = result
+            readiness_snapshot = result
+            readiness_baseline = deepcopy(result)
             self.window.display_mods_result(result)
             for callback in callbacks:
                 callback(result)
 
-        worker.mods_ready.connect(ready)
+        def finished_result(result):
+            if not accepts(result):
+                return
+            if readiness_snapshot is None:
+                ready(result)
+                return
+            # Advisory completion must not replace later Steam progress or a
+            # newer check. It never runs launch continuations a second time.
+            if (
+                accepts(result)
+                and self.window.last_mod_result is readiness_snapshot
+                and readiness_snapshot == readiness_baseline
+            ):
+                self.window.last_mod_result = result
+                self.window.display_mods_result(result)
+            callbacks = self.mod_callbacks.pop(request, [])
+            if accepts(result):
+                for callback in callbacks:
+                    callback(self.window.last_mod_result)
+
+        worker.mods_progress.connect(progress)
+        worker.readiness_ready.connect(ready)
+        worker.mods_ready.connect(finished_result)
         worker.finished.connect(lambda: self._mod_finished(request))
         worker.start()
 

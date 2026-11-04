@@ -118,6 +118,10 @@ def mod_summary_text(result: ModCheckResult) -> str:
     if not result.ok:
         return f"Check failed: {result.error}"
 
+    if result.checking:
+        return (
+            f"Required {len(result.required_mods)}  ·  Checking Workshop freshness and item state…"
+        )
     required_count = len(result.required_mods)
     if required_count == 0:
         return "Required 0  ·  Ready 0  ·  Missing 0  ·  Update/pending 0"
@@ -167,6 +171,8 @@ def mod_server_heading(result: ModCheckResult) -> str:
 
 
 def mod_readiness_text(result: ModCheckResult) -> str:
+    if result.checking:
+        return "Requirements loaded. Checking mod readiness…"
     if not result.ok:
         return "Mod readiness could not be confirmed. Recheck before launching."
     if result.local_requirements:
@@ -199,7 +205,10 @@ def mod_row(mod: RequiredMod) -> ModRow:
         ITEM_STATE_NEEDS_UPDATE,
     )
 
-    if mod.workshop_completion_pending:
+    if mod.checking:
+        status = "Checking readiness" if mod.installed else "Missing · checking Workshop details"
+        colour = STATUS_COLOURS["warning"]
+    elif mod.workshop_completion_pending:
         status = "Waiting for Steam completion"
         colour = STATUS_COLOURS["warning"]
     elif mod.workshop_state is not None and mod.workshop_state & ITEM_STATE_DOWNLOADING:

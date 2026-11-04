@@ -76,7 +76,9 @@ def open_host_url(url, *, desktop_open=None) -> bool:
     from PySide6.QtCore import QUrl
 
     try:
-        started, _pid = start_host_detached([opener, url.toString(QUrl.FullyEncoded)])
+        started, _pid = start_host_detached(
+            [opener, url.toString(QUrl.ComponentFormattingOption.FullyEncoded)]
+        )
     except OSError:
         return False
     return started

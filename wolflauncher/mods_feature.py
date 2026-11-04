@@ -600,6 +600,7 @@ class ModsFeatureMixin:
             steam_context,
             workshop_install=workshop_install,
             include_hashes=True,
+            force_metadata=force,
         )
         self.mod_worker = worker
         product_key = self.dayz_product_key()
@@ -668,15 +669,19 @@ class ModsFeatureMixin:
             )
 
     def display_mods_result(self, result: ModCheckResult):
-        self.mods_table.setSortingEnabled(False)
+        # Presentation snapshots are separate from last_mod_result, which alone
+        # supplies completed evidence to launch and Workshop actions.
+        self.displayed_mod_result = result
         self.mod_server_title.setText(mod_server_heading(result))
         self.mod_readiness.setText(mod_readiness_text(result))
         self.mod_summary.setText(mod_summary_text(result))
         self.mod_summary.setToolTip("")
         missing_count = len(result.missing_mods) if result.ok else 0
-        self.subscribe_missing_button.setEnabled(missing_count > 0)
+        self.subscribe_missing_button.setEnabled(missing_count > 0 and not result.checking)
         self.subscribe_missing_button.setText(
-            f"Resolve {missing_count} required mod{'s' if missing_count != 1 else ''}"
+            "Checking required mods…"
+            if result.checking
+            else f"Resolve {missing_count} required mod{'s' if missing_count != 1 else ''}"
             if missing_count
             else "Install/update required mods"
         )
@@ -690,25 +695,7 @@ class ModsFeatureMixin:
         # lexical order can bury an update behind ready items. Header sorting
         # stays enabled for an explicit user choice after this useful default.
         required = sorted(result.required_mods, key=mod_default_sort_key)
-        self.mods_table.setRowCount(len(required))
-        for row, mod in enumerate(required):
-            row_data = mod_row(mod)
-            for column, value in enumerate(row_data.values):
-                item = QTableWidgetItem(value)
-                item.setData(Qt.UserRole, row_data.workshop_id)
-                if column in {2, 3}:
-                    item.setFont(monospace_font())
-                if column in {0, 2, 3}:
-                    item.setTextAlignment(Qt.AlignCenter)
-                if column == 0:
-                    item.setForeground(QColor(row_data.status_colour))
-                self.mods_table.setItem(row, column, item)
-        self.mods_table.resizeColumnsToContents()
-        self.mods_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-        self.mods_table.setSortingEnabled(False)
-        self.apply_mod_filter()
-        if self.mods_table.rowCount() > 0:
-            self.mods_table.selectRow(0)
+        self._display_mod_rows(required, preserve_position=True)
 
     def sort_mod_table_by_column(self, column: int):
         """Allow an explicit header sort without changing the useful default."""
@@ -723,6 +710,8 @@ class ModsFeatureMixin:
         self.mods_table.sortItems(column, order)
 
     def selected_required_mod(self):
+        if self.mods_table.currentRow() < 0:
+            return None
         if self.viewing_installed_workshop_library():
             row = self.mods_table.currentRow()
             workshop_id = self._mods_cell(row, 2) if row >= 0 else ""
@@ -730,7 +719,7 @@ class ModsFeatureMixin:
                 (mod for mod in self.installed_workshop_mods if mod.workshop_id == workshop_id),
                 None,
             )
-        result = self.last_mod_result
+        result = getattr(self, "displayed_mod_result", None) or self.last_mod_result
         if not result or not result.ok:
             return None
         row = self.mods_table.currentRow()
@@ -745,7 +734,7 @@ class ModsFeatureMixin:
             return
         mod = self.selected_required_mod()
         if hasattr(self, "force_update_button"):
-            self.force_update_button.setEnabled(mod is not None)
+            self.force_update_button.setEnabled(mod is not None and not mod.checking)
         if hasattr(self, "mod_detail_uninstall_button"):
             self.mod_detail_uninstall_button.setEnabled(
                 mod is not None
@@ -990,6 +979,9 @@ class ModsFeatureMixin:
         copy_url_action = QAction("Copy Workshop URL", self)
         check_update_action = QAction("Check/update this mod", self)
         force_update_action = QAction("Force Steam update", self)
+        mod = self.selected_required_mod()
+        check_update_action.setEnabled(mod is not None and not mod.checking)
+        force_update_action.setEnabled(mod is not None and not mod.checking)
         open_action.triggered.connect(lambda: self.open_workshop_page_for_mod_row(row))
         copy_id_action.triggered.connect(
             lambda: self.copy_to_clipboard(self._mods_cell(row, 2), "Workshop ID")
