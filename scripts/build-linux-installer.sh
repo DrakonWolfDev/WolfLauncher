@@ -34,7 +34,11 @@ archive="$repo_root/dist/${bundle_name}-installer.tar.gz"
 
 rm -rf "$stage_root"
 mkdir -p "$bundle_root" "$repo_root/dist"
+provenance_inputs="$stage_root/provenance-inputs.json"
+"$python_bin" -m wolflauncher.build_provenance begin --output "$provenance_inputs" \
+  --tool "tar=$(command -v tar)" --parent-artifact "$appimage"
 install -m 0755 "$appimage" "$bundle_root/$(basename "$appimage")"
+cmp "$appimage" "$bundle_root/$(basename "$appimage")"
 install -m 0755 scripts/wolflauncher-install.sh "$bundle_root/install.sh"
 install -m 0755 scripts/wolflauncher-uninstall.sh "$bundle_root/uninstall.sh"
 install -m 0644 packaging/linux/wolflauncher.desktop "$bundle_root/wolflauncher.desktop"
@@ -43,6 +47,13 @@ install -m 0644 docs/INSTALL_LINUX.md "$bundle_root/INSTALL.md"
 install -m 0644 LICENSE COPYRIGHT THIRD_PARTY_NOTICES.md "$bundle_root/"
 
 rm -f "$archive" "$archive.sha256"
+"$python_bin" -m wolflauncher.build_provenance seal \
+  --inputs "$provenance_inputs" --bundle-root "$bundle_root"
 tar -czf "$archive" -C "$stage_root" "$bundle_name"
 (cd "$repo_root/dist" && sha256sum "$(basename "$archive")") > "$archive.sha256"
+"$python_bin" -m wolflauncher.build_provenance finish \
+  --inputs "$provenance_inputs" --bundle-root "$bundle_root" \
+  --parent-artifact "$appimage" "$archive"
+"$python_bin" -m wolflauncher.build_provenance verify \
+  --manifest "$archive.provenance.json" --bundle-root "$bundle_root" "$archive"
 printf '%s\n' "$archive"

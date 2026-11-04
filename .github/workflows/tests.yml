@@ -154,6 +154,7 @@ jobs:
           path: |
             dist/*.deb
             dist/*.deb.sha256
+            dist/*.deb.provenance.json
             dist/*.whl
           if-no-files-found: error
 
@@ -222,6 +223,7 @@ jobs:
           path: |
             dist/windows/*-setup-*.exe
             dist/windows/*-setup-*.exe.sha256
+            dist/windows/*-setup-*.exe.provenance.json
           if-no-files-found: error
 
   linux-rpm-appimage:
@@ -259,6 +261,8 @@ jobs:
           path: |
             dist/*.rpm
             dist/*.rpm.sha256
+            dist/*.rpm.provenance.json
             dist/*.AppImage
             dist/*.AppImage.sha256
+            dist/*.AppImage.provenance.json
           if-no-files-found: error

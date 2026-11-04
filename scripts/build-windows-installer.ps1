@@ -5,7 +5,8 @@ param(
     [string]$Python = "python",
     [string]$BundleRoot = "",
     [string]$OutputRoot = "",
-    [string]$ArtifactLabel = "windows-x64"
+    [string]$ArtifactLabel = "windows-x64",
+    [string]$PortableArchive = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -64,6 +65,15 @@ if ($LASTEXITCODE -ne 0 -or -not $numericVersion) {
 New-Item -ItemType Directory -Path $OutputRoot -Force | Out-Null
 $installerName = "wolflauncher-$version-setup-$ArtifactLabel.exe"
 $installerPath = Join-Path $OutputRoot $installerName
+if (-not $PortableArchive) {
+    $PortableArchive = Join-Path (Split-Path -Parent $BundleRoot) "wolflauncher-$version-$ArtifactLabel.zip"
+}
+$PortableArchive = [System.IO.Path]::GetFullPath($PortableArchive)
+$provenanceInputs = Join-Path $projectRoot "build\windows\setup-provenance-inputs.json"
+& $Python -m wolflauncher.build_provenance begin --output $provenanceInputs --tool "iscc=$Iscc" --tool "setup-icon=$iconPath" --parent-artifact $PortableArchive --parent-bundle $BundleRoot
+if ($LASTEXITCODE -ne 0) { throw "Installer parent provenance failed." }
+& $Python -m wolflauncher.build_provenance seal --inputs $provenanceInputs --bundle-root $BundleRoot
+if ($LASTEXITCODE -ne 0) { throw "Installer input sealing failed." }
 Remove-Item -LiteralPath $installerPath -Force -ErrorAction SilentlyContinue
 
 & $Iscc `
@@ -85,5 +95,9 @@ if (-not (Test-Path -LiteralPath $installerPath -PathType Leaf)) {
 $hash = Get-Sha256Digest $installerPath
 $hashPath = "$installerPath.sha256"
 [System.IO.File]::WriteAllText($hashPath, "$hash  $installerName`n", [System.Text.Encoding]::ASCII)
+& $Python -m wolflauncher.build_provenance finish --inputs $provenanceInputs --bundle-root $BundleRoot --parent-artifact $PortableArchive --parent-bundle $BundleRoot $installerPath
+if ($LASTEXITCODE -ne 0) { throw "Installer provenance failed." }
+& $Python -m wolflauncher.build_provenance verify --manifest "$installerPath.provenance.json" --bundle-root $BundleRoot $installerPath
+if ($LASTEXITCODE -ne 0) { throw "Installer inventory verification failed." }
 Write-Host "Built $installerPath"
 Write-Host "SHA256 $hash"

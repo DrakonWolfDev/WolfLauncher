@@ -52,6 +52,10 @@ mkdir -p \
   "$package_root/usr/share/wolflauncher/external" \
   "$package_root/usr/share/doc/wolflauncher"
 
+provenance_inputs="$repo_root/build/deb/provenance-inputs.json"
+"$python_bin" -m wolflauncher.build_provenance begin --output "$provenance_inputs" \
+  --tool "dpkg-deb=$(command -v dpkg-deb)"
+
 "$python_bin" -m build --wheel --no-isolation
 wheel_path="$repo_root/dist/wolflauncher-${wheel_version}-py3-none-any.whl"
 "$python_bin" -m pip install \
@@ -129,6 +133,12 @@ HOOK
 done
 
 artifact="$repo_root/dist/wolflauncher_${debian_version}_${artifact_label}_${architecture}.deb"
+"$python_bin" -m wolflauncher.build_provenance seal \
+  --inputs "$provenance_inputs" --bundle-root "$package_root"
 dpkg-deb --root-owner-group --build "$package_root" "$artifact"
 (cd "$repo_root/dist" && sha256sum "$(basename "$artifact")") > "$artifact.sha256"
+"$python_bin" -m wolflauncher.build_provenance finish \
+  --inputs "$provenance_inputs" --bundle-root "$package_root" "$artifact"
+"$python_bin" -m wolflauncher.build_provenance verify \
+  --manifest "$artifact.provenance.json" --bundle-root "$package_root" "$artifact"
 printf '%s\n' "$artifact"

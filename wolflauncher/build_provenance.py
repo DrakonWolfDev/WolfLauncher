@@ -114,7 +114,30 @@ def read_json(path: Path) -> dict:
     return data
 
 
-def begin(root: Path, output: Path, tools: list[str]) -> None:
+def parent_record(artifact: Path, source: dict, bundle: Path | None = None) -> dict:
+    manifest = artifact.with_name(artifact.name + ".provenance.json")
+    verify(manifest, artifact, bundle)
+    data = read_json(manifest)
+    if data["source"] != source:
+        raise ValueError("Parent artifact was built from a different source snapshot")
+    record = {
+        "artifact": data["artifact"],
+        "manifest": {"file": manifest.name, **file_record(manifest)},
+    }
+    if bundle is not None:
+        record["bundle_sha256"] = hashlib.sha256(
+            json.dumps(data["bundle"], sort_keys=True, separators=(",", ":")).encode()
+        ).hexdigest()
+    return record
+
+
+def begin(
+    root: Path,
+    output: Path,
+    tools: list[str],
+    parent_artifact: Path | None = None,
+    parent_bundle: Path | None = None,
+) -> None:
     packages = {}
     for name in ("PyInstaller", "PySide6", "shiboken6"):
         try:
@@ -128,12 +151,16 @@ def begin(root: Path, output: Path, tools: list[str]) -> None:
             raise ValueError("Tools must have unique name=path specifications")
         tool_records[name] = {"file": Path(value).name, **file_record(Path(value))}
     state = source_state(root)
+    if parent_bundle is not None and parent_artifact is None:
+        raise ValueError("A parent bundle requires its parent artifact")
+    parent = parent_record(parent_artifact, state, parent_bundle) if parent_artifact else None
     write_json(
         output,
         {
             "schema": SCHEMA,
             "started_at": datetime.now(timezone.utc).isoformat(),
             "source": state,
+            **({"parent": parent} if parent is not None else {}),
             "toolchain": {
                 "python": platform.python_version(),
                 "platform": platform.system(),
@@ -145,15 +172,44 @@ def begin(root: Path, output: Path, tools: list[str]) -> None:
     )
 
 
-def finish(root: Path, inputs: Path, bundle: Path, artifact: Path) -> Path:
+def seal(root: Path, inputs: Path, bundle: Path) -> None:
+    evidence = read_json(inputs)
+    if evidence["source"] != source_state(root):
+        raise ValueError("Source changed before staging; rebuild")
+    if "staged_bundle" in evidence:
+        raise ValueError("Build inputs have already been sealed")
+    evidence["staged_bundle"] = bundle_inventory(bundle)
+    write_json(inputs, evidence)
+
+
+def finish(
+    root: Path,
+    inputs: Path,
+    bundle: Path,
+    artifact: Path,
+    parent_artifact: Path | None = None,
+    parent_bundle: Path | None = None,
+) -> Path:
     evidence = read_json(inputs)
     if evidence["source"] != source_state(root):
         raise ValueError("Source changed during build; rebuild from one consistent snapshot")
+    inventory = bundle_inventory(bundle)
+    staged = evidence.pop("staged_bundle", None)
+    if staged is not None and staged != inventory:
+        raise ValueError("Staged files changed during packaging; rebuild")
+    if "parent" in evidence:
+        if parent_artifact is None or evidence["parent"] != parent_record(
+            parent_artifact, evidence["source"], parent_bundle
+        ):
+            raise ValueError("Parent artifact or bundle changed during packaging")
+    elif parent_artifact is not None or parent_bundle is not None:
+        raise ValueError("Parent artifact was not captured before packaging")
     evidence.update(
         {
             "finished_at": datetime.now(timezone.utc).isoformat(),
             "artifact": {"file": artifact.name, **file_record(artifact)},
-            "bundle": bundle_inventory(bundle),
+            "bundle": inventory,
+            **({"staged_inputs_verified": True} if staged is not None else {}),
             "assurance": "Unsigned build evidence; not an independent signature or reproducible-build claim.",
         }
     )
@@ -191,10 +247,17 @@ def main(argv=None):
     capture = commands.add_parser("begin")
     capture.add_argument("--output", type=Path, required=True)
     capture.add_argument("--tool", action="append", default=[])
+    capture.add_argument("--parent-artifact", type=Path)
+    capture.add_argument("--parent-bundle", type=Path)
+    staging = commands.add_parser("seal")
+    staging.add_argument("--inputs", type=Path, required=True)
+    staging.add_argument("--bundle-root", type=Path, required=True)
     complete = commands.add_parser("finish")
     complete.add_argument("--inputs", type=Path, required=True)
     complete.add_argument("--bundle-root", type=Path, required=True)
     complete.add_argument("artifact", type=Path)
+    complete.add_argument("--parent-artifact", type=Path)
+    complete.add_argument("--parent-bundle", type=Path)
     check = commands.add_parser("verify")
     check.add_argument("--manifest", type=Path, required=True)
     check.add_argument("--bundle-root", type=Path)
@@ -204,9 +267,20 @@ def main(argv=None):
     args = parser.parse_args(argv)
     try:
         if args.command == "begin":
-            begin(args.root, args.output, args.tool)
+            begin(args.root, args.output, args.tool, args.parent_artifact, args.parent_bundle)
+        elif args.command == "seal":
+            seal(args.root, args.inputs, args.bundle_root)
         elif args.command == "finish":
-            print(finish(args.root, args.inputs, args.bundle_root, args.artifact))
+            print(
+                finish(
+                    args.root,
+                    args.inputs,
+                    args.bundle_root,
+                    args.artifact,
+                    args.parent_artifact,
+                    args.parent_bundle,
+                )
+            )
         else:
             verify(
                 args.manifest,

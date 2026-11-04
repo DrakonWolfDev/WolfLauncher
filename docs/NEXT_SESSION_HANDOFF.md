@@ -664,3 +664,12 @@ real downloads/cancellation, game joins, frozen-package resource behaviour,
 Windows, native desktop/accessibility or older distro/FUSE checks. Native wrapper
 package provenance also remains useful follow-up work. No runtime change,
 release/version/publication or API deployment in this batch.
+
+
+## Native package provenance source implementation — 4 November 2026
+
+BUILD-01 now has source integration for DEB/RPM/Windows Setup/Linux installer
+archives, with sealed staged inputs and verified parent chains where applicable.
+Do not reopen this as missing source work. Clean native builds/extracted-payload
+checks and Windows compiler/install/uninstall evidence remain separate next steps.
+See [the follow-up](DEVELOPMENT_FOLLOWUP_2026-11-04.md#native-package-provenance-chain--4-november-2026).

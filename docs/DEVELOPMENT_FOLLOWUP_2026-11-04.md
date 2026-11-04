@@ -469,3 +469,28 @@ Normalized [resource and Steam evidence](evidence/2026-11-04-resource-steam-vali
 retains samples without account IDs, item IDs or local library paths. Packaged
 resource behaviour, native Windows, older Linux/FUSE, real downloads and real
 DayZ joins remain open. No version bump, release/publication or API deployment.
+
+
+## Native package provenance chain — 4 November 2026
+
+BUILD-01 now extends to DEB, RPM, Windows Setup and the AppImage-backed Linux
+installer archive. Native payloads are sealed before packaging and checked again
+afterward. Wrappers bind verified parent artifact/manifest hashes; RPM and Setup
+also compare the parent staged bundle. Full source snapshots must match, so a
+same-commit dirty change or stale/replaced AppDir cannot silently acquire current
+source provenance. The Linux archive compares its AppImage copy before sealing.
+DEB includes control files/hooks; RPM includes its installed wrapper and notices.
+CI retains sidecars and the existing tag-only gate checks native/wrapper artifacts
+against the expected clean source before publication. No workflow was dispatched.
+
+Four new regressions exercise sealed-input mutations/resealing, parent artifact/
+manifest changes, stale bundles and same-commit source mismatch. Local native
+build evidence will be recorded separately after clean-checkout validation.
+See [provenance usage and assurance limits](BUILD_PROVENANCE.md). Windows build,
+installation and removal remain pending on a native Windows runner. These are
+unsigned build records, not publisher signatures or a reproducibility claim.
+
+Source validation for this batch: **1,020 run / 1,013 passed / 7 skipped**;
+required Ruff, core mypy, compile/whitespace, workflow YAML, ShellCheck and
+release-lock dependency audit pass. Previous-commit CI has Windows test failures
+now under investigation; local Linux success does not close those failures.

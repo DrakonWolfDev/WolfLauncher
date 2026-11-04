@@ -4,7 +4,14 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from wolflauncher.build_provenance import begin, bundle_inventory, finish, source_state, verify
+from wolflauncher.build_provenance import (
+    begin,
+    bundle_inventory,
+    finish,
+    seal,
+    source_state,
+    verify,
+)
 
 
 class BuildProvenanceTests(unittest.TestCase):
@@ -100,3 +107,58 @@ class BuildProvenanceTests(unittest.TestCase):
         manifest = finish(self.root, self.inputs, self.bundle, self.artifact)
         with self.assertRaisesRegex(ValueError, "clean source"):
             verify(manifest, self.artifact, expected_commit=expected, require_clean=True)
+
+    def test_sealed_native_payload_detects_packaging_changes_and_cannot_be_resealed(self):
+        begin(self.root, self.inputs, [])
+        seal(self.root, self.inputs, self.bundle)
+        with self.assertRaisesRegex(ValueError, "already been sealed"):
+            seal(self.root, self.inputs, self.bundle)
+        manifest = finish(self.root, self.inputs, self.bundle, self.artifact)
+        self.assertTrue(json.loads(manifest.read_text())["staged_inputs_verified"])
+        (self.bundle / "program").write_bytes(b"changed during native packaging")
+        with self.assertRaisesRegex(ValueError, "Staged files changed"):
+            finish(self.root, self.inputs, self.bundle, self.artifact)
+
+    def test_wrapper_binds_parent_artifact_manifest_bundle_and_source(self):
+        begin(self.root, self.inputs, [])
+        parent = self.artifact
+        parent_manifest = finish(self.root, self.inputs, self.bundle, parent)
+        child = parent.with_name("wrapper.archive")
+        child.write_bytes(b"wrapped artifact")
+        begin(self.root, self.inputs, [], parent, self.bundle)
+        seal(self.root, self.inputs, self.bundle)
+        with self.assertRaisesRegex(ValueError, "Parent artifact"):
+            finish(self.root, self.inputs, self.bundle, child)
+        manifest = finish(self.root, self.inputs, self.bundle, child, parent, self.bundle)
+        verify(manifest, child, self.bundle)
+        data = json.loads(manifest.read_text())
+        self.assertEqual(data["parent"]["artifact"]["file"], parent.name)
+        self.assertNotIn(str(self.root.parent), manifest.read_text())
+        parent_manifest.write_text(parent_manifest.read_text() + "\n")
+        with self.assertRaisesRegex(ValueError, "Parent artifact"):
+            finish(self.root, self.inputs, self.bundle, child, parent, self.bundle)
+        parent.write_bytes(b"replaced parent")
+        with self.assertRaisesRegex(ValueError, "Artifact"):
+            begin(self.root, self.inputs, [], parent, self.bundle)
+
+    def test_reused_bundle_and_same_commit_with_different_dirty_source_are_rejected(self):
+        begin(self.root, self.inputs, [])
+        parent = self.artifact
+        finish(self.root, self.inputs, self.bundle, parent)
+        (self.bundle / "program").write_bytes(b"stale or replaced bundle")
+        with self.assertRaisesRegex(ValueError, "Packaged files"):
+            begin(self.root, self.inputs, [], parent, self.bundle)
+        (self.bundle / "program").write_bytes(b"example executable")
+        (self.root / "app.py").write_text("different dirty source at same commit\n")
+        with self.assertRaisesRegex(ValueError, "different source snapshot"):
+            begin(self.root, self.inputs, [], parent, self.bundle)
+
+    def test_parent_changed_after_wrapper_started_cannot_be_certified(self):
+        begin(self.root, self.inputs, [])
+        finish(self.root, self.inputs, self.bundle, self.artifact)
+        begin(self.root, self.inputs, [], self.artifact)
+        child = self.artifact.with_name("wrapper.archive")
+        child.write_bytes(b"wrapper")
+        self.artifact.write_bytes(b"parent changed during packaging")
+        with self.assertRaisesRegex(ValueError, "Artifact"):
+            finish(self.root, self.inputs, self.bundle, child, self.artifact)

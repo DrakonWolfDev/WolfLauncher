@@ -12,7 +12,15 @@ fi
 appdir="$repo_root/build/appimage/WolfLauncher.AppDir"
 test -x "$appdir/usr/lib/wolflauncher/WolfLauncher"
 top="$repo_root/build/rpm"
-mkdir -p "$top"
+rm -rf "$top"
+mkdir -p "$top/payload/usr/bin" "$top/payload/usr/share/doc/wolflauncher"
+parent="$repo_root/dist/WolfLauncher-${version}-x86_64.AppImage"
+provenance_inputs="$top/provenance-inputs.json"
+"$python_bin" -m wolflauncher.build_provenance begin --output "$provenance_inputs" \
+  --tool "rpmbuild=$(command -v rpmbuild)" \
+  --parent-artifact "$parent" --parent-bundle "$appdir"
+cp -a "$appdir/usr/." "$top/payload/usr/"
+cp LICENSE COPYRIGHT THIRD_PARTY_NOTICES.md "$top/payload/usr/share/doc/wolflauncher/"
 cat > "$top/wolflauncher.spec" <<EOF
 %global __os_install_post %{nil}
 %global debug_package %{nil}
@@ -32,10 +40,7 @@ Steam and Workshop-aware DayZ server launcher with bundled Python, Qt and Node.j
 
 %install
 mkdir -p "%{buildroot}/usr"
-cp -a "$appdir/usr/." "%{buildroot}/usr/"
-install -Dm755 "$top/wolflauncher" "%{buildroot}/usr/bin/wolflauncher"
-mkdir -p "%{buildroot}/usr/share/doc/wolflauncher"
-cp "$repo_root/LICENSE" "$repo_root/COPYRIGHT" "$repo_root/THIRD_PARTY_NOTICES.md" "%{buildroot}/usr/share/doc/wolflauncher/"
+cp -a "$top/payload/usr/." "%{buildroot}/usr/"
 
 %post
 if command -v update-desktop-database >/dev/null 2>&1; then
@@ -54,13 +59,21 @@ fi
 /usr/share/icons/hicolor/scalable/apps/wolflauncher.svg
 /usr/share/doc/wolflauncher
 EOF
-cat > "$top/wolflauncher" <<'EOF'
+cat > "$top/payload/usr/bin/wolflauncher" <<'EOF'
 #!/bin/sh
 exec /usr/lib/wolflauncher/WolfLauncher "$@"
 EOF
+chmod 0755 "$top/payload/usr/bin/wolflauncher"
+"$python_bin" -m wolflauncher.build_provenance seal \
+  --inputs "$provenance_inputs" --bundle-root "$top/payload"
 rpmbuild -bb --define "_topdir $top" "$top/wolflauncher.spec"
 artifact="$repo_root/dist/wolflauncher-${version}-1.x86_64.rpm"
 cp "$top/RPMS/x86_64/wolflauncher-${version}-1.x86_64.rpm" "$artifact"
 rpm -qip "$artifact"
 (cd "$repo_root/dist" && sha256sum "$(basename "$artifact")") > "$artifact.sha256"
+"$python_bin" -m wolflauncher.build_provenance finish \
+  --inputs "$provenance_inputs" --bundle-root "$top/payload" \
+  --parent-artifact "$parent" --parent-bundle "$appdir" "$artifact"
+"$python_bin" -m wolflauncher.build_provenance verify \
+  --manifest "$artifact.provenance.json" --bundle-root "$top/payload" "$artifact"
 printf '%s\n' "$artifact"

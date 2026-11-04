@@ -132,13 +132,16 @@ jobs:
           path: |
             dist/*.deb
             dist/*.deb.sha256
+            dist/*.deb.provenance.json
             dist/*.rpm
             dist/*.rpm.sha256
+            dist/*.rpm.provenance.json
             dist/WolfLauncher-*-x86_64.AppImage
             dist/WolfLauncher-*-x86_64.AppImage.sha256
             dist/WolfLauncher-*-x86_64.AppImage.provenance.json
             dist/WolfLauncher-*-linux-x86_64-installer.tar.gz
             dist/WolfLauncher-*-linux-x86_64-installer.tar.gz.sha256
+            dist/WolfLauncher-*-linux-x86_64-installer.tar.gz.provenance.json
             wolflauncher-*-installer-source.tar.gz
             wolflauncher-*-installer-source.tar.gz.sha256
           if-no-files-found: error
@@ -203,6 +206,7 @@ jobs:
             dist/windows/*.zip.provenance.json
             dist/windows/*-setup-*.exe
             dist/windows/*-setup-*.exe.sha256
+            dist/windows/*-setup-*.exe.provenance.json
           if-no-files-found: error
 
   publish:
@@ -241,6 +245,14 @@ jobs:
           python3 -m wolflauncher.build_provenance verify --commit "$GITHUB_SHA" --require-clean \
             --manifest "release/wolflauncher-${VERSION}-windows-x64.zip.provenance.json" \
             "release/wolflauncher-${VERSION}-windows-x64.zip"
+          for artifact in \
+            "release/wolflauncher-${VERSION}-setup-windows-x64.exe" \
+            "release/dist/wolflauncher_${VERSION}_ubuntu24_amd64.deb" \
+            "release/dist/wolflauncher-${VERSION}-1.x86_64.rpm" \
+            "release/dist/WolfLauncher-${VERSION}-linux-x86_64-installer.tar.gz"; do
+            python3 -m wolflauncher.build_provenance verify --commit "$GITHUB_SHA" --require-clean \
+              --manifest "$artifact.provenance.json" "$artifact"
+          done
           cp "release/wolflauncher-${VERSION}-setup-windows-x64.exe" "release/wolflauncher-${VERSION}-windows.exe"
           cp "release/dist/wolflauncher_${VERSION}_ubuntu24_amd64.deb" "release/wolflauncher-${VERSION}.deb"
           cp "release/dist/wolflauncher-${VERSION}-1.x86_64.rpm" "release/wolflauncher-${VERSION}.rpm"
