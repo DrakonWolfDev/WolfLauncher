@@ -1,0 +1,129 @@
+{
+  "date": "2026-11-04",
+  "source_commit": "292f1b734f2f01538571844e423724c304493cbd",
+  "source_dirty": false,
+  "source_snapshot_sha256": "1aff60e52cb383850a4cbdd3b4581871a2f74756cd0c421dd383bc7785d338eb",
+  "artifact": {
+    "file": "WolfLauncher-0.9.3.5b-x86_64.AppImage",
+    "sha256": "66648af87c9ec2fed3393b7029486e99c38f7988c78518b174b09caa9b49fbfa",
+    "size": 109693432
+  },
+  "bundle_entries": 1111,
+  "toolchain": {
+    "architecture": "x86_64",
+    "packages": {
+      "PyInstaller": "6.21.0",
+      "PySide6": "6.11.1",
+      "shiboken6": "6.11.1"
+    },
+    "platform": "Linux",
+    "python": "3.12.3",
+    "tools": {
+      "appimage-runtime": {
+        "file": "appimage-runtime-20251108-x86_64",
+        "sha256": "2fca8b443c92510f1483a883f60061ad09b46b978b2631c807cd873a47ec260d",
+        "size": 944632
+      },
+      "appimagetool": {
+        "file": "appimagetool-1.9.1-x86_64.AppImage",
+        "sha256": "ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0",
+        "size": 15092216
+      },
+      "node": {
+        "file": "node",
+        "sha256": "6295488653f0d93b0a157841746fef7e72cc4328cfb60c4bbe0ca2668a836ffd",
+        "size": 98932688
+      }
+    }
+  },
+  "provenance_verified": true,
+  "provenance_manifest_sha256": "e55a0e90b4936518bf596015b428a7389203460f238bf1edd4f78994c93bd10e",
+  "isolation": [
+    "temporary checkout",
+    "private tmp and XDG directories",
+    "private process namespace",
+    "private network namespace"
+  ],
+  "runs": [
+    {
+      "artifact": "WolfLauncher-0.9.3.5b-x86_64.AppImage",
+      "sha256": "66648af87c9ec2fed3393b7029486e99c38f7988c78518b174b09caa9b49fbfa",
+      "exit_code": 0,
+      "passed": true,
+      "scale": "1",
+      "wall_ms": 2080,
+      "validation": [
+        {
+          "packaged_validation": "passed",
+          "checks": {
+            "browser": {
+              "stable_rows": 1000,
+              "experimental_rows": 10,
+              "latest_search": true,
+              "scroll_and_selection": true
+            },
+            "mods": {
+              "rows": 200,
+              "items_reused": true,
+              "selection_preserved": true,
+              "cached_thumbnail": true
+            },
+            "runtime": {
+              "node": "v20.20.2",
+              "host_child": {
+                "ssl": "OpenSSL 3.0.13 30 Jan 2024",
+                "bundle_ssl": false
+              }
+            }
+          },
+          "elapsed_ms": 574,
+          "max_tick_gap_ms": 246.4
+        }
+      ],
+      "screenshot_sha256": "96c775d0742a2624f7a186a45c26d5aab1cf4473b05bb4c4f5b7e1917175f3d2"
+    },
+    {
+      "artifact": "WolfLauncher-0.9.3.5b-x86_64.AppImage",
+      "sha256": "66648af87c9ec2fed3393b7029486e99c38f7988c78518b174b09caa9b49fbfa",
+      "exit_code": 0,
+      "passed": true,
+      "scale": "2",
+      "wall_ms": 2219,
+      "validation": [
+        {
+          "packaged_validation": "passed",
+          "checks": {
+            "browser": {
+              "stable_rows": 1000,
+              "experimental_rows": 10,
+              "latest_search": true,
+              "scroll_and_selection": true
+            },
+            "mods": {
+              "rows": 200,
+              "items_reused": true,
+              "selection_preserved": true,
+              "cached_thumbnail": true
+            },
+            "runtime": {
+              "node": "v20.20.2",
+              "host_child": {
+                "ssl": "OpenSSL 3.0.13 30 Jan 2024",
+                "bundle_ssl": false
+              }
+            }
+          },
+          "elapsed_ms": 694,
+          "max_tick_gap_ms": 255.9
+        }
+      ],
+      "screenshot_sha256": "c5300a2e5abf0878d6a3fdca9d2fca8c474d3b34d79f3df351ad2145b9393cc5"
+    }
+  ],
+  "limits": [
+    "Offscreen local Linux only; AppImage extraction-and-run, not FUSE.",
+    "Timings include fixture setup and extraction; not startup or frame-rate benchmarks.",
+    "No native Windows, live Steam/Workshop/DayZ or older-distribution validation.",
+    "Unsigned provenance; not independent signatures or byte-reproducibility."
+  ]
+}

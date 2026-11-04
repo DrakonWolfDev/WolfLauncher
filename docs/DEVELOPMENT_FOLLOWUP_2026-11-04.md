@@ -361,3 +361,72 @@ dependency audit reports no known vulnerabilities. Packaged Linux, native Window
 high-DPI/manual accessibility and real Steam/DayZ checks remain distinct follow-up
 evidence. No package build, version bump, tag, release publication, public-link
 change or API deployment was performed.
+
+## Isolated Linux package validation — 4 November 2026
+
+Andi approved the next step of building and validating an isolated Linux package.
+The AppImage was rebuilt from clean source commit
+`292f1b734f2f01538571844e423724c304493cbd` in a separate temporary checkout.
+Original repository artifacts were preserved. The version remains `0.9.3.5b`;
+this is a local development artifact, not a newly published release.
+
+The temporary environment installed the hash-locked release runtime and pinned
+PyInstaller 6.21.0/hooks 2026.6. Cached checksum-pinned AppImage/Node tools and an
+npm cache populated from the lockfile allowed the entire build, including its
+basic packaged startup smoke, to run without network access. No dependencies or
+build tools were installed into the launcher's source virtual environment.
+
+An opt-in extension to the existing smoke mode now exercises synthetic UI flows
+inside the actual frozen application. The runner creates private temporary XDG,
+`/tmp`, process and network namespaces; private `/tmp` is needed to isolate Qt's
+single-instance socket as well as settings. It rejects ordinary user-data paths
+before inserting fixtures. See [usage and exact boundaries](ISOLATED_LINUX_VALIDATION.md).
+
+Both final AppImage runs exited normally with all checks passing:
+
+| Qt scale | Browser rows | Mod rows | Extract/run/check/close wall time |
+| --- | --- | --- | --- |
+| 1× | 1,000 Stable, then 10 Experimental | 200 | 2,080 ms |
+| 2× | 1,000 Stable, then 10 Experimental | 200 | 2,219 ms |
+
+Checks cover rapid latest-query replacement, edition separation, browser
+scroll/selection, unchanged mod-item reuse, retained mod selection, cached
+synthetic preview rendering, bundled Node `v20.20.2`/GameDig availability and
+normal shutdown. The frozen launcher handed off a harmless system-Python child,
+which loaded host OpenSSL 3.0.13 without bundled `_internal` SSL libraries.
+This supplies actual frozen-runtime evidence for the earlier host-environment fix.
+
+Screenshot inspection found the Size column clipping "Unavailable". Its initial
+width now uses the actual monospace font and the unavailable label, while still
+avoiding content-wide sizing. A regression and the packaged check assert that
+fit. The package was rebuilt and both scale runs repeated after that correction;
+the initially validated artifact was preserved separately rather than relabelled.
+The corrected 1× screenshot was inspected; 2× also passed its fit assertion.
+
+The final artifact is **109,693,432 bytes**, SHA-256
+`66648af87c9ec2fed3393b7029486e99c38f7988c78518b174b09caa9b49fbfa`.
+Provenance verification passed for the full expected commit, a clean source
+snapshot, the artifact hash and **1,111 staged bundle entries**. This is unsigned
+build evidence, not an independent publisher signature or byte-reproducibility
+claim. [Minimal retained evidence](evidence/2026-11-04-isolated-linux-package.json)
+records the toolchain, source/artifact/manifest hashes, results and screenshot
+hashes without private runtime paths.
+
+The private artifact and full sidecar remain under
+`/tmp/wolflauncher-validation-checkout/dist/`. Final run logs/screenshots remain
+under `/tmp/wolflauncher-package-ui-x7j3vc3v/` (1×) and
+`/tmp/wolflauncher-package-ui-m4btk8ol/` (2×). These temporary paths can be removed
+by system cleanup; the committed evidence records the completed checks.
+
+Final source validation: **1,016 tests run / 1,009 passed / 7 skipped**. Three new
+smoke/isolation/failure regressions and the Size-column fit assertions pass.
+Required Ruff lint/formatting, core type checks, compilation and whitespace checks
+pass; the release-lock dependency audit reports no known vulnerabilities.
+
+The timings include extraction, fixture creation and synchronous validation work.
+They are not cold-start, frame-rate or normal-use latency benchmarks. This proves
+local offscreen extraction-and-run behaviour, not FUSE mounting, older distro
+compatibility, native Wayland/X11 rendering, manual accessibility, native Windows
+or actual Steam/Workshop/DayZ joins. Those remain open. No Steam/game/Workshop
+action, installer execution, version bump, tag, publication, public-download change
+or API deployment was performed.

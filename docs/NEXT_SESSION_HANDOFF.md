@@ -625,3 +625,22 @@ All four remaining review areas now have source improvements; do not reopen them
 from the earlier candidate list. Packaged Linux, native Windows, high-DPI/manual
 accessibility and live Steam/DayZ validation remain pending. No release, version
 bump, package build, public-link change or API deployment was performed.
+
+
+## Isolated Linux artifact validated — 4 November 2026
+
+Rebuilt a private AppImage from clean commit 292f1b734f2f01538571844e423724c304493cbd
+with the pinned runtime/build tools in a temporary checkout. Basic smoke and
+extended frozen UI/runtime checks passed at 1× and 2× Qt scaling inside private
+XDG/tmp, PID and network namespaces. Provenance verifies the commit, clean source,
+artifact hash and 1,111 staged bundle entries. A clipped Size-column unavailable
+label found during inspection was corrected, rebuilt and revalidated. See
+[results, artifact identity and limits](DEVELOPMENT_FOLLOWUP_2026-11-04.md#isolated-linux-package-validation--4-november-2026)
+and [repeatable validation](ISOLATED_LINUX_VALIDATION.md).
+
+Source checks: 1,016 run, 1,009 passed, 7 skipped; quality checks and dependency
+audit pass. Local offscreen packaged evidence is now complete for the recorded
+synthetic scenarios. FUSE, older distros, native desktop/a11y, Windows and live
+Steam/Workshop/DayZ checks remain open. Existing artifacts, user configuration and
+Steam content were preserved. Version stays 0.9.3.5b; no tag, installer execution,
+publication, public-link change or API deployment occurred.
