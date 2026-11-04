@@ -102,22 +102,26 @@ class SingleInstanceGuard:
         )
         socket.write(frame)
         socket.waitForBytesWritten(ACTIVATION_TIMEOUT_MS)
-        if url is not None:
-            response = bytearray()
-            deadline = time.monotonic() + 1
-            while b"\n" not in response and len(response) < 32:
-                if socket.bytesAvailable():
-                    response.extend(bytes(socket.read(32 - len(response))))
-                    continue
-                remaining = int((deadline - time.monotonic()) * 1000)
-                if remaining <= 0 or not socket.waitForReadyRead(remaining):
-                    break
-            acknowledgement = bytes(response)
-            if acknowledgement != b"accepted\n":
-                self.delivery_error = (
-                    "The running WolfLauncher did not confirm this server link. "
-                    "Close that instance and open the link again."
-                )
+        # Keep the sender alive until the primary has received the frame. This
+        # also avoids losing activation-only writes on Windows named pipes.
+        response = bytearray()
+        deadline = time.monotonic() + 1
+        while b"\n" not in response and len(response) < 32:
+            if socket.bytesAvailable():
+                response.extend(bytes(socket.read(32 - len(response))))
+                continue
+            remaining = int((deadline - time.monotonic()) * 1000)
+            if remaining <= 0 or not socket.waitForReadyRead(remaining):
+                break
+        acknowledgement = bytes(response)
+        if acknowledgement != b"accepted\n":
+            self.delivery_error = (
+                "The running WolfLauncher did not confirm this server link. "
+                "Close that instance and open the link again."
+                if url is not None
+                else "The running WolfLauncher did not confirm activation. "
+                "Close that instance and open WolfLauncher again."
+            )
         socket.disconnectFromServer()
         return True
 
@@ -158,8 +162,8 @@ class SingleInstanceGuard:
             self._finish(socket)
             return
         if buffer == b"activate":
+            self._accept(socket)
             self._activate_primary()
-            self._finish(socket)
             return
         if b"\n" not in buffer:
             return
@@ -181,17 +185,20 @@ class SingleInstanceGuard:
         if self._url_handler is None and len(self._pending_urls) >= MAX_PENDING_URLS:
             self._finish(socket)
             return
-        socket.write(b"accepted\n")
-        socket.flush()
-        self._clients.pop(socket, None)
-        socket.disconnectFromServer()
-        socket.deleteLater()
+        self._accept(socket)
         self._activate_primary()
         if self._url_handler is not None:
             # Queue delivery so a modal review never blocks socket cleanup.
             QTimer.singleShot(0, lambda: self._url_handler(url))
         elif len(self._pending_urls) < MAX_PENDING_URLS:
             self._pending_urls.append(url)
+
+    def _accept(self, socket):
+        socket.write(b"accepted\n")
+        socket.flush()
+        self._clients.pop(socket, None)
+        socket.disconnectFromServer()
+        socket.deleteLater()
 
     def _activate_primary(self):
         if self._activate is None:

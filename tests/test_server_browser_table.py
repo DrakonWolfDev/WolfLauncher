@@ -24,7 +24,7 @@ from wolflauncher.server_browser_table import (
     update_browser_table_row,
 )
 from wolflauncher.table_items import SortableTableWidgetItem
-from wolflauncher.theme import STATUS_COLOURS
+from wolflauncher.theme import STATUS_COLOURS, configure_data_table
 
 
 class ServerBrowserTableTests(unittest.TestCase):
@@ -852,6 +852,7 @@ class ServerBrowserTableTests(unittest.TestCase):
 
     def test_dynamic_mod_text_yields_name_width_without_horizontal_overflow(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        configure_data_table(table)
         table.resize(1200, 300)
         table.setHorizontalHeaderLabels(
             [

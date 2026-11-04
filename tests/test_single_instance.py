@@ -37,13 +37,14 @@ class SingleInstanceGuardTests(unittest.TestCase):
     def test_second_instance_notifies_the_primary_instance(self):
         server_name = f"wolflauncher-test-{uuid4().hex}"
         primary = SingleInstanceGuard(server_name)
-        secondary = SingleInstanceGuard(server_name)
         activations = []
         try:
             self.assertTrue(primary.start_or_notify())
             primary.set_activation_handler(lambda: activations.append(True))
 
-            self.assertFalse(secondary.start_or_notify())
+            started, error = self.forward(primary, None)
+            self.assertFalse(started)
+            self.assertEqual(error, "")
             self.pump(lambda: bool(activations))
             self.assertEqual(activations, [True])
         finally:
@@ -81,10 +82,10 @@ from PySide6.QtCore import QCoreApplication
 from wolflauncher.single_instance import SingleInstanceGuard
 app = QCoreApplication([])
 guard = SingleInstanceGuard(sys.argv[1])
-print(json.dumps([guard.start_or_notify(sys.argv[2]), guard.delivery_error]))
+print(json.dumps([guard.start_or_notify(sys.argv[2] or None), guard.delivery_error]))
 """
         with subprocess.Popen(
-            [sys.executable, "-c", code, primary.server_name, url],
+            [sys.executable, "-c", code, primary.server_name, url or ""],
             cwd=Path(__file__).resolve().parents[1],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -163,11 +164,18 @@ print(json.dumps([guard.start_or_notify(sys.argv[2]), guard.delivery_error]))
     def test_secondary_close_does_not_unlink_the_running_primary(self):
         primary = self.primary()
         secondary = SingleInstanceGuard(primary.server_name)
-        self.assertFalse(secondary.start_or_notify())
+        with patch.object(secondary, "_notify_existing_instance", return_value=True):
+            self.assertFalse(secondary.start_or_notify())
         secondary.close()
-        third = SingleInstanceGuard(primary.server_name)
-        self.assertFalse(third.start_or_notify())
+        self.assertEqual(self.forward(primary, None), [False, ""])
         self.assertTrue(primary.server.isListening())
+
+    def test_activation_without_acknowledgement_is_reported(self):
+        primary = self.primary()
+        with patch.object(primary, "_read", side_effect=lambda socket: primary._finish(socket)):
+            started, error = self.forward(primary, None)
+        self.assertFalse(started)
+        self.assertIn("did not confirm activation", error)
 
     def test_older_running_instance_without_acknowledgement_is_reported(self):
         primary = self.primary()

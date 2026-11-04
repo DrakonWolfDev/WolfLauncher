@@ -459,7 +459,13 @@ def main():
         sys.exit(1)
     if not primary_instance:
         if instance_guard.delivery_error:
-            QMessageBox.warning(None, "Server link not confirmed", instance_guard.delivery_error)
+            QMessageBox.warning(
+                None,
+                "Server link not confirmed"
+                if incoming_url is not None
+                else "Launcher activation not confirmed",
+                instance_guard.delivery_error,
+            )
         return
     run_local_retention()
     log_path = configure_local_logging()

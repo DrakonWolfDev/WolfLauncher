@@ -527,3 +527,25 @@ Local validation: **1,021 run / 1,014 passed / 7 skipped**, including the new
 coarse-directory-metadata regression; affected groups, workflow quality checks,
 shell syntax and the release-lock dependency audit pass. Native Windows success
 is pending the next push-triggered runner.
+
+
+## Activation delivery follow-up — 4 November 2026
+
+The native Windows run at 13649a7 reduced the prior nine test problems to two.
+Plain activation previously disconnected before receiving confirmation; unlike
+shared-link IPC, it did not keep the sender alive until the primary received its
+frame. Activation now uses the same bounded acknowledgement path as links, with
+an activation-specific retry message if an older running instance does not
+acknowledge. The server continues accepting the existing `activate` frame.
+Tests use independent processes, matching real launches, and cover missing
+activation acknowledgement. Shared-link parsing, limits and review remain intact.
+
+The table fixture now also calls the actual `configure_data_table` helper, which
+hides the row header and sets pixel scrolling. Its former default Qt row header
+consumed space absent from the real browser; the zero-overflow assertion is
+retained. No production column-width relaxation was introduced.
+
+Linux source verification: **1,022 run / 1,015 passed / 7 skipped**; required
+format/lint, core type checks, compilation and whitespace pass. Windows results
+remain pending the next native run. Private Linux native artifacts remain tied
+to their exact 13649a7 source; they are not relabelled as this newer IPC change.
