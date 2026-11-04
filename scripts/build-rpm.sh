@@ -24,6 +24,7 @@ cp LICENSE COPYRIGHT THIRD_PARTY_NOTICES.md "$top/payload/usr/share/doc/wolflaun
 cat > "$top/wolflauncher.spec" <<EOF
 %global __os_install_post %{nil}
 %global debug_package %{nil}
+%global _build_id_links none
 Name: wolflauncher
 Version: $version
 Release: 1

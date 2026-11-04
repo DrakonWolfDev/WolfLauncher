@@ -494,3 +494,36 @@ Source validation for this batch: **1,020 run / 1,013 passed / 7 skipped**;
 required Ruff, core mypy, compile/whitespace, workflow YAML, ShellCheck and
 release-lock dependency audit pass. Previous-commit CI has Windows test failures
 now under investigation; local Linux success does not close those failures.
+
+
+## Windows CI repair and native payload corrections — 4 November 2026
+
+Inspection of [the previous Tests run](https://github.com/DrakonWolfDev/WolfLauncher/actions/runs/41921560643)
+found the Linux quality/unit/DEB/RPM/AppImage jobs passing, while Windows failed
+seven tests and errored in two before compilation. Repairs retain the assertions:
+use native path separators/absolute paths for simulated Linux host-environment
+checks, resolve Windows short/long temporary-path aliases, explicitly write the
+non-ASCII malformed fixture as UTF-8, close the migrated SQLite database before
+removing its temporary directory, use the existing bounded IPC event pump, and
+supply the actual 18 browser headers in the dynamic-column fixture. A changed-file
+fixture now also changes size so it does not depend on timestamp granularity.
+
+The new-PBO failure also exposed a source boundary: Windows directory metadata
+can lag membership changes. Advisory comparisons now re-enumerate the already
+bounded directories before accepting a hash outcome, with the existing deadline,
+entry caps and cancellation checks. A deterministic regression holds directory
+metadata constant while adding a PBO and requires an unknown result. This adds
+bounded directory work, not PBO body reads or a weaker readiness condition.
+
+Initial clean native builds from 62b8916 produced AppImage/installer/DEB/RPM
+sidecars. Independent extraction verified the installer archive and found exact
+DEB bytes with a normalized control-file mode, plus RPM-generated build-ID links
+outside the staged inventory. DEB now explicitly sets its control file to 0644;
+RPM disables those generated links for its bundled runtime. Corrected builds and
+Windows runner results must be recorded separately, without relabelling the
+initial artifacts as newer source.
+
+Local validation: **1,021 run / 1,014 passed / 7 skipped**, including the new
+coarse-directory-metadata regression; affected groups, workflow quality checks,
+shell syntax and the release-lock dependency audit pass. Native Windows success
+is pending the next push-triggered runner.

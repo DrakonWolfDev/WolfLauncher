@@ -31,7 +31,7 @@ class ModHashTests(unittest.TestCase):
     def setUp(self):
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
-        self.root = Path(temporary.name)
+        self.root = Path(temporary.name).resolve()
         self.library = self.root / "workshop"
         self.mod_dir = self.library / "111"
         self.pbo = self.mod_dir / "Addons" / "example.PBO"
@@ -141,7 +141,7 @@ class ModHashTests(unittest.TestCase):
 
     def test_updates_during_comparison_invalidate_the_result(self):
         def changed(trailers):
-            self.write_pbo(self.pbo, bytes([3]) * 20)
+            self.pbo.write_bytes(b"changed synthetic PBO body\0" + bytes([3]) * 20)
             return self.server_hash
 
         with patch("wolflauncher.mod_hash.calculate_mod_hash", side_effect=changed):
@@ -156,6 +156,25 @@ class ModHashTests(unittest.TestCase):
 
         with patch("wolflauncher.mod_hash.calculate_mod_hash", side_effect=changed):
             self.assertEqual(compare_mod_hash(self.mod_dir, self.server_hash).status, "unknown")
+
+    def test_new_pbo_invalidates_even_when_directory_metadata_does_not_advance(self):
+        snapshots = {path: path.stat() for path in (self.mod_dir, self.pbo.parent)}
+        original_stat = Path.stat
+
+        def snapshot_stat(path, *args, **kwargs):
+            return snapshots[path] if path in snapshots else original_stat(path, *args, **kwargs)
+
+        def changed(trailers):
+            self.write_pbo(self.pbo.parent / "new.pbo", bytes(20))
+            return self.server_hash
+
+        with (
+            patch.object(Path, "stat", autospec=True, side_effect=snapshot_stat),
+            patch("wolflauncher.mod_hash.calculate_mod_hash", side_effect=changed),
+        ):
+            result = compare_mod_hash(self.mod_dir, self.server_hash)
+        self.assertEqual(result.status, "unknown")
+        self.assertIn("changed during comparison", result.detail)
 
     def test_linked_pbos_cannot_bless_content_outside_the_selected_mod(self):
         self.pbo.unlink()

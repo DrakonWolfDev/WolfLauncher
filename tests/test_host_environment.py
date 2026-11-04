@@ -1,6 +1,7 @@
 import os
 import sys
 import unittest
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 from PySide6.QtCore import QUrl
@@ -13,9 +14,11 @@ from wolflauncher.host_environment import (
 
 
 class HostEnvironmentTests(unittest.TestCase):
+    bundle = Path.cwd() / "test" / "bundle"
+
     def frozen(self):
         return patch.multiple(
-            sys, platform="linux", frozen=True, _MEIPASS="/test/bundle", create=True
+            sys, platform="linux", frozen=True, _MEIPASS=str(self.bundle), create=True
         )
 
     def test_source_and_other_platforms_keep_exact_environment_in_a_copy(self):
@@ -31,9 +34,19 @@ class HostEnvironmentTests(unittest.TestCase):
         original = {
             "LD_LIBRARY_PATH": "/test/bundle:/host/lib",
             "LD_LIBRARY_PATH_ORIG": "/host/lib",
-            "PATH": "/test/bundle/node-runtime:/usr/bin::relative:/test/bundle-other/bin",
-            "QT_PLUGIN_PATH": "/test/bundle/plugins:/host/qt/plugins",
-            "QT_QPA_PLATFORM_PLUGIN_PATH": "/test/bundle/platforms",
+            "PATH": os.pathsep.join(
+                (
+                    str(self.bundle / "node-runtime"),
+                    str(self.bundle.parent / "host-bin"),
+                    "",
+                    "relative",
+                    str(self.bundle.parent / "bundle-other/bin"),
+                )
+            ),
+            "QT_PLUGIN_PATH": os.pathsep.join(
+                (str(self.bundle / "plugins"), str(self.bundle.parent / "host-qt/plugins"))
+            ),
+            "QT_QPA_PLATFORM_PLUGIN_PATH": str(self.bundle / "platforms"),
             "QT_QPA_FONTDIR": "/host/fonts",
             "DISPLAY": ":1",
             "QT_QPA_PLATFORM": "wayland",
@@ -46,8 +59,18 @@ class HostEnvironmentTests(unittest.TestCase):
         self.assertEqual(original, before)
         self.assertEqual(result["LD_LIBRARY_PATH"], "/host/lib")
         self.assertNotIn("LD_LIBRARY_PATH_ORIG", result)
-        self.assertEqual(result["PATH"], "/usr/bin::relative:/test/bundle-other/bin")
-        self.assertEqual(result["QT_PLUGIN_PATH"], "/host/qt/plugins")
+        self.assertEqual(
+            result["PATH"],
+            os.pathsep.join(
+                (
+                    str(self.bundle.parent / "host-bin"),
+                    "",
+                    "relative",
+                    str(self.bundle.parent / "bundle-other/bin"),
+                )
+            ),
+        )
+        self.assertEqual(result["QT_PLUGIN_PATH"], str(self.bundle.parent / "host-qt/plugins"))
         self.assertNotIn("QT_QPA_PLATFORM_PLUGIN_PATH", result)
         for key in (
             "QT_QPA_FONTDIR",

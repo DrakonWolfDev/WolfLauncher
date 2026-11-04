@@ -44,8 +44,7 @@ class SingleInstanceGuardTests(unittest.TestCase):
             primary.set_activation_handler(lambda: activations.append(True))
 
             self.assertFalse(secondary.start_or_notify())
-            for _ in range(10):
-                self.app.processEvents()
+            self.pump(lambda: bool(activations))
             self.assertEqual(activations, [True])
         finally:
             primary.close()

@@ -29,7 +29,7 @@ class PackagedValidationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             isolated_root({}, window)
         with tempfile.TemporaryDirectory(prefix="wolf-validation-test-") as directory:
-            root = Path(directory)
+            root = Path(directory).resolve()
             window.server_cache.execute.return_value.fetchone.return_value = (
                 0,
                 "main",

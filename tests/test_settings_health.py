@@ -154,7 +154,7 @@ class LinuxMemoryMapHealthTests(unittest.TestCase):
             path = Path(directory) / "max_map_count"
             self.assertEqual(linux_memory_map_health(path)[1], "WARN")
             for value in ("", "bad", "-1", "0", "1.5", "１２", "1" * 80):
-                path.write_text(value)
+                path.write_text(value, encoding="utf-8")
                 with self.subTest(value=value):
                     row = linux_memory_map_health(path)
                     self.assertEqual(row[1], "WARN")

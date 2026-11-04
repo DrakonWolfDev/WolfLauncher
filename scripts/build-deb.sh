@@ -120,6 +120,7 @@ Homepage: https://github.com/DrakonWolfDev/WolfLauncher
 Description: Linux-first DayZ launcher
  Native Steam and Workshop-aware DayZ server launcher for Linux.
 EOF
+chmod 0644 "$package_root/DEBIAN/control"
 
 for hook in postinst postrm; do
   cat > "$package_root/DEBIAN/$hook" <<'HOOK'

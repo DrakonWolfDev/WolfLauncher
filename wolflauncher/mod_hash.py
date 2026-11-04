@@ -81,27 +81,32 @@ def compare_mod_hash(
         root = Path(mod_dir).resolve(strict=True)
         directories = {root: identity(root), Path(mod_dir): identity(Path(mod_dir))}
         files = {}
+        members = {}
         trailers = []
         count = 0
         # Only the top level of DayZ's data directories contributes to its hash.
         with os.scandir(root) as entries:
+            members[root] = set()
             for entry in entries:
                 guard()
                 count += 1
                 if count > MAX_DIRECTORY_ENTRIES:
                     raise _Unavailable("Too many directory entries to compare safely.")
+                members[root].add(entry.name)
                 if entry.name.casefold() not in DATA_DIRECTORIES:
                     continue
                 if entry.is_symlink() or not entry.is_dir(follow_symlinks=False):
                     raise _Unavailable("A mod data directory is unavailable or linked elsewhere.")
                 directory = Path(entry.path)
                 directories[directory] = identity(directory)
+                members[directory] = set()
                 with os.scandir(directory) as children:
                     for child in children:
                         guard()
                         count += 1
                         if count > MAX_DIRECTORY_ENTRIES:
                             raise _Unavailable("Too many directory entries to compare safely.")
+                        members[directory].add(child.name)
                         if Path(child.name).suffix.casefold() != ".pbo":
                             continue
                         if child.is_symlink() or not child.is_file(follow_symlinks=False):
@@ -150,6 +155,20 @@ def compare_mod_hash(
                         status = "match"
                         detail = "Server hash matches when allowing duplicate PBOs on the server."
                         break
+        # Directory timestamps can remain unchanged/delayed on Windows. Recheck
+        # membership too, so newly added or removed PBOs invalidate this snapshot.
+        checked = 0
+        for directory, before in members.items():
+            current = set()
+            with os.scandir(directory) as entries:
+                for entry in entries:
+                    guard()
+                    checked += 1
+                    if checked > MAX_DIRECTORY_ENTRIES:
+                        raise _Unavailable("Too many directory entries to compare safely.")
+                    current.add(entry.name)
+            if current != before:
+                raise _Unavailable("Mod files changed during comparison. Recheck to retry.")
         for path, before in {**directories, **files}.items():
             guard()
             if identity(path) != before:

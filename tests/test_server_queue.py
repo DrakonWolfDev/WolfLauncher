@@ -3,6 +3,7 @@ import sqlite3
 import subprocess
 import tempfile
 import unittest
+from contextlib import closing
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -134,12 +135,11 @@ class QueueTests(unittest.TestCase):
             connection.execute("PRAGMA user_version = 9")
             connection.commit()
             connection.close()
-            connection = server_cache.connect(path)
-            self.addCleanup(connection.close)
-            result = server_cache.get_server(connection, self.candidate().cache_key)
-            self.assertEqual(result.name, "Example")
-            self.assertIsNone(result.queue_count)
-            self.assertEqual(result.queue_checked_at, "")
+            with closing(server_cache.connect(path)) as connection:
+                result = server_cache.get_server(connection, self.candidate().cache_key)
+                self.assertEqual(result.name, "Example")
+                self.assertIsNone(result.queue_count)
+                self.assertEqual(result.queue_checked_at, "")
 
     def test_provider_refresh_cannot_refresh_move_or_resurrect_queue(self):
         connection = sqlite3.connect(":memory:")

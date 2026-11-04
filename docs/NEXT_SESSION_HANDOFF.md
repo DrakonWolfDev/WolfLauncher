@@ -673,3 +673,14 @@ archives, with sealed staged inputs and verified parent chains where applicable.
 Do not reopen this as missing source work. Clean native builds/extracted-payload
 checks and Windows compiler/install/uninstall evidence remain separate next steps.
 See [the follow-up](DEVELOPMENT_FOLLOWUP_2026-11-04.md#native-package-provenance-chain--4-november-2026).
+
+
+## Windows CI failures investigated — 4 November 2026
+
+Previous Linux CI jobs pass, but Windows exposed seven failures/two errors before
+packaging. Platform-neutral test-fixture/cleanup repairs and a bounded advisory
+hash-directory membership recheck are implemented. 1,021 Linux tests run / 1,014
+passed / 7 skipped; Windows needs the next native runner result. Initial independent
+native extraction also found DEB control-file mode normalization and extra RPM
+build-ID links; source corrections are included and clean rebuilds are next.
+See [details](DEVELOPMENT_FOLLOWUP_2026-11-04.md#windows-ci-repair-and-native-payload-corrections--4-november-2026).

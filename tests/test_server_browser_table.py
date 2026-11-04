@@ -855,6 +855,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         table.resize(1200, 300)
         table.setHorizontalHeaderLabels(
             [
+                "Fav",
                 "Server Name",
                 "Live Name",
                 "Host",
@@ -871,6 +872,7 @@ class ServerBrowserTableTests(unittest.TestCase):
                 "Last Seen",
                 "Source",
                 "Game Time",
+                "",
             ]
         )
         server = DiscoveredServer(
