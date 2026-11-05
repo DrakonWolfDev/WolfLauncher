@@ -1,5 +1,6 @@
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 from wolflauncher import server_cache
@@ -12,6 +13,68 @@ from wolflauncher.server_browser_controller import (
 
 
 class ServerBrowserControllerTests(unittest.TestCase):
+    def test_name_filter_runs_before_limit_and_count_and_keeps_real_bang_names(self):
+        self.connection.execute("DELETE FROM discovered_servers")
+        names = [
+            "115.191.45.245:27101",
+            "101.126.11.42:27129",
+            "!",
+            "!!!",
+            "! [GER] DayZ - Community PVE",
+            "生存服务器",
+            "Named server",
+        ]
+        rows = [DiscoveredServer(name, f"host{i}", 2302, 2303) for i, name in enumerate(names)]
+        server_cache.upsert_servers(self.connection, rows)
+        snapshot = load_browser_snapshot(self.connection, BrowserQuery(limit=2))
+        self.assertEqual(snapshot.match_count, 3)
+        self.assertEqual([server.name for server in snapshot.servers], [names[4], names[6]])
+        # An intentional unfiltered cache query still has the original records.
+        self.assertEqual(len(server_cache.search_servers(self.connection)), len(names))
+        # A locally checked title can rescue a directory address placeholder.
+        checked = replace(rows[0], server_name="Verified live title", status_source="local")
+        server_cache.upsert_server(self.connection, checked)
+        snapshot = load_browser_snapshot(self.connection, BrowserQuery())
+        self.assertEqual(snapshot.match_count, 4)
+        self.assertIn(checked.cache_key, [server.cache_key for server in snapshot.servers])
+        # Provider-only titles do not override the name the browser actually shows.
+        server_cache.upsert_server(
+            self.connection,
+            replace(rows[1], server_name="Unverified title", status_source="provider"),
+        )
+        self.assertEqual(load_browser_snapshot(self.connection, BrowserQuery()).match_count, 4)
+        # Reclassify after live evidence is lost, without erasing the endpoint.
+        server_cache.upsert_server(self.connection, replace(checked, server_name="!"))
+        self.assertEqual(load_browser_snapshot(self.connection, BrowserQuery()).match_count, 3)
+
+    def test_schema_ten_names_are_backfilled_without_a_directory_refresh(self):
+        self.connection.execute("DELETE FROM discovered_servers")
+        rows = [
+            DiscoveredServer("115.191.45.245:27101", "one", 2302, 2303),
+            DiscoveredServer("!", "two", 2302, 2303),
+            DiscoveredServer("! Real server", "three", 2302, 2303),
+            DiscoveredServer(
+                "203.0.113.1:2302",
+                "four",
+                2302,
+                2303,
+                server_name="Locally verified",
+                status_source="local",
+            ),
+        ]
+        server_cache.upsert_servers(self.connection, rows)
+        self.connection.execute("ALTER TABLE discovered_servers DROP COLUMN browsable_name")
+        self.connection.execute("PRAGMA user_version = 10")
+        self.connection.commit()
+        server_cache.initialize(self.connection)
+        snapshot = load_browser_snapshot(self.connection, BrowserQuery())
+        self.assertEqual(snapshot.match_count, 2)
+        self.assertEqual(
+            {server.cache_key for server in snapshot.servers},
+            {rows[2].cache_key, rows[3].cache_key},
+        )
+        self.assertEqual(len(server_cache.search_servers(self.connection)), 4)
+
     def setUp(self):
         self.tmpdir = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmpdir.cleanup)

@@ -749,3 +749,31 @@ Andi clarified the reported closing was the temporary launcher; its ten-minute
 diagnostic shutdown is a plausible explanation, with no exception found in the
 inspected current test log. A production crash is not established or claimed fixed.
 No release, version bump, public-link change or API deployment.
+
+
+## Address-only browser names suppressed — 5 November 2026
+
+Andi's screenshot showed address-only rows and a bare `!` near the top of the
+browser. The existing malformed-name filter only rejected decoding damage and
+control characters; addresses/punctuation were accepted. Shared name validation
+now rejects IP literals/endpoints (including bracketed IPv6) and names containing
+no letters or digits. Genuine `! [GER] ...` titles, non-Latin names and names
+containing an address remain usable. A usable locally checked title can rescue a
+provider address placeholder; unverified provider/live fields cannot do so.
+
+Cache schema 11 stores a derived browsable-name flag, backfilled in batches of
+500 within the migration transaction and recalculated on every upsert. Filtering
+runs inside SQL before LIMIT and count, keeping pages/counts correct without
+Python callbacks on every redraw. Cached endpoints remain available to explicit
+lookup; records and saved Favourites are not deleted. Restart the source launcher
+to load this fix and migrate the cache; no fresh provider download is needed.
+
+Validation: **1,029 run / 1,022 passed / 7 skipped**; required quality checks and
+locked dependency audit pass. Regressions cover the screenshot-style names,
+Unicode/genuine exclamation titles, filtering before LIMIT/count, live-name
+rescue/loss and schema-10 backfill. Legacy migration fixtures now include the
+pre-existing live-name/status fields used by the derived classification.
+A separate in-memory 50,000-row check migrated all batches in 350.89 ms and loaded
+200 rows with 45,000 matches in a five-sample median 17.83 ms. These are synthetic
+local measurements, not packaged or cold-start evidence. Native/package checks
+for this correction remain separate; no release/version/publication/deployment.

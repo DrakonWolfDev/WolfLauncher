@@ -651,3 +651,34 @@ no exception was found in the inspected test log. No production crash fix is
 claimed. The actual Stable join remains unverified: 64/64 mods were ready, the
 normal preflight was accepted and the game process appeared, but connection to
 198.244.177.109 game 2702/query 2703 was not confirmed.
+
+
+## Address placeholders in the browser — 5 November 2026
+
+The reported address rows were not caused by the stable-order correction: the
+existing malformed-name predicate only screened replacement/control characters.
+IP literals and IP:port placeholders, plus punctuation-only `!`, passed that test.
+The shared name predicate now rejects those cases while retaining real titles
+starting with `!`, non-Latin titles and titles that merely contain an address.
+The browser still prefers a usable locally verified title; such a title can make
+an otherwise address-only provider record browsable.
+
+Schema 11 adds a derived `browsable_name` flag, computed on every cache upsert and
+backfilled for existing records in batches of 500 within the existing atomic
+migration. The SQL search/count predicate uses that flag before LIMIT. This
+avoids short pages, incorrect match counts and repeated Python name parsing on
+redraw. Raw records and endpoint lookup remain available; no entries, Favourites
+or user configuration are erased. A launcher restart applies the fix to the
+existing cache without a directory refresh. Normal background ordering remains
+stable for surviving matches.
+
+Validation: **1,029 run / 1,022 passed / 7 skipped**, Ruff format/lint, core mypy,
+compilation/whitespace and locked dependency audit pass. Three regressions cover
+address/punctuation versus real names, filtering before count/LIMIT, live-title
+rescue/loss and migration of existing schema-10 records. Historical minimal
+migration fixtures now include their existing live-name/status columns. A
+separate synthetic in-memory 50,000-row migration/query check verified all
+batches, excluded 5,000 address placeholders, and returned a full 200-row page
+with 45,000 matches. One-time migration: 350.89 ms; five warm snapshot samples:
+17.83 ms median. No packaged/cold-start performance claim, native validation,
+release, version bump, public download change or API deployment in this batch.

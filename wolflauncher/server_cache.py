@@ -13,9 +13,10 @@ import yaml
 from .models import DiscoveredServer
 from .paths import user_data_dir
 from .persistence import ensure_private_directory
+from .server_display import has_browsable_server_name
 from .server_identity import identity_fields, merge_identity, normalize_product
 
-SCHEMA_VERSION = 10
+SCHEMA_VERSION = 11
 SQLITE_BUSY_TIMEOUT_MS = 5000
 DATA_DIR = user_data_dir()
 SERVER_CACHE_PATH = DATA_DIR / "server_cache.sqlite3"
@@ -120,6 +121,7 @@ def _initialize_schema_v1(connection: sqlite3.Connection) -> None:
             identity_evidence TEXT NOT NULL DEFAULT '[]',
             display_name TEXT NOT NULL,
             server_name TEXT NOT NULL DEFAULT '',
+            browsable_name INTEGER NOT NULL DEFAULT 0,
             host TEXT NOT NULL,
             game_port INTEGER NOT NULL,
             query_port INTEGER NOT NULL,
@@ -316,6 +318,24 @@ def _migrate(connection: sqlite3.Connection, current_version: int, target_versio
         )
         connection.execute("PRAGMA user_version = 10")
         current_version = 10
+    if current_version == 10 and target_version >= 11:
+        columns = {row[1] for row in connection.execute("PRAGMA table_info(discovered_servers)")}
+        if "browsable_name" not in columns:
+            connection.execute(
+                "ALTER TABLE discovered_servers ADD COLUMN browsable_name INTEGER NOT NULL DEFAULT 0"
+            )
+        # Classify existing cached names once, in bounded batches. Filtering stays
+        # inside SQLite before LIMIT/count, without Python callbacks per redraw.
+        cursor = connection.execute(
+            "SELECT cache_key, display_name, server_name, status_source FROM discovered_servers"
+        )
+        while rows := cursor.fetchmany(500):
+            connection.executemany(
+                "UPDATE discovered_servers SET browsable_name = ? WHERE cache_key = ?",
+                [(int(has_browsable_server_name(row[1], row[2], row[3])), row[0]) for row in rows],
+            )
+        connection.execute("PRAGMA user_version = 11")
+        current_version = 11
     if current_version != target_version:
         raise RuntimeError(
             f"Unsupported server cache migration from version {current_version} to {target_version}."
@@ -423,7 +443,7 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
         """
         INSERT INTO discovered_servers (
             product, identity_state, identity_evidence,
-            cache_key, source, display_name, server_name, host, game_port, query_port,
+            cache_key, source, display_name, server_name, browsable_name, host, game_port, query_port,
             map_name, players_current, players_max, ping_ms, version, password,
             modded, perspective, online, last_checked, last_seen, required_mod_count,
             mod_metadata_status, mod_metadata_checked_at,
@@ -437,7 +457,7 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
         )
         VALUES (
             :product, :identity_state, :identity_evidence,
-            :cache_key, :source, :display_name, :server_name, :host, :game_port, :query_port,
+            :cache_key, :source, :display_name, :server_name, :browsable_name, :host, :game_port, :query_port,
             :map_name, :players_current, :players_max, :ping_ms, :version, :password,
             :modded, :perspective, :online, :last_checked, :last_seen, :required_mod_count,
             :mod_metadata_status, :mod_metadata_checked_at,
@@ -455,6 +475,7 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             source = excluded.source,
             display_name = excluded.display_name,
             server_name = excluded.server_name,
+            browsable_name = excluded.browsable_name,
             host = excluded.host,
             game_port = excluded.game_port,
             query_port = excluded.query_port,
@@ -906,10 +927,7 @@ def _search_where(
     if hide_quality_flagged:
         clauses.append("quality_flags = '[]'")
     if hide_malformed_names:
-        clauses.append("INSTR(display_name, ?) = 0")
-        params.append("\ufffd")
-        clauses.append("display_name NOT GLOB ?")
-        params.append(f"*[{chr(1)}-{chr(31)}]*")
+        clauses.append("browsable_name = 1")
 
     where_sql = f"WHERE {' AND '.join(clauses)}" if clauses else ""
     return where_sql, params
@@ -922,6 +940,9 @@ def _server_params(server: DiscoveredServer) -> dict[str, Any]:
         "cache_key": server.cache_key,
         "source": server.source,
         "display_name": server.name,
+        "browsable_name": int(
+            has_browsable_server_name(server.name, server.server_name, server.status_source)
+        ),
         "server_name": server.server_name,
         "host": server.host,
         "game_port": server.game_port,

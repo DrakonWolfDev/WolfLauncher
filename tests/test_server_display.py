@@ -4,12 +4,44 @@ from wolflauncher.server_display import (
     display_map_name,
     display_required_mod_count,
     display_server_flags,
+    is_displayable_server_name,
     map_filter_key,
     ping_severity,
 )
 
 
 class ServerDisplayTests(unittest.TestCase):
+    def test_address_and_punctuation_placeholders_are_not_server_names(self):
+        for name in (
+            "",
+            "  ",
+            "!",
+            "!!!",
+            "---",
+            "\ufffd",
+            "Broken\x00name",
+            "115.191.45.245:27101",
+            " 101.126.11.42:27129 ",
+            "203.0.113.10",
+            "::1",
+            "2001:db8::1",
+            "[2001:db8::1]:2302",
+            "[2001:db8::1]",
+        ):
+            with self.subTest(name=name):
+                self.assertFalse(is_displayable_server_name(name))
+        for name in (
+            "![GER] DayZ - Community PVE",
+            "! [GER] DayZ - Community PVE Badlands",
+            "123",
+            "生存服务器",
+            "Сервер",
+            "203.0.113.10 Community",
+            "DayZ : 2302",
+        ):
+            with self.subTest(name=name):
+                self.assertTrue(is_displayable_server_name(name))
+
     def test_known_map_names_are_canonical_and_enoch_is_livonia(self):
         self.assertEqual(display_map_name("chernarusplus"), "ChernarusPlus")
         self.assertEqual(display_map_name("namalsk"), "Namalsk")
