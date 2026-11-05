@@ -271,7 +271,7 @@ class CuratedServersMixin:
             if status and status.online and item:
                 item.setToolTip(players_queue_tooltip(status.queue_count, status.query_started_at))
                 text = players_with_queue(
-                    status.players, status.queue_count, status.query_started_at
+                    status.players, status.queue_count, status.query_started_at, compact=True
                 )
                 if item.text() != text:
                     item.setText(text)
@@ -802,7 +802,9 @@ class CuratedServersMixin:
             self._set_item(
                 row,
                 10,
-                players_with_queue(status.players, status.queue_count, status.query_started_at),
+                players_with_queue(
+                    status.players, status.queue_count, status.query_started_at, compact=True
+                ),
             )
             self._set_item(row, 11, status.time)
             if hasattr(self, "table") and (item := self.table.item(row, 10)) is not None:

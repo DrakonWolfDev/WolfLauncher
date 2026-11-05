@@ -22,13 +22,17 @@ def queue_text(count: int | None, checked_at: str, *, now: datetime | None = Non
     return f"Queue: {count}" + ("" if fresh else " (stale)")
 
 
-def players_with_queue(players: str, count: int | None, checked_at: str) -> str:
+def players_with_queue(
+    players: str, count: int | None, checked_at: str, *, compact: bool = False
+) -> str:
     # Only a fresh, positive queue adds information to the visible player count.
     # Unknown, empty and expired observations stay distinct in the tooltip/data.
-    players = " / ".join(part.strip() for part in players.split("/")) if players else "—"
+    separator = "/" if compact else " / "
+    players = separator.join(part.strip() for part in players.split("/")) if players else "—"
     count = valid_queue_count(count)
     observed = queue_text(count, checked_at)
-    return f"{players} +{count}" if count and observed == f"Queue: {count}" else players
+    suffix = f"+{count}" if compact else f" +{count}"
+    return players + suffix if count and observed == f"Queue: {count}" else players
 
 
 def players_queue_tooltip(count: int | None, checked_at: str) -> str:

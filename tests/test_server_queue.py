@@ -84,7 +84,7 @@ class QueueTests(unittest.TestCase):
                     label += f" +{expected}"
                 self.assertEqual(label, browser_row(enriched).values[7])
                 self.assertEqual(label, browser_inspector(enriched).players)
-                self.assertEqual(label, curated_server_row(saved, status)[10])
+                self.assertEqual(label.replace(" ", ""), curated_server_row(saved, status)[10])
 
     def test_zero_unknown_stale_and_future_measurements_are_distinct(self):
         now = datetime(2026, 11, 3, tzinfo=timezone.utc)
@@ -107,6 +107,8 @@ class QueueTests(unittest.TestCase):
         self.assertEqual(players_with_queue("20/20", 5, fresh), "20 / 20 +5")
         self.assertEqual(players_with_queue("2/60", 0, fresh), "2 / 60")
         self.assertEqual(players_with_queue("20/20", 2, fresh), "20 / 20 +2")
+        self.assertEqual(players_with_queue("2 / 60", 0, fresh, compact=True), "2/60")
+        self.assertEqual(players_with_queue("20 / 20", 2, fresh, compact=True), "20/20+2")
         self.assertIn("Queue: 5", players_queue_tooltip(5, fresh))
         for count, checked in (
             (None, fresh),
@@ -223,7 +225,7 @@ class QueueDisplayTests(unittest.TestCase):
         status = ServerStatus(True, players="60/60", queue_count=12, query_started_at=now)
         from PySide6.QtWidgets import QTableWidgetItem
 
-        curated.setItem(0, 10, QTableWidgetItem("60 / 60 +12"))
+        curated.setItem(0, 10, QTableWidgetItem("60/60+12"))
         window = SimpleNamespace(
             servers=[saved],
             table=curated,
@@ -239,7 +241,7 @@ class QueueDisplayTests(unittest.TestCase):
             CuratedServersMixin.refresh_queue_displays(window)
         self.assertEqual(browser.currentRow(), 0)
         self.assertEqual(browser.item(0, 8).text(), "60 / 60")
-        self.assertEqual(curated.item(0, 10).text(), "60 / 60")
+        self.assertEqual(curated.item(0, 10).text(), "60/60")
         self.assertEqual(window.browser_detail_players.text(), "60 / 60")
         self.assertIn("expired", browser.item(0, 8).toolTip())
         self.assertIn("expired", curated.item(0, 10).toolTip())

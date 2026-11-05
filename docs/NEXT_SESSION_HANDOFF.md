@@ -845,3 +845,17 @@ expired/future observations, expiry without polling, Offline timeout cards,
 other failure states and timeout-to-Online recovery. This is source regression
 evidence; current native/package/live confirmation remains separate. Restart the
 source launcher to load the change. No release/version/publication/deployment.
+
+
+## Favourite-only compact counts — 5 November 2026
+
+Andi refined the spacing preference: Favourites use `2/60` or `20/20+2`, while
+the server browser retains `2 / 60` or `20 / 20 +2`. The shared formatter now has
+an explicit compact option used by Favourite startup/live/expiry rendering;
+browser rendering keeps the spaced default. Positive-only fresh queues, nullable
+observations, expiry, sorting and Offline presentation are preserved.
+
+Validation: **1,035 run / 1,028 passed / 7 skipped**; required quality checks and
+locked dependency audit pass. Existing regressions verify both formats, initial
+Favourite status, live measurements and different browser/Favourite expiry text.
+Source checks only; no native/package rebuild, release/version or deployment.

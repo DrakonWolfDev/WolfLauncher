@@ -12,7 +12,8 @@ tags are unknown; an integer `raw.queue` is also supported when no queue tag is
 present. Player count and capacity are never used to infer queue size.
 
 The Server Browser player column and selected-server summary show, for example,
-`60 / 60 +12`. Favourites and their details use the same measurement.
+`60 / 60 +12`. Favourites use the same measurement in compact form: `60/60+12`.
+With no fresh positive queue, the browser shows `2 / 60` and Favourites show `2/60`.
 Automatic browser live checks, selected-server checks and favourite refreshes
 use the existing bounded query workers; no additional queue-specific requests
 are sent. Sorting by players still uses the numeric player count.

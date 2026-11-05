@@ -51,7 +51,9 @@ def curated_server_row(server: Server, status: ServerStatus | None = None) -> li
     )
     values[8] = "ONLINE"
     values[9] = display_map_name(status.map_name)
-    values[10] = players_with_queue(status.players, status.queue_count, status.query_started_at)
+    values[10] = players_with_queue(
+        status.players, status.queue_count, status.query_started_at, compact=True
+    )
     values[11] = status.time
     values[12] = f"{status.ping}ms" if status.ping else ""
     values[13] = status.version
