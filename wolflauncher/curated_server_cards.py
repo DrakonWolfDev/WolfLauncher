@@ -105,7 +105,7 @@ class CuratedServerCard(QFrame):
 
         self.stats_label = QLabel(self._stats(values))
         self.stats_label.setToolTip(
-            "Players / server capacity + waiting to join. +? means the queue is unknown or expired."
+            "Players / server capacity. +N appears only when N players are waiting to join."
         )
         set_ui_role(self.stats_label, self._ping_role(values[12]))
         self.stats_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)

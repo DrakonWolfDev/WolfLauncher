@@ -402,7 +402,7 @@ class ServerBrowserMixin:
             "Password required"
         )
         self.browser_table.horizontalHeaderItem(8).setToolTip(
-            "Players / server capacity + waiting to join. +? means the queue is unknown or expired."
+            "Players / server capacity. +N appears only when N players are waiting to join."
         )
         self.browser_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.browser_table.setSelectionMode(QTableWidget.SingleSelection)
@@ -468,7 +468,7 @@ class ServerBrowserMixin:
         self.browser_detail_map = QLabel("—")
         self.browser_detail_players = QLabel("—")
         self.browser_detail_players.setToolTip(
-            "Players / server capacity + waiting to join. +? means the queue is unknown or expired."
+            "Players / server capacity. +N appears only when N players are waiting to join."
         )
         self.browser_detail_ping = QLabel("—")
         for column, (heading, value) in enumerate(

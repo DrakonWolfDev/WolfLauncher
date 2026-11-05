@@ -234,12 +234,15 @@ class CheckServerTests(unittest.TestCase):
     @patch(
         "wolflauncher.status.subprocess.run", side_effect=subprocess.TimeoutExpired("gamedig", 5)
     )
-    def test_gamedig_timeout_returns_unknown_timeout_status(self, run, which, resolve_host_mock):
+    def test_gamedig_timeout_retains_timeout_reason_and_displays_offline(
+        self, run, which, resolve_host_mock
+    ):
         status = check_server(self.make_server())
 
         self.assertFalse(status.online)
         self.assertIs(status.outcome, ServerStatusOutcome.TIMEOUT)
-        self.assertIn("isn't responding", status.user_message())
+        self.assertEqual(status.display_state, "OFFLINE")
+        self.assertEqual(status.user_message(), "Server offline")
         self.assertEqual(status.resolved_ip, "203.0.113.10")
         self.assertEqual(status.error, "status check timed out")
 
@@ -324,9 +327,7 @@ class CheckServerTests(unittest.TestCase):
     @patch("wolflauncher.status.resolve_host", return_value="203.0.113.10")
     @patch("wolflauncher.status.gamedig_command", return_value=["node", "gamedig"])
     @patch("wolflauncher.status.subprocess.run")
-    def test_gamedig_json_error_reports_attempted_query_port_without_claiming_offline(
-        self, run, *_
-    ):
+    def test_gamedig_json_error_displays_offline_and_retains_attempted_query_port(self, run, *_):
         run.return_value = subprocess.CompletedProcess(
             args=[], returncode=0, stdout=json.dumps({"error": "Failed all 2 attempts"}), stderr=""
         )
@@ -334,7 +335,7 @@ class CheckServerTests(unittest.TestCase):
         status = check_server(server)
         self.assertIs(status.outcome, ServerStatusOutcome.TIMEOUT)
         self.assertIn(f"Query port {server.query_port}", status.error)
-        self.assertEqual(status.user_message(), "Server isn't responding")
+        self.assertEqual(status.user_message(), "Server offline")
         self.assertIn("Check the saved query port", status.user_message(include_details=True))
         self.assertNotIn("offline, restarting", status.user_message())
 

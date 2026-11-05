@@ -194,6 +194,8 @@ def api_status_tooltip(server: DiscoveredServer) -> str:
 
 def browser_status(server: DiscoveredServer) -> tuple[str, str]:
     """Return a human-facing status and colour without exposing provider jargon."""
+    if server.status_source == "local_timeout":
+        return "OFFLINE", STATUS_COLOURS["negative"]
     if server.status_source.startswith("local_"):
         return "UNKNOWN", STATUS_COLOURS["warning"]
     if server.status_source == "local":

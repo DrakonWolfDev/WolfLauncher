@@ -74,14 +74,14 @@ class ServerStatus:
     def display_state(self) -> str:
         if self.outcome is ServerStatusOutcome.ONLINE:
             return "ONLINE"
-        if self.outcome is ServerStatusOutcome.OFFLINE:
+        if self.outcome in {ServerStatusOutcome.OFFLINE, ServerStatusOutcome.TIMEOUT}:
             return "OFFLINE"
         return "UNKNOWN"
 
     def user_message(self, *, include_details: bool = False) -> str:
         messages = {
             ServerStatusOutcome.OFFLINE: "Server offline",
-            ServerStatusOutcome.TIMEOUT: "Server isn't responding",
+            ServerStatusOutcome.TIMEOUT: "Server offline",
             ServerStatusOutcome.NETWORK_ERROR: "Unable to check server",
             ServerStatusOutcome.INVALID_RESPONSE: "Couldn't read server status",
             ServerStatusOutcome.CANCELLED: "Status check cancelled",

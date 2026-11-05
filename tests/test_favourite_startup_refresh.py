@@ -39,7 +39,7 @@ class FavouriteStartupRefreshTests(unittest.TestCase):
         CuratedServersMixin._mark_startup_status_rows_checking(window, [0])
         values = [table.item(0, col).text() for col in range(16)]
         self.assertEqual(values[8], "Rechecking…")
-        self.assertEqual(values[10], "12/60+?")
+        self.assertEqual(values[10], "12 / 60")
         self.assertEqual(values[12], "42ms")
         card = CuratedServerCard(0, values)
         self.addCleanup(card.close)

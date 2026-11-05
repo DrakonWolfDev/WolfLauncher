@@ -46,7 +46,8 @@ class CuratedServerCardTests(unittest.TestCase):
             status_tooltip=curated_status_tooltip(server, status),
         )
         self.addCleanup(card.close)
-        self.assertIn("Server isn't responding", card.metadata_label.text())
+        self.assertIn("Server offline", card.metadata_label.text())
+        self.assertEqual(card.property("onlineState"), "offline")
         self.assertNotIn("2303", card.metadata_label.text())
         self.assertNotIn("Failed all", card.metadata_label.text())
         self.assertIn("Join in DayZ: 203.0.113.10:3302", card.metadata_label.toolTip())

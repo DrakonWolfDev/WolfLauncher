@@ -737,3 +737,30 @@ raw errors/endpoint roles in tooltips. A themed offscreen Qt preview was visuall
 inspected; its helper text was shortened after initial clipping, then rechecked.
 No native/package/live-server verification, release, version bump, publication,
 public download change or API deployment was performed in this batch.
+
+
+## User-requested Offline labels and player spacing — 5 November 2026
+
+Andi requested Offline for nonresponding servers and a quieter player display.
+Query timeouts now present as OFFLINE in both browser and Favourites, with the
+negative colour/card state and a concise “Server offline” message. A successful
+recheck restores ONLINE. TIMEOUT/local_timeout remain the underlying diagnostic
+outcome/source; this presentation does not convert a timeout into confirmed
+protocol evidence of shutdown. DNS/network/tool/invalid-response/cancellation
+failures remain Unknown. Retry cooldowns, background bounds and launch checks
+are unchanged. This supersedes the earlier timeout-as-Unknown presentation.
+
+The shared player formatter now shows `2 / 60`, or `20 / 20 +2` when a fresh queue
+measurement is positive. Zero, missing, invalid and expired counts add no suffix.
+Unknown is not stored as zero, expired positive readings disappear, and tooltips
+retain the distinction. Browser rows/inspector, Favourite rows/cards and the
+presentation expiry timer share the format; numeric sorting is unchanged. This
+supersedes the earlier visible `+0`/`+?` design at Andi's explicit request.
+
+Validation: **1,035 run / 1,028 passed / 7 skipped**; required Ruff format/lint,
+core mypy, compilation/whitespace and locked dependency audit pass. Regression
+coverage includes exact spacing, positive-only suffixes, zero/unknown/expired/
+future measurements and timer expiry; timeout retains its diagnostic reason,
+shows Offline, then returns Online after a successful check. Favourite timeout
+cards retain full error/port details in tooltips. No new real server or packaged
+validation, release, version bump, public-link change or API deployment.

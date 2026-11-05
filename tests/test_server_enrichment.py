@@ -131,7 +131,7 @@ class ServerEnrichmentTests(unittest.TestCase):
         self.assertEqual(enriched.last_seen, "2026-06-20T12:00:00Z")
         self.assertEqual(enriched.status_source, "local")
 
-    def test_unsuccessful_checks_are_unknown_and_retain_retry_cooldown(self):
+    def test_timeouts_display_offline_other_errors_unknown_and_retain_retry_cooldown(self):
         from wolflauncher.server_browser_presenter import browser_inspector, browser_status
 
         for outcome in (
@@ -149,7 +149,10 @@ class ServerEnrichmentTests(unittest.TestCase):
                     ServerStatus(False, outcome=outcome),
                     "2026-06-20T14:00:00+00:00",
                 )
-                self.assertEqual(browser_status(enriched)[0], "UNKNOWN")
+                self.assertEqual(
+                    browser_status(enriched)[0],
+                    "OFFLINE" if outcome is ServerStatusOutcome.TIMEOUT else "UNKNOWN",
+                )
                 self.assertIn("Local check unsuccessful", browser_inspector(enriched).truth)
                 self.assertIsNone(enriched.ping_ms)
                 self.assertFalse(
@@ -162,6 +165,24 @@ class ServerEnrichmentTests(unittest.TestCase):
                         enriched, now=datetime(2026, 6, 20, 14, 5, tzinfo=timezone.utc)
                     )
                 )
+
+    def test_timeout_display_returns_online_after_a_successful_recheck(self):
+        from wolflauncher.server_browser_presenter import browser_status
+
+        timeout = ServerStatus(False, outcome=ServerStatusOutcome.TIMEOUT)
+        self.assertEqual(timeout.display_state, "OFFLINE")
+        unavailable = enrich_discovered_server(
+            self.make_candidate(), timeout, "2026-11-05T12:00:00Z"
+        )
+        self.assertEqual(browser_status(unavailable)[0], "OFFLINE")
+        self.assertEqual(unavailable.status_source, "local_timeout")
+        recovered = enrich_discovered_server(
+            unavailable,
+            ServerStatus(True, server_name="Back online", players="2/60"),
+            "2026-11-05T12:02:00Z",
+        )
+        self.assertEqual(browser_status(recovered)[0], "ONLINE")
+        self.assertEqual(recovered.status_source, "local")
 
     def test_parse_connect_port_reads_port_from_gamedig_connect_address(self):
         self.assertEqual(parse_connect_port("203.0.113.10:2302"), 2302)

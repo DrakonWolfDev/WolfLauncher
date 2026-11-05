@@ -821,3 +821,27 @@ unchanged saved values, disclosure edits, short failure text and full diagnostic
 retention. An offscreen themed dialog preview was visually checked; a clipped
 helper paragraph was shortened and rechecked. Native/package evidence remains
 separate. No actual server query/port repair, release, version bump or deployment.
+
+
+## Requested Offline labels and quieter player counts — 5 November 2026
+
+Andi explicitly prefers nonresponding servers to display Offline, and player
+counts as `2 / 60` or `20 / 20 +2`. This supersedes the earlier visible `+0`/`+?`
+notation and timeout-as-Unknown presentation. Browser and Favourite timeouts now
+use the Offline label/colour; a successful later check restores Online. The
+underlying TIMEOUT outcome/local_timeout source and diagnostic details remain
+intact. DNS/network/tool/read/cancellation errors still display Unknown rather
+than being attributed to the server. Existing retry timing and launch guards
+are preserved; no extra polling loop was added.
+
+The shared formatter adds spaces around `/` and before a positive queue suffix.
+Zero, unavailable and expired queues have no suffix; nullable evidence and expiry
+remain distinct in data/tooltips. No fabricated empty queue or old positive count
+is displayed. Numeric player sorting and stable row order are preserved.
+
+Validation: **1,035 run / 1,028 passed / 7 skipped**, required quality checks and
+locked dependency audit pass. Coverage checks exact formatting, zero/missing/
+expired/future observations, expiry without polling, Offline timeout cards,
+other failure states and timeout-to-Online recovery. This is source regression
+evidence; current native/package/live confirmation remains separate. Restart the
+source launcher to load the change. No release/version/publication/deployment.

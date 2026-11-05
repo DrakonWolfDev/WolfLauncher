@@ -12,19 +12,20 @@ tags are unknown; an integer `raw.queue` is also supported when no queue tag is
 present. Player count and capacity are never used to infer queue size.
 
 The Server Browser player column and selected-server summary show, for example,
-`60/60+12`. Favourites and their details use the same measurement.
+`60 / 60 +12`. Favourites and their details use the same measurement.
 Automatic browser live checks, selected-server checks and favourite refreshes
 use the existing bounded query workers; no additional queue-specific requests
 are sent. Sorting by players still uses the numeric player count.
 
-- `10/20+0` means ten players, twenty spaces and an explicitly measured empty queue.
-- `20/20+5` means a full twenty-player server with five waiting to join.
-- `10/20+?` means the queue is unavailable or its reading has expired. Tooltips
-  explain the notation and distinguish missing evidence from an expired reading.
-  Failed live checks and successful responses without a queue clear earlier
+- `2 / 60` shows the current players and capacity, with spaces around `/`.
+- `20 / 20 +2` adds the queue only when a fresh observation shows people waiting.
+- Empty, unknown and expired queues add no suffix. Their distinct states remain
+  in the stored measurement and tooltip; absence of a suffix does not certify
+  a measured empty queue. No `+0` or `+?` appears in the player count.
+- Failed live checks and successful responses without a queue clear earlier
   observations. Counts expire after two minutes, with missing/invalid/future
-  timestamps also treated as expired. A ten-second display timer updates labels
-  even when network polling is disabled; it stops during shutdown.
+  timestamps also treated as expired. A ten-second display timer removes expired
+  suffixes even when network polling is disabled; it stops during shutdown.
 
 Background replies update values in place. Table headers sort once when clicked,
 without enabling Qt's continuous reordering. Full snapshots of the same search
