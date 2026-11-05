@@ -52,6 +52,7 @@ def populate_browser_table(
     favourite_endpoints: set[tuple[str, int, int]] | None = None,
     *,
     preserve_order: bool = False,
+    mod_previews: dict[str, tuple[str, str, str]] | None = None,
 ) -> None:
     """Replace the discovered-server table rows while preserving sortable metadata."""
     # A provider refresh can replace hundreds of rows at once. Repainting after
@@ -66,7 +67,9 @@ def populate_browser_table(
         table.setRowCount(len(servers))
         favourites = favourite_endpoints or set()
         for row, server in enumerate(servers):
-            _set_browser_table_row(table, row, server, favourites)
+            _set_browser_table_row(
+                table, row, server, favourites, (mod_previews or {}).get(server.cache_key)
+            )
         if not preserve_order:
             header = table.horizontalHeader()
             table.sortItems(header.sortIndicatorSection(), header.sortIndicatorOrder())
@@ -154,6 +157,7 @@ def _set_browser_table_row(
     row: int,
     server: DiscoveredServer,
     favourite_endpoints: set[tuple[str, int, int]] | None = None,
+    mod_preview: tuple[str, str, str] | None = None,
 ) -> None:
     row_data = browser_row(server)
     cache_key = server.cache_key
@@ -162,9 +166,14 @@ def _set_browser_table_row(
     for data_column, value in enumerate(row_data.values):
         column = data_column + 1
         item = SortableTableWidgetItem(value, row_data.sort_values[data_column])
+        if column == BROWSER_MODS_COLUMN and mod_preview:
+            item = SortableTableWidgetItem(mod_preview[0], mod_preview[0])
         item.setData(Qt.UserRole, cache_key)
         if data_column in row_data.tooltips:
             item.setToolTip(row_data.tooltips[data_column])
+        if column == BROWSER_MODS_COLUMN and mod_preview:
+            item.setToolTip(mod_preview[1])
+            item.setForeground(QColor(mod_preview[2]))
         if data_column == 7 and row_data.values[7] != "—":
             item.setData(
                 Qt.UserRole + 2,

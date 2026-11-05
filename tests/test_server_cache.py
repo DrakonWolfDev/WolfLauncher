@@ -328,6 +328,33 @@ class ServerCacheTests(unittest.TestCase):
         self.assertEqual(cached.day_acceleration, 6)
         self.assertEqual(cached.night_acceleration, 4)
 
+    def test_failed_local_check_cannot_restore_the_cached_clock_on_upsert(self):
+        from wolflauncher.server_enrichment import enrich_discovered_server
+        from wolflauncher.status import ServerStatus, ServerStatusOutcome
+
+        connection = self.open_cache()
+        local = DiscoveredServer(
+            "Timed",
+            "203.0.113.10",
+            2302,
+            2303,
+            status_source="local",
+            online=True,
+            stable_server_id="11111111-1111-1111-1111-111111111111",
+            game_time="16:56",
+            day_acceleration=6,
+            night_acceleration=4,
+        )
+        server_cache.upsert_server(connection, local)
+        failed = enrich_discovered_server(
+            local, ServerStatus(False, outcome=ServerStatusOutcome.TIMEOUT), "2026-11-05T12:00:00Z"
+        )
+        server_cache.upsert_server(connection, failed)
+        cached = server_cache.get_server(connection, local.cache_key)
+        self.assertEqual(cached.game_time, "")
+        self.assertIsNone(cached.day_acceleration)
+        self.assertIsNone(cached.night_acceleration)
+
     def test_stable_wolfapi_id_moves_corrected_endpoint_without_duplicate(self):
         connection = self.open_cache()
         stable_id = "11111111-1111-1111-1111-111111111111"

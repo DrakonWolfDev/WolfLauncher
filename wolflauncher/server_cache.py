@@ -421,7 +421,7 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
                     )
                 ),
             )
-        if existing and server.status_source != "local":
+        if existing and not server.status_source.startswith("local"):
             server = replace(
                 server,
                 game_time=str(existing["game_time"]),
@@ -510,11 +510,11 @@ def _upsert_server(connection: sqlite3.Connection, server: DiscoveredServer) -> 
             quality_flags = excluded.quality_flags,
             country_code = excluded.country_code,
             country_source = excluded.country_source,
-            game_time = CASE WHEN excluded.status_source = 'local'
+            game_time = CASE WHEN excluded.status_source = 'local' OR excluded.status_source GLOB 'local_*'
                 THEN excluded.game_time ELSE discovered_servers.game_time END,
-            day_acceleration = CASE WHEN excluded.status_source = 'local'
+            day_acceleration = CASE WHEN excluded.status_source = 'local' OR excluded.status_source GLOB 'local_*'
                 THEN excluded.day_acceleration ELSE discovered_servers.day_acceleration END,
-            night_acceleration = CASE WHEN excluded.status_source = 'local'
+            night_acceleration = CASE WHEN excluded.status_source = 'local' OR excluded.status_source GLOB 'local_*'
                 THEN excluded.night_acceleration ELSE discovered_servers.night_acceleration END,
             queue_count = excluded.queue_count,
             queue_checked_at = excluded.queue_checked_at,

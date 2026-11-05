@@ -218,6 +218,8 @@ class QueueDisplayTests(unittest.TestCase):
                     freshness=freshness,
                     players_current=9,
                     players_max=90,
+                    game_time="16:56",
+                    day_acceleration=6,
                     queue_count=2,
                     queue_checked_at=datetime.now(timezone.utc).isoformat(),
                 )
@@ -226,6 +228,10 @@ class QueueDisplayTests(unittest.TestCase):
                 self.assertEqual(browser.item(0, 8).text(), "—")
                 self.assertIsNone(browser.item(0, 8).sort_value)
                 self.assertEqual(browser_inspector(server).players, "—")
+                self.assertEqual(browser.item(0, 16).text(), "—")
+                self.assertTrue(browser.item(0, 16).icon().isNull())
+                self.assertIsNone(browser.item(0, 16).sort_value)
+                self.assertEqual(browser_inspector(server).game_time, "—")
                 window = SimpleNamespace(
                     servers=[],
                     table=curated,
@@ -248,6 +254,8 @@ class QueueDisplayTests(unittest.TestCase):
                 update_browser_table_row(browser, server.cache_key, recovered)
                 self.assertEqual(browser.item(0, 6).text(), "ONLINE")
                 self.assertEqual(browser.item(0, 8).text(), "2 / 90")
+                self.assertIn("16:56", browser.item(0, 16).text())
+                self.assertFalse(browser.item(0, 16).icon().isNull())
 
     @classmethod
     def setUpClass(cls):

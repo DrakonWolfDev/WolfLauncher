@@ -1,0 +1,35 @@
+{
+  "date": "2026-11-05",
+  "kind": "synthetic offscreen Qt source profile",
+  "method": "One cycle: populate 1000 rows, show online subset of 500, return to 1000. Each timing includes apply_browser_snapshot plus processEvents under cProfile. Cached successful mod results for all rows; no selected row. Real table, theme, columns and mod presentation; remaining window actions mocked. No network, Steam, game or user database access.",
+  "baseline_commit": "a3e6027d2ac888b3e4d0d1b23a16bb9182168a2b",
+  "baseline_ms": [
+    2265.63,
+    696.89,
+    2143.87
+  ],
+  "baseline_profile_total_seconds": 5.104,
+  "baseline_table_item_reads": 1129250,
+  "optimized_worktree_sha256": {
+    "wolflauncher/server_browser_feature.py": "d283edb143f1eaf6f27157da71582e96447220a094e2a5271f813e1180286040",
+    "wolflauncher/server_browser_presenter.py": "c05bc3f80a0193dad822c3499e4d2ecd14eaf53463097fc256092693ac45ef2b",
+    "wolflauncher/server_browser_table.py": "ce9df96532a2443413154d70e2495c90a71adb383d921fa2b7e112d9ac2ac811",
+    "wolflauncher/server_enrichment.py": "29db566f785b68f73be30ad6fe546a1d9de506c1c2bd1129c1578a8468f84f8e",
+    "wolflauncher/server_cache.py": "bd55da5bf8125f968d7f16c22f6270bcf773a96536a7c99edaf1508668c666aa",
+    "wolflauncher/theme.py": "9e3b5c84f3656006df6786e013d4eafeec6afe3dc25a71d03c28054dc298017e"
+  },
+  "optimized_ms": [
+    327.66,
+    157.48,
+    268.07
+  ],
+  "optimized_profile_total_seconds": 0.751,
+  "optimized_profile": "1000 327.66\n500 157.48\n1000 268.07\n         851266 function calls (850922 primitive calls) in 0.751 seconds\n\n   Ordered by: cumulative time\n   List reduced from 264 to 14 due to restriction <14>\n\n   ncalls  tottime  percall  cumtime  percall filename:lineno(function)\n        3    0.006    0.002    0.634    0.211 /mnt/shared/Dev/WolfLauncher/wolflauncher/server_browser_feature.py:1698(apply_browser_snapshot)\n        3    0.005    0.002    0.612    0.204 /mnt/shared/Dev/WolfLauncher/wolflauncher/server_browser_table.py:49(populate_browser_table)\n     2500    0.208    0.000    0.587    0.000 /mnt/shared/Dev/WolfLauncher/wolflauncher/server_browser_table.py:155(_set_browser_table_row)\n     2500    0.017    0.000    0.153    0.000 /mnt/shared/Dev/WolfLauncher/wolflauncher/server_browser_presenter.py:258(browser_row)\n        3    0.119    0.040    0.119    0.040 {built-in method processEvents}\n     5000    0.004    0.000    0.077    0.000 /mnt/shared/Dev/WolfLauncher/wolflauncher/server_browser_presenter.py:179(display_server_name)\n    12500    0.014    0.000    0.076    0.000 /mnt/shared/Dev/WolfLauncher/wolflauncher/server_display.py:13(is_displayable_server_name)\n    47500    0.052    0.000    0.052    0.000 /mnt/shared/Dev/WolfLauncher/wolflauncher/table_items.py:7(__init__)\n    45000    0.043    0.000    0.043    0.000 {method 'setItem' of 'PySide6.QtWidgets.QTableWidget' objects}\n     5000    0.009    0.000    0.034    0.000 /usr/lib/python3.12/ipaddress.py:28(ip_address)\n    18500    0.007    0.000    0.026    0.000 /usr/lib/python3.12/re/__init__.py:174(search)\n    49000    0.026    0.000    0.026    0.000 {method 'setData' of 'PySide6.QtWidgets.QTableWidgetItem' objects}\n     7500    0.005    0.000    0.025    0.000 /mnt/shared/Dev/WolfLauncher/wolflauncher/server_browser_presenter.py:171(live_name_text)\n     2500    0.011    0.000    0.022    0.000 /mnt/shared/Dev/WolfLauncher/wolflauncher/server_browser_table.py:144(_style_browser_favourite)\n\n\n",
+  "harness_sha256": "1d63054f5e02148bb4b7bfdca0ccf4674bcea4ac2783f3c9f0db971ed45c81f3",
+  "harness_source": "import sys,time,cProfile,pstats\nfrom pathlib import Path\nfrom types import SimpleNamespace\nfrom unittest.mock import Mock\nsys.path.insert(0,str(Path.cwd()))\nfrom PySide6.QtWidgets import QApplication,QTableWidget\nfrom wolflauncher.server_browser_feature import ServerBrowserMixin\nfrom wolflauncher.server_browser_controller import BrowserQuery,BrowserSnapshot\nfrom wolflauncher.models import DiscoveredServer,Server\nfrom wolflauncher.mods import ModCheckResult\nfrom wolflauncher.theme import apply_application_theme,configure_data_table\napp=QApplication([]);apply_application_theme(app)\ntable=QTableWidget(0,18);configure_data_table(table);table.resize(1350,720)\nservers=[DiscoveredServer(f'Server {i:04}',f'host{i}',2302,2303,online=i%2==0,status_source='local',players_current=9,players_max=90,game_time='16:56',day_acceleration=1) for i in range(1000)]\nwindow=SimpleNamespace(browser_table=table,browser_detailed_columns=Mock(isChecked=Mock(return_value=False)),selected_discovered_server=Mock(return_value=None),current_browser_query=Mock(return_value=BrowserQuery(limit=1000)),browser_limit=Mock(currentText=Mock(return_value='1000')),servers=[],wolfapi_directory_total=None,discovery_provider_key=Mock(return_value='wolfapi_v1'),browser_summary=Mock(),update_browser_active_filters=Mock(),update_browser_selection_context=Mock(),update_browser_detail_for_key=Mock())\nwindow.configure_browser_columns=lambda:ServerBrowserMixin.configure_browser_columns(window)\nwindow.apply_browser_mod_preview=lambda *args:ServerBrowserMixin.apply_browser_mod_preview(window,*args)\nwindow.browser_mod_results={s.cache_key:(time.monotonic(),ModCheckResult(True,Server(s.name,'G',s.host,2302,2303),[])) for s in servers}\nwindow.configure_browser_columns();table.show();app.processEvents()\nsummary=dict(total=1000,online=500,seen=1000,checked=1000)\nprofile=cProfile.Profile();profile.enable()\nfor rows in (servers,[s for s in servers if s.online],servers):\n start=time.perf_counter();ServerBrowserMixin.apply_browser_snapshot(window,BrowserSnapshot(rows,len(rows),summary));app.processEvents();print(len(rows),round((time.perf_counter()-start)*1000,2))\nprofile.disable();pstats.Stats(profile).sort_stats('cumtime').print_stats(14)\ntable.close()\n",
+  "limits": [
+    "Single-cycle measurements with profiler overhead, not medians or cold-start results.",
+    "Measures row application/repaint, not API latency or complete asynchronous filter delivery.",
+    "No packaged/native performance claim; verify on the user desktop after restart."
+  ]
+}

@@ -47,6 +47,7 @@ from .server_browser_controller import BrowserQuery, browser_filter_options, loa
 from .server_browser_presenter import (
     browser_inspector,
     browser_mod_pill,
+    browser_mod_preview,
     browser_style_terms,
     browser_summary_text,
     browser_summary_tooltip,
@@ -1517,35 +1518,9 @@ class ServerBrowserMixin:
             self.start_selected_server_mod_preview(server)
 
     def apply_browser_mod_preview(self, cache_key: str, result: ModCheckResult):
-        if not result.ok:
-            update_browser_mod_cell(
-                self.browser_table,
-                cache_key,
-                "UNAVAILABLE",
-                result.error or "Required-mod readiness could not be checked.",
-                STATUS_COLOURS["warning"],
-            )
-            self.update_browser_detail_for_key(cache_key, "Unavailable")
-            return
-        missing = len(result.missing_mods)
-        if missing:
-            update_browser_mod_cell(
-                self.browser_table,
-                cache_key,
-                f"{missing} MISSING",
-                "Launch will open pre-flight and offer to install or update the missing Workshop items.",
-                STATUS_COLOURS["negative"],
-            )
-            self.update_browser_detail_for_key(cache_key, f"{missing} missing locally")
-            return
-        update_browser_mod_cell(
-            self.browser_table,
-            cache_key,
-            "READY",
-            "Local Workshop readiness preview. Launch pre-flight performs the final check.",
-            STATUS_COLOURS["positive"],
-        )
-        self.update_browser_detail_for_key(cache_key, "Ready locally")
+        text, tooltip, colour, detail = browser_mod_preview(result)
+        update_browser_mod_cell(self.browser_table, cache_key, text, tooltip, colour)
+        self.update_browser_detail_for_key(cache_key, detail)
 
     def promote_selected_discovered_server(self):
         server = self.selected_discovered_server()
@@ -1764,6 +1739,13 @@ class ServerBrowserMixin:
             self.active_discovered_cache_key = ""
         self.browser_servers = servers
 
+        now = time.monotonic()
+        mod_previews = {}
+        for server in servers:
+            cached = self.browser_mod_results.get(server.cache_key)
+            if cached and now - cached[0] < (900 if cached[1].ok else 300):
+                mod_previews[server.cache_key] = browser_mod_preview(cached[1])[:3]
+
         # Restoring rows is not a user request to open the inspector.
         with QSignalBlocker(self.browser_table):
             populate_browser_table(
@@ -1775,6 +1757,7 @@ class ServerBrowserMixin:
                     if server.favourite
                 },
                 preserve_order=True,
+                mod_previews=mod_previews,
             )
             if selected_key:
                 for row in range(self.browser_table.rowCount()):
@@ -1783,10 +1766,6 @@ class ServerBrowserMixin:
                         self.browser_table.selectRow(row)
                         break
         self.browser_table.verticalScrollBar().setValue(scroll_value)
-        for server in servers:
-            cached = self.browser_mod_results.get(server.cache_key)
-            if cached and time.monotonic() - cached[0] < (900 if cached[1].ok else 300):
-                self.apply_browser_mod_preview(server.cache_key, cached[1])
         self.configure_browser_columns()
         self.browser_summary.setText(
             browser_summary_text(

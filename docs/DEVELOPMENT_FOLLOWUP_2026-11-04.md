@@ -798,3 +798,38 @@ coverage checks all three cached Offline cases, inspector/table/timer suppressio
 online recovery and failed enrichment clearing population. Source regression
 evidence only; no current native/package/live verification, version bump,
 release, publication or deployment. Restart the source launcher to load the fix.
+
+
+## Offline clocks and measured filter rebuild pause — 5 November 2026
+
+Andi reported stale game time on Offline rows and a pause toggling Online only.
+Offline rows now hide clock, acceleration, phase icon and time sort value in
+browser/inspector presentation, including pre-existing cached rows. Failed local
+checks clear the clock/acceleration fields; both stable-ID merging and SQL upsert
+now accept that clearing instead of restoring an old local clock. Provider-only
+refreshes still preserve locally measured time. Successful checks restore it.
+
+A source profile reproduced the GUI pause with 1,000 displayed rows and cached
+mod previews. Snapshot application rebuilt rows, then reapplied each preview by
+searching the table, producing quadratic work (over 1.1 million item reads across
+a 1,000/500/1,000-row cycle). Cached previews are now prepared once and applied
+directly while building each row. Incremental replies use the same preview
+formatter; ready/missing/unavailable states, colours/tooltips and existing
+15-minute/5-minute expiry rules remain. Selection, scroll and stable order are
+preserved. The two scalable phase icons now reuse bounded SVG-backed QIcons with
+copy-on-return, avoiding repeated SVG loads without rasterising away scaling.
+
+Under the same synthetic offscreen profiler, returning to the 1,000-row list
+fell from 2,143.87 ms to 268.07 ms. Initial population: 2,265.63 to 327.66 ms;
+500-row subset: 696.89 to 157.48 ms. These are single-cycle profiled source table
+application/repaint measurements, not medians, native/package timing or complete
+API/filter-request latency. The harness, raw final profile, input identities and
+limits are retained in [profile evidence](evidence/2026-11-05-browser-filter-profile.json).
+
+Validation: **1,037 run / 1,030 passed / 7 skipped**; required Ruff format/lint,
+core mypy, compilation/whitespace and locked dependency audit pass. Regressions
+cover offline clock/icon/sort suppression and recovery, failed-clock persistence,
+linear table reads with cached ready/missing/unavailable/expired previews,
+selection/scroll/order and switching to a smaller online view. No extra polling,
+launch bypass, native/package rebuild, release/version or API deployment.
+Restart the source launcher for desktop confirmation of the reported interaction.

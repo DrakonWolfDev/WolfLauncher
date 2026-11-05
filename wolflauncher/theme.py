@@ -1,5 +1,6 @@
 """Shared visual tokens and application-level styling for WolfLauncher."""
 
+from functools import lru_cache
 from pathlib import Path
 
 from PySide6.QtCore import Qt
@@ -57,6 +58,11 @@ def theme_icon(name: str) -> QIcon:
 
 def time_icon(is_day: bool) -> QIcon:
     """Return the scalable DayZ game-time phase icon."""
+    return QIcon(_cached_time_icon(is_day))
+
+
+@lru_cache(maxsize=2)
+def _cached_time_icon(is_day: bool) -> QIcon:
     return QIcon(str(ASSETS_DIR / ("time-sun.svg" if is_day else "time-moon.svg")))
 
 

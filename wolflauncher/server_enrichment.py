@@ -31,6 +31,9 @@ def enrich_discovered_server(
             ping_ms=None,
             players_current=None,
             players_max=None,
+            game_time="",
+            day_acceleration=None,
+            night_acceleration=None,
             queue_count=None,
             queue_checked_at="",
         )

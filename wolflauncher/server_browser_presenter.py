@@ -69,6 +69,8 @@ def browser_players_text(server: DiscoveredServer) -> str:
 
 def game_time_text(server: DiscoveredServer, include_symbol: bool = True) -> str:
     """Format locally measured DayZ time with a broad day/night cue."""
+    if browser_status(server)[0] == "OFFLINE":
+        return "—"
     parsed = _game_time_parts(server.game_time)
     if parsed is None:
         return "—"
@@ -83,6 +85,8 @@ def game_time_text(server: DiscoveredServer, include_symbol: bool = True) -> str
 
 
 def game_time_is_day(server: DiscoveredServer) -> bool | None:
+    if browser_status(server)[0] == "OFFLINE":
+        return None
     parsed = _game_time_parts(server.game_time)
     return 6 <= parsed[0] < 18 if parsed is not None else None
 
@@ -100,7 +104,34 @@ def browser_mod_pill(mod_preview: str) -> tuple[str, str]:
     return "", "warning"
 
 
+def browser_mod_preview(result) -> tuple[str, str, str, str]:
+    """Describe cached readiness once for bulk rows or an individual reply."""
+    if not result.ok:
+        return (
+            "UNAVAILABLE",
+            result.error or "Required-mod readiness could not be checked.",
+            STATUS_COLOURS["warning"],
+            "Unavailable",
+        )
+    missing = len(result.missing_mods)
+    if missing:
+        return (
+            f"{missing} MISSING",
+            "Launch will open pre-flight and offer to install or update the missing Workshop items.",
+            STATUS_COLOURS["negative"],
+            f"{missing} missing locally",
+        )
+    return (
+        "READY",
+        "Local Workshop readiness preview. Launch pre-flight performs the final check.",
+        STATUS_COLOURS["positive"],
+        "Ready locally",
+    )
+
+
 def game_time_tooltip(server: DiscoveredServer) -> str:
+    if browser_status(server)[0] == "OFFLINE":
+        return "Game time is unavailable while this server is offline."
     if _game_time_parts(server.game_time) is None:
         return "Game time is measured locally when you select this server."
     measured = f" at {server.last_checked}" if server.last_checked else ""
@@ -333,7 +364,7 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
             server.last_checked,
             server.last_seen,
             server.source,
-            _game_time_sort_value(server.game_time),
+            None if status_text == "OFFLINE" else _game_time_sort_value(server.game_time),
         ],
         tooltips=tooltips,
         status_colour=status_colour,
@@ -372,17 +403,14 @@ def browser_inspector(
     mods = mod_preview or display_required_mod_count(server.required_mod_count)
     if mods == "–":
         mods = "Unknown until checked"
+    clock = game_time_text(server)
     return BrowserInspector(
         title=display_server_name(server),
         status=status.title(),
         status_kind=status_kind,
         endpoint=server.connect_target,
         map_name=display_map_name(server.map_name),
-        game_time=(
-            game_time_text(server)
-            if game_time_text(server) != "—"
-            else "Unknown until locally checked"
-        ),
+        game_time=clock if clock != "—" or status == "OFFLINE" else "Unknown until locally checked",
         players=players,
         ping=ping,
         truth=truth,

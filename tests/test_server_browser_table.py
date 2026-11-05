@@ -65,11 +65,19 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertEqual(selected_browser_cache_key(table), keys[0])
 
     def test_same_search_snapshot_preserves_visible_order_scroll_and_selection(self):
+        import time
         from dataclasses import replace
 
         from wolflauncher.server_browser_controller import BrowserQuery, BrowserSnapshot
 
-        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        class ReadTrackingTable(QTableWidget):
+            item_reads = 0
+
+            def item(self, *args):
+                self.item_reads += 1
+                return super().item(*args)
+
+        table = ReadTrackingTable(0, BROWSER_COLUMN_COUNT)
         self.addCleanup(table.close)
         configure_data_table(table)
         table.resize(800, 220)
@@ -90,6 +98,19 @@ class ServerBrowserTableTests(unittest.TestCase):
             update_browser_selection_context=Mock(),
         )
         summary = {"total": 50, "online": 0, "checked": 0, "seen": 0}
+        ready = SimpleNamespace(ok=True, missing_mods=[], error="")
+        window.browser_mod_results = {
+            server.cache_key: (time.monotonic(), ready) for server in servers
+        }
+        window.browser_mod_results[servers[0].cache_key] = (
+            time.monotonic(),
+            SimpleNamespace(ok=True, missing_mods=[object()], error=""),
+        )
+        window.browser_mod_results[servers[1].cache_key] = (
+            time.monotonic(),
+            SimpleNamespace(ok=False, error="Unavailable now"),
+        )
+        window.browser_mod_results[servers[2].cache_key] = (time.monotonic() - 901, ready)
         ServerBrowserMixin.apply_browser_snapshot(window, BrowserSnapshot(servers, 50, summary))
         table.sortItems(1, Qt.DescendingOrder)
         table.show()
@@ -99,7 +120,18 @@ class ServerBrowserTableTests(unittest.TestCase):
         table.verticalScrollBar().setValue(300)
         scroll = table.verticalScrollBar().value()
         fresh = [replace(server, players_current=10) for server in reversed(servers)]
+        table.item_reads = 0
         ServerBrowserMixin.apply_browser_snapshot(window, BrowserSnapshot(fresh, 50, summary))
+        # Cached previews must not scan the full table once per server.
+        self.assertLess(table.item_reads, len(servers) * 10)
+        for row in range(50):
+            key = table.item(row, 1).data(Qt.UserRole)
+            expected = {
+                servers[0].cache_key: "1 MISSING",
+                servers[1].cache_key: "UNAVAILABLE",
+                servers[2].cache_key: "–",
+            }.get(key, "READY")
+            self.assertEqual(table.item(row, 12).text(), expected)
         self.assertEqual([table.item(row, 1).data(Qt.UserRole) for row in range(50)], keys)
         self.assertEqual(selected_browser_cache_key(table), servers[20].cache_key)
         self.assertEqual(table.verticalScrollBar().value(), scroll)
@@ -120,6 +152,10 @@ class ServerBrowserTableTests(unittest.TestCase):
             [table.item(row, 1).data(Qt.UserRole) for row in range(50)],
             [server.cache_key for server in new_results],
         )
+        window.current_browser_query.return_value = replace(query, online_only=True)
+        ServerBrowserMixin.apply_browser_snapshot(window, BrowserSnapshot(fresh[:3], 3, summary))
+        self.assertEqual(table.rowCount(), 3)
+        self.assertEqual([table.item(row, 12).text() for row in range(3)], ["READY"] * 3)
 
     def test_wolfapi_refresh_uses_background_worker_not_child_process(self):
         worker = Mock()
