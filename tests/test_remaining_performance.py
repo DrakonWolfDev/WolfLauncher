@@ -335,6 +335,73 @@ class ModScanReuseTests(unittest.TestCase):
 
 
 class BrowserSnapshotTests(QtCase):
+    def test_small_map_lookup_checks_new_rows_after_the_snapshot_without_scrolling(self):
+        from wolflauncher.server_browser_feature import ServerBrowserMixin
+        from wolflauncher.server_browser_table import populate_browser_table
+
+        for count in (1, 3, 5):
+            with self.subTest(count=count):
+                window, loader = self.window()
+                window.query = replace(window.query, map_name=f"Rare map {count}")
+                table = QTableWidget(0, 18)
+                self.addCleanup(table.close)
+                table.resize(900, 350)
+                table.show()
+                self.app.processEvents()
+                window.browser_table = table
+                window.browser_servers = []
+                window.browser_snapshot_loader = loader
+                window.browser_map = Mock()
+                window._combo_filter_value = Mock(return_value=window.query.map_name)
+                window.discovery_source_name = Mock(return_value="wolfapi")
+                window.results_freshness_worker = None
+                window.results_freshness_context = ""
+                window.results_freshness_attempted_keys = set()
+                window.selection_enrichment_workers = {}
+                window.handle_results_freshness_progress = Mock()
+                window.handle_results_freshness_finished = Mock()
+                window.schedule_selected_discovered_server_check = Mock()
+                window.refresh_server_browser = lambda: loader.request(window.query)
+                window.schedule_results_freshness_check = lambda: (
+                    ServerBrowserMixin.schedule_results_freshness_check(window)
+                )
+                window.continue_initial_results_freshness_check = lambda: (
+                    ServerBrowserMixin.continue_initial_results_freshness_check(window)
+                )
+
+                def apply(snapshot):
+                    window.browser_servers = snapshot.servers
+                    populate_browser_table(table, snapshot.servers)
+
+                window.apply_browser_snapshot = apply
+                servers = [
+                    DiscoveredServer(
+                        f"Rare server {i}",
+                        f"rare-{count}-{i}",
+                        2302,
+                        2303,
+                        product="stable",
+                        map_name=window.query.map_name,
+                    )
+                    for i in range(count)
+                ]
+                with patch("wolflauncher.server_browser_feature.ServerEnrichmentWorker") as factory:
+                    ServerBrowserMixin.handle_remote_wolfapi_map(
+                        window, window.query.map_name, servers, ""
+                    )
+                    factory.assert_not_called()
+                    self.assertTrue(loader.pending_freshness)
+                    self.wait_until(lambda: window.browser_snapshot_worker is None)
+                    factory.assert_called_once()
+                    self.assertEqual(
+                        {server.cache_key for server in factory.call_args.args[0]},
+                        {server.cache_key for server in servers},
+                    )
+                    self.assertFalse(factory.call_args.kwargs["probe_fallbacks"])
+                    factory.return_value.start.assert_called_once_with()
+                    self.assertEqual(table.verticalScrollBar().maximum(), 0)
+                    self.assertFalse(loader.pending_freshness)
+
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)

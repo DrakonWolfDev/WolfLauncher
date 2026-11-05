@@ -11,6 +11,7 @@ from PySide6.QtWidgets import QApplication, QCheckBox, QHeaderView, QPushButton,
 
 from wolflauncher.app import MainWindow, persist_enriched_server
 from wolflauncher.models import DiscoveredServer
+from wolflauncher.server_browser_controller import BrowserQuery
 from wolflauncher.server_browser_feature import ServerBrowserMixin
 from wolflauncher.server_browser_table import (
     BROWSER_COLUMN_COUNT,
@@ -474,6 +475,7 @@ class ServerBrowserTableTests(unittest.TestCase):
             pending_results_freshness=False,
             initial_results_freshness_batches_remaining=0,
             results_freshness_context="",
+            current_browser_query=Mock(return_value=BrowserQuery()),
             results_freshness_attempted_keys=set(),
             selection_enrichment_workers={},
             statusBar=Mock(return_value=Mock()),
@@ -513,7 +515,8 @@ class ServerBrowserTableTests(unittest.TestCase):
             results_freshness_worker=running,
             pending_results_freshness=False,
             initial_results_freshness_batches_remaining=0,
-            results_freshness_context="",
+            results_freshness_context=BrowserQuery(),
+            current_browser_query=Mock(return_value=BrowserQuery()),
             results_freshness_attempted_keys=set(),
         )
 
@@ -530,7 +533,8 @@ class ServerBrowserTableTests(unittest.TestCase):
             results_freshness_worker=completed,
             pending_results_freshness=False,
             initial_results_freshness_batches_remaining=0,
-            results_freshness_context="",
+            results_freshness_context=BrowserQuery(),
+            current_browser_query=Mock(return_value=BrowserQuery()),
             results_freshness_attempted_keys=set(),
         )
 
@@ -550,16 +554,59 @@ class ServerBrowserTableTests(unittest.TestCase):
             results_freshness_worker=running,
             pending_results_freshness=False,
             initial_results_freshness_batches_remaining=0,
-            results_freshness_context="new hope",
+            results_freshness_context=BrowserQuery(text="new hope"),
+            current_browser_query=Mock(return_value=BrowserQuery(text="example community")),
             results_freshness_attempted_keys={"old-result"},
         )
 
         MainWindow.schedule_results_freshness_check(window)
 
         self.assertTrue(window.pending_results_freshness)
-        self.assertEqual(window.results_freshness_context, "example community")
+        self.assertEqual(window.results_freshness_context, BrowserQuery(text="example community"))
         self.assertEqual(window.results_freshness_attempted_keys, set())
         running.cancel.assert_called_once_with()
+
+    def test_filter_change_cancels_previous_freshness_pass_with_the_same_search_text(self):
+        from dataclasses import replace
+
+        previous = BrowserQuery(text="", map_name="Namalsk", products=("stable",))
+        for changed in (
+            replace(previous, map_name="Livonia"),
+            replace(previous, products=("experimental",)),
+            replace(previous, version="1.30"),
+        ):
+            with self.subTest(query=changed):
+                running = Mock()
+                window = SimpleNamespace(
+                    browser_servers=[],
+                    current_browser_query=Mock(return_value=changed),
+                    results_freshness_worker=running,
+                    pending_results_freshness=False,
+                    results_freshness_context=previous,
+                    results_freshness_attempted_keys={"old"},
+                )
+                MainWindow.schedule_results_freshness_check(window)
+                running.cancel.assert_called_once_with()
+                self.assertTrue(window.pending_results_freshness)
+                self.assertEqual(window.results_freshness_attempted_keys, set())
+                self.assertEqual(window.results_freshness_context, changed)
+
+    def test_failed_or_obsolete_map_lookup_does_not_schedule_a_freshness_pass(self):
+        for error, active in (("Unavailable", "Namalsk"), ("", "Livonia")):
+            with self.subTest(error=error, active=active):
+                window = SimpleNamespace(
+                    server_cache=Mock(),
+                    browser_map=Mock(),
+                    statusBar=Mock(return_value=Mock()),
+                    discovery_source_name=Mock(return_value="wolfapi"),
+                    _combo_filter_value=Mock(return_value=active),
+                    refresh_server_browser=Mock(),
+                    schedule_results_freshness_check=Mock(),
+                )
+                with patch("wolflauncher.server_browser_feature.server_cache.merge_source_servers"):
+                    MainWindow.handle_remote_wolfapi_map(window, "Namalsk", [], error)
+                window.refresh_server_browser.assert_not_called()
+                window.schedule_results_freshness_check.assert_not_called()
 
     @patch("wolflauncher.server_browser_feature.QTimer.singleShot")
     def test_results_freshness_completion_schedules_the_next_batch_without_rebuild(

@@ -777,3 +777,24 @@ A separate in-memory 50,000-row check migrated all batches in 350.89 ms and load
 200 rows with 45,000 matches in a five-sample median 17.83 ms. These are synthetic
 local measurements, not packaged or cold-start evidence. Native/package checks
 for this correction remain separate; no release/version/publication/deployment.
+
+
+## Freshness after small map lookups — 5 November 2026
+
+Andi found that selecting a map fetched WolfAPI results but did not live-check
+small lists. The successful map callback refreshed cached rows without scheduling
+freshness, leaving it dependent on incidental viewport/scroll activity. It now
+explicitly schedules the existing bounded pass; the snapshot loader waits until
+new rows are applied before continuing. Freshness context now uses the complete
+BrowserQuery, so a map/edition/version change with unchanged search text clears
+previous attempts and cancels the previous-context batch appropriately.
+
+Validation: **1,032 run / 1,025 passed / 7 skipped**; required Ruff format/lint,
+core mypy, compilation/whitespace and locked dependency audit pass. An integrated
+regression merges map responses, uses the real read-only snapshot loader/table,
+and confirms one/three/five-result lists start live checks after snapshot delivery
+with no scrollbar. Other regressions cover changed filter context and failed or
+obsolete map callbacks. Existing TTL, worker/batch bounds, polling pause rules,
+selection checks and stable row updates remain in place. No real API/game check
+or package rebuild was performed for this fix; native/live confirmation remains
+separate. Restart the source launcher to load it. No release/version/deployment.

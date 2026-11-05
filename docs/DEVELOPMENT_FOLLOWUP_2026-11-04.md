@@ -682,3 +682,30 @@ batches, excluded 5,000 address placeholders, and returned a full 200-row page
 with 45,000 matches. One-time migration: 350.89 ms; five warm snapshot samples:
 17.83 ms median. No packaged/cold-start performance claim, native validation,
 release, version bump, public download change or API deployment in this batch.
+
+
+## Freshness checks for small map results — 5 November 2026
+
+A successful remote map lookup merged its results and refreshed the browser but
+never requested the live freshness pass. A small result list has no scrolling,
+so the viewport timer could not make up for the missing scheduling. The active
+map callback now explicitly schedules the existing bounded freshness pass after
+requesting the table refresh. The asynchronous snapshot loader defers the check
+until its new rows are applied. No extra API fetch or unbounded query loop was
+added.
+
+Freshness tracking previously used search text alone. It now uses the complete
+BrowserQuery, so changing map, version or edition with identical search text
+clears previous attempted identities and cancels an older-context running batch.
+Same-context work still coalesces, recent live status still honours its TTL,
+paused polling remains paused and live results update rows in place.
+
+Validation: **1,032 run / 1,025 passed / 7 skipped**, required Ruff format/lint,
+core mypy, compilation/whitespace and locked dependency audit pass. A regression
+runs actual cache merging, read-only snapshot workers and table population for
+one, three and five matching servers; it asserts no live worker starts before
+the snapshot is applied and that all matches are queued without any scrollbar.
+Additional regressions verify filter changes with unchanged search text and no
+freshness scheduling for failed/obsolete map callbacks. This is source/simulated
+integration evidence; no fresh real API/game or packaged validation is claimed.
+No version bump, release, publication, public-link change or API deployment.

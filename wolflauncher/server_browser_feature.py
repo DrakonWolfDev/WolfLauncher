@@ -1168,6 +1168,10 @@ class ServerBrowserMixin:
         )
         if self._combo_filter_value(self.browser_map, "Any map").casefold() == map_name.casefold():
             self.refresh_server_browser()
+            # Small result sets may never scroll, so they cannot rely on the
+            # viewport timer to request live status. The snapshot loader defers
+            # this pass until the newly merged rows have actually been applied.
+            self.schedule_results_freshness_check()
             self.statusBar().showMessage(
                 f'WolfAPI map lookup merged {merged} result(s) for "{map_name}".', 5000
             )
@@ -1279,9 +1283,7 @@ class ServerBrowserMixin:
             return
         if not hasattr(self, "browser_servers"):
             return
-        context = (
-            " ".join(self.browser_search.text().split()) if hasattr(self, "browser_search") else ""
-        )
+        context = self.current_browser_query()
         context_changed = context != self.results_freshness_context
         if context_changed:
             self.results_freshness_context = context
