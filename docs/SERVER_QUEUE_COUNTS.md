@@ -12,18 +12,26 @@ tags are unknown; an integer `raw.queue` is also supported when no queue tag is
 present. Player count and capacity are never used to infer queue size.
 
 The Server Browser player column and selected-server summary show, for example,
-`60/60 · Queue: 12`. Favourites and their details use the same measurement.
+`60/60+12`. Favourites and their details use the same measurement.
 Automatic browser live checks, selected-server checks and favourite refreshes
 use the existing bounded query workers; no additional queue-specific requests
 are sent. Sorting by players still uses the numeric player count.
 
-- `Queue: 0` means the live response explicitly reported an empty queue.
-- `Queue: unknown` means no valid queue observation is available. Failed live
-  checks and successful responses without a queue clear earlier observations.
-- `Queue: 12 (stale)` means the recorded count is at least two minutes old, has
-  no usable timestamp, or has a timestamp in the future. Rendering rechecks age;
-  a ten-second display timer also expires visible labels when network polling
-  is disabled. That timer stops with normal runtime scheduling during shutdown.
+- `10/20+0` means ten players, twenty spaces and an explicitly measured empty queue.
+- `20/20+5` means a full twenty-player server with five waiting to join.
+- `10/20+?` means the queue is unavailable or its reading has expired. Tooltips
+  explain the notation and distinguish missing evidence from an expired reading.
+  Failed live checks and successful responses without a queue clear earlier
+  observations. Counts expire after two minutes, with missing/invalid/future
+  timestamps also treated as expired. A ten-second display timer updates labels
+  even when network polling is disabled; it stops during shutdown.
+
+Background replies update values in place. Table headers sort once when clicked,
+without enabling Qt's continuous reordering. Full snapshots of the same search
+retain the visible order of surviving matches, append new matches and restore
+selection/scroll. Changing search, filters, edition, limit or the sort controls
+starts a fresh ordered view. Matches leaving a filtered/limited result can still
+be removed; stale rows are not retained as if they continued to match.
 
 Browser cache schema 10 adds a nullable count and its own query timestamp;
 existing rows migrate to unknown. The favourite status cache also preserves the

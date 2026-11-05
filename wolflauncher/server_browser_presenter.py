@@ -11,7 +11,7 @@ from .server_display import (
     is_displayable_server_name,
 )
 from .server_perspective import perspective_label
-from .server_queue import players_with_queue
+from .server_queue import players_queue_tooltip, players_with_queue
 from .theme import STATUS_COLOURS
 
 
@@ -287,11 +287,7 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
             + ", ".join(flag.replace("_", " ") for flag in server.quality_flags)
             + ". This is advisory provider-data screening, not proof the server is unsafe."
         )
-    tooltips[7] = (
-        "Separate queue size reported by the live DayZ query; never inferred from players. "
-        "Unknown means no valid measurement; counts expire after two minutes."
-        + (f" Queue checked: {server.queue_checked_at}" if server.queue_checked_at else "")
-    )
+    tooltips[7] = players_queue_tooltip(server.queue_count, server.queue_checked_at)
     tooltips[15] = game_time_tooltip(server)
 
     return BrowserRow(
@@ -458,9 +454,7 @@ def browser_summary_text(
 ) -> str:
     total = summary["total"]
     if total == 0:
-        if directory_total is None:
-            return "No discovered servers cached"
-        return f"No discovered servers cached · {directory_total:,} servers in WolfAPI directory"
+        return "Find servers to get started."
 
     if shown == 0:
         result_text = "No matching servers"
@@ -468,12 +462,7 @@ def browser_summary_text(
         result_text = f"{shown:,} of {match_count:,} matching servers shown"
     else:
         result_text = f"{match_count:,} matching servers"
-    if directory_total is None:
-        return f"{result_text} · {summary['online']:,} online out of {total:,} cached locally"
-    return (
-        f"{result_text} · {summary['online']:,} cached as online · "
-        f"{directory_total:,} servers in WolfAPI directory"
-    )
+    return result_text
 
 
 def browser_summary_tooltip(summary: dict[str, int]) -> str:

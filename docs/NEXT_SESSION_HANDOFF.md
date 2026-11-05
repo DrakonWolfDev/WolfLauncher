@@ -709,3 +709,43 @@ Remaining broader items: chosen real join, changed-content/bulk download evidenc
 Windows/native accessibility, older distro evidence, multi-hour stability,
 REL-02/API-01 specifics, LAN discovery coverage and the documented product/signing
 choices. No release/version/publication or API deployment.
+
+
+## Calm server browsing — 5 November 2026
+
+Andi reported moving “waterfall” rows and requested compact players/capacity/queue
+counts. Browser headers now sort on request rather than continuously during
+background replies. Same-query snapshots preserve surviving row order and restore
+selection/scroll, appending new matches. Changed searches/filters/edition/limit or
+sort controls use fresh query ordering. Rows leaving a filtered/limited result
+can still disappear; do not retain nonmatching rows as live matches.
+
+Browser, Favourites and cards use `10/20+0`, `20/20+5`, or `10/20+?` for unknown or
+expired queue evidence. Tooltips explain the notation; strict parsing, nullable
+counts, two-minute expiry and numeric player sorting are preserved. Browser
+summary copy now shows matching results, with directory/cache diagnostics in its
+tooltip. Its action says “Join server”, with a simple first-use instruction.
+
+Product direction: **complex underneath, calm and easy on the surface**. A new
+player should be able to select and join a server and understand Settings without
+someone explaining it. Preserve necessary checks/confirmations, disclose technical
+information progressively, and avoid a wall of internal implementation language.
+This focused browser correction is implemented; a complete Settings/other-screen
+usability review has not been completed in this batch.
+
+Regression evidence: **1,026 run / 1,019 passed / 7 skipped**. Tests cover actual
+header clicks, stable live enrichment/mod updates across all table columns,
+snapshot order/selection/scroll, new/removed matches, changed searches, compact
+queue values and honest expiry. Quality/dependency checks are recorded in the
+[detailed follow-up](DEVELOPMENT_FOLLOWUP_2026-11-04.md).
+
+Earlier Windows CI on b1cde4d now passes the unit tests and portable/Setup build
+and smoke/install/uninstall checks. This is evidence for that earlier commit;
+the current browser correction still needs its own native/package confirmation.
+The approved Stable endpoint is 198.244.177.109, game 2702/query 2703. The live
+review found 64/64 required mods ready, accepted the normal preflight and observed
+the game process; actual server connection was not verified. Do not mark it done.
+Andi clarified the reported closing was the temporary launcher; its ten-minute
+diagnostic shutdown is a plausible explanation, with no exception found in the
+inspected current test log. A production crash is not established or claimed fixed.
+No release, version bump, public-link change or API deployment.

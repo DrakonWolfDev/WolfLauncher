@@ -5,7 +5,7 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QTableWidget
 
 from .models import DiscoveredServer
-from .server_browser_presenter import browser_row, game_time_is_day
+from .server_browser_presenter import browser_row, game_time_is_day, players_text
 from .server_display import ping_severity
 from .table_items import SortableTableWidgetItem
 from .theme import (
@@ -25,6 +25,17 @@ BROWSER_PASSWORD_COLUMN = 17
 BROWSER_FAVOURITE_ROLE = Qt.UserRole + 1
 
 
+def configure_browser_sorting(table: QTableWidget) -> None:
+    """Sort when requested, without moving rows as background replies arrive."""
+    table.setSortingEnabled(False)
+    header = table.horizontalHeader()
+    header.setSectionsClickable(True)
+    header.setSortIndicatorShown(True)
+    if not getattr(table, "_browser_sort_connected", False):
+        header.sortIndicatorChanged.connect(table.sortItems)
+        table._browser_sort_connected = True
+
+
 def selected_browser_cache_key(table: QTableWidget) -> str:
     """Return identity from the visibly selected row, never a stale current index."""
     selection_model = table.selectionModel()
@@ -39,6 +50,8 @@ def populate_browser_table(
     table: QTableWidget,
     servers: Sequence[DiscoveredServer],
     favourite_endpoints: set[tuple[str, int, int]] | None = None,
+    *,
+    preserve_order: bool = False,
 ) -> None:
     """Replace the discovered-server table rows while preserving sortable metadata."""
     # A provider refresh can replace hundreds of rows at once. Repainting after
@@ -48,13 +61,15 @@ def populate_browser_table(
     # would synchronously scan the whole table a second time here.
     table.setUpdatesEnabled(False)
     try:
-        table.setSortingEnabled(False)
+        configure_browser_sorting(table)
         table.setIconSize(QSize(20, 20))
         table.setRowCount(len(servers))
         favourites = favourite_endpoints or set()
         for row, server in enumerate(servers):
             _set_browser_table_row(table, row, server, favourites)
-        table.setSortingEnabled(True)
+        if not preserve_order:
+            header = table.horizontalHeader()
+            table.sortItems(header.sortIndicatorSection(), header.sortIndicatorOrder())
     finally:
         table.setUpdatesEnabled(True)
         table.viewport().update()
@@ -154,7 +169,7 @@ def _set_browser_table_row(
             item.setData(
                 Qt.UserRole + 2,
                 (
-                    row_data.values[7].split(" · Queue:", 1)[0],
+                    players_text(server.players_current, server.players_max),
                     server.queue_count,
                     server.queue_checked_at,
                 ),
@@ -190,11 +205,6 @@ def _set_browser_table_row(
         password.setIcon(theme_icon("lock-table"))
         password.setToolTip("Password required to join this server")
     items.append((BROWSER_PASSWORD_COLUMN, password))
-    # Replacing the active sort cell can move this row immediately. Set it last
-    # so all cells stay together, and let Qt reposition only this changed row
-    # instead of disabling/re-enabling sorting (which sorts the whole table).
-    sort_column = table.horizontalHeader().sortIndicatorSection()
-    items.sort(key=lambda entry: entry[0] == sort_column)
     for column, item in items:
         table.setItem(row, column, item)
 

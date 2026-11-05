@@ -58,6 +58,7 @@ from .server_browser_table import (
     BROWSER_FAVOURITE_COLUMN,
     BROWSER_NAME_COLUMN,
     BROWSER_PASSWORD_COLUMN,
+    configure_browser_sorting,
     populate_browser_table,
     selected_browser_cache_key,
     set_browser_favourite_marker,
@@ -400,10 +401,13 @@ class ServerBrowserMixin:
         self.browser_table.horizontalHeaderItem(BROWSER_PASSWORD_COLUMN).setToolTip(
             "Password required"
         )
+        self.browser_table.horizontalHeaderItem(8).setToolTip(
+            "Players / server capacity + waiting to join. +? means the queue is unknown or expired."
+        )
         self.browser_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.browser_table.setSelectionMode(QTableWidget.SingleSelection)
         self.browser_table.setEditTriggers(QTableWidget.NoEditTriggers)
-        self.browser_table.setSortingEnabled(True)
+        configure_browser_sorting(self.browser_table)
         self.browser_table.setTabKeyNavigation(False)
         configure_data_table(self.browser_table)
         set_ui_role(self.browser_table, "browserTable")
@@ -463,6 +467,9 @@ class ServerBrowserMixin:
         facts_layout.setVerticalSpacing(4)
         self.browser_detail_map = QLabel("—")
         self.browser_detail_players = QLabel("—")
+        self.browser_detail_players.setToolTip(
+            "Players / server capacity + waiting to join. +? means the queue is unknown or expired."
+        )
         self.browser_detail_ping = QLabel("—")
         for column, (heading, value) in enumerate(
             (
@@ -484,7 +491,7 @@ class ServerBrowserMixin:
         body_layout.setContentsMargins(16, 14, 16, 14)
         body_layout.setSpacing(12)
         self.browser_detail_context = QLabel(
-            "Selection-driven truth and mod readiness will appear here."
+            "Select a server, then choose Join. We’ll check the mods for you."
         )
         self.browser_detail_context.setWordWrap(True)
         set_ui_role(self.browser_detail_context, "metadata")
@@ -583,7 +590,7 @@ class ServerBrowserMixin:
         self.browser_promote_button.clicked.connect(self.promote_selected_discovered_server)
         self.browser_inspect_button = QPushButton("View mod details")
         self.browser_inspect_button.clicked.connect(self.inspect_selected_discovered_server)
-        self.browser_launch_button = QPushButton("Launch server")
+        self.browser_launch_button = QPushButton("Join server")
         self.browser_launch_button.setIcon(theme_icon("launch"))
         set_ui_role(self.browser_launch_button, "primary")
         self.browser_launch_button.clicked.connect(self.launch_selected_discovered_server)
@@ -1717,6 +1724,37 @@ class ServerBrowserMixin:
         scroll_value = self.browser_table.verticalScrollBar().value()
         limit = int(self.browser_limit.currentText())
         servers = snapshot.servers
+        query = self.current_browser_query()
+        preserve_order = getattr(self, "_browser_display_query", None) == query
+        if preserve_order:
+            # Refresh values in the order the player is looking at. New matches
+            # follow existing rows; changing the search or sort starts a new view.
+            positions = {
+                self.browser_table.item(row, BROWSER_NAME_COLUMN).data(Qt.UserRole): row
+                for row in range(self.browser_table.rowCount())
+                if self.browser_table.item(row, BROWSER_NAME_COLUMN)
+            }
+            servers = sorted(
+                servers, key=lambda server: positions.get(server.cache_key, len(positions))
+            )
+        else:
+            # The query already returns sorted results. Reflect that choice in
+            # the header without a second sort overriding the search ordering.
+            header = self.browser_table.horizontalHeader()
+            with QSignalBlocker(header):
+                header.setSortIndicator(
+                    {
+                        "name": 1,
+                        "players": 8,
+                        "ping": 9,
+                        "map": 7,
+                        "version": 10,
+                        "last_checked": 13,
+                        "last_seen": 14,
+                    }.get(query.sort_by, 1),
+                    Qt.DescendingOrder if query.descending else Qt.AscendingOrder,
+                )
+        self._browser_display_query = query
         if selected_key and selected_key not in {server.cache_key for server in servers}:
             if hasattr(self, "server_launch"):
                 self.server_launch.invalidate()
@@ -1734,6 +1772,7 @@ class ServerBrowserMixin:
                     for server in self.servers
                     if server.favourite
                 },
+                preserve_order=True,
             )
             if selected_key:
                 for row in range(self.browser_table.rowCount()):
@@ -1758,12 +1797,12 @@ class ServerBrowserMixin:
                 else None,
             )
         )
+        tooltip = browser_summary_tooltip(snapshot.cache_summary)
+        if self.wolfapi_directory_total is not None:
+            tooltip += f" · {self.wolfapi_directory_total:,} in server directory"
         if getattr(self, "wolfapi_filtered_total", None) is not None:
-            self.browser_summary.setText(
-                self.browser_summary.text()
-                + f" · {self.wolfapi_filtered_total:,} in selected edition directory"
-            )
-        self.browser_summary.setToolTip(browser_summary_tooltip(snapshot.cache_summary))
+            tooltip += f" · {self.wolfapi_filtered_total:,} in selected edition directory"
+        self.browser_summary.setToolTip(tooltip)
         self.update_browser_active_filters()
         self.update_browser_selection_context(follow_selection=False)
 
@@ -1809,7 +1848,7 @@ class ServerBrowserMixin:
             else:
                 launch_button.setToolTip("")
             launch_button.setText(
-                f"Launch {display_server_name(selected)}" if selected else "Launch selected server"
+                f"Join {display_server_name(selected)}" if selected else "Join selected server"
             )
         if hasattr(self, "update_browser_detail_card"):
             self.update_browser_detail_card(selected)
@@ -1841,7 +1880,7 @@ class ServerBrowserMixin:
             self.browser_detail_players.setText("—")
             self.browser_detail_ping.setText("—")
             self.browser_detail_context.setText(
-                "Selection-driven truth and mod readiness will appear here."
+                "Select a server, then choose Join. We’ll check the mods for you."
             )
             for label in (
                 self.browser_detail_truth,
@@ -1884,9 +1923,9 @@ class ServerBrowserMixin:
             self.browser_detail_players.setText(detail.players)
             self.browser_detail_ping.setText(detail.ping)
             self.browser_detail_context.setText(f"Game time  {detail.game_time}")
-            self.browser_detail_truth.setText(f"Truth basis\n{detail.truth}")
+            self.browser_detail_truth.setText(f"Server status\n{detail.truth}")
             self.browser_detail_features.setText(f"Features\n{detail.features}")
-            self.browser_detail_mods.setText(f"Mod readiness\n{detail.mods}")
+            self.browser_detail_mods.setText(f"Mods\n{detail.mods}")
             self.browser_detail_diagnostics.setText(detail.diagnostics)
         self.browser_detail_card.style().unpolish(self.browser_detail_card)
         self.browser_detail_card.style().polish(self.browser_detail_card)
@@ -2105,7 +2144,7 @@ class ServerBrowserMixin:
             return
         menu = QMenu(self)
         inspect_action = QAction("Inspect mods", self)
-        launch_action = QAction("Launch server", self)
+        launch_action = QAction("Join server", self)
         promote_action = QAction("Add to Favourite Servers", self)
         copy_connect_action = QAction("Copy connect address", self)
         copy_link_action = QAction("Copy server link", self)

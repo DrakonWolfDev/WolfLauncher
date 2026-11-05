@@ -29,6 +29,97 @@ from wolflauncher.theme import STATUS_COLOURS, configure_data_table
 
 
 class ServerBrowserTableTests(unittest.TestCase):
+    def test_header_click_sorts_once_then_live_replies_keep_the_row_in_place(self):
+        from dataclasses import replace
+
+        from PySide6.QtCore import QPoint
+        from PySide6.QtTest import QTest
+
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        self.addCleanup(table.close)
+        servers = [
+            DiscoveredServer("One", "one", 2302, 2303, players_current=2),
+            DiscoveredServer("Two", "two", 2302, 2303, players_current=10),
+        ]
+        populate_browser_table(table, servers)
+        for column in range(BROWSER_COLUMN_COUNT):
+            table.setColumnHidden(column, column != 8)
+        table.resize(300, 200)
+        table.show()
+        self.app.processEvents()
+        header = table.horizontalHeader()
+        point = QPoint(header.sectionViewportPosition(8) + 20, header.height() // 2)
+        QTest.mouseClick(header.viewport(), Qt.LeftButton, pos=point)
+        first_order = [table.item(row, 8).sort_value for row in range(2)]
+        self.assertIn(first_order, ([2, 10], [10, 2]))
+        QTest.mouseClick(header.viewport(), Qt.LeftButton, pos=point)
+        self.assertEqual(
+            [table.item(row, 8).sort_value for row in range(2)], list(reversed(first_order))
+        )
+        keys = [table.item(row, 1).data(Qt.UserRole) for row in range(2)]
+        table.selectRow(0)
+        changed = next(server for server in servers if server.cache_key == keys[0])
+        update_browser_table_row(table, changed.cache_key, replace(changed, players_current=50))
+        self.assertEqual([table.item(row, 1).data(Qt.UserRole) for row in range(2)], keys)
+        self.assertEqual(selected_browser_cache_key(table), keys[0])
+
+    def test_same_search_snapshot_preserves_visible_order_scroll_and_selection(self):
+        from dataclasses import replace
+
+        from wolflauncher.server_browser_controller import BrowserQuery, BrowserSnapshot
+
+        table = QTableWidget(0, BROWSER_COLUMN_COUNT)
+        self.addCleanup(table.close)
+        configure_data_table(table)
+        table.resize(800, 220)
+        servers = [DiscoveredServer(f"Server {i:03}", f"host{i}", 2302, 2303) for i in range(50)]
+        query = BrowserQuery()
+        window = SimpleNamespace(
+            browser_table=table,
+            selected_discovered_server=lambda: servers[20],
+            current_browser_query=Mock(return_value=query),
+            browser_limit=Mock(currentText=Mock(return_value="200")),
+            servers=[],
+            browser_mod_results={},
+            configure_browser_columns=Mock(),
+            browser_summary=Mock(),
+            wolfapi_directory_total=None,
+            discovery_provider_key=Mock(return_value="wolfapi_v1"),
+            update_browser_active_filters=Mock(),
+            update_browser_selection_context=Mock(),
+        )
+        summary = {"total": 50, "online": 0, "checked": 0, "seen": 0}
+        ServerBrowserMixin.apply_browser_snapshot(window, BrowserSnapshot(servers, 50, summary))
+        table.sortItems(1, Qt.DescendingOrder)
+        table.show()
+        self.app.processEvents()
+        keys = [table.item(row, 1).data(Qt.UserRole) for row in range(50)]
+        table.selectRow(keys.index(servers[20].cache_key))
+        table.verticalScrollBar().setValue(300)
+        scroll = table.verticalScrollBar().value()
+        fresh = [replace(server, players_current=10) for server in reversed(servers)]
+        ServerBrowserMixin.apply_browser_snapshot(window, BrowserSnapshot(fresh, 50, summary))
+        self.assertEqual([table.item(row, 1).data(Qt.UserRole) for row in range(50)], keys)
+        self.assertEqual(selected_browser_cache_key(table), servers[20].cache_key)
+        self.assertEqual(table.verticalScrollBar().value(), scroll)
+        self.assertTrue(all(table.item(row, 8).sort_value == 10 for row in range(50)))
+        # New results append; vanished matches are removed without shuffling survivors.
+        added = DiscoveredServer("New", "new", 2302, 2303)
+        ServerBrowserMixin.apply_browser_snapshot(
+            window, BrowserSnapshot(fresh[1:] + [added], 50, summary)
+        )
+        self.assertEqual(
+            [table.item(row, 1).data(Qt.UserRole) for row in range(50)],
+            [key for key in keys if key != fresh[0].cache_key] + [added.cache_key],
+        )
+        window.current_browser_query.return_value = replace(query, text="new search")
+        new_results = list(reversed(fresh))
+        ServerBrowserMixin.apply_browser_snapshot(window, BrowserSnapshot(new_results, 50, summary))
+        self.assertEqual(
+            [table.item(row, 1).data(Qt.UserRole) for row in range(50)],
+            [server.cache_key for server in new_results],
+        )
+
     def test_wolfapi_refresh_uses_background_worker_not_child_process(self):
         worker = Mock()
         discovery_limit = Mock()
@@ -126,7 +217,7 @@ class ServerBrowserTableTests(unittest.TestCase):
 
         self.assertEqual(table.rowCount(), 1)
         self.assertEqual(table.item(0, 2).text(), "Live Name")
-        self.assertEqual(table.item(0, 8).text(), "12/60 · Queue: unknown")
+        self.assertEqual(table.item(0, 8).text(), "12/60+?")
         self.assertIsInstance(table.item(0, 8), SortableTableWidgetItem)
         self.assertEqual(table.item(0, 8).sort_value, 12)
         self.assertEqual(table.columnCount(), 18)
@@ -136,7 +227,7 @@ class ServerBrowserTableTests(unittest.TestCase):
             table.item(0, 6).foreground().color().name(),
             STATUS_COLOURS["positive"],
         )
-        self.assertTrue(table.isSortingEnabled())
+        self.assertFalse(table.isSortingEnabled())
 
     def test_population_does_not_rescan_every_cell_to_size_columns(self):
         class ResizeTrackingTable(QTableWidget):
@@ -227,7 +318,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         MainWindow.update_browser_selection_context(window)
 
         self.assertFalse(any(button.isEnabled() for button in buttons))
-        self.assertEqual(buttons[2].text(), "Launch selected server")
+        self.assertEqual(buttons[2].text(), "Join selected server")
 
     def test_browser_primary_action_names_the_selected_server(self):
         buttons = [QPushButton(), QPushButton(), QPushButton()]
@@ -247,7 +338,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         MainWindow.update_browser_selection_context(window)
 
         self.assertTrue(all(button.isEnabled() for button in buttons))
-        self.assertEqual(buttons[2].text(), "Launch Namalsk Adventure")
+        self.assertEqual(buttons[2].text(), "Join Namalsk Adventure")
 
     def test_browser_primary_action_uses_the_same_locally_validated_name_as_the_row(self):
         button = QPushButton()
@@ -268,7 +359,7 @@ class ServerBrowserTableTests(unittest.TestCase):
 
         MainWindow.update_browser_selection_context(window)
 
-        self.assertEqual(button.text(), "Launch Locally Validated Name")
+        self.assertEqual(button.text(), "Join Locally Validated Name")
 
     def test_missing_mods_do_not_turn_online_status_pill_red(self):
         server = DiscoveredServer(
@@ -975,6 +1066,7 @@ class ServerBrowserTableTests(unittest.TestCase):
                         if table.item(r, 1).data(Qt.UserRole) == selected.cache_key
                     )
                     table.selectRow(row)
+                    original_order = [table.item(r, 1).data(Qt.UserRole) for r in range(3)]
                     updated = replace(
                         selected,
                         name="AAA moved",
@@ -1002,6 +1094,11 @@ class ServerBrowserTableTests(unittest.TestCase):
                     self.assertEqual(table.item(row, 1).text(), "AAA moved")
                     self.assertTrue(table.item(row, 0).data(BROWSER_FAVOURITE_ROLE))
                     self.assertEqual(table.item(row, 9).text(), "999ms")
+                    self.assertEqual(
+                        [table.item(r, 1).data(Qt.UserRole) for r in range(3)], original_order
+                    )
+                    # A deliberate sort still uses the freshly updated values.
+                    table.sortItems(column, order)
                     sort_values = [table.item(r, column)._normalized_sort_value() for r in range(3)]
                     self.assertEqual(
                         sort_values, sorted(sort_values, reverse=order == Qt.DescendingOrder)
@@ -1026,7 +1123,7 @@ class ServerBrowserTableTests(unittest.TestCase):
         self.assertEqual(table.item(0, 0).text(), "\u2606")
         self.assertIsNone(table.cellWidget(0, 0))
 
-    def test_mod_preview_reorders_only_its_row_and_preserves_selection(self):
+    def test_mod_preview_keeps_rows_in_place_and_preserves_selection(self):
         table = QTableWidget(0, BROWSER_COLUMN_COUNT)
         servers = [
             DiscoveredServer("One", "one", 2302, 27016),
@@ -1036,11 +1133,11 @@ class ServerBrowserTableTests(unittest.TestCase):
         table.sortItems(12, Qt.AscendingOrder)
         table.selectRow(0)
         selected = selected_browser_cache_key(table)
+        original_order = [table.item(row, 1).data(Qt.UserRole) for row in range(2)]
         other = next(server for server in servers if server.cache_key != selected)
         self.assertTrue(update_browser_mod_cell(table, other.cache_key, "ZZZ", "Updated"))
         self.assertEqual(selected_browser_cache_key(table), selected)
-        values = [table.item(row, 12)._normalized_sort_value() for row in range(2)]
-        self.assertEqual(values, sorted(values))
+        self.assertEqual([table.item(row, 1).data(Qt.UserRole) for row in range(2)], original_order)
         updated_row = next(
             row for row in range(2) if table.item(row, 1).data(Qt.UserRole) == other.cache_key
         )

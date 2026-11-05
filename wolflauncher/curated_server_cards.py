@@ -101,6 +101,9 @@ class CuratedServerCard(QFrame):
         layout.addLayout(time_block)
 
         self.stats_label = QLabel(self._stats(values))
+        self.stats_label.setToolTip(
+            "Players / server capacity + waiting to join. +? means the queue is unknown or expired."
+        )
         set_ui_role(self.stats_label, self._ping_role(values[12]))
         self.stats_label.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
         self.stats_label.setFixedWidth(self.STATS_COLUMN_WIDTH)
@@ -142,9 +145,7 @@ class CuratedServerCard(QFrame):
 
     @staticmethod
     def _stats(values: list[str]) -> str:
-        return "\n".join(
-            part for part in (values[10].replace(" · Queue:", "\nQueue:"), values[12]) if part
-        )
+        return "\n".join(part for part in (values[10], values[12]) if part)
 
     @staticmethod
     def _game_time_is_day(value: str) -> bool | None:

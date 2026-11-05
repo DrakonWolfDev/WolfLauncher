@@ -607,3 +607,47 @@ API deployment was performed.
 
 Integrated validation: **1,023 run / 1,016 passed / 7 skipped**; required Ruff
 format/lint, core mypy, compilation/whitespace and locked dependency audit pass.
+
+
+## Stable rows and simpler counts — 5 November 2026
+
+A user report identified disruptive row movement while asynchronous status and
+mod-readiness results arrived. QTableWidget's automatic sorting moved a row as
+soon as its active sort value changed. Browser sorting is now explicit: clicking
+a header sorts using current values, while subsequent background replies update
+the existing row. Full same-query snapshots retain the visible order of surviving
+matches, append new matches and restore selected identity and scroll position.
+A changed query starts a fresh ordered view, and its sort indicator reflects the
+query without a second table sort overriding it. Membership of filtered/limited
+results can still change; nonmatching rows are removed honestly.
+
+Players/capacity/queue now use `10/20+0` and `20/20+5` across the browser, selected
+summary, Favourites and cards. `+?` represents unavailable or expired queue
+observations; tooltips explain it instead of falsely showing zero. Strict queue
+parsing, fresh/nullable measurements, two-minute expiry and numeric player sort
+keys are unchanged. The presentation timer expires the compact text and tooltip
+without network work or row reordering. Browser summary text shows matching
+results; cache/directory totals remain in its tooltip. The browser action and
+first-use copy say Join, and inspector headings use plain language.
+
+The governing product direction is complex underneath, calm and easy on the
+surface: first-time players should be able to join and use Settings without an
+explanation. This batch addresses the reported browser behaviour and related
+copy; it does not claim a completed usability audit of every screen.
+
+Validation: **1,026 run / 1,019 passed / 7 skipped**. Added real Qt header-click
+coverage and a full-snapshot selection/scroll/order regression, including new and
+removed matches and changed queries. The existing all-column row-integrity tests
+now also assert that live replies keep rows in place before a deliberate re-sort.
+Mod previews preserve order too. Compact count coverage includes measured zero,
+positive queues, unavailable/invalid/future/expired observations and tooltip expiry.
+Required Ruff format/lint, core mypy, compilation/whitespace and locked dependency
+audit are checked before the development push. Current source package/native
+validation remains separate; no version bump, package publication or deployment.
+
+Andi clarified that the closing application was WolfLauncher. The temporary live
+join diagnostic has a ten-minute self-close timer, so that is a plausible cause;
+no exception was found in the inspected test log. No production crash fix is
+claimed. The actual Stable join remains unverified: 64/64 mods were ready, the
+normal preflight was accepted and the game process appeared, but connection to
+198.244.177.109 game 2702/query 2703 was not confirmed.

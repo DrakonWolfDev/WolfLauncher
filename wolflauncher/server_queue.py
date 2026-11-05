@@ -23,4 +23,17 @@ def queue_text(count: int | None, checked_at: str, *, now: datetime | None = Non
 
 
 def players_with_queue(players: str, count: int | None, checked_at: str) -> str:
-    return f"{players or 'Unknown'} · {queue_text(count, checked_at)}"
+    # Keep uncertainty distinct from an explicitly measured empty queue. The
+    # explanation belongs in the tooltip, rather than widening every row.
+    observed = queue_text(count, checked_at)
+    suffix = str(count) if observed == f"Queue: {count}" else "?"
+    return f"{players or '—'}+{suffix}"
+
+
+def players_queue_tooltip(count: int | None, checked_at: str) -> str:
+    observed = queue_text(count, checked_at)
+    if observed.endswith(" (stale)"):
+        return "Players / server capacity + waiting to join. Queue reading has expired; recheck this server."
+    if observed == "Queue: unknown":
+        return "Players / server capacity + waiting to join. Queue size is not available yet."
+    return f"Players / server capacity + waiting to join. {observed}."

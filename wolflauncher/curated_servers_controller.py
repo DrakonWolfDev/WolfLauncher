@@ -46,7 +46,7 @@ from .server_enrichment import (
     parse_connect_port,
 )
 from .server_identity import saved_edition_label, saved_server_fields
-from .server_queue import players_with_queue
+from .server_queue import players_queue_tooltip, players_with_queue
 from .settings import (
     server_key,
 )
@@ -267,7 +267,8 @@ class CuratedServersMixin:
         for row, server in enumerate(self.servers):
             status = cached_status_for_server(self.curated_status_cache, server)
             item = self.table.item(row, 10)
-            if status and status.online and item and " · Queue:" in item.text():
+            if status and status.online and item:
+                item.setToolTip(players_queue_tooltip(status.queue_count, status.query_started_at))
                 text = players_with_queue(
                     status.players, status.queue_count, status.query_started_at
                 )
@@ -283,6 +284,7 @@ class CuratedServersMixin:
             observation = item.data(Qt.UserRole + 2) if item else None
             if observation:
                 players, count, checked_at = observation
+                item.setToolTip(players_queue_tooltip(count, checked_at))
                 text = players_with_queue(players, count, checked_at)
                 if item.text() != text:
                     item.setText(text)
@@ -382,6 +384,10 @@ class CuratedServersMixin:
             item.setForeground(QColor(colour))
         if cached and column in {3, 5, 8, 9, 10, 11, 12, 13, 14, 15}:
             item.setToolTip("Last known status; refresh is checking for current data.")
+        if column == 10:
+            status = cached_status_for_server(self.curated_status_cache, self.servers[row])
+            if status and status.online:
+                item.setToolTip(players_queue_tooltip(status.queue_count, status.query_started_at))
         self.table.setItem(row, column, item)
 
     def _curated_cell_colour(self, column: int, text: str) -> str:
@@ -782,6 +788,8 @@ class CuratedServersMixin:
                 players_with_queue(status.players, status.queue_count, status.query_started_at),
             )
             self._set_item(row, 11, status.time)
+            if hasattr(self, "table") and (item := self.table.item(row, 10)) is not None:
+                item.setToolTip(players_queue_tooltip(status.queue_count, status.query_started_at))
             self._set_item(row, 12, ping_text)
             self._set_item(row, 13, status.version)
             self._set_item(row, 14, flags_text)

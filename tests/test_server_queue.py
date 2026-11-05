@@ -21,7 +21,7 @@ from wolflauncher.models import DiscoveredServer, Server
 from wolflauncher.server_browser_presenter import browser_inspector, browser_row
 from wolflauncher.server_browser_table import populate_browser_table, update_browser_table_row
 from wolflauncher.server_enrichment import enrich_discovered_server
-from wolflauncher.server_queue import queue_text
+from wolflauncher.server_queue import players_queue_tooltip, players_with_queue, queue_text
 from wolflauncher.settings import server_key
 from wolflauncher.status import ServerStatus, check_server, dayz_queue_count
 
@@ -79,7 +79,7 @@ class QueueTests(unittest.TestCase):
                     self.candidate(), status, status.query_started_at
                 )
                 self.assertEqual(enriched.queue_count, expected)
-                label = f"Queue: {expected}" if expected is not None else "Queue: unknown"
+                label = f"+{expected}" if expected is not None else "+?"
                 self.assertIn(label, browser_row(enriched).values[7])
                 self.assertIn(label, browser_inspector(enriched).players)
                 self.assertIn(label, curated_server_row(saved, status)[10])
@@ -98,13 +98,32 @@ class QueueTests(unittest.TestCase):
             with self.subTest(checked=checked):
                 self.assertEqual(queue_text(0, checked, now=now), "Queue: 0 (stale)")
 
+    def test_compact_counts_never_present_missing_or_expired_queue_as_zero(self):
+        now = datetime.now(timezone.utc)
+        fresh = now.isoformat()
+        self.assertEqual(players_with_queue("10/20", 0, fresh), "10/20+0")
+        self.assertEqual(players_with_queue("20/20", 5, fresh), "20/20+5")
+        self.assertIn("Queue: 5", players_queue_tooltip(5, fresh))
+        for count, checked in (
+            (None, fresh),
+            (True, fresh),
+            (-1, fresh),
+            (0, (now - timedelta(seconds=121)).isoformat()),
+            (5, (now + timedelta(seconds=60)).isoformat()),
+            (0, "bad"),
+        ):
+            with self.subTest(count=count, checked=checked):
+                self.assertEqual(players_with_queue("10/20", count, checked), "10/20+?")
+        self.assertIn("not available", players_queue_tooltip(None, fresh))
+        self.assertIn("expired", players_queue_tooltip(0, "bad"))
+
     def test_failed_or_missing_live_queue_clears_previous_observation(self):
         previous = self.candidate(queue_count=12, queue_checked_at="2026-11-03T00:00:00Z")
         for status in (ServerStatus(False), ServerStatus(True, players="60/60")):
             result = enrich_discovered_server(previous, status, "2026-11-03T00:01:00Z")
             self.assertIsNone(result.queue_count)
             self.assertEqual(result.queue_checked_at, "")
-            self.assertIn("Queue: unknown", browser_row(result).values[7])
+            self.assertTrue(browser_row(result).values[7].endswith("+?"))
 
     def test_old_and_invalid_curated_cache_dont_invent_zero(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -193,14 +212,14 @@ class QueueDisplayTests(unittest.TestCase):
         browser.selectRow(0)
         live = replace(first, queue_count=12, queue_checked_at=now)
         self.assertTrue(update_browser_table_row(browser, first.cache_key, live))
-        self.assertEqual(browser.item(0, 8).text(), "60/60 · Queue: 12")
+        self.assertEqual(browser.item(0, 8).text(), "60/60+12")
         self.assertEqual(browser.item(0, 8).sort_value, 60)
         self.assertEqual(browser.item(0, 8).data(Qt.UserRole), first.cache_key)
         saved = Server("Example", "Test", first.host, first.game_port, first.query_port)
         status = ServerStatus(True, players="60/60", queue_count=12, query_started_at=now)
         from PySide6.QtWidgets import QTableWidgetItem
 
-        curated.setItem(0, 10, QTableWidgetItem("60/60 · Queue: 12"))
+        curated.setItem(0, 10, QTableWidgetItem("60/60+12"))
         window = SimpleNamespace(
             servers=[saved],
             table=curated,
@@ -215,7 +234,9 @@ class QueueDisplayTests(unittest.TestCase):
             clock.now.return_value = datetime.now(timezone.utc) + timedelta(seconds=121)
             CuratedServersMixin.refresh_queue_displays(window)
         self.assertEqual(browser.currentRow(), 0)
-        self.assertEqual(browser.item(0, 8).text(), "60/60 · Queue: 12 (stale)")
-        self.assertEqual(curated.item(0, 10).text(), "60/60 · Queue: 12 (stale)")
-        self.assertEqual(window.browser_detail_players.text(), "60/60 · Queue: 12 (stale)")
+        self.assertEqual(browser.item(0, 8).text(), "60/60+?")
+        self.assertEqual(curated.item(0, 10).text(), "60/60+?")
+        self.assertEqual(window.browser_detail_players.text(), "60/60+?")
+        self.assertIn("expired", browser.item(0, 8).toolTip())
+        self.assertIn("expired", curated.item(0, 10).toolTip())
         window.refresh_curated_server_cards.assert_called_once()

@@ -44,7 +44,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertEqual(detail.status_kind, "ready")
         self.assertEqual(detail.map_name, "Namalsk")
         self.assertEqual(detail.game_time, "Unknown until locally checked")
-        self.assertEqual(detail.players, "12/60 · Queue: unknown")
+        self.assertEqual(detail.players, "12/60+?")
         self.assertEqual(detail.ping, "42 ms")
         self.assertEqual(detail.mods, "Ready locally")
         self.assertIn("Query port  27016", detail.diagnostics)
@@ -99,7 +99,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
 
         self.assertEqual(
             browser_summary_text(summary, shown=0, match_count=0, limit=200),
-            "No discovered servers cached",
+            "Find servers to get started.",
         )
 
     def test_summary_marks_truncated_and_no_match_results(self):
@@ -113,11 +113,11 @@ class ServerBrowserPresenterTests(unittest.TestCase):
         self.assertNotIn("Cached discovered servers:", truncated)
         self.assertEqual(
             truncated,
-            "200 of 350 matching servers shown · 100 online out of 500 cached locally",
+            "200 of 350 matching servers shown",
         )
         self.assertEqual(
             no_matches,
-            "No matching servers · 100 online out of 500 cached locally",
+            "No matching servers",
         )
         self.assertIn("500 cached", browser_summary_tooltip(summary))
         self.assertIn("200 checked", browser_summary_tooltip(summary))
@@ -131,7 +131,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
 
         self.assertEqual(
             text,
-            "102 matching servers · 1,113 cached as online · 57,411 servers in WolfAPI directory",
+            "102 matching servers",
         )
 
     def test_summary_uses_api_directory_total_with_an_empty_local_cache(self):
@@ -143,7 +143,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
 
         self.assertEqual(
             text,
-            "No discovered servers cached · 57,411 servers in WolfAPI directory",
+            "Find servers to get started.",
         )
 
     def test_browser_row_builds_display_sort_tooltip_and_colour_metadata(self):
@@ -166,7 +166,7 @@ class ServerBrowserPresenterTests(unittest.TestCase):
 
         self.assertEqual(row.values[0], "Live Name")
         self.assertEqual(row.values[1], "Live Name")
-        self.assertEqual(row.values[7], "12/60 · Queue: unknown")
+        self.assertEqual(row.values[7], "12/60+?")
         self.assertEqual(row.values[10], "Password, Modded")
         self.assertEqual(row.values[15], "—")
         self.assertEqual(row.sort_values[7], 12)
