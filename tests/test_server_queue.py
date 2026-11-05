@@ -201,6 +201,54 @@ class QueueTests(unittest.TestCase):
 
 
 class QueueDisplayTests(unittest.TestCase):
+    def test_offline_cached_counts_stay_hidden_through_timer_updates_and_recover(self):
+        for source, freshness in (("local_timeout", ""), ("local", ""), ("provider", "offline")):
+            with self.subTest(source=source, freshness=freshness):
+                browser = QTableWidget(0, 18)
+                curated = QTableWidget(0, 16)
+                self.addCleanup(browser.close)
+                self.addCleanup(curated.close)
+                server = DiscoveredServer(
+                    "Example",
+                    "203.0.113.10",
+                    2302,
+                    2303,
+                    online=False,
+                    status_source=source,
+                    freshness=freshness,
+                    players_current=9,
+                    players_max=90,
+                    queue_count=2,
+                    queue_checked_at=datetime.now(timezone.utc).isoformat(),
+                )
+                populate_browser_table(browser, [server])
+                self.assertEqual(browser.item(0, 6).text(), "OFFLINE")
+                self.assertEqual(browser.item(0, 8).text(), "—")
+                self.assertIsNone(browser.item(0, 8).sort_value)
+                self.assertEqual(browser_inspector(server).players, "—")
+                window = SimpleNamespace(
+                    servers=[],
+                    table=curated,
+                    browser_table=browser,
+                    curated_status_cache={},
+                    selected_discovered_server=Mock(return_value=server),
+                    browser_detail_players=QLabel(),
+                )
+                CuratedServersMixin.refresh_queue_displays(window)
+                self.assertEqual(browser.item(0, 8).text(), "—")
+                self.assertEqual(window.browser_detail_players.text(), "—")
+                recovered = replace(
+                    server,
+                    status_source="local",
+                    online=True,
+                    players_current=2,
+                    queue_count=None,
+                    queue_checked_at="",
+                )
+                update_browser_table_row(browser, server.cache_key, recovered)
+                self.assertEqual(browser.item(0, 6).text(), "ONLINE")
+                self.assertEqual(browser.item(0, 8).text(), "2 / 90")
+
     @classmethod
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])

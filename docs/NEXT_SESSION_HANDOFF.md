@@ -859,3 +859,23 @@ Validation: **1,035 run / 1,028 passed / 7 skipped**; required quality checks an
 locked dependency audit pass. Existing regressions verify both formats, initial
 Favourite status, live measurements and different browser/Favourite expiry text.
 Source checks only; no native/package rebuild, release/version or deployment.
+
+
+## Hide stale population on Offline rows — 5 November 2026
+
+Andi reported an Offline browser row still showing nine players. Failed local
+checks cleared ping/queue but retained the older population. Failed enrichment
+now clears current/capacity counts too. The shared browser presentation also
+hides population/queue for every Offline classification, including existing
+cached local timeouts, local offline results and provider-reported offline rows,
+without requiring another query. Such rows have no numeric player sort value.
+The queue display timer cannot reinstate a hidden historical count. A successful
+check restores the newly reported population; Offline is not rendered as a
+fabricated zero. Favourite failure rows already clear their population cells.
+
+Validation: **1,036 run / 1,029 passed / 7 skipped**; required Ruff format/lint,
+core mypy, compilation/whitespace and locked dependency audit pass. Regression
+coverage checks all three cached Offline cases, inspector/table/timer suppression,
+online recovery and failed enrichment clearing population. Source regression
+evidence only; no current native/package/live verification, version bump,
+release, publication or deployment. Restart the source launcher to load the fix.

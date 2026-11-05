@@ -29,6 +29,8 @@ def enrich_discovered_server(
                 else f"local_{status.outcome.value}"
             ),
             ping_ms=None,
+            players_current=None,
+            players_max=None,
             queue_count=None,
             queue_checked_at="",
         )

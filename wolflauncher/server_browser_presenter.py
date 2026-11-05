@@ -58,6 +58,8 @@ def players_text(current: int | None, maximum: int | None) -> str:
 
 
 def browser_players_text(server: DiscoveredServer) -> str:
+    if browser_status(server)[0] == "OFFLINE":
+        return "—"
     return players_with_queue(
         players_text(server.players_current, server.players_max),
         server.queue_count,
@@ -289,7 +291,11 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
             + ", ".join(flag.replace("_", " ") for flag in server.quality_flags)
             + ". This is advisory provider-data screening, not proof the server is unsafe."
         )
-    tooltips[7] = players_queue_tooltip(server.queue_count, server.queue_checked_at)
+    tooltips[7] = (
+        "Player count is unavailable while this server is offline."
+        if status_text == "OFFLINE"
+        else players_queue_tooltip(server.queue_count, server.queue_checked_at)
+    )
     tooltips[15] = game_time_tooltip(server)
 
     return BrowserRow(
@@ -319,7 +325,7 @@ def browser_row(server: DiscoveredServer) -> BrowserRow:
             server.query_port,
             0 if server.online else 1,
             server.map_name,
-            server.players_current,
+            None if status_text == "OFFLINE" else server.players_current,
             server.ping_ms,
             server.version,
             flags_text,

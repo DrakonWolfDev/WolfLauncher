@@ -155,6 +155,8 @@ class ServerEnrichmentTests(unittest.TestCase):
                 )
                 self.assertIn("Local check unsuccessful", browser_inspector(enriched).truth)
                 self.assertIsNone(enriched.ping_ms)
+                self.assertIsNone(enriched.players_current)
+                self.assertIsNone(enriched.players_max)
                 self.assertFalse(
                     local_enrichment_due(
                         enriched, now=datetime(2026, 6, 20, 14, 4, tzinfo=timezone.utc)
