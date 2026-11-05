@@ -709,3 +709,31 @@ Additional regressions verify filter changes with unchanged search text and no
 freshness scheduling for failed/obsolete map callbacks. This is source/simulated
 integration evidence; no fresh real API/game or packaged validation is claimed.
 No version bump, release, publication, public-link change or API deployment.
+
+
+## Clear port roles and calm Favourite failures — 5 November 2026
+
+The reported Favourite has game port 3302 and query port 2303. The former is used
+to join; the latter is used to request server status, players and mods. They can
+differ, and a query timeout alone cannot establish a correct replacement port.
+The saved values have been preserved. The edit dialog now explicitly labels the
+status query port, includes its number in the disclosure caption, opens that
+section for a non-default pair and explains its role. Editing the query field
+updates the caption; ordinary game+1 pairs retain progressive disclosure.
+
+Favourite cards/table status text now shows the concise outcome rather than
+appending raw GameDig errors and query-port troubleshooting to every row. Full
+failure details remain in the metadata/status-cell tooltip alongside clearly
+labelled join and status-query endpoints, as well as existing logs. Timeout
+classification, endpoint parsing, save/identity behaviour, querying and launch
+checks are unchanged. The correct query port for the reported server remains
+unverified; this is a presentation correction, not a claimed connection repair.
+
+Validation: **1,034 run / 1,027 passed / 7 skipped**; required Ruff format/lint,
+core mypy, compilation/whitespace and release-lock dependency audit pass. Tests
+cover the screenshot's differing port pair without modifying it, disclosure
+updates after deliberate edits, concise timeout/DNS/offline labels and retained
+raw errors/endpoint roles in tooltips. A themed offscreen Qt preview was visually
+inspected; its helper text was shortened after initial clipping, then rechecked.
+No native/package/live-server verification, release, version bump, publication,
+public download change or API deployment was performed in this batch.

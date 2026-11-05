@@ -3,6 +3,7 @@ from PySide6.QtWidgets import (
     QDialog,
     QDialogButtonBox,
     QFormLayout,
+    QLabel,
     QLineEdit,
     QPushButton,
     QSpinBox,
@@ -60,29 +61,32 @@ class EditCuratedServerDialog(QDialog):
         self.game_port = QSpinBox()
         self.game_port.setRange(1, 65535)
         self.game_port.setValue(server.game_port)
+        self.game_port.setToolTip("The port DayZ uses to join this server.")
         self.query_port = QSpinBox()
         self.query_port.setRange(1, 65535)
         self.query_port.setValue(server.query_port)
+        self.query_port.setToolTip(
+            "The query port used to check server status, players and mods. "
+            "Use the query port supplied by the server owner."
+        )
         self.query_port_panel = QWidget()
         query_port_layout = QFormLayout(self.query_port_panel)
         query_port_layout.setContentsMargins(0, 0, 0, 0)
-        query_port_layout.addRow("Query port override", self.query_port)
+        query_port_layout.addRow("Status query port", self.query_port)
+        self.query_port_help = QLabel(
+            "Checks server status, players and mods.\nIt can differ from the game port."
+        )
+        self.query_port_help.setWordWrap(True)
+        query_port_layout.addRow(self.query_port_help)
         self.query_port_disclosure = QPushButton()
         self.query_port_disclosure.setCheckable(True)
-        self.query_port_disclosure.toggled.connect(
-            lambda expanded: set_disclosure_state(
-                self.query_port_disclosure,
-                self.query_port_panel,
-                "advanced connection port",
-                expanded,
+        self.query_port_disclosure.toggled.connect(self._update_query_port_disclosure)
+        self.query_port.valueChanged.connect(
+            lambda _value: self._update_query_port_disclosure(
+                self.query_port_disclosure.isChecked()
             )
         )
-        set_disclosure_state(
-            self.query_port_disclosure,
-            self.query_port_panel,
-            "advanced connection port",
-            False,
-        )
+        self._update_query_port_disclosure(server.query_port != server.game_port + 1)
         self.favourite = QCheckBox("Favourite")
         self.favourite.setChecked(server.favourite)
         form.addRow("Name", self.name)
@@ -99,6 +103,14 @@ class EditCuratedServerDialog(QDialog):
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+
+    def _update_query_port_disclosure(self, expanded: bool):
+        set_disclosure_state(
+            self.query_port_disclosure,
+            self.query_port_panel,
+            f"status query port ({self.query_port.value()})",
+            expanded,
+        )
 
     def curated_server(self) -> Server:
         host, game_port, query_port = normalize_server_endpoint(

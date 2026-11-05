@@ -78,7 +78,7 @@ class ServerStatus:
             return "OFFLINE"
         return "UNKNOWN"
 
-    def user_message(self) -> str:
+    def user_message(self, *, include_details: bool = False) -> str:
         messages = {
             ServerStatusOutcome.OFFLINE: "Server offline",
             ServerStatusOutcome.TIMEOUT: "Server isn't responding",
@@ -88,7 +88,7 @@ class ServerStatus:
             ServerStatusOutcome.CHECK_ERROR: "Unable to check server",
         }
         message = messages.get(self.outcome, self.error)
-        if self.error and self.error.casefold() not in message.casefold():
+        if include_details and self.error and self.error.casefold() not in message.casefold():
             return f"{message}: {self.error}"
         return message
 

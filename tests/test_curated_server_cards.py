@@ -6,6 +6,9 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 from PySide6.QtWidgets import QApplication
 
 from wolflauncher.curated_server_cards import CuratedServerCard
+from wolflauncher.curated_server_presenter import curated_server_row, curated_status_tooltip
+from wolflauncher.models import Server
+from wolflauncher.status import ServerStatus, ServerStatusOutcome
 
 
 def card_values(status: str = "ONLINE") -> list[str]:
@@ -30,6 +33,27 @@ def card_values(status: str = "ONLINE") -> list[str]:
 
 
 class CuratedServerCardTests(unittest.TestCase):
+    def test_timeout_card_keeps_ports_and_raw_errors_in_the_tooltip(self):
+        server = Server("Example", "Community", "203.0.113.10", 3302, 2303)
+        status = ServerStatus(
+            False,
+            outcome=ServerStatusOutcome.TIMEOUT,
+            error="Query port 2303 did not answer: Failed all 2 attempts",
+        )
+        card = CuratedServerCard(
+            0,
+            curated_server_row(server, status),
+            status_tooltip=curated_status_tooltip(server, status),
+        )
+        self.addCleanup(card.close)
+        self.assertIn("Server isn't responding", card.metadata_label.text())
+        self.assertNotIn("2303", card.metadata_label.text())
+        self.assertNotIn("Failed all", card.metadata_label.text())
+        self.assertIn("Join in DayZ: 203.0.113.10:3302", card.metadata_label.toolTip())
+        self.assertIn("Check server status: 203.0.113.10:2303", card.metadata_label.toolTip())
+        self.assertIn("Failed all 2 attempts", card.metadata_label.toolTip())
+        self.assertFalse(card.connect_button.isEnabled())
+
     @classmethod
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])

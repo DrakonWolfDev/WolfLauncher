@@ -798,3 +798,26 @@ obsolete map callbacks. Existing TTL, worker/batch bounds, polling pause rules,
 selection checks and stable row updates remain in place. No real API/game check
 or package rebuild was performed for this fix; native/live confirmation remains
 separate. Restart the source launcher to load it. No release/version/deployment.
+
+
+## Clear Favourite port roles and status messages — 5 November 2026
+
+Andi's screenshot showed game port 3302 in Edit and query port 2303 in the timeout
+message. These are two saved roles, not interchangeable ports; no live evidence
+establishes the correct query port for that server. Preserve both saved values.
+The Favourite edit disclosure now names and shows its saved status query port,
+opens automatically for a non-default port pair, and explains joining versus
+status/player/mod queries. It no longer hides a differing port behind an
+unspecific “advanced connection port” label. Usual game+1 pairs remain collapsed.
+
+Default status messages now give the concise outcome, with full query failure
+text and labelled join/status endpoints retained in Favourite card/table tooltips
+and existing diagnostic logs. Query timeout still means unknown status rather
+than proof the game server is offline. No launch gate or probing route changed.
+
+Validation: **1,034 run / 1,027 passed / 7 skipped**; required quality checks and
+locked dependency audit pass. Regressions cover the 3302/2303 dialog pair,
+unchanged saved values, disclosure edits, short failure text and full diagnostic
+retention. An offscreen themed dialog preview was visually checked; a clipped
+helper paragraph was shortened and rechecked. Native/package evidence remains
+separate. No actual server query/port repair, release, version bump or deployment.

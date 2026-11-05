@@ -55,6 +55,23 @@ class CuratedDialogTests(unittest.TestCase):
         self.assertEqual(result.game_port, 2402)
         self.assertEqual(result.query_port, 2403)
 
+    def test_custom_query_port_is_visible_explained_and_preserved(self):
+        original = Server("DrakonCherno", "Community", "95.145.110.178", 3302, 2303)
+        dialog = EditCuratedServerDialog(None, original)
+        self.addCleanup(dialog.close)
+        self.assertFalse(dialog.query_port_panel.isHidden())
+        self.assertEqual(dialog.game_port.value(), 3302)
+        self.assertEqual(dialog.query_port.value(), 2303)
+        self.assertIn("2303", dialog.query_port_disclosure.text())
+        self.assertIn("differ from the game port", dialog.query_port_help.text())
+        self.assertEqual(dialog.curated_server(), original)
+        dialog.query_port_disclosure.click()
+        self.assertTrue(dialog.query_port_panel.isHidden())
+        dialog.query_port.setValue(3303)
+        self.assertIn("3303", dialog.query_port_disclosure.text())
+        self.assertEqual(dialog.curated_server().game_port, 3302)
+        self.assertEqual(dialog.curated_server().query_port, 3303)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -24,6 +24,7 @@ class CuratedServerCard(QFrame):
         *,
         experimental: bool = False,
         stable: bool = False,
+        status_tooltip: str = "",
     ):
         super().__init__(parent)
         self.row = row
@@ -74,6 +75,8 @@ class CuratedServerCard(QFrame):
         set_ui_role(self.metadata_label, "cardMetadata")
         if values[8] in {"OFFLINE", "UNKNOWN"} and values[9]:
             self.metadata_label.setToolTip(values[9])
+        if status_tooltip:
+            self.metadata_label.setToolTip(status_tooltip)
         text.addWidget(self.name_label)
         text.addWidget(self.metadata_label)
         layout.addLayout(text, 1)

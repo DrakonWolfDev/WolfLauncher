@@ -4,6 +4,17 @@ from .server_queue import players_with_queue
 from .status import ServerStatus
 
 
+def curated_status_tooltip(server: Server, status: ServerStatus | None) -> str:
+    """Keep connection roles and diagnostic detail available outside the card text."""
+    lines = [
+        f"Join in DayZ: {server.host}:{server.game_port}",
+        f"Check server status: {server.host}:{server.query_port} (query port)",
+    ]
+    if status and not status.online:
+        lines.append(status.user_message(include_details=True))
+    return "\n".join(lines)
+
+
 def curated_server_row(server: Server, status: ServerStatus | None = None) -> list[str]:
     """Build the fixed-column display values for a curated server row."""
     values = [

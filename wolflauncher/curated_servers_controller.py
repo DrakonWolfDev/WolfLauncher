@@ -35,6 +35,7 @@ from .curated_server_presenter import (
     all_status_checks_unknown,
     curated_server_row,
     curated_status_counts,
+    curated_status_tooltip,
 )
 from .curated_status_cache import (
     cached_status_for_server,
@@ -384,6 +385,13 @@ class CuratedServersMixin:
             item.setForeground(QColor(colour))
         if cached and column in {3, 5, 8, 9, 10, 11, 12, 13, 14, 15}:
             item.setToolTip("Last known status; refresh is checking for current data.")
+        if column == 9:
+            server = self.servers[row]
+            item.setToolTip(
+                curated_status_tooltip(
+                    server, cached_status_for_server(self.curated_status_cache, server)
+                )
+            )
         if column == 10:
             status = cached_status_for_server(self.curated_status_cache, self.servers[row])
             if status and status.online:
@@ -437,8 +445,12 @@ class CuratedServersMixin:
             values = [self._server_cell(row, column) for column in range(16)]
             experimental = False
             stable = False
+            status_tooltip = ""
             if row < len(self.servers):
                 server = self.servers[row]
+                status_tooltip = curated_status_tooltip(
+                    server, cached_status_for_server(self.curated_status_cache, server)
+                )
                 label = saved_edition_label(server, getattr(self, "product_availability", {}))
                 if label:
                     values[3] = (values[3] or values[2] or "Unnamed server") + "  ·  " + label
@@ -447,7 +459,12 @@ class CuratedServersMixin:
                 )
                 stable = server.product == "stable" and server.identity_state != "conflict"
             card = CuratedServerCard(
-                row, values, self.server_cards, experimental=experimental, stable=stable
+                row,
+                values,
+                self.server_cards,
+                experimental=experimental,
+                stable=stable,
+                status_tooltip=status_tooltip,
             )
             card.selected.connect(self._select_curated_card)
             card.activated.connect(self._launch_curated_card)
@@ -803,6 +820,8 @@ class CuratedServersMixin:
             )
             self._set_item(row, 8, status.display_state, colour)
             self._set_item(row, 9, status.user_message())
+            if hasattr(self, "table") and (item := self.table.item(row, 9)) is not None:
+                item.setToolTip(curated_status_tooltip(self.servers[row], status))
             for column in range(10, 16):
                 self._set_item(row, column, "")
         self.update_curated_status_summary()

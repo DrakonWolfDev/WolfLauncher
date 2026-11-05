@@ -334,7 +334,8 @@ class CheckServerTests(unittest.TestCase):
         status = check_server(server)
         self.assertIs(status.outcome, ServerStatusOutcome.TIMEOUT)
         self.assertIn(f"Query port {server.query_port}", status.error)
-        self.assertIn("Check the saved query port", status.user_message())
+        self.assertEqual(status.user_message(), "Server isn't responding")
+        self.assertIn("Check the saved query port", status.user_message(include_details=True))
         self.assertNotIn("offline, restarting", status.user_message())
 
 

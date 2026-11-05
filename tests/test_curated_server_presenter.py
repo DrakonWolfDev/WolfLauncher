@@ -71,7 +71,7 @@ class CuratedServerPresenterTests(unittest.TestCase):
         self.assertEqual(row[5], "203.0.113.10")
         self.assertEqual(row[3], "Configured Name")
         self.assertEqual(row[8], "OFFLINE")
-        self.assertEqual(row[9], "Server offline: offline or no response")
+        self.assertEqual(row[9], "Server offline")
         self.assertEqual(row[10:], ["", "", "", "", "", ""])
 
     def test_failed_query_is_unknown_instead_of_offline(self):
@@ -86,7 +86,8 @@ class CuratedServerPresenterTests(unittest.TestCase):
 
         self.assertEqual(row[8], "UNKNOWN")
         self.assertIn("Unable to check server", row[9])
-        self.assertIn("DNS failed", row[9])
+        self.assertNotIn("DNS failed", row[9])
+        self.assertIn("DNS failed", status.user_message(include_details=True))
 
     def test_status_counts_keep_unknown_separate_from_offline(self):
         self.assertEqual(
