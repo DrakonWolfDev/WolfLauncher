@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Preserve the installed Workshop library when background server-mod checks
+  finish, so selecting a library mod continues to show its Workshop details.
+
 - Reuse validated mod previews and unchanged table cells, reduce repeated
   Workshop name reads, and filter cached servers through a cancellable
   background query while preserving live readiness and edition isolation.

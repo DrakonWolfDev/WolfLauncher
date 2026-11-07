@@ -7,9 +7,17 @@ from unittest.mock import Mock, patch
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QApplication, QMessageBox, QTableWidget, QTableWidgetItem
+from PySide6.QtWidgets import (
+    QApplication,
+    QLabel,
+    QMessageBox,
+    QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
+)
 
-from wolflauncher.mods import RequiredMod
+from wolflauncher.models import Server
+from wolflauncher.mods import ModCheckResult, RequiredMod
 from wolflauncher.mods_feature import ModsFeatureMixin
 from wolflauncher.workshop_subscription import ITEM_STATE_NEEDS_UPDATE, WorkshopUnsubscribeResult
 
@@ -18,6 +26,52 @@ class InstalledWorkshopLibraryTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
+
+    def test_server_results_preserve_library_rows_and_selected_details(self):
+        class View(ModsFeatureMixin):
+            def viewing_installed_workshop_library(self):
+                return self.library_view
+
+            def apply_mod_filter(self):
+                pass
+
+            def update_mod_detail_card(self):
+                self.detail_mod = self.selected_required_mod()
+
+        view = View()
+        view.library_view = True
+        view.mods_table = QTableWidget(0, 4)
+        self.addCleanup(view.mods_table.close)
+        view.mods_table.itemSelectionChanged.connect(view.update_mod_detail_card)
+        view.mod_server_title = QLabel("Installed DayZ Workshop library")
+        view.mod_readiness, view.mod_summary = QLabel(), QLabel()
+        view.subscribe_missing_button, view.force_update_button = QPushButton(), QPushButton()
+        view.subscribe_missing_button.setEnabled(False)
+        view.installed_workshop_mods = [
+            RequiredMod("10", "Installed first", installed=True),
+            RequiredMod("20", "Installed second", installed=True),
+        ]
+        view.last_mod_result = None
+        view._display_mod_rows(view.installed_workshop_mods)
+        for checking in (True, False):
+            result = ModCheckResult(
+                True,
+                Server("Background server", "Test", "127.0.0.1", 2302, 2303),
+                [RequiredMod("99", "Server requirement")],
+                checking=checking,
+            )
+            view.last_mod_result = result
+            view.display_mods_result(result)
+            self.assertEqual(view.mods_table.rowCount(), 2)
+            self.assertEqual(view.mod_server_title.text(), "Installed DayZ Workshop library")
+            self.assertFalse(view.subscribe_missing_button.isEnabled())
+            view.mods_table.selectRow(0)
+            view.mods_table.selectRow(1)
+            self.assertIs(view.detail_mod, view.installed_workshop_mods[1])
+        view.library_view = False
+        view.display_mods_result(result)
+        self.assertEqual(view.mods_table.rowCount(), 1)
+        self.assertIs(view.detail_mod, result.required_mods[0])
 
     def uninstall_window(self):
         mods = [RequiredMod(str(i), name=f"Mod {i}", installed=True) for i in range(100)]

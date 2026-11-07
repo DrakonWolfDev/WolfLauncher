@@ -628,6 +628,10 @@ class ModsFeatureMixin:
             )
 
     def display_mods_result(self, result: ModCheckResult):
+        # Server checks can finish while the installed library is visible.
+        # Its rows and selection must continue to use installed_workshop_mods.
+        if self.viewing_installed_workshop_library():
+            return
         # Presentation snapshots are separate from last_mod_result, which alone
         # supplies completed evidence to launch and Workshop actions.
         self.displayed_mod_result = result

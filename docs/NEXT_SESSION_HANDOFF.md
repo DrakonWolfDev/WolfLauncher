@@ -1,5 +1,18 @@
 # WolfLauncher consolidated next-session handoff
 
+## Windows preview follow-up — 7 November 2026
+
+The maintainer reported an empty Workshop details panel after selecting a mod;
+double-click still opened Steam, and reselecting the server restored details.
+Reproduced server-check results overwriting installed-library rows while the
+view selector and selection resolver remained on the installed library.
+`display_mods_result` now leaves the installed-library presentation untouched;
+completed server evidence remains available through `last_mod_result`.
+A real Qt table regression covers partial/final background results, selection
+signals and switching back to required mods. Windows source validation:
+1,038 tests run, 68 skipped; Ruff formatting/lint and core mypy passed.
+Live Steam/DayZ confirmation remains with the maintainer's weekend testing.
+
 Prepared **2 November 2026** for work later or on **3 November 2026**.
 This is a planning handoff, not a release deadline. No fixes, builds or deployments
 were performed as part of assembling it.
