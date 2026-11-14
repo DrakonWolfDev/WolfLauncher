@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 0.9.4b — 2026-11-14
+
+Includes the reliability and LAN improvements recorded in the 0.9.3.5b private
+test build below, plus the following changes.
+
+- Patch the bundled GameDig XML parser dependency; retain GameDig 5.3.3 and
+  verify its DayZ query runtime on Windows and Linux.
+
 - Share shorter HTTPS server links with endpoint data encoded directly, preserving
   long-link compatibility and launch confirmations. The website can show the
   matching directory name and provides a short-link copy action.

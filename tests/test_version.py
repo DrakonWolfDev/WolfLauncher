@@ -6,7 +6,7 @@ from wolflauncher.versioning import windows_version_tuple
 
 class VersionTests(unittest.TestCase):
     def test_first_beta_version_is_pep440(self):
-        self.assertEqual(__version__, "0.9.3.5b")
+        self.assertEqual(__version__, "0.9.4b")
 
     def test_windows_version_preserves_four_release_components(self):
         self.assertEqual(windows_version_tuple("0.9.3.5b"), (0, 9, 3, 5))

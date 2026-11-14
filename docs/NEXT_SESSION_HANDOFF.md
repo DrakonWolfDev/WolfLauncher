@@ -1108,3 +1108,16 @@ server refresh/browser handoff remain maintainer checks for these new binaries.
 Fresh Windows intermediates are outside dist under ignored build evidence.
 No release/version bump/main merge/tag/publication or installed-app replacement.
 See [complete rebuild evidence](INSTALLER_REBUILD_NPM_FIX_2026-11-14.md).
+
+## Final release authorised — 14 November 2026
+
+The maintainer reports that the fresh npm-patched Linux installer passes again
+and explicitly requests merging to main and publishing a release. This supersedes
+the earlier pending-authorisation notes. Version advances to **0.9.4b** (Windows
+numeric 0.9.4.0), retaining the beta channel and existing pre-1.0 signing policy.
+See [release notes and verification boundaries](RELEASE_0.9.4b.md).
+
+Source checks and the complete matching-tag Windows/Linux build/publication are
+being verified separately. The existing release workflow updates the shared
+Wolf Forge feed after complete publication; wolflauncher.co.uk consumes that
+feed automatically. No WolfAPI deployment is part of this release.
