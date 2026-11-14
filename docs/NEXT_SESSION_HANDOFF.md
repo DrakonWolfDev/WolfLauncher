@@ -1008,3 +1008,27 @@ A matching private Mint installer with a `mint22-join-test-20261114` label passe
 checksum, complete extracted inventory, require-clean provenance, UI/domain
 checks and normal startup/shutdown. Earlier packages are preserved.
 See [full deployment/build evidence and remaining release checks](JOIN_DOMAIN_MIGRATION_2026-11-14.md).
+
+## Compact sharing and server names — 14 November 2026
+
+At the maintainer's request, desktop context menus now say **Share server link…**
+and copy compact self-contained https://wolflauncher.co.uk/s/ links. The code
+preserves host, both ports, directory reference and edition hint without a saved
+mapping or network request. Long HTTPS/protocol links remain accepted. Python
+and JavaScript use the same strict binary format and byte-identical URL fixtures.
+
+The website displays a directory name only when the fixed WolfAPI resolve
+endpoint returns one row matching the supplied host, both ports and optional
+directory reference. Names are advisory plain text; misses/outages keep the
+address and opening action usable. Name lookups have bounded bytes, duration,
+concurrency and cache entries/lifetime, with overlapping-request deduplication.
+The page copies a short HTTPS share URL but opens the existing full protocol
+URL, retaining compatibility with earlier link-capable installed launchers.
+
+Verification before push: **1,038 launcher tests, OK / 7 skipped**, required Ruff
+format/lint and core mypy, compilation/whitespace; **83 website tests passed**;
+Docker build and container name/short-route checks; real directory match for the
+maintainer's example server, desktop/mobile and invalid-link Chrome checks.
+No direct game query, actual launcher navigation, Steam/Workshop change or game
+join was performed. Website auto-deployment and matching private Mint rebuild
+are being verified separately. No version bump or desktop release/publication.

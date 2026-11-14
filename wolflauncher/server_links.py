@@ -1,5 +1,6 @@
 """Versioned server links carry endpoint data, never launch arguments or secrets."""
 
+import base64
 import re
 from dataclasses import dataclass
 from ipaddress import IPv4Address
@@ -40,6 +41,59 @@ class ServerLinkTarget:
     def url(self, *, https=True):
         return (JOIN_ORIGIN if https else "wolflauncher://join") + "?" + self.query()
 
+    def short_url(self):
+        target = parse_server_link(self.url())
+        product = ("unknown", "stable", "experimental").index(target.product)
+        try:
+            host = IPv4Address(target.host).packed
+            flags = 0x10 | product
+        except ValueError:
+            host = bytes([len(target.host)]) + target.host.encode("ascii")
+            flags = 0x14 | product
+        payload = (
+            bytes([flags])
+            + host
+            + target.game_port.to_bytes(2, "big")
+            + target.query_port.to_bytes(2, "big")
+            + target.server_id.encode("ascii")
+        )
+        code = base64.urlsafe_b64encode(payload).decode("ascii").rstrip("=")
+        return "https://wolflauncher.co.uk/s/" + code
+
+
+def _parse_short_link(value):
+    match = re.fullmatch(r"https://wolflauncher\.co\.uk/s/([A-Za-z0-9_-]{10,520})", value)
+    if not match:
+        raise ServerLinkError("This short server link is malformed.")
+    try:
+        code = match[1]
+        payload = base64.urlsafe_b64decode(code + "=" * (-len(code) % 4))
+        flags = payload[0]
+        if flags & 0xF8 != 0x10 or flags & 3 == 3:
+            raise ValueError("Unsupported short-link version")
+        if flags & 4:
+            size = payload[1]
+            host = payload[2 : 2 + size].decode("ascii")
+            offset = 2 + size
+        else:
+            host = str(IPv4Address(payload[1:5]))
+            offset = 5
+        if len(payload) < offset + 4:
+            raise ValueError("Truncated ports")
+        target = ServerLinkTarget(
+            host,
+            int.from_bytes(payload[offset : offset + 2], "big"),
+            int.from_bytes(payload[offset + 2 : offset + 4], "big"),
+            payload[offset + 4 :].decode("ascii"),
+            ("unknown", "stable", "experimental")[flags & 3],
+        )
+        target = parse_server_link(target.url())
+        if target.short_url() != value:
+            raise ValueError("Non-canonical short link")
+        return target
+    except (ValueError, IndexError, UnicodeError):
+        raise ServerLinkError("This short server link is malformed.") from None
+
 
 def _host(value):
     if not value or len(value) > 253:
@@ -57,6 +111,8 @@ def _host(value):
 
 
 def parse_server_link(value: str) -> ServerLinkTarget:
+    if isinstance(value, str) and value.startswith("https://wolflauncher.co.uk/s/"):
+        return _parse_short_link(value)
     if (
         not isinstance(value, str)
         or not value
@@ -132,7 +188,7 @@ def build_server_link(server) -> str:
         getattr(server, "product", "unknown"),
     )
     # Apply precisely the same schema to outbound and inbound links.
-    return parse_server_link(target.url()).url()
+    return parse_server_link(target.url()).short_url()
 
 
 def parse_startup_arguments(arguments):

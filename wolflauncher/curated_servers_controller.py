@@ -950,7 +950,7 @@ class CuratedServersMixin:
         refresh_selected_action = QAction("Refresh selected status", self)
         apply_live_port_action = QAction("Apply live connect port", self)
         copy_connect_action = QAction("Copy connect address", self)
-        copy_link_action = QAction("Copy server link", self)
+        copy_link_action = QAction("Share server link…", self)
         copy_link_action.triggered.connect(lambda: self.copy_server_link(self.servers[row]))
         copy_details_action = QAction("Copy server details", self)
         edit_action = QAction("Edit favourite server", self)

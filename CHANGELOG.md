@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Share shorter HTTPS server links with endpoint data encoded directly, preserving
+  long-link compatibility and launch confirmations. The website can show the
+  matching directory name and provides a short-link copy action.
+
 - Use wolflauncher.co.uk for shared server links and the About/Update website.
   Continue accepting previously copied Wolf Forge server links. The matching
   website review page provides launcher opening, download and copy fallbacks.

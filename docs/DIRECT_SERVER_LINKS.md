@@ -10,10 +10,11 @@ server-link support in public downloads.
 
 ## User flow
 
-Favourite Server and Server Browser context menus offer **Copy server link**.
-The resulting HTTPS URL opens a page showing the supplied address and separate
+Favourite Server and Server Browser context menus offer **Share server link…**.
+The resulting compact HTTPS URL opens a page showing the supplied address and separate
 game/query ports, with an explicit **Open in WolfLauncher** action, installation
-guidance and a manual-copy option. The page never guesses whether the launcher
+guidance and a short-link copy option. A bounded WolfAPI directory lookup can
+show the matching server name as advisory text. The page never guesses whether the launcher
 is installed, automatically navigates to a protocol handler, starts a download or
 queries the game server. Download links use the existing product download page.
 
@@ -136,3 +137,34 @@ The page uses the current Servers-tab manual-opening instruction and excludes
 shared addresses from search indexing. The parser fixtures are byte-identical
 between launcher and website. No query data is inserted as HTML or sent to a
 server lookup by the page.
+
+## Compact sharing and directory names — 14 November 2026
+
+Newly copied links use a compact, self-contained HTTPS format, for example
+`https://wolflauncher.co.uk/s/Ecb0sW0I_gj_`. The example represents
+198.244.177.109, game port 2302, query port 2303 and a Stable hint. Its data is
+encoded directly; no saved mapping, new database or persistent volume is needed.
+This format is not a signed identity and does not replace normal review.
+
+Python and JavaScript decode the same versioned binary layout: a flags byte
+(upper five bits 0x10, bit 2 indicates hostname, low two bits select unknown,
+stable or experimental), four IPv4 bytes or a one-byte length plus ASCII
+hostname, two big-endian 16-bit ports, then the optional ASCII directory ID.
+Unpadded base64url encodes the payload. Strict field validation is reused and
+noncanonical encodings, extra queries/fragments and unknown versions are rejected.
+Hostnames and directory references are retained, even when these make a code
+longer than the IPv4 example. Long HTTPS/protocol links remain supported.
+
+The webpage looks up only the existing fixed WolfAPI HTTPS resolve endpoint.
+A name is shown only for one row matching the host, both ports, and directory
+ID when supplied. Missing, stale/unmatched or failed lookups do not disable the
+address or launcher-opening button. Names are rendered as plain text and marked
+as directory information that may have changed. No direct game-server probes,
+arbitrary fetch targets or automatic protocol navigation are added. Sharing a
+link in the desktop app remains local and requires no network request.
+
+The website name service limits response bytes, concurrent requests, cache
+entries, cache lifetime and request duration. Its share field copies the compact
+HTTPS URL; its opening button uses the existing full wolflauncher protocol URL.
+New desktop builds accept short links from paste/CLI/IPC; older builds can use
+the website opening button to receive a supported full protocol link.

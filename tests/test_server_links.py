@@ -88,7 +88,7 @@ class ServerLinkSchemaTests(unittest.TestCase):
             product="experimental",
         )
         link = build_server_link(server)
-        self.assertTrue(link.startswith("https://wolflauncher.co.uk/join/"))
+        self.assertTrue(link.startswith("https://wolflauncher.co.uk/s/"))
         self.assertNotIn("Private", link)
         parsed = parse_server_link(link)
         self.assertEqual((parsed.game_port, parsed.query_port), (2302, 3303))

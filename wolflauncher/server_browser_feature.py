@@ -2128,7 +2128,7 @@ class ServerBrowserMixin:
         launch_action = QAction("Join server", self)
         promote_action = QAction("Add to Favourite Servers", self)
         copy_connect_action = QAction("Copy connect address", self)
-        copy_link_action = QAction("Copy server link", self)
+        copy_link_action = QAction("Share server link…", self)
         copy_link_action.triggered.connect(lambda: self.copy_server_link(server))
         copy_host_action = QAction("Copy host", self)
         copy_details_action = QAction("Copy server details", self)

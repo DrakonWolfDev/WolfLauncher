@@ -49,6 +49,56 @@
         "server_id": "dayz:abc-123",
         "product": "experimental"
       }
+    },
+    {
+      "url": "https://wolflauncher.co.uk/s/Ecb0sW0I_gj_",
+      "expected": {
+        "host": "198.244.177.109",
+        "game_port": 2302,
+        "query_port": 2303,
+        "server_id": "",
+        "product": "stable"
+      }
+    },
+    {
+      "url": "https://wolflauncher.co.uk/s/EssAcQoAAf__ZGlyZWN0b3J5OmFiYy0xMjM",
+      "expected": {
+        "host": "203.0.113.10",
+        "game_port": 1,
+        "query_port": 65535,
+        "server_id": "directory:abc-123",
+        "product": "experimental"
+      }
+    },
+    {
+      "url": "https://wolflauncher.co.uk/s/FBBkYXl6LmV4YW1wbGUuY29tCP5piA",
+      "expected": {
+        "host": "dayz.example.com",
+        "game_port": 2302,
+        "query_port": 27016,
+        "server_id": "",
+        "product": "unknown"
+      }
+    },
+    {
+      "url": "https://wolflauncher.co.uk/s/FAF4AAEAAg",
+      "expected": {
+        "host": "x",
+        "game_port": 1,
+        "query_port": 2,
+        "server_id": "",
+        "product": "unknown"
+      }
+    },
+    {
+      "url": "https://wolflauncher.co.uk/s/Ff1hYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWEuYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiYmJiLmNjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjY2NjYy5kZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRkZGRk_____2FhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFh",
+      "expected": {
+        "host": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb.ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc.ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+        "game_port": 65535,
+        "query_port": 65535,
+        "server_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "product": "stable"
+      }
     }
   ],
   "invalid": [
@@ -91,6 +141,19 @@
     "https://wolflauncher.co.uk.evil.example/join/?v=1&host=203.0.113.10&game_port=2302&query_port=27016",
     "https://wolflauncher.co.uk@evil.example/join/?v=1&host=203.0.113.10&game_port=2302&query_port=27016",
     "https://user@wolflauncher.co.uk/join/?v=1&host=203.0.113.10&game_port=2302&query_port=27016",
-    "https://wolflauncher.co.uk/join%2f?v=1&host=203.0.113.10&game_port=2302&query_port=27016"
+    "https://wolflauncher.co.uk/join%2f?v=1&host=203.0.113.10&game_port=2302&query_port=27016",
+    "https://wolflauncher.co.uk/s/Ecb0sW0I_gj_=",
+    "https://wolflauncher.co.uk/s/Ecb0sW0I_gj_?v=1",
+    "https://wolflauncher.co.uk/s/Ecb0sW0I_gj_#fragment",
+    "http://wolflauncher.co.uk/s/Ecb0sW0I_gj_",
+    "https://wolflauncher.co.uk.evil.example/s/Ecb0sW0I_gj_",
+    "https://user@wolflauncher.co.uk/s/Ecb0sW0I_gj_",
+    "https://wolflauncher.co.uk/s//Ecb0sW0I_gj_",
+    "https://wolflauncher.co.uk/join/Ecb0sW0I_gj_",
+    "https://wolflauncher.co.uk/s/IAAAAAAAAAAA",
+    "https://wolflauncher.co.uk/s/EwAAAAAAAAAA",
+    "https://wolflauncher.co.uk/s/EH8AAAEAAAAB",
+    "https://wolflauncher.co.uk/s/EH8AAAEAAQAC_w",
+    "https://wolflauncher.co.uk/s/FP9hYWFhYWFh"
   ]
 }
