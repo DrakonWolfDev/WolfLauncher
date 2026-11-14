@@ -1,5 +1,13 @@
 # Mint installer rebuild and quick release readiness — 14 November 2026
 
+## Follow-up: npm advisory resolved
+
+The previously recorded two low npm findings are resolved in development by a
+scoped patched-parser override, retaining GameDig 5.3.3. Fresh audit: zero
+findings; three runtime compatibility/security checks and the full launcher
+regression suite pass. Existing private installers have not been rebuilt with
+this fix. See [current audit evidence](NPM_RUNTIME_AUDIT_2026-11-14.md).
+
 ## Follow-up: domain migration completed
 
 The product website is **wolflauncher.co.uk**. Both repositories have now been

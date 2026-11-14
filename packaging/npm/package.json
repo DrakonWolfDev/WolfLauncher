@@ -5,5 +5,10 @@
   "description": "Pinned GameDig runtime bundled with WolfLauncher",
   "dependencies": {
     "gamedig": "5.3.3"
+  },
+  "overrides": {
+    "gamedig": {
+      "fast-xml-parser": "5.12.0"
+    }
   }
 }

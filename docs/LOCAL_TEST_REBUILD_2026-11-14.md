@@ -120,7 +120,8 @@ Version remains **0.9.3.5b**. Older packages are preserved.
   inventory before packaging. The Linux extraction check does not attest Windows
   file modes.
 
-Windows hands-on profile discovery, real browser handoff and Steam/DayZ joining
-remain with the maintainer. No version bump, main merge, tag, public installer
-publication or download-link change was made. Release preparation follows their
-Windows test result and explicit release instruction.
+The maintainer subsequently confirmed that the launcher and link work on
+Windows. This is maintainer-reported hands-on evidence; Windows profile
+discovery and Steam/DayZ joining were not separately confirmed in that report.
+No version bump, main merge, tag, public installer publication or download-link
+change was made. Explicit final release instructions remain pending.

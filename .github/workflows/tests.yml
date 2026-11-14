@@ -192,6 +192,9 @@ jobs:
         shell: powershell
         run: .\scripts\build-windows.ps1 -Python python -Npm npm -Node node -ArtifactLabel windows-x64
 
+      - name: Check GameDig runtime and patched XML parser
+        run: node --test scripts/test-gamedig-runtime.mjs
+
       - name: Upload portable Windows release-candidate artifact
         if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

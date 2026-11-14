@@ -1066,6 +1066,25 @@ preservation and protocol-handler checks passed. Downloaded checksums, clean
 expected-commit provenance and independent portable file hashes/sizes passed.
 See [Windows artifact and evidence](LOCAL_TEST_REBUILD_2026-11-14.md).
 
-Next: await the maintainer's Windows hands-on test result. Their stated intent
-is to release afterwards; no main merge, version bump, tag, desktop publication
-or public download-link change has been performed in this build task.
+Windows follow-up: the maintainer confirms that the launcher works and the
+link works on Windows. This is maintainer-reported hands-on confirmation;
+the report does not separately confirm Windows profile discovery or Steam/DayZ
+joining. Their stated intent is to release afterwards; explicit final release
+instructions remain pending. No main merge, version bump, tag, desktop
+publication or public download-link change has been performed in this build task.
+
+### npm dependency findings resolved — 14 November 2026
+
+At the maintainer's request, traced and tested the two low npm findings. They
+represent one fast-xml-parser stop-node CPU-exhaustion advisory propagated through
+GameDig. The DayZ binary query path does not use XML; GameDig's XML consumer also
+does not enable the affected option. A scoped override pins the patched parser
+5.12.0 while retaining GameDig 5.3.3. Clean npm install and fresh audit pass with
+zero vulnerabilities. Three native Windows runtime tests pass: bounded hostile
+XML rejection, existing XML-consumer compatibility and actual CLI queries against
+a loopback DayZ UDP fixture. Windows packaging CI now runs these checks.
+
+Full Mint Python regression: **1,038 tests, OK / 7 skipped**. Workflow Ruff
+format/lint, core mypy and compilation pass. Existing installers are unchanged;
+final packages must be rebuilt with the updated lockfile. No live Steam/DayZ
+action or publication. See [audit and test evidence](NPM_RUNTIME_AUDIT_2026-11-14.md).
