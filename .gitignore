@@ -11,6 +11,10 @@ venv/
 htmlcov/
 build/
 dist/
+
+# Generated installer source archive staged at the repository root by release CI.
+/wolflauncher-*-installer-source.tar.gz
+/wolflauncher-*-installer-source.tar.gz.sha256
 *.egg-info/
 packaging/npm/node_modules/
 

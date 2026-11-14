@@ -82,6 +82,22 @@ class BuildProvenanceTests(unittest.TestCase):
         (self.root / "build/output").write_text("build output")
         self.assertEqual(state, source_state(self.root))
 
+    def test_release_source_archives_do_not_dirty_native_build_provenance(self):
+        ignore = Path(__file__).resolve().parents[1] / ".gitignore"
+        (self.root / ".gitignore").write_bytes(ignore.read_bytes())
+        subprocess.run(["git", "-C", str(self.root), "add", ".gitignore"], check=True)
+        subprocess.run(["git", "-C", str(self.root), "commit", "-qm", "Build ignores"], check=True)
+        clean = source_state(self.root)
+        self.assertFalse(clean["dirty"])
+        for suffix in (".tar.gz", ".tar.gz.sha256"):
+            (self.root / ("wolflauncher-0.9.4b-installer-source" + suffix)).write_bytes(b"output")
+        self.assertEqual(clean, source_state(self.root))
+        begin(self.root, self.inputs, [])
+        manifest = finish(self.root, self.inputs, self.bundle, self.artifact)
+        verify(manifest, self.artifact, expected_commit=clean["commit"], require_clean=True)
+        (self.root / "unexpected-source.py").write_text("unexpected source\n")
+        self.assertTrue(source_state(self.root)["dirty"])
+
     def test_bundle_symlinks_are_preserved_and_escaping_links_are_rejected(self):
         link = self.bundle / "link"
         try:

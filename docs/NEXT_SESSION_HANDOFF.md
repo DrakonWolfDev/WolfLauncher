@@ -1121,3 +1121,16 @@ Source checks and the complete matching-tag Windows/Linux build/publication are
 being verified separately. The existing release workflow updates the shared
 Wolf Forge feed after complete publication; wolflauncher.co.uk consumes that
 feed automatically. No WolfAPI deployment is part of this release.
+
+### Initial tag publication safely blocked
+
+The initial c7b8ded tag run passed both native platform builds and all checksums,
+but publication correctly rejected dirty Linux provenance. Release CI stages
+`wolflauncher-<version>-installer-source.tar.gz` and its checksum in the repository
+root before native builds; these generated outputs were not ignored. No GitHub
+Release or public feed update occurred. Narrow root-only ignore rules now exclude
+only those generated archive/checksum names. A regression verifies a clean native
+snapshot despite these outputs and continued rejection of unexpected source files;
+a workflow guard checks cleanliness before native building. Rebuild both platforms
+from the corrected commit, replacing the unpublished tag; do not reuse or relabel
+the initially rejected provenance.
