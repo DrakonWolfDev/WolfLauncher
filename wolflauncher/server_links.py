@@ -6,7 +6,8 @@ from ipaddress import IPv4Address
 from urllib.parse import parse_qsl, urlencode, urlsplit
 
 MAX_SERVER_LINK_BYTES = 2048
-JOIN_ORIGIN = "https://wolf-forge.co.uk/join/"
+JOIN_ORIGIN = "https://wolflauncher.co.uk/join/"
+JOIN_HOSTS = {"wolflauncher.co.uk", "wolf-forge.co.uk"}
 REQUIRED_FIELDS = {"v", "host", "game_port", "query_port"}
 OPTIONAL_FIELDS = {"server_id", "product"}
 
@@ -63,7 +64,13 @@ def parse_server_link(value: str) -> ServerLinkTarget:
         or any(not 33 <= ord(char) <= 126 for char in value)
         or "#" in value
         or re.search(r"%(?![0-9a-fA-F]{2})", value)
-        or not value.startswith(("wolflauncher://join", "https://wolf-forge.co.uk/join"))
+        or not value.startswith(
+            (
+                "wolflauncher://join",
+                "https://wolflauncher.co.uk/join",
+                "https://wolf-forge.co.uk/join",
+            )
+        )
     ):
         raise ServerLinkError("This server link is malformed or too long.")
     try:
@@ -72,11 +79,11 @@ def parse_server_link(value: str) -> ServerLinkTarget:
             parsed.scheme == "wolflauncher" and parsed.netloc == "join" and parsed.path in ("", "/")
         ) or (
             parsed.scheme == "https"
-            and parsed.netloc == "wolf-forge.co.uk"
+            and parsed.netloc in JOIN_HOSTS
             and parsed.path in ("/join", "/join/")
         )
         if not valid:
-            raise ServerLinkError("Use a WolfLauncher link or a wolf-forge.co.uk/join/ link.")
+            raise ServerLinkError("Use a WolfLauncher link or a wolflauncher.co.uk/join/ link.")
         pairs = parse_qsl(
             parsed.query,
             keep_blank_values=True,

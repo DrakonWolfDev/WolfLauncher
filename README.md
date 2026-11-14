@@ -30,7 +30,7 @@ See the [roadmap](docs/ROADMAP.md) for planned features.
   and saved launch reports.
 - **Update notifications:** quietly checks applicable GitHub releases after
   startup, shows inert release notes, and opens the official
-  [WolfLauncher page](https://wolf-forge.co.uk/wolf-launcher.html) only when
+  [WolfLauncher website](https://wolflauncher.co.uk/) only when
   **View Update** is selected. Use **About → Check for Updates** for an immediate
   manual check. WolfLauncher never downloads or installs updates.
 

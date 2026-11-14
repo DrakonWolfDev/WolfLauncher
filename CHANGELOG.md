@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Use wolflauncher.co.uk for shared server links and the About/Update website.
+  Continue accepting previously copied Wolf Forge server links. The matching
+  website review page provides launcher opening, download and copy fallbacks.
+- Match the Settings player-name row across Linux and Windows, with Set name
+  and Existing profile controls, and move Open a server link to the Servers toolbar.
+
 - Preserve the installed Workshop library when background server-mod checks
   finish, so selecting a library mod continues to show its Workshop details.
 

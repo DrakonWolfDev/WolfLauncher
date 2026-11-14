@@ -58,7 +58,7 @@ class AboutFeatureMixin:
         links.setSpacing(8)
         links.setAlignment(Qt.AlignCenter)
         for label, url, description in (
-            ("◌  Website", "https://wolf-forge.co.uk", "Open the Wolf Forge website"),
+            ("◌  Website", "https://wolflauncher.co.uk", "Open the WolfLauncher website"),
             (
                 "<>  GitHub",
                 "https://github.com/DrakonWolfDev/WolfLauncher",

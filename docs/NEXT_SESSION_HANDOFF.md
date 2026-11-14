@@ -928,6 +928,27 @@ selection/scroll/order and switching to a smaller online view. No extra polling,
 launch bypass, native/package rebuild, release/version or API deployment.
 Restart the source launcher for desktop confirmation of the reported interaction.
 
+## Private Windows and Mint test installers — 14 November 2026
+
+At the user's request, rebuilt the current development commit `5fe27bd` as a
+Windows Setup installer and a Python 3.12 Debian amd64 package for Linux Mint
+22.3. Version remains 0.9.3.5b; filenames include `test-20261114` to distinguish
+them from the older packages missing the existing-profile picker. Both packages
+have verified inventories, provenance and SHA256 sidecars. Windows packaged
+startup passed; extracted Debian startup and presence of the profile-picker
+button passed. Full suites passed on Windows and Linux (1,038 tests each),
+including the Mint Python 3.12 environment. Source quality checks and locked
+Python audit passed. See [build record](LOCAL_TEST_REBUILD_2026-11-14.md).
+Native installation and live Steam/DayZ profile reuse remain user tests. No
+version bump, publication, release, API deployment or installed-app replacement.
+
+Follow-up: moved **Open a server link…** from Settings to the Servers bottom
+toolbar between Add a favourite server and Move up. Only the Mint Debian test
+package was rebuilt with a `toolbar` filename label; Windows artifacts are
+preserved. Linux Python 3.12: 1,038 tests OK / 7 skipped; Ruff format/lint and
+core mypy pass. Extracted inventory, checksum and packaged toolbar/action smoke
+checks pass, with visual inspection. See the same build record for details.
+
 ## Matching player-name controls in Settings — 14 November 2026
 
 At the user's request, Linux Settings now has a single Player name row with
@@ -944,3 +965,34 @@ confirmed the shared row, both directions of name synchronisation, saving by
 button and Enter, and delegation to the existing profile picker. No real player
 settings or profile files were changed. Native Windows and packaged verification
 of this follow-up remain pending; existing test installers have not been rebuilt.
+
+## Requested Mint rebuild and quick release review — 14 November 2026
+
+The Settings player-name follow-up is now in a rebuilt private Mint Debian
+installer, including the existing uncommitted toolbar move. Checksum, independently
+extracted inventory, packaged startup/close and UI actions pass. All eight Tests
+CI jobs and branch Installer checks for 980a632 passed. Python dependency audit
+is clear; npm retains two low findings from one XML-parser advisory. The public
+HTTPS /join/ route returned 404. Final clean-source packaging, matching website
+deployment and native/live release checks are still needed. No publication,
+version bump, main merge or deployment.
+See [artifact and full readiness record](RELEASE_READINESS_2026-11-14.md).
+
+## wolflauncher.co.uk join-page migration — 14 November 2026
+
+The maintainer confirmed the standalone website repository is
+`../Wolf-Launcher-Website`, and its existing Coolify application automatically
+deploys pushes to main. Website commit `6f4716f` adds the review page, strict
+JavaScript parser, copy/install fallback, build/Docker wiring and public routes.
+Launcher links now use `https://wolflauncher.co.uk/join/`; the exact old Wolf
+Forge origin stays accepted for previously shared inputs. About and View Update
+also open the new website. Current manual-paste guidance points to Servers.
+
+Launcher: **1,038 tests, OK / 7 skipped**, Ruff format/lint, core mypy,
+compilation and whitespace passed. Website: **58 tests passed**; Docker image
+build and container route/MIME smoke passed; headless Chrome desktop/mobile and
+invalid-link states passed, with screenshots inspected. Shared contract vectors
+are byte-identical. No page action automatically opens the protocol handler,
+downloads an installer, or queries a game server. The release feed remains the
+existing shared feed. The earlier toolbar move is included in this integrated
+development snapshot. No main merge, version bump or desktop publication.

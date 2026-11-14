@@ -1,11 +1,12 @@
 # Shared DayZ server links
 
-FEATURE-03 is implemented in source on `dev/release-preparation`. The matching
-HTTPS fallback page is prepared in
-[`wolf-forge-static`, branch `dev/wolflauncher-server-links`](https://github.com/DrakonWolfDev/wolf-forge-static/tree/dev/wolflauncher-server-links).
-Neither branch is a published release. The existing local 0.9.3.5b packages
-predate this feature, and the website route must be deployed with a matching
-launcher release before public links are advertised.
+FEATURE-03 is implemented on `dev/release-preparation`. The matching HTTPS
+fallback page now lives in
+[Wolf-Launcher-Website](https://github.com/DrakonWolfDev/Wolf-Launcher-Website),
+served at `https://wolflauncher.co.uk/join/` by its Docker/Coolify deployment.
+The original Wolf Forge branch is historical implementation evidence, not the
+current deployment source. Publish matching launcher binaries before advertising
+server-link support in public downloads.
 
 ## User flow
 
@@ -17,7 +18,7 @@ is installed, automatically navigates to a protocol handler, starts a download o
 queries the game server. Download links use the existing product download page.
 
 The launcher accepts an HTTPS or `wolflauncher:` link from the OS, its command
-line, or **Settings → Open a server link…**. A cold launch queues it until the
+line, or **Servers → Open a server link…**. A cold launch queues it until the
 main window is shown. A second instance forwards it to the running window.
 
 Incoming links first open **Review shared DayZ server**. Where a directory
@@ -38,7 +39,7 @@ that operation finishes. No new favourite is created by receiving a link.
 ## Version-one contract
 
 ```text
-https://wolf-forge.co.uk/join/?v=1&host=203.0.113.10&game_port=2302&query_port=27016
+https://wolflauncher.co.uk/join/?v=1&host=203.0.113.10&game_port=2302&query_port=27016
 wolflauncher://join?v=1&host=203.0.113.10&game_port=2302&query_port=27016
 ```
 
@@ -48,9 +49,11 @@ directory reference; optional `product` is `stable`, `experimental` or `unknown`
 The edition hint is never live launch authority. A supported full game ID still
 has to be verified by the normal live query before selecting an installation.
 
-The canonical HTTPS origin is exactly `https://wolf-forge.co.uk`, and its route
+The canonical HTTPS origin is exactly `https://wolflauncher.co.uk`, and its route
 is `/join/` (also accepting `/join`). The protocol authority is exactly `join`,
-with an empty or `/` path. Both parsers accept the optional slash that GIO can
+with an empty or `/` path. The previous exact `https://wolf-forge.co.uk/join/` origin
+is accepted for already-shared links; newly copied links use wolflauncher.co.uk.
+Both parsers accept the optional slash that GIO can
 insert when serialising a URI. IPv6 and raw Unicode hostnames are outside this
 initial transport contract; ASCII IDNA names can use the normal DNS form.
 
@@ -118,3 +121,18 @@ permission prompts, real Steam/game joins and the deployed HTTPS route still
 need release-time verification. The extended Windows smoke script has not been
 executed on this Linux host. No package build, version bump, website deployment,
 live desktop registration or game/Workshop action was performed for this work.
+
+## Domain migration — 14 November 2026
+
+Newly generated HTTPS links and the launcher's About/Update website destinations
+use wolflauncher.co.uk. The old exact Wolf Forge HTTPS origin remains accepted
+for input compatibility. The protocol link and all endpoint, field, edition,
+confirmation and IPC rules remain unchanged.
+
+The standalone website includes the join page in its static build and Docker
+image, serves both /join and /join/, and serves JavaScript modules with the
+correct MIME type. It keeps the existing release feed and download controls.
+The page uses the current Servers-tab manual-opening instruction and excludes
+shared addresses from search indexing. The parser fixtures are byte-identical
+between launcher and website. No query data is inserted as HTML or sent to a
+server lookup by the page.

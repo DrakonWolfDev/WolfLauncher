@@ -27,7 +27,7 @@ from . import __version__
 from .theme import set_ui_role
 
 UPDATE_REPOSITORY = "DrakonWolfDev/WolfLauncher"
-UPDATE_DESTINATION = "https://wolf-forge.co.uk/wolf-launcher.html"
+UPDATE_DESTINATION = "https://wolflauncher.co.uk/"
 UPDATE_CHANNEL = "experimental"
 
 
