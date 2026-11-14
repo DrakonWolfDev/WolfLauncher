@@ -82,3 +82,13 @@ clean integrated source `4815172`. Includes the new wolflauncher.co.uk domain,
 name row and toolbar move. Checksum, full independently extracted inventory with
 require-clean/expected-commit provenance, packaged UI/domain checks and normal
 startup/shutdown pass. See [matching website deployment and full evidence](JOIN_DOMAIN_MIGRATION_2026-11-14.md).
+
+## Compact sharing rebuild
+
+Latest private Mint installer:
+`dist/wolflauncher_0.9.3.5b_mint22-share-test-20261114_amd64.deb`,
+from clean source 1cb10dd. Adds Share server link… and compact HTTPS sharing.
+Checksum, independently extracted full inventory with clean/expected-commit
+provenance, isolated UI/short-code checks and normal startup/shutdown pass.
+The matching website shows names after its scoped, verified TLS-proxy routing
+fix. See [full evidence](SHORT_SERVER_SHARING_2026-11-14.md).

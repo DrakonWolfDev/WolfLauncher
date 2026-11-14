@@ -1,0 +1,19 @@
+{
+  "short_url": "https://wolflauncher.co.uk/s/Ecb0sW0I_gj_",
+  "host": "198.244.177.109",
+  "game_port": 2302,
+  "query_port": 2303,
+  "product_hint": "stable",
+  "directory_name": "New Dawn Cherno PVE|Discord|Missions|DayzDog|Treasure|Trader|Ex",
+  "website_source": "22b7a0a",
+  "routing": "Website-only hostname entry to existing TLS proxy; public API hostname/443 and certificate verification preserved.",
+  "checks": [
+    "Live short review route HTTP 200",
+    "Live same-origin name endpoint HTTP 200",
+    "Live isolated Chrome name/protocol/share controls passed"
+  ],
+  "not_verified": [
+    "Actual browser permission prompt and launcher handoff",
+    "Steam/DayZ join"
+  ]
+}

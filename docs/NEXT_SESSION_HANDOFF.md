@@ -1032,3 +1032,23 @@ maintainer's example server, desktop/mobile and invalid-link Chrome checks.
 No direct game query, actual launcher navigation, Steam/Workshop change or game
 join was performed. Website auto-deployment and matching private Mint rebuild
 are being verified separately. No version bump or desktop release/publication.
+
+### Short sharing: deployed names and matching Mint package verified
+
+Both requested features are now live. The short example
+https://wolflauncher.co.uk/s/Ecb0sW0I_gj_ preserves 198.244.177.109:2302 with query
+port 2303 and Stable hint. The page shows its matching New Dawn directory name.
+Production initially timed out to the API public IP. Read-only Coolify/container
+checks and WolfAPI's documented proxy history identified the own-public-IP path.
+A website-only Docker hostname entry to the existing verified TLS proxy fixed
+the lookup while keeping the public API hostname, port 443 and certificate
+verification. No API/global DNS/router/firewall/proxy/TLS configuration change.
+All diagnostics finished; no remote monitor remains.
+
+Clean launcher source 1cb10dd is in the latest private Mint package:
+`dist/wolflauncher_0.9.3.5b_mint22-share-test-20261114_amd64.deb`.
+Checksum, full independent extracted inventory, clean/expected-commit provenance,
+UI/domain actions and normal startup/shutdown pass. Local full launcher suite:
+1,038 tests OK / 7 skipped; website: 83 tests passed; Docker and desktop/mobile/
+invalid/live browser checks pass. No actual Steam/DayZ joining or desktop release.
+See [short-share implementation, deployment and package evidence](SHORT_SERVER_SHARING_2026-11-14.md).
