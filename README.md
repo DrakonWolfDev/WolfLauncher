@@ -235,6 +235,11 @@ For wheels, source archives, `.deb` files and Windows packages, see
 [BUILD_GUIDE.md](BUILD_GUIDE.md). That guide identifies the requirements files
 and build scripts used by each packaging path.
 
+### Development handoff
+
+Start with [the current handoff](docs/NEXT_SESSION_HANDOFF.md) for the released
+baseline, remaining evidence and local workspace notes before new development.
+
 ### Implementation plans
 
 - [Combined Stable/Experimental browser and automatic launching](docs/COMBINED_BROWSER_IMPLEMENTATION_PLAN.md)
