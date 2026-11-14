@@ -1052,3 +1052,20 @@ UI/domain actions and normal startup/shutdown pass. Local full launcher suite:
 1,038 tests OK / 7 skipped; website: 83 tests passed; Docker and desktop/mobile/
 invalid/live browser checks pass. No actual Steam/DayZ joining or desktop release.
 See [short-share implementation, deployment and package evidence](SHORT_SERVER_SHARING_2026-11-14.md).
+
+### Linux hands-on confirmation and matching Windows build
+
+The maintainer reports completing the requested Linux hands-on release checks.
+The matching Windows test installer is now in
+`dist/windows/share-test-20261114/wolflauncher-0.9.3.5b-setup-windows-x64.exe`,
+built from clean development commit d6e162d (same application source as the
+latest Mint sharing package). Version remains 0.9.3.5b. Tests workflow
+43616145919 passed all eight jobs; Windows ran 1,038 tests, OK / 68 skipped.
+Native packaged startup and installer install/reinstall/uninstall, data
+preservation and protocol-handler checks passed. Downloaded checksums, clean
+expected-commit provenance and independent portable file hashes/sizes passed.
+See [Windows artifact and evidence](LOCAL_TEST_REBUILD_2026-11-14.md).
+
+Next: await the maintainer's Windows hands-on test result. Their stated intent
+is to release afterwards; no main merge, version bump, tag, desktop publication
+or public download-link change has been performed in this build task.

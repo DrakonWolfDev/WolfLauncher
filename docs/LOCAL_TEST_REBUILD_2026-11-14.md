@@ -92,3 +92,35 @@ Checksum, independently extracted full inventory with clean/expected-commit
 provenance, isolated UI/short-code checks and normal startup/shutdown pass.
 The matching website shows names after its scoped, verified TLS-proxy routing
 fix. See [full evidence](SHORT_SERVER_SHARING_2026-11-14.md).
+
+## Matching Windows sharing test installer
+
+The maintainer confirmed completion of the requested Linux hands-on checks,
+including installer/settings, profile/name, sharing/handoff and server joining.
+This is maintainer-reported verification, separate from automated evidence.
+
+At their request, built the matching Windows installer from clean development
+commit `d6e162d54692e67f72bf0c34ecc698ec3b100611`. Application source matches the
+latest Mint sharing build; intervening commits only record verification.
+Version remains **0.9.3.5b**. Older packages are preserved.
+
+- [Windows test installer](../dist/windows/share-test-20261114/wolflauncher-0.9.3.5b-setup-windows-x64.exe)
+- SHA256: `ecf5f925e91fc00ee5f26911a82f39ac8117c0ca66c9c544bce237cba35603f6`
+- Adjacent checksum and provenance records, plus the portable ZIP and checksum,
+  are retained in the same dated directory.
+- [Tests workflow 43616145919](https://github.com/DrakonWolfDev/WolfLauncher/actions/runs/43616145919):
+  all eight jobs passed, including Windows packaging, Linux packages, Python
+  3.10/3.11/3.12 suites and quality/dependency-audit checks.
+- Windows: **1,038 tests, OK / 68 skipped**. Native frozen startup and installer
+  install/reinstall/start/uninstall checks passed, including user-data preservation
+  and protocol registration/ownership checks.
+- Downloaded installer and portable checksums passed. Installer provenance verifies
+  the expected clean commit. Independently extracted portable paths, sizes and
+  hashes match all **1,020** recorded bundle files; native build checked its
+  inventory before packaging. The Linux extraction check does not attest Windows
+  file modes.
+
+Windows hands-on profile discovery, real browser handoff and Steam/DayZ joining
+remain with the maintainer. No version bump, main merge, tag, public installer
+publication or download-link change was made. Release preparation follows their
+Windows test result and explicit release instruction.
