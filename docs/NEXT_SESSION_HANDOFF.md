@@ -1088,3 +1088,23 @@ Full Mint Python regression: **1,038 tests, OK / 7 skipped**. Workflow Ruff
 format/lint, core mypy and compilation pass. Existing installers are unchanged;
 final packages must be rebuilt with the updated lockfile. No live Steam/DayZ
 action or publication. See [audit and test evidence](NPM_RUNTIME_AUDIT_2026-11-14.md).
+
+### Cleared dist and rebuilt both installers with npm fix
+
+At the maintainer's request, removed the old dist artifacts. The folder now
+contains only these fresh private installers and their SHA256/provenance sidecars:
+
+- `dist/wolflauncher-0.9.3.5b-setup-windows-x64.exe`
+- `dist/wolflauncher_0.9.3.5b_mint22-npm-test-20261114_amd64.deb`
+
+Both use clean source `20b8e6f`, retaining version 0.9.3.5b and including the
+patched parser. Windows native suite: **1,038 tests, OK / 75 skipped**. Both
+packages pass checksum, expected-clean-source provenance, independently extracted
+inventory and startup checks. All three dependency/runtime regressions pass
+against each platform's actual bundled Node and modules. Windows isolated
+install/reinstall/start/uninstall and test user-data preservation pass; existing
+real protocol registration was preserved. Mint native installation and real
+server refresh/browser handoff remain maintainer checks for these new binaries.
+Fresh Windows intermediates are outside dist under ignored build evidence.
+No release/version bump/main merge/tag/publication or installed-app replacement.
+See [complete rebuild evidence](INSTALLER_REBUILD_NPM_FIX_2026-11-14.md).

@@ -1,5 +1,9 @@
 # GameDig XML dependency audit — 14 November 2026
 
+Follow-up: both private installers have now been rebuilt with this fix and
+verified, superseding the unchanged-installer status recorded below. See
+[fresh installer evidence](INSTALLER_REBUILD_NPM_FIX_2026-11-14.md).
+
 The fresh npm audit reproduced two low-severity findings from one advisory:
 [GHSA-474x-hrwr-fgx4](https://github.com/advisories/GHSA-474x-hrwr-fgx4).
 GameDig 5.3.3 pins fast-xml-parser 5.8.0. Malformed XML can cause quadratic
