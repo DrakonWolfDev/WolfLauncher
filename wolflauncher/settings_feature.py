@@ -82,24 +82,23 @@ class SettingsFeatureMixin:
             external_launcher_layout.addWidget(browse)
             launcher_controls_layout.addWidget(self.external_launcher_settings, 1)
             launcher_settings.addRow("Launch engine", launcher_controls)
-        if capabilities.platform_id == "windows":
-            self.settings_player_name = QLineEdit(self.player_name.text())
-            self.settings_player_name.setToolTip(
-                "DayZ saves settings per profile name. This is the same name shown on Favourite Servers."
-            )
-            self.settings_player_name.textChanged.connect(self.sync_favourites_player_name)
-            self.settings_player_name.returnPressed.connect(self.save_player_name)
-            name_controls = QHBoxLayout()
-            name_controls.addWidget(self.settings_player_name, 1)
-            existing_profile = QPushButton("Existing profile…")
-            existing_profile.clicked.connect(self.choose_existing_player_profile)
-            name_controls.addWidget(existing_profile)
-            launcher_settings.addRow("Player name", name_controls)
-        else:
+        if capabilities.platform_id != "windows":
             launcher_settings.addRow("Steam installation", self.native_steam_mode)
-            existing_profile = QPushButton("Choose existing profile…")
-            existing_profile.clicked.connect(self.choose_existing_player_profile)
-            launcher_settings.addRow("Player profile", existing_profile)
+        self.settings_player_name = QLineEdit(self.player_name.text())
+        self.settings_player_name.setToolTip(
+            "DayZ saves settings per profile name. This is the same name shown on Favourite Servers."
+        )
+        self.settings_player_name.textChanged.connect(self.sync_favourites_player_name)
+        self.settings_player_name.returnPressed.connect(self.save_player_name)
+        name_controls = QHBoxLayout()
+        name_controls.addWidget(self.settings_player_name, 1)
+        set_player_name = QPushButton("Set name")
+        set_player_name.clicked.connect(self.save_player_name)
+        name_controls.addWidget(set_player_name)
+        existing_profile = QPushButton("Existing profile…")
+        existing_profile.clicked.connect(self.choose_existing_player_profile)
+        name_controls.addWidget(existing_profile)
+        launcher_settings.addRow("Player name", name_controls)
         layout.addLayout(launcher_settings)
         open_server_link = QPushButton("Open a server link…")
         open_server_link.clicked.connect(lambda: self.server_links.prompt())

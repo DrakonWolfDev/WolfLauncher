@@ -927,3 +927,20 @@ linear table reads with cached ready/missing/unavailable/expired previews,
 selection/scroll/order and switching to a smaller online view. No extra polling,
 launch bypass, native/package rebuild, release/version or API deployment.
 Restart the source launcher for desktop confirmation of the reported interaction.
+
+## Matching player-name controls in Settings — 14 November 2026
+
+At the user's request, Linux Settings now has a single Player name row with
+the editable name, **Set name** and **Existing profile…**. Windows uses the same
+row, gaining the explicit save button. Both use the existing bidirectional
+Servers-tab name synchronisation, save handler and read-only profile picker.
+Linux retains its Steam installation selector. README instructions now cover
+the Settings name field on both platforms.
+
+Verification: full Linux suite **1,038 tests, OK / 7 skipped** (local-socket tests
+required running outside the restricted sandbox); workflow Ruff formatting/lint,
+core mypy and whitespace checks pass. An isolated offscreen Linux UI smoke
+confirmed the shared row, both directions of name synchronisation, saving by
+button and Enter, and delegation to the existing profile picker. No real player
+settings or profile files were changed. Native Windows and packaged verification
+of this follow-up remain pending; existing test installers have not been rebuilt.

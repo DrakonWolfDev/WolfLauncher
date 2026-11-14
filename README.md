@@ -98,7 +98,7 @@ For DayZ Stable:
 
 1. Open **Settings** and use **Check health** to confirm the selected Steam,
    DayZ and Workshop installation. Set your player name on the **Servers** tab
-   if needed; Windows also provides this field in **Settings**.
+   if needed, or use the matching **Player name** row in **Settings**.
 2. Find a server in **Server Browser**, or use **Add a favourite server** on
    the **Servers** tab. New installations start with an empty favourites list.
 3. Select **Connect**. WolfLauncher checks the server and required mods. If
