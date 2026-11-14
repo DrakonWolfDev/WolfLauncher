@@ -1134,3 +1134,41 @@ snapshot despite these outputs and continued rejection of unexpected source file
 a workflow guard checks cleanliness before native building. Rebuild both platforms
 from the corrected commit, replacing the unpublished tag; do not reuse or relabel
 the initially rejected provenance.
+
+### 0.9.4b published and live download links verified
+
+Completed the explicitly requested final main merge and public beta release.
+Remote `main` and tag `v0.9.4b` point to clean source
+`ff59edb266bcc4ee085bbb86bf443d045340e4d3`. The unpublished initial tag was
+replaced after its provenance guard blocked publication; no rejected artifacts
+were relabelled or published.
+
+- Final local source suite: **1,039 tests, OK / 7 skipped**. Workflow Ruff
+  formatting/lint, hardened-core mypy, compilation and whitespace checks pass.
+  Locked Python release dependency audit: no known vulnerabilities.
+- [Final tagged Tests CI](https://github.com/DrakonWolfDev/WolfLauncher/actions/runs/43641304184):
+  all eight jobs passed, including Windows, both Ubuntu packages and RPM/AppImage.
+- [Final tagged release workflow](https://github.com/DrakonWolfDev/WolfLauncher/actions/runs/43641304217):
+  all jobs passed, including native package smoke tests, all artifact checksums,
+  expected-commit/clean-source provenance and complete publication.
+- [Published beta release](https://github.com/DrakonWolfDev/WolfLauncher/releases/tag/v0.9.4b):
+  12 assets, including Windows Setup/portable ZIP, DEB, RPM, AppImage, Linux
+  user-local installer and source archive, with the workflow's public sidecars.
+  Public Windows numeric metadata is 0.9.4.0; display version is 0.9.4b.
+- [Shared download-manifest update](https://github.com/DrakonWolfDev/wolf-forge-static/actions/runs/43641925564):
+  passed, including HTTP verification of all four platform download links.
+  Live `https://wolf-forge.co.uk/releases.json` serves 0.9.4b.
+- The product site was serving its bundled fallback (X-Release-Source: bundled),
+  so shared-feed publication alone did not refresh it. Refreshed its documented
+  bundled snapshot in isolated website checkout, with 83 tests and production
+  build passing; website main commit `51f6285` automatically deployed. Live
+  `https://wolflauncher.co.uk/releases.json` now serves 0.9.4b for all four platforms.
+  Website test filenames now follow their fixture version. The original website
+  worktree was preserved. Runtime reachability of the shared feed remains a
+  separate maintenance item; the verified bundled snapshot supplies current links.
+
+Maintainer hands-on Windows/Linux confirmation remains distinct from final-tag
+CI/build evidence. No additional real Steam/DayZ sessions were initiated here.
+Older investigation/backlog evidence gaps remain as documented, not silently
+closed by publication. No WolfAPI deployment or system settings change occurred.
+Continue future development on dev/release-preparation. Preserve the released tag.

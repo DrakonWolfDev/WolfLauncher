@@ -45,3 +45,18 @@ the shared website manifest update only after publishing all required platforms.
 Terminal CI, asset and live download-feed evidence will be recorded in the
 next-session handoff after publication. This document alone does not establish
 that publication has completed.
+
+## Publication completed
+
+Published [v0.9.4b](https://github.com/DrakonWolfDev/WolfLauncher/releases/tag/v0.9.4b)
+from clean source `ff59edb266bcc4ee085bbb86bf443d045340e4d3`, now on main.
+Final local suite: **1,039 tests, OK / 7 skipped**; quality checks and locked
+Python dependency audit passed. Tagged Tests CI `43641304184` and complete
+release workflow `43641304217` passed. All checksums and clean matching-source
+provenance passed before the 12 release assets were published.
+
+Shared feed update `43641925564` passed. The product website's bundled fallback
+was also refreshed and automatically deployed from website commit `51f6285`
+after its production build and 83 tests passed. Both live public download feeds
+were verified at 0.9.4b. See the handoff for the safely rejected initial attempt
+and remaining shared-feed reachability maintenance note.
