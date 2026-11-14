@@ -73,3 +73,12 @@ Checksum, independently extracted full inventory, normal packaged startup/close
 and isolated UI/action checks passed. Version remains 0.9.3.5b; older packages
 and Windows artifacts are preserved. See
 [release-readiness evidence and remaining checks](RELEASE_READINESS_2026-11-14.md).
+
+## Clean domain-migration rebuild
+
+Superseding private Mint package:
+`dist/wolflauncher_0.9.3.5b_mint22-join-test-20261114_amd64.deb`, built from
+clean integrated source `4815172`. Includes the new wolflauncher.co.uk domain,
+name row and toolbar move. Checksum, full independently extracted inventory with
+require-clean/expected-commit provenance, packaged UI/domain checks and normal
+startup/shutdown pass. See [matching website deployment and full evidence](JOIN_DOMAIN_MIGRATION_2026-11-14.md).

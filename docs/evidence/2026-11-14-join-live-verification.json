@@ -1,0 +1,27 @@
+[
+  {
+    "path": "/join/",
+    "status": 200,
+    "sha256": "d992c23ae74cb1f8837d04ef7ac07eb895a181c27caf834a6e9a8822ee660a31"
+  },
+  {
+    "path": "/join",
+    "status": 200,
+    "sha256": "d992c23ae74cb1f8837d04ef7ac07eb895a181c27caf834a6e9a8822ee660a31"
+  },
+  {
+    "path": "/join/page.mjs",
+    "status": 200,
+    "sha256": "66865931065cb581366b0218898393e9e2ddd9ed2f444c310e19364e3c83203b"
+  },
+  {
+    "path": "/join/links.mjs",
+    "status": 200,
+    "sha256": "d14c7eaee1d0f3c9e35bd3f629bc63cf5f6ba3ae7494cb5a58163ba26efa2e8b"
+  },
+  {
+    "path": "/join/join.css",
+    "status": 200,
+    "sha256": "7b8a059164c0c3404631947f66874fb15eae77f9a8804546f1f1998d52187e59"
+  }
+]

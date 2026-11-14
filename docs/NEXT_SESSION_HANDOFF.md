@@ -996,3 +996,15 @@ are byte-identical. No page action automatically opens the protocol handler,
 downloads an installer, or queries a game server. The release feed remains the
 existing shared feed. The earlier toolbar move is included in this integrated
 development snapshot. No main merge, version bump or desktop publication.
+
+### Migration deployment and clean installer verified
+
+Website commit 6f4716f automatically deployed through the existing Coolify app.
+Live https://wolflauncher.co.uk/join/ and /join return 200; HTML/assets match the
+verified source, and a live-browser script/target/protocol-link check passes.
+Launcher integrated source 4815172 is clean, committed and pushed to
+dev/release-preparation, including the previously uncommitted toolbar move.
+A matching private Mint installer with a `mint22-join-test-20261114` label passes
+checksum, complete extracted inventory, require-clean provenance, UI/domain
+checks and normal startup/shutdown. Earlier packages are preserved.
+See [full deployment/build evidence and remaining release checks](JOIN_DOMAIN_MIGRATION_2026-11-14.md).

@@ -1,5 +1,13 @@
 # Mint installer rebuild and quick release readiness — 14 November 2026
 
+## Follow-up: domain migration completed
+
+The product website is **wolflauncher.co.uk**. Both repositories have now been
+updated, the join page is live, and the toolbar move is committed. The earlier
+404 and dirty-build findings below describe the initial check and are superseded
+by [the migration/deployment and clean-installer evidence](JOIN_DOMAIN_MIGRATION_2026-11-14.md).
+Final release-package and real Steam/DayZ checks remain.
+
 ## Result
 
 The requested private Linux Mint 22.3 amd64 Debian installer was rebuilt.
